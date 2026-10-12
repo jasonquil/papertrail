@@ -67,6 +67,12 @@ main{overflow:auto;min-width:0}
 .vh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .vh>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:0}
 .vh-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#login{position:fixed;inset:0;z-index:80;background:var(--bg);display:grid;place-items:center;padding:16px;overflow:auto}
+.lg-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:14px}
+.lg-card h1{font:800 1.4rem var(--display);margin:6px 0 0}.lg-card form{display:flex;flex-direction:column;gap:12px}.lg-card .btn{justify-content:center}
+.lg-msg{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:8px 10px;font-size:.88rem;margin:0}.lg-card .brand{padding:0}
+.users{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.urow{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;flex-wrap:wrap}
+.urow small{display:block;color:var(--muted)}.uact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.uact select{width:auto}.chip.warn{background:var(--warn-soft);color:var(--warn)}
 .banner.sa{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}.sa-b{display:flex;gap:8px}.banner{background:var(--info-soft);color:var(--info);border-radius:8px;padding:10px 14px;font-size:.9rem;font-weight:500}
 .loading{color:var(--muted);padding:60px 0;text-align:center}
 
@@ -106,7 +112,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .search:focus-within{border-color:var(--accent)}
 
 .stagesel{appearance:none;-webkit-appearance:none;width:auto;border:0;border-radius:999px;padding:3px 24px 3px 10px;font-size:.76rem;font-weight:700;cursor:pointer;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 9px center;color:var(--accent)}
-.stagesel.won{background-color:var(--good-soft);color:var(--good)}
+.stagesel.contract{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.stagesel.won{background-color:var(--good-soft);color:var(--good)}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}
 .stagesel:focus{box-shadow:0 0 0 3px var(--accent-soft);outline:none}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap;letter-spacing:.01em}
@@ -270,10 +276,10 @@ td .t2{display:block;color:var(--muted);font-size:.8rem}
 .lt input:checked+span{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .lt input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .logbox .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.chk{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:4px}.chips .chk{color:var(--fg)}.chk{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
 .chk select{padding:2px 4px}
 
-input[type=text],input[type=email],input[type=tel],input[type=number],input[type=date],input[type=url],input[type=search],input:not([type]),select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;width:100%;min-width:0}
+input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],input[type=date],input[type=url],input[type=search],input:not([type]),select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;width:100%;min-width:0}
 textarea{resize:vertical;line-height:1.45}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 
@@ -436,7 +442,62 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 @media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}.sheet{animation:pop .16s ease-out}}
 @keyframes slide{from{transform:translateX(24px);opacity:.6}}
 @keyframes pop{from{transform:translateY(8px);opacity:.6}}
+
+/* ===== Hidden theme: Tackle Box (vintage bait shop). Unlocked by clicking the fish in Settings 5 times ===== */
+html:root[data-fish="tackle"]{
+  --bg:#F1E6CC; --surface:#FBF4E2; --surface-2:#EADBB8; --fg:#2B1D12; --muted:#6E5A43; --line:#D3BE93;
+  --accent:#1F4D2E; --accent-fg:#FBF4E2; --accent-soft:#DCE5CF;
+  --warn:#8A5A00; --warn-soft:#F6E5B5; --bad:#A32418; --bad-soft:#F6D9D2; --good:#1F4D2E; --good-soft:#DCE5CF; --info:#2F4F6E; --info-soft:#E3E6DA;
+  --past-bg:#F6D9D2; --past-line:#D9A196; --today-bg:#F8E9B0; --today-line:#D9B84A; --future-bg:#DCE5CF; --future-line:#A9BF95;
+  --ink:#2B1D12; --red:#A32418;
+  --display:"Alfa Slab One",Rockwell,"Roboto Slab",Georgia,serif;
+  --body:"Bitter",Georgia,"Times New Roman",serif;
+  --scrim:rgba(43,29,18,.42); --shadow:6px 6px 0 rgba(43,29,18,.35);
+  color-scheme:light;
+}
+[data-fish="tackle"] body{background:var(--bg) radial-gradient(circle at 18% 8%,rgba(255,255,255,.4),transparent 45%) fixed}
+[data-fish="tackle"] h1,[data-fish="tackle"] h2,[data-fish="tackle"] h3{font-weight:400;letter-spacing:.2px}
+[data-fish="tackle"] h1{color:var(--ink)}
+[data-fish="tackle"] .panel h3,[data-fish="tackle"] .sech h3{color:var(--accent)}
+[data-fish="tackle"] .nav{position:relative;border-right:3px double #C9B282;padding-top:28px}
+[data-fish="tackle"] .nav::before{content:"";position:absolute;left:0;right:0;top:0;height:11px;background:repeating-linear-gradient(90deg,var(--red) 0 18px,var(--surface) 18px 36px);border-bottom:1px solid rgba(43,29,18,.25)}
+[data-fish="tackle"] .brand b{font:400 1.2rem/1 var(--display);color:var(--red);letter-spacing:.4px}
+[data-fish="tackle"] .brand small{display:block;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+[data-fish="tackle"] .brand .mark{background:none;width:34px;height:34px}
+[data-fish="tackle"] .navi.on{background:var(--accent);color:var(--accent-fg)}
+[data-fish="tackle"] .navi:hover:not(.on){background:var(--surface-2);color:var(--ink)}
+[data-fish="tackle"] .panel,[data-fish="tackle"] .tbl{border:2px solid var(--ink);border-radius:4px;box-shadow:4px 4px 0 rgba(43,29,18,.16)}
+[data-fish="tackle"] .panel{outline:1px dashed #C9B282;outline-offset:-7px}
+[data-fish="tackle"] .btn{border-radius:4px;border-color:#BFA676}
+[data-fish="tackle"] .btn.pri{background:var(--red);border:2px solid var(--ink);color:#FBF4E2;box-shadow:3px 3px 0 var(--ink)}
+[data-fish="tackle"] .btn.pri:hover{filter:none;transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+[data-fish="tackle"] .btn.pri:active{transform:translate(3px,3px);box-shadow:none}
+[data-fish="tackle"] .sheet{border:2px solid var(--ink);border-radius:6px}
+[data-fish="tackle"] .chip,[data-fish="tackle"] .stagesel{border-radius:4px}
+[data-fish="tackle"] thead th{font-family:var(--display);font-weight:400;letter-spacing:.06em;color:var(--accent)}
+[data-fish="tackle"] tbody tr:nth-child(even){background:rgba(234,219,184,.35)}
+[data-fish="tackle"] .lg-card{border:2px solid var(--ink);border-radius:6px;box-shadow:6px 6px 0 rgba(43,29,18,.2)}
+.tk-bob,.tk-lure,.tk-stamp{display:none}
+[data-fish="tackle"] .tk-float{position:relative;margin:auto auto 0;width:120px;height:62px;pointer-events:none}
+[data-fish="tackle"] .tk-float svg{position:absolute;left:47px;top:4px;animation:tkBob 2.2s ease-in-out infinite;z-index:1}
+[data-fish="tackle"] .tk-float .rp{position:absolute;left:50%;top:40px;width:56px;height:10px;margin-left:-28px;border:1.5px solid #8FA7B0;border-radius:50%;opacity:0;animation:tkRip 2.2s ease-out infinite}
+[data-fish="tackle"] .tk-float .r2{animation-delay:1.1s}
+@keyframes tkRip{0%{transform:scale(.4);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+[data-fish="tackle"] .tk-lure{display:block;align-self:flex-start;margin:4px 0 0 14px;transform-origin:13px 0;animation:tkSwing 3s ease-in-out infinite;pointer-events:none}
+[data-fish="tackle"] .tk-stamp{display:grid;position:fixed;right:26px;bottom:22px;z-index:0;width:96px;height:96px;place-items:center;text-align:center;border:2px solid var(--red);border-radius:50%;color:var(--red);font:400 12px/1.2 var(--display);transform:rotate(-12deg);opacity:.5;pointer-events:none}
+[data-fish="tackle"] main{position:relative;z-index:1}
+@keyframes tkSway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes tkBob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(5px) rotate(5deg)}}
+@keyframes tkSwing{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
+@media (prefers-reduced-motion:reduce){[data-fish="tackle"] .tk-float svg,[data-fish="tackle"] .tk-float .rp,[data-fish="tackle"] .tk-lure{animation:none}}
+.fishegg{position:absolute;right:12px;bottom:10px;width:14px;height:8px;border:0;padding:0;background:none;color:var(--muted);opacity:.35;cursor:default;line-height:0}
+.fishegg:hover{opacity:.6}.fishegg svg{width:14px;height:8px;display:block}
+.fishegg.wig{animation:fishWig .35s ease-in-out}
+@keyframes fishWig{0%,100%{transform:rotate(0)}30%{transform:rotate(-18deg) translateX(-2px)}70%{transform:rotate(14deg) translateX(2px)}}
+.sets{position:relative;padding-bottom:18px}
 </style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -758,14 +819,14 @@ table.p-t{width:100%;border-collapse:collapse;margin-top:14px}
 'use strict';
 // ---------- constants ----------
 const COLS = ['companies','contacts','deals','quotes','activities','tasks','contracts','templates','journeys','enrollments'];
-const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'won',l:'Closed Won',p:100},{k:'lost',l:'Closed Lost',p:0}];
+const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'won',l:'Closed Won',p:100},{k:'lost',l:'Closed Lost',p:0}];
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
 const OPP_TYPES = ['Shredding Purge','Scheduled Shredding','Medical Waste','Hard Drive Destruction','Product Destruction','Other'];
 const SVC_TYPES = ['Shredding','Medical Waste','Hard Drive/ Media','Shred & Med','Scanning','Product Destruction','Chat - Unknown'];
-const INTERVALS = ['Weekly','Every 2 weeks','Every 4 weeks','Monthly','Every 8 weeks','Quarterly','Twice a year','Yearly','On call','One-time'];
-const INITIAL_CALL = ['Jason','Kate','Ann','House'];
-const NO_CLOSE = ['Needed approval','Shopping prices','Wanted quote in writing','Timing','Needed more info','Other'];
-const LOSS_REASONS = ['Price','Went with competitor','No response','No longer needed','Timing','Other'];
+const INTERVALS = ['As Needed','Weekly','Bi-Weekly','Every 2 weeks','Every 4 weeks','Monthly','Bi-Monthly','Every 8 weeks','Quarterly','Twice a year','Yearly','On call','One-time'];
+const INITIAL_CALL = ['Jason','Kate','Ann','Austin','Sarah','House'];
+const NO_CLOSE = ['Not Decision Maker','Readiness','Gathering Quotes','Schedule','Unknown','Other'];
+const LOSS_REASONS = ['Price','Went with competitor','Unresponsive','No longer needed','Timing','Other'];
 const ACT = {voicemail:'Left Voicemail',noconnect:"Didn't Connect",inbound:'Inbound Call',call:'Outbound Call',email:'Email',meeting:'Meeting',note:'Note',job:'Job done',done:'Reminder',stage:'Update'};
 const LOG_TYPES = ['voicemail','noconnect','inbound','call','email','meeting','note','job'];
 const MS = 'Microsoft 365';
@@ -808,7 +869,7 @@ let team = {ids:[]};
 let db = null, U = null, AI = null, DL = null, MCP = null;
 const EM = {}; // companyId -> {status, items, err, partial, at}
 let ME = {id:null, name:''};
-let canWrite = true, live = false, booted = false, STANDALONE = false;
+let canWrite = true, live = false, booted = false, STANDALONE = false, SUPA = null;
 const P = {}; // id -> profile
 const ui = {view:'today', detail:null, q:'', mine:false, ai:{}, aiBusy:{}, coTab:{}, actFilter:'all'};
 let X = null;
@@ -880,7 +941,7 @@ function confetti(){
   const c = document.createElement('canvas'); const ctx = c.getContext && c.getContext('2d'); if (!ctx) return;
   const dpr = Math.min(window.devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
   c.width = W * dpr; c.height = H * dpr; c.className = 'confetti'; document.body.append(c); ctx.scale(dpr, dpr);
-  const colors = ['#0D6B61', '#4EC1B1', '#F2B33D', '#E8664A', '#7DCB86', '#2F5D8A', '#F7D774'];
+  const colors = FISH ? ['#A32418', '#1F4D2E', '#D9A400', '#2F4F6E', '#C9B282', '#6E5A43'] : ['#0D6B61', '#4EC1B1', '#F2B33D', '#E8664A', '#7DCB86', '#2F5D8A', '#F7D774'];
   const n = reduce ? 40 : Math.min(220, Math.round(W / 6));
   const ps = Array.from({length: n}, () => ({x: Math.random() * W, y: -20 - Math.random() * H * 0.5, w: 6 + Math.random() * 6, h: 8 + Math.random() * 8,
     vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 3, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, c: colors[Math.random() * colors.length | 0], sway: Math.random() * Math.PI * 2}));
@@ -890,7 +951,7 @@ function confetti(){
     const fade = t > dur - 700 ? Math.max(0, (dur - t) / 700) : 1;
     for (const p of ps) {
       p.vy += 0.06; p.sway += 0.05; p.x += p.vx + Math.sin(p.sway) * 0.8; p.y += p.vy; p.r += p.vr;
-      ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 1.3)) + 2); ctx.restore();
+      ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; if (FISH) { const L_ = p.w + 6; ctx.beginPath(); ctx.ellipse(0, 0, L_ / 2, L_ / 4.2, 0, 0, Math.PI * 2); ctx.moveTo(L_ / 2 - 2, 0); ctx.lineTo(L_ / 2 + 6, -L_ / 4); ctx.lineTo(L_ / 2 + 6, L_ / 4); ctx.closePath(); ctx.fill(); } else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 1.3)) + 2); ctx.restore();
     }
     if (t < dur) requestAnimationFrame(tick); else c.remove();
   };
@@ -961,7 +1022,7 @@ let saveT = 0;
 function saveLocal(){ if (!STANDALONE) return; clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch { toast("Couldn't save in this browser. Export your records from Settings.", 'bad'); } }, 150); }
 function loadLocal(){
   try { const raw = localStorage.getItem(LS_KEY); if (raw) { const o = JSON.parse(raw); for (const c of COLS) if (o && o[c] && typeof o[c] === 'object') S[c] = o[c]; } } catch {}
-  ME = {id: 'jason', name: 'Jason'}; P.kate = {name: 'Kate'}; P.ann = {name: 'Ann'}; team = {ids: ['kate', 'ann']};
+  ME = {id: 'jason', name: 'Jason'}; P.kate = {name: 'Kate'}; P.ann = {name: 'Ann'}; P.sarah = {name: 'Sarah'}; P.austin = {name: 'Austin'}; team = {ids: ['kate', 'ann', 'sarah', 'austin']};
 }
 function loadSample(){
   const t = today(), now = Date.now(), day = 864e5;
@@ -1046,6 +1107,27 @@ function attention(){
   return out.sort((a,b) => sev[a.sev]-sev[b.sev] || a.o-b.o);
 }
 
+// ---------- hidden fishing theme ----------
+let FISH = false;
+const BOBBER = '<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="#A32418" stroke="#2B1D12" stroke-width="2"/><path d="M2.5 17a14.5 14.5 0 0029 0z" fill="#FBF4E2"/><path d="M2 17h30" stroke="#2B1D12" stroke-width="2"/></svg>';
+const BOBBER_SM = '<svg width="26" height="34" viewBox="0 0 30 40"><path d="M15 0v8" stroke="#2B1D12" stroke-width="2"/><ellipse cx="15" cy="22" rx="12" ry="14" fill="#FBF4E2" stroke="#2B1D12" stroke-width="2"/><path d="M3 21a12 14 0 0124 0z" fill="#A32418"/><path d="M3 21h24" stroke="#2B1D12" stroke-width="2"/></svg>';
+function setFish(on){
+  FISH = !!on;
+  if (FISH) {
+    document.documentElement.dataset.fish = 'tackle';
+    if (!document.getElementById('fishFonts')) { const l = document.createElement('link'); l.id = 'fishFonts'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Bitter:wght@400;500;600;700&display=swap'; document.head.appendChild(l); }
+  } else delete document.documentElement.dataset.fish;
+  try { localStorage.setItem('apcrm-fish', FISH ? '1' : '0'); } catch {}
+  schedule();
+}
+try { if (localStorage.getItem('apcrm-fish') === '1') setTimeout(() => setFish(true), 0); } catch {}
+let fishClicks = [], fishT = 0;
+function fishEgg(el){
+  const now = Date.now(); fishClicks = fishClicks.filter(t => now - t < 3000); fishClicks.push(now);
+  el.classList.remove('wig'); void el.offsetWidth; el.classList.add('wig');
+  if (fishClicks.length >= 5) { fishClicks = []; const on = !FISH; setFish(on); closeModal(); toast(on ? "Gone fishin'! 🎣" : 'Back to the office.'); if (on) setTimeout(confetti, 150); }
+}
+
 // ---------- rendering ----------
 let raf = 0;
 function schedule(){ if (raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); }
@@ -1075,12 +1157,14 @@ function render(){
 
 function navHtml(){
   const badge = {journeys: booted ? journeyDue().length : 0, today: booted ? attention().length : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
-  return `<div class="brand"><span class="mark">PT</span><span><b>Paper Trail</b></span></div>
+  return `<div class="brand">${FISH ? `<span class="mark">${BOBBER}</span><span><b>Paper Trail</b><small>Bait &amp; Tackle Co.</small></span>` : '<span class="mark">PT</span><span><b>Paper Trail</b></span>'}</div>
   <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
   <div class="navlist">${VIEWS.map(([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`).join('')}</div>
+  ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
   <div class="navfoot">
     <button class="navi" data-act="settings">${ic('gear')}<span>Settings</span></button>
     ${ME.id ? `<div class="meline">${av(ME.id)}<span>${esc(ME.name || 'You')}</span></div>` : ''}
+    ${FISH ? `<svg class="tk-lure" width="26" height="58" viewBox="0 0 26 60" aria-hidden="true"><path d="M13 0v10" stroke="#6E5A43"/><circle cx="13" cy="12" r="2.5" fill="none" stroke="#6E5A43" stroke-width="1.5"/><path d="M13 15c9 4 10 22 0 32C3 37 4 19 13 15z" fill="#D9A400" stroke="#2B1D12" stroke-width="1.5"/><path d="M13 47v6m0 0c-3 0-4 3-2 5m2-5c3 0 4 3 2 5" stroke="#2B1D12" stroke-width="1.5" fill="none"/></svg>` : ''}
   </div>`;
 }
 
@@ -1123,7 +1207,8 @@ V.today = () => {
   const groups = coActivityGroups();
   const nothing = !Object.values(S.companies).length && !Object.values(S.deals).length;
 
-  return head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}), mineSeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
+  const fresh = FISH ? L('deals').filter(d => (d.createdAt || 0) >= Date.now() - 7 * 864e5).length : 0;
+  return head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), mineSeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your Spiro data over from Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + `<div class="cols2">
     <section class="panel"><div class="ph"><h3>Needs attention</h3><span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span></div>
@@ -1194,7 +1279,7 @@ V.pipeline = () => {
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||''));
   const nOpen = all.filter(isOpen).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
-  return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + mineSeg() + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
   + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${rows.map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -1297,7 +1382,7 @@ V.opp = () => {
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="pipeline">← Opportunities</button>
     <div class="cp-head"><span class="cp-ic">${ic('cols')}</span><div class="cp-name"><h1>${esc(d.name || 'Opportunity')}</h1><p class="sub">${d.companyId ? `<button class="lnk" data-act="coPage" data-id="${d.companyId}">${esc(cname(d.companyId))}</button>` : 'No account'}${d.contactId && S.contacts[d.contactId] ? ` · ${link('contacts', d.contactId)}` : ''}</p></div>
       <div class="vh-act">${W ? stageSel(d, 'rowStage') : stageChip(d)}${headBtns}</div></div>
-    <section class="panel"><div class="ph"><h3>Summary ${ic('spark')}</h3>${AI ? `<button class="btn sm ghost" data-act="coach" data-id="${id}" ${ui.aiBusy['c_' + id] ? 'disabled' : ''}>${ui.aiBusy['c_' + id] ? 'Checking…' : 'Check this opportunity with Claude'}</button>` : ''}</div><p>${esc(oppSummary(id))}</p>${aiBox('c_' + id)}</section>
+
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
       <div class="cpgrid">
       ${f('Company', d.companyId ? esc(cname(d.companyId)) : '', false, 'companyId')}${f('Opportunity', esc(d.type || d.name), false, 'type')}${f('Contact', d.contactId && S.contacts[d.contactId] ? esc(pname_(S.contacts[d.contactId])) : '', false, 'contactId')}
@@ -1326,7 +1411,7 @@ V.company = () => {
   let body = '';
   if (tab === 'details') {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
-    body = `<section class="panel"><div class="ph"><h3>Summary ${ic('spark')}</h3>${AI ? `<button class="btn sm ghost" data-act="summarize" data-id="${id}" ${ui.aiBusy[id] ? 'disabled' : ''}>Deeper summary with Claude</button>` : ''}</div><p>${esc(coSummary(id))}</p>${aiBox(id)}</section>
+    body = `
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}</div>
       <div class="cpgrid">${cpField('Name', esc(c.name))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
       ${cpField('Address', esc(c.address))}${cpField('City', esc(c.city))}${cpField('Zip code', esc(c.zip))}
@@ -1352,7 +1437,7 @@ V.company = () => {
 V.companies = () => {
   const rows = L('companies').filter(mine).filter(c => match(ui.q, c.name, c.city, c.phone, c.address, c.zip)).sort(byName);
   const total = Object.keys(S.companies).length;
-  return head('Accounts', `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + mineSeg() + addBtn('Account','newCompany'))
+  return head('Accounts', `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${rows.map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
@@ -1364,7 +1449,7 @@ V.companies = () => {
 V.contacts = () => {
   const rows = L('contacts').filter(mine).filter(c => match(ui.q, pname_(c), c.email, c.email2, c.phone, c.title, cname(c.companyId))).sort((a,b) => pname_(a).localeCompare(pname_(b)));
   const total = Object.keys(S.contacts).length;
-  return head('Contacts', `${total} contact${total===1?'':'s'}`, searchBox('Search contacts') + mineSeg() + addBtn('Contact','newContact'))
+  return head('Contacts', `${total} contact${total===1?'':'s'}`, searchBox('Search contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${rows.map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(c.phone||c.mobile||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>`);
 };
@@ -1562,7 +1647,6 @@ const DETAIL = {
     const web = c.website ? (/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website) : '';
     return `<div class="dh"><div><p class="eyebrow">Account</p><h2>${esc(c.name)}</h2><p class="sub">${esc([c.city, c.state].filter(Boolean).join(', '))}</p></div>${closeBtn}</div>
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
-    ${aiBox(id)}
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
     <dl class="facts">${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}</dl>
@@ -1594,8 +1678,7 @@ const DETAIL = {
     const tasks = L('tasks').filter(k => k.dealId === id && !k.done);
     const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
     return `<div class="dh"><div><p class="eyebrow">Opportunity</p><h2>${esc(d.name)}</h2>${d.companyId ? `<div>${link('companies', d.companyId)}${d.contactId ? ' · ' + link('contacts', d.contactId) : ''}</div>` : ''}</div>${closeBtn}</div>
-    <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}${AI ? `<button class="btn sm" data-act="coach" data-id="${id}" ${ui.aiBusy['c_'+id]?'disabled':''}>${ic('spark')}${ui.aiBusy['c_'+id]?'Checking…':'Check this opportunity'}</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
-    ${aiBox('c_'+id)}
+    <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     <dl class="facts">
       <dt>Stage</dt><dd>${canWrite ? `<select id="dealStage" data-change="dealStage" data-id="${id}" aria-label="Stage" style="width:auto">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k===s.k?'selected':''}>${s.l}</option>`).join('')}</select>` : stageChip(d)}</dd>
       ${fact('Annual projected', d.value ? `<b class="num">${money(d.value)}</b>` : '')}
@@ -1917,6 +2000,10 @@ function quoteDoc(q){
   <p class="t">Total ${money2(qTotal(q))}</p>${q.notes ? `<p class="n">${esc(q.notes)}</p>` : ''}</body></html>`;
 }
 async function saveFile(filename, data, fallbackLabel){
+  if (!DL && !window.claude) {
+    try { const type = /\.csv$/i.test(filename) ? 'text/csv;charset=utf-8' : /\.html?$/i.test(filename) ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8';
+      const url = URL.createObjectURL(new Blob([data], {type})); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); toast('Downloaded ' + filename); return; } catch {}
+  }
   if (DL) {
     try { await DL.save({filename, data}); toast('Saved ' + filename); return; }
     catch(e){ if (e && e.code === 'declined') return; if (e && e.code === 'rate_limited') { toast('A save is already waiting for you. Finish that one first.', 'bad'); return; } }
@@ -1999,7 +2086,7 @@ function guessMap(type, headers){
   if (type === 'contacts' && map.firstName != null && map.fullName != null) delete map.fullName;
   return map;
 }
-function mapStage(s){ s = norm(s); if (!s) return 'lead'; if (/won|closedwon|signed|win/.test(s)) return 'won'; if (/lost|closedlost|dead|declined/.test(s)) return 'lost'; if (/proposal|quot|pricing|estimate|negot|contract|verbal|commit|review|follow/.test(s)) return 'quoted'; return 'lead'; }
+function mapStage(s){ s = norm(s); if (!s) return 'lead'; if (/won|closedwon|signed|win/.test(s)) return 'won'; if (/lost|closedlost|dead|declined/.test(s)) return 'lost'; if (/contract|agreement|verbal|commit/.test(s)) return 'contract'; if (/proposal|quot|pricing|estimate|negot|review|follow/.test(s)) return 'quoted'; return 'lead'; }
 function toYmd(s){ s = String(s||'').trim(); if (!s) return ''; if (isDate(s)) return s; let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/); if (m) { let y = +m[3]; if (y < 100) y += 2000; return `${y}-${pad(+m[1])}-${pad(+m[2])}`; } m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/); if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`; const d = new Date(s); return isNaN(d) ? '' : ymd(d); }
 
 const imp = {type:'accounts', headers:[], rows:[], map:{}, name:''};
@@ -2089,15 +2176,93 @@ async function exportCsv(){
   await saveFile(`paper-trail-${today()}.csv`, rows.map(r => r.map(csvCell).join(',')).join('\r\n'), 'Export');
 }
 
+// ---------- filtered downloads (Opportunities, Accounts, Contacts) ----------
+const dlBtn = t => `<button class="btn" data-act="expOpen" data-t="${t}">${ic('down')}Download</button>`;
+const mdy = v => { if (!v) return ''; const d = typeof v === 'number' ? new Date(v) : parseYmd(v); return isNaN(d) ? '' : `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`; };
+const ymdOf = v => !v ? '' : typeof v === 'number' ? ymd(new Date(v)) : String(v).slice(0, 10);
+const nm = id => id ? pname(id).replace(' (you)', '') : '';
+const inRange = (v, from, to) => { const d = ymdOf(v); if (!from && !to) return true; if (!d) return false; return (!from || d >= from) && (!to || d <= to); };
+const anyOpt = (list, label) => [['', label || 'Any'], ...list.map(x => Array.isArray(x) ? x : [x, x])];
+const ownerOpts = () => people().map(i => [i, nm(i)]).sort((a, b) => a[1].localeCompare(b[1]));
+const mainContact = coId => gr(coId).contacts.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
+const coStats = coId => { const ds = gr(coId).deals; const won = ds.filter(d => d.stage === 'won'); const last = won.map(d => ymdOf(d.serviceDate) || ymdOf(d.closedAt)).filter(Boolean).sort().pop() || '';
+  return {open: ds.filter(isOpen).length, won: won.length, wonValue: sum(won, d => d.value), last}; };
+const coStatus = (coId, st) => { if (!st) return true; const x = coStats(coId); return st === 'open' ? x.open > 0 : st === 'won' ? x.won > 0 : st === 'noopen' ? x.open === 0 : st === 'never' ? x.won === 0 : true; };
+const EXP = {
+  deals: {
+    title: 'opportunities', file: 'opportunities',
+    cols: [
+      ['Opportunity Id', d => d.id], ['Company', d => cname(d.companyId)], ['Opportunity', d => d.name || d.type],
+      ['Contact', d => d.contactId && S.contacts[d.contactId] ? pname_(S.contacts[d.contactId]) : ''], ['Contact Email', d => d.contactId ? ctMail(S.contacts[d.contactId]) : ''],
+      ['Sales Stage', d => stage(d).l], ['Closed Date', d => isOpen(d) ? '' : mdy(d.closedAt)], ['Created', d => mdy(d.createdAt)], ['Description', d => d.notes],
+      ['Owner', d => nm(d.ownerId)], ['Service', d => d.service], ['Service Interval', d => d.interval], ['Service Date', d => mdy(d.serviceDate)], ['Service Type', d => d.serviceType],
+      ['Annual Projected Amount', d => d.value || ''], ['Lead Source', d => d.source], ['Lead Source Other', d => d.sourceOther], ['Initial Call', d => d.initialCall],
+      ['First Call Close', d => d.firstCallClose], ['Reason for Loss', d => d.lostReason], ['Did not Close on First Call', d => d.noCloseReason],
+      ['Closed By', d => isOpen(d) ? '' : nm(d.closedBy)], ['Price Quoted', d => d.priceQuoted || '']],
+    form: () => {
+      const cur = ui.oppShow || 'open'; const on = k => cur === 'all' || (cur === 'open' ? isOpen({stage: k}) : cur === k);
+      return `<div class="f"><span>Sales stage</span><div class="chips">${STAGES.map(st => `<label class="chk"><input type="checkbox" name="st_${st.k}" ${on(st.k) ? 'checked' : ''} data-change="expCount"> ${st.l}</label>`).join('')}</div></div>
+      <div class="grid3">${F('Date', sel('dateBy', [['created', 'Created'], ['closed', 'Closed date'], ['service', 'Service date']], 'created', 'data-change="expCount"'))}${F('From', inp('from', '', 'date', 'data-change="expCount"'))}${F('To', inp('to', '', 'date', 'data-change="expCount"'))}</div>
+      <div class="grid3">${F('Owner', sel('ownerId', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Closed by', sel('closedBy', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Initial call', sel('initialCall', anyOpt(INITIAL_CALL), '', 'data-change="expCount"'))}</div>
+      <div class="grid2">${F('Opportunity', sel('type', anyOpt(OPP_TYPES), '', 'data-change="expCount"'))}${F('Service', sel('service', anyOpt(SERVICES), '', 'data-change="expCount"'))}${F('Service type', sel('serviceType', anyOpt(SVC_TYPES), '', 'data-change="expCount"'))}${F('Service interval', sel('interval', anyOpt(INTERVALS), '', 'data-change="expCount"'))}</div>`;
+    },
+    rows: f => L('deals').filter(d => STAGES.some(st => f['st_' + st.k] && stage(d).k === st.k)
+      && inRange(f.dateBy === 'closed' ? (isOpen(d) ? '' : d.closedAt) : f.dateBy === 'service' ? d.serviceDate : d.createdAt, f.from, f.to)
+      && (!f.ownerId || d.ownerId === f.ownerId) && (!f.closedBy || (!isOpen(d) && d.closedBy === f.closedBy)) && (!f.initialCall || d.initialCall === f.initialCall)
+      && (!f.type || (d.type || d.name) === f.type) && (!f.service || d.service === f.service) && (!f.serviceType || d.serviceType === f.serviceType) && (!f.interval || d.interval === f.interval))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+  },
+  companies: {
+    title: 'accounts', file: 'accounts',
+    cols: [
+      ['Company Id', c => c.id], ['Name', c => c.name], ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
+      ['Owner', c => nm(c.ownerId)], ['Created', c => mdy(c.createdAt)], ['Open Opportunities', c => coStats(c.id).open], ['Won Jobs', c => coStats(c.id).won], ['Last Job Date', c => mdy(coStats(c.id).last)], ['Notes', c => c.notes]],
+    form: () => locForm('Account owner'),
+    rows: f => L('companies').filter(c => locMatch(c, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.id, f.status) && inRange(c.createdAt, f.from, f.to)).sort(byName)
+  },
+  contacts: {
+    title: 'contacts', file: 'contacts',
+    cols: [
+      ['First Name', c => c.firstName], ['Last Name', c => c.lastName], ['Email', c => c.email], ['Personal Email', c => c.email2], ['Title', c => c.title],
+      ['Phone', c => c.phone], ['Mobile', c => c.mobile], ['Description', c => c.notes], ['Owner', c => nm(c.ownerId)], ['Company', c => cname(c.companyId)], ['Created', c => mdy(c.createdAt)]],
+    form: () => locForm('Contact owner'),
+    rows: f => L('contacts').filter(c => { const co = S.companies[c.companyId] || {}; return locMatch(co, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.companyId, f.status) && inRange(c.createdAt, f.from, f.to); })
+      .sort((a, b) => cname(a.companyId).localeCompare(cname(b.companyId)) || pname_(a).localeCompare(pname_(b)))
+  }
+};
+function locForm(ownerLabel){
+  const cities = [...new Set(L('companies').map(c => (c.city || '').trim()).filter(Boolean))].sort();
+  const states = [...new Set(L('companies').map(c => (c.state || '').trim()).filter(Boolean))].sort();
+  return `<div class="grid2">${F(ownerLabel, sel('ownerId', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Jobs', sel('status', [['', 'Any'], ['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], '', 'data-change="expCount"'))}</div>
+    <div class="grid3">${F('City', sel('city', anyOpt(cities), '', 'data-change="expCount"'))}${F('State', sel('state', anyOpt(states), '', 'data-change="expCount"'))}${F('ZIP starts with', inp('zip', '', 'text', 'inputmode="numeric" data-input="expCount"'))}</div>
+    <div class="grid2">${F('Created from', inp('from', '', 'date', 'data-change="expCount"'))}${F('Created to', inp('to', '', 'date', 'data-change="expCount"'))}</div>`;
+}
+const locMatch = (co, f) => (!f.city || (co.city || '').trim() === f.city) && (!f.state || (co.state || '').trim() === f.state) && (!f.zip || String(co.zip || '').startsWith(f.zip.trim()));
+function expRows(){ const fm = $('#mform'); if (!fm || !ui.exp) return []; return EXP[ui.exp].rows(formData(fm)); }
+function expCount(){ const n = expRows().length; const b = $('#mform [type=submit]'); if (b) { b.disabled = !n; b.textContent = n ? `Download ${n} ${n === 1 ? EXP[ui.exp].title.replace(/ies$/, 'y').replace(/s$/, '') : EXP[ui.exp].title}` : 'Nothing matches'; } }
+function exportModal(t){
+  const X_ = EXP[t]; if (!X_) return; ui.exp = t;
+  openModal(`Download ${X_.title}`, `${X_.form()}<p class="sub">Downloads as a CSV file that opens in Excel. Columns: ${X_.cols.map(c => c[0]).join(', ')}.</p>`, 'Download', async () => {
+    const rows = expRows(); if (!rows.length) { toast('Nothing matches those filters.', 'bad'); return false; }
+    const out = [X_.cols.map(c => c[0]), ...rows.map(r => X_.cols.map(c => { const v = c[1](r); return v == null ? '' : v; }))];
+    await saveFile(`${X_.file}-${today()}.csv`, '﻿' + out.map(r => r.map(csvCell).join(',')).join('\r\n'), 'Download');
+    return true;
+  }, {wide: t === 'deals'});
+  expCount();
+}
+
 // ---------- settings ----------
 function settingsModal(){
   const row = (icon, title, text, btn) => `<div class="setrow"><span class="seti">${ic(icon)}</span><div><b>${title}</b><p class="sub">${text}</p></div>${btn}</div>`;
   openModal('Settings', `<div class="sets">
     ${row('mail', 'My connections', 'Connect your Outlook email so you can send from the CRM and see your customer emails on each account.', `<button type="button" class="btn pri" data-act="connections">Open</button>`)}
-    ${row('users', 'Team', 'Choose which teammates can be assigned accounts, opportunities and reminders.', `<button type="button" class="btn" data-act="team">Manage team</button>`)}
+    ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
+    ${SUPA ? row('users', 'Users', isAdmin() ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', `<button type="button" class="btn" data-act="users">${isAdmin() ? 'Manage users' : 'View'}</button>`)
+      : row('users', 'Team', 'Choose which teammates can be assigned accounts, opportunities and reminders.', `<button type="button" class="btn" data-act="team">Manage team</button>`)}
     ${row('mail', 'Email templates', 'Edit the ready-made emails your team picks from when emailing a customer.', `<button type="button" class="btn" data-act="tplManage">Edit templates</button>`)}
-    ${canWrite ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from a Spiro export or any CSV file.', `<button type="button" class="btn" data-act="import">Import CSV</button>`) : ''}
+    ${canWrite && isAdmin() ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from a Spiro export or any CSV file.', `<button type="button" class="btn" data-act="import">Import CSV</button>`) : ''}
     ${row('down', 'Export', 'Download every account and contact as a CSV file you can open in Excel.', `<button type="button" class="btn" data-act="export">Export CSV</button>`)}
+    <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button>
   </div>`, null);
 }
 
@@ -2940,8 +3105,15 @@ const A = {
   qDelRow: (d, el) => { const rows = $('#qItems').children; if (rows.length > 1) el.closest('.item').remove(); else el.closest('.item').querySelectorAll('input').forEach(i => i.value = ''); updQuoteTotal(); },
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
   settings: () => settingsModal(),
-  import: () => importModal(),
+  fishEgg: (d, el) => fishEgg(el),
+  import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } importModal(); },
+  users: () => usersModal(),
+  account: () => accountModal(),
+  signOut: async () => { closeModal(); await SUPA.sb.auth.signOut(); location.reload(); },
+  uActive: d => { const u = USERS.find(x => x.id === d.id); if (u) uPatch(d.id, {active: !u.active}); },
+  uCode: d => uPatch(d.id, {invite_code: inviteCode()}),
   export: () => exportCsv(),
+  expOpen: d => exportModal(d.t),
   team: () => teamModal(),
   teamAdd: d => { saveTeam([...(team.ids||[]), d.id]); const li = document.querySelector(`#teamHits [data-id="${CSS.escape(d.id)}"]`); if (li) li.textContent = 'Added'; },
   teamDel: d => saveTeam((team.ids||[]).filter(i => i !== d.id)),
@@ -2978,6 +3150,8 @@ const CHANGE = {
   dealStage: el => changeStage(el.dataset.id, el.value),
   rowStage: el => changeStage(el.dataset.id, el.value),
   oppField: el => oppSaveField(el),
+  expCount: () => expCount(),
+  uRole: el => { if (el.dataset.id) uPatch(el.dataset.id, {role: el.value}); },
   impType: el => { imp.type = el.value; if (imp.headers.length) imp.map = guessMap(imp.type, imp.headers); renderImpBody(); },
   impFile: el => { const file = el.files && el.files[0]; if (!file) return; const r = new FileReader(); r.onload = () => { const rows = parseCSV(String(r.result)); imp.name = file.name; imp.headers = rows[0] || []; imp.rows = rows.slice(1);
     const n = file.name.toLowerCase(); const t = /opportunit|deal/.test(n) ? 'deals' : /contact|people|person/.test(n) ? 'contacts' : /compan|account|organi/.test(n) ? 'accounts' : imp.type; imp.type = t; const ts = $('#impType'); if (ts) ts.value = t;
@@ -3039,6 +3213,7 @@ let teamTimer = 0;
 document.addEventListener('input', e => {
   const el = e.target;
   if (el.type === 'tel' && !(e.inputType || '').startsWith('delete')) { phoneInput(el); }
+  if (el.dataset.input) { CHANGE[el.dataset.input]?.(el); return; }
   if (el.id === 'tplBody') { updTplPrev(); return; }
   if (el.id === 'dCc' || el.id === 'dBcc') { acShow(el); return; }
   if (el.id === 'jsIn' || el.id === 'jsDate') { jsPreview(); return; }
@@ -3888,12 +4063,172 @@ async function deleteQuoteNow(id){
   return ok;
 }
 
+// ---------- hosted mode: Supabase logins, users and shared data ----------
+const isAdmin = () => !SUPA || ME.role === 'admin';
+const SB_PAGE = 1000;
+function makeSupaDb(sb){
+  const subs = {}; // col -> [{map, cb, ready}]
+  const fire = c => (subs[c] || []).forEach(x => { if (x.ready) x.cb(x.snap()); });
+  const ch = sb.channel('pt-records').on('postgres_changes', {event: '*', schema: 'public', table: 'records'}, ev => {
+    const row = ev.eventType === 'DELETE' ? ev.old : ev.new; if (!row || !row.col) return;
+    for (const x of subs[row.col] || []) { if (ev.eventType === 'DELETE') delete x.map[row.id]; else x.map[row.id] = row.data || {}; }
+    fire(row.col);
+  });
+  ch.subscribe();
+  async function loadAll(c){
+    const map = {};
+    for (let from = 0; ; from += SB_PAGE) {
+      const {data, error} = await sb.from('records').select('id,data').eq('col', c).range(from, from + SB_PAGE - 1);
+      if (error) throw error;
+      for (const r of data || []) map[r.id] = r.data || {};
+      if (!data || data.length < SB_PAGE) break;
+    }
+    return map;
+  }
+  const fail = e => { const err = new Error((e && e.message) || 'Database error'); err.code = e && e.code === '42501' ? 'permission-denied' : (e && e.code) || 'unknown'; return err; };
+  function docRef(c, id){
+    return {
+      async set(data){ const {error} = await sb.from('records').upsert({col: c, id, data, updated_at: new Date().toISOString()}, {onConflict: 'col,id'}); if (error) throw fail(error); },
+      async update(patch){ const {error} = await sb.rpc('merge_record', {p_col: c, p_id: id, p_patch: patch}); if (error) throw fail(error); },
+      async delete(){ const {error} = await sb.from('records').delete().eq('col', c).eq('id', id); if (error) throw fail(error); },
+      onSnapshot(cb, onErr){
+        const x = {map: {}, ready: false, cb: () => cb({exists: id in x.map, data: () => x.map[id]})};
+        x.snap = () => null; (subs[c] = subs[c] || []).push(x);
+        loadAll(c).then(m => { x.map = m; x.ready = true; x.snap = () => null; cb({exists: id in m, data: () => m[id]}); }).catch(e => onErr && onErr(fail(e)));
+        x.cb = () => cb({exists: id in x.map, data: () => x.map[id]});
+        return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
+      }
+    };
+  }
+  return {
+    collection(c){
+      return {
+        doc: id => docRef(c, id),
+        onSnapshot(cb, onErr){
+          const x = {map: {}, ready: false, cb};
+          x.snap = () => ({docs: Object.entries(x.map).map(([id, d]) => ({id, data: () => d}))});
+          (subs[c] = subs[c] || []).push(x);
+          loadAll(c).then(m => { x.map = m; x.ready = true; cb(x.snap()); }).catch(e => onErr && onErr(fail(e)));
+          return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
+        }
+      };
+    },
+    doc(path){ const [c, id] = path.split('/'); return docRef(c, id); }
+  };
+}
+let USERS = []; // profiles rows
+function applyProfiles(rows){
+  USERS = rows || [];
+  for (const u of USERS) P[u.id] = {name: u.name, email: u.email, role: u.role, active: u.active};
+  const me = USERS.find(u => SUPA && SUPA.uid && u.user_id === SUPA.uid);
+  if (me) ME = {id: me.id, name: me.name, email: me.email, role: me.role};
+  team = {ids: USERS.filter(u => u.active).map(u => u.id)};
+}
+async function loadProfiles(){
+  const {data, error} = await SUPA.sb.from('profiles').select('id,name,email,role,active,user_id,invite_code').order('name');
+  if (error) throw error;
+  applyProfiles(data); schedule();
+  if (!$('#modal').hidden && $('#usersList')) usersModal();
+}
+function loginHtml(mode, msg){
+  const first = mode === 'first';
+  return `<div class="lg-card"><div class="brand"><span class="mark">PT</span><span><b>Paper Trail</b></span></div>
+    <h1>${first ? 'Set up your account' : 'Sign in'}</h1>
+    ${first ? '<p class="sub">Use the email and invite code your admin gave you, then choose a password.</p>' : ''}
+    <form id="lgForm" data-mode="${mode}">
+      <label class="f"><span>Email</span><input name="email" type="email" autocomplete="username" required></label>
+      ${first ? '<label class="f"><span>Invite code</span><input name="code" autocomplete="off" required></label>' : ''}
+      <label class="f"><span>${first ? 'Choose a password' : 'Password'}</span><input name="password" type="password" minlength="8" autocomplete="${first ? 'new-password' : 'current-password'}" required></label>
+      ${msg ? `<p class="lg-msg" role="alert">${esc(msg)}</p>` : ''}
+      <button class="btn pri" type="submit">${first ? 'Create my account' : 'Sign in'}</button>
+    </form>
+    <button class="lnk" type="button" data-lg="${first ? 'signin' : 'first'}">${first ? 'Already set up? Sign in' : 'First time here? Set up your account'}</button></div>`;
+}
+function supaLogin(sb){
+  return new Promise(resolve => {
+    const el = document.createElement('div'); el.id = 'login'; document.body.appendChild(el);
+    const show = (mode, msg) => { el.innerHTML = loginHtml(mode, msg); const f = el.querySelector('input'); if (f) f.focus(); };
+    el.addEventListener('click', e => { const b = e.target.closest('[data-lg]'); if (b) show(b.dataset.lg); });
+    el.addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target; const mode = f.dataset.mode; const btn = f.querySelector('[type=submit]');
+      const email = f.email.value.trim().toLowerCase(), password = f.password.value, code = f.code ? f.code.value.trim() : '';
+      btn.disabled = true; btn.textContent = mode === 'first' ? 'Setting up…' : 'Signing in…';
+      try {
+        if (mode === 'first') {
+          let r = await sb.auth.signUp({email, password});
+          if (r.error && /registered|exists/i.test(r.error.message)) r = await sb.auth.signInWithPassword({email, password});
+          if (r.error) throw r.error;
+          if (!r.data.session) throw new Error('Email confirmation is turned on in Supabase. Turn it off (see the setup guide), then try again.');
+          const c = await sb.rpc('claim_profile', {p_code: code});
+          if (c.error) throw c.error;
+          if (!c.data) { await sb.auth.signOut(); throw new Error("That invite code doesn't match this email. Check it with your admin."); }
+        } else {
+          const r = await sb.auth.signInWithPassword({email, password}); if (r.error) throw new Error('Wrong email or password.');
+        }
+        const ok = await sb.rpc('is_member'); if (ok.error) throw ok.error;
+        if (!ok.data) { await sb.auth.signOut(); throw new Error("This account isn't active in Paper Trail. Ask your admin to add you."); }
+        el.remove(); resolve();
+      } catch (err) { show(mode, (err && err.message) || 'Something went wrong. Try again.'); const i = el.querySelector('[name=email]'); if (i) i.value = email; }
+    });
+    show('signin');
+  });
+}
+async function supaStart(){
+  const cfg = window.PAPER_TRAIL || {};
+  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true}});
+  SUPA = {sb, uid: null};
+  const {data} = await sb.auth.getSession();
+  let ok = false;
+  if (data && data.session) { const m = await sb.rpc('is_member'); ok = !m.error && !!m.data; if (!ok) await sb.auth.signOut(); }
+  if (!ok) await supaLogin(sb);
+  const u = await sb.auth.getUser(); SUPA.uid = u.data && u.data.user ? u.data.user.id : null;
+  await loadProfiles();
+  sb.channel('pt-profiles').on('postgres_changes', {event: '*', schema: 'public', table: 'profiles'}, () => loadProfiles().catch(() => {})).subscribe();
+  sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.reload(); });
+  return makeSupaDb(sb);
+}
+const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o = ''; const r = new Uint32Array(8); crypto.getRandomValues(r); for (const n of r) o += a[n % a.length]; return o.slice(0, 4) + '-' + o.slice(4); };
+function usersModal(){
+  const admin = isAdmin();
+  const row = u => { const pending = !u.user_id && u.invite_code; const me = u.id === ME.id;
+    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${esc(u.email)}</small></div>
+      <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : pending ? `<span class="chip warn" title="Not signed up yet">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>` : '<span class="chip good">Active</span>'}
+      ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}">${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
+  openModal('Users', `<p class="sub">${admin ? 'Add the people who use Paper Trail. Each new person gets an invite code: send them the site link and the code, and they choose their own password under “First time here?”.' : 'People who use Paper Trail. Only an admin can add users.'}</p>
+    <ul class="users" id="usersList">${USERS.map(row).join('') || '<li class="sub">No users yet.</li>'}</ul>
+    ${admin ? `<h3 style="margin-top:14px">Add a user</h3><div class="grid3">${F('Name', inp('uName', '', 'text', 'placeholder="Kate Dillon"'))}${F('Work email', inp('uEmail', '', 'email', 'placeholder="kate@allpointsprotects.com"'))}${F('Role', sel('uRole', [['manager', 'Manager'], ['admin', 'Admin']], 'manager'))}</div>
+      <p class="sub">Managers can see and change everything except importing data and managing users.</p>` : ''}`,
+    admin ? 'Add user' : null, admin ? async f => {
+      const name = (f.uName || '').trim(), email = (f.uEmail || '').trim().toLowerCase();
+      if (!name || !EMAIL_RE.test(email)) { toast('Enter a name and a valid email.', 'bad'); return false; }
+      if (USERS.some(u => u.email.toLowerCase() === email)) { toast('That email is already a user.', 'bad'); return false; }
+      const code = inviteCode();
+      const {error} = await SUPA.sb.from('profiles').insert({id: uid(), name, email, role: f.uRole || 'manager', active: true, invite_code: code});
+      if (error) { toast("Couldn't add that user: " + error.message, 'bad'); return false; }
+      await loadProfiles(); usersModal(); toast(`${name} added. Their invite code is ${code}.`);
+      return false;
+    } : null);
+}
+async function uPatch(id, fields){ const {error} = await SUPA.sb.from('profiles').update(fields).eq('id', id); if (error) { toast("Couldn't save: " + error.message, 'bad'); return; } await loadProfiles(); }
+function accountModal(){
+  openModal('My account', `<p class="sub">Signed in as <b>${esc(ME.name || '')}</b> (${esc(ME.email || '')}), ${ME.role === 'admin' ? 'Admin' : 'Manager'}.</p>
+    <label class="f"><span>New password</span><input name="pw" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></label>`, 'Change password', async f => {
+      if (!f.pw || f.pw.length < 8) { toast('Use at least 8 characters.', 'bad'); return false; }
+      const {error} = await SUPA.sb.auth.updateUser({password: f.pw}); if (error) { toast(error.message, 'bad'); return false; }
+      toast('Password changed'); return true;
+    }, {foot: `<button type="button" class="btn ghost" data-act="signOut" style="margin-right:auto">Sign out</button>`});
+}
+
 // ---------- boot ----------
 async function boot(){
   const h = (location.hash || '').slice(1); if (VIEWS.some(v => v[0] === h)) ui.view = h;
   render();
   const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
-  const [u, d, s, dl, mc] = await Promise.all([use('user'), use('db'), use('sample'), use('downloads'), use('mcp')]);
+  let [u, d, s, dl, mc] = await Promise.all([use('user'), use('db'), use('sample'), use('downloads'), use('mcp')]);
+  if (!d && !window.claude && window.PAPER_TRAIL && window.PAPER_TRAIL.supabaseUrl && window.supabase) {
+    try { d = await supaStart(); } catch (e) { $('#main').innerHTML = `<div class="wrap"><p class="banner">Couldn't connect to the Paper Trail database: ${esc((e && e.message) || 'unknown error')}. Check config.js and reload.</p></div>`; return; }
+  }
   U = u; AI = s; DL = dl; MCP = mc;
   if (U) { try { ME = await U.me(); } catch {} try { const cw = await U.can('data.write'); if (cw === false) canWrite = false; } catch {} }
   if (d) {
@@ -3902,7 +4237,7 @@ async function boot(){
       db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); S[c] = o; loaded[c] = true; schedule(); },
         err => { loaded[c] = true; if (err && err.code === 'revoked') { canWrite = false; toast('Your access to this CRM changed. Reload to continue.', 'bad'); } else toast("Lost the live connection to your records. Reload the page.", 'bad'); schedule(); });
     }
-    db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
+    if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
   }
   if (!d && !window.claude) { STANDALONE = true; loadLocal(); }
   booted = true; bootDone();
