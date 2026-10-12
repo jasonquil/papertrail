@@ -243,6 +243,7 @@ td .t2{display:block;color:var(--muted);font-size:.8rem}
 #drawer,#modal{position:fixed;inset:0;z-index:20}
 #modal{z-index:50}
 #qbHost{position:fixed;inset:0;z-index:40;overflow:auto;background:var(--bg)}
+[hidden]{display:none!important}
 .scrim{position:absolute;inset:0;background:var(--scrim)}
 .drawer{position:absolute;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--bg);box-shadow:var(--shadow);display:flex;flex-direction:column}
 #drawerBody{overflow:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 22px calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
@@ -511,6 +512,7 @@ html:root[data-fish="tackle"]{
 <div id="toasts" aria-live="polite"></div>
 <div id="qbHost" hidden></div>
 <template id="qbTpl"><style>
+:host([hidden]){display:none!important}
 :host{display:block;
   --bg:#eef0e8; --panel:#ffffff; --ink:#1f2418; --muted:#5f6656; --line:#d5d9cb;
   --green:#415a18; --green-ink:#ffffff; --green-soft:#e4ead6; --red:#d81a22; --field:#fbfcf8;
