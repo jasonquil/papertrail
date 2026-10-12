@@ -244,6 +244,7 @@ td .t2{display:block;color:var(--muted);font-size:.8rem}
 #modal{z-index:50}
 #qbHost{position:fixed;inset:0;z-index:40;overflow:auto;background:var(--bg)}
 [hidden]{display:none!important}
+.sf #dfRemBtn{order:1}.sf:has(#dfRemBtn) [type=submit]{order:2}
 .scrim{position:absolute;inset:0;background:var(--scrim)}
 .drawer{position:absolute;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--bg);box-shadow:var(--shadow);display:flex;flex-direction:column}
 #drawerBody{overflow:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 22px calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
@@ -1940,7 +1941,8 @@ function dealForm(id, pre={}){
     ${F('First call close', sel('firstCallClose', ['', 'Yes', 'No'], d.firstCallClose, 'data-change="dfFcc"'))}
     <label class="f" id="dfNoClose"${hid(d.firstCallClose === 'No')}><span>Did not close on first call</span>${sel('noCloseReason', o(NO_CLOSE, d.noCloseReason), d.noCloseReason)}</label>
     <label class="f" id="dfLoss"${hid(d.stage === 'lost')}><span>Reason for loss</span>${sel('lostReason', o(LOSS_REASONS, d.lostReason), d.lostReason)}</label>
-    </div>`, id ? 'Save' : 'Add opportunity', async f => {
+    <input type="hidden" name="then" id="dfThen" value="">
+    </div>`, 'Save', async f => {
       let companyId = f.companyId === '__new' ? '' : f.companyId;
       if (!companyId && f.newCompany) { const co = L('companies').find(c => norm(c.name) === norm(f.newCompany)); if (co) companyId = co.id; else { companyId = uid(); if (!await put('companies', companyId, {name: f.newCompany, state: 'FL', ownerId: ME.id})) return false; } }
       if (!companyId) { toast('Every opportunity needs a company. Choose one or add a new one.', 'bad'); return false; }
@@ -1957,8 +1959,9 @@ function dealForm(id, pre={}){
       if (ok && rec.stage === 'won' && prev.stage !== 'won') confetti();
       if (ok && id && prev.stage !== rec.stage) logAct({type:'stage', text:`Stage changed to ${stage(rec).l}`, dealId:nid, companyId});
       if (ok && !id) { toast('Opportunity added'); ui.detail = {col:'deals', id:nid}; schedule(); }
+      if (ok && f.then === 'reminder' && isOpen(rec)) setTimeout(() => taskForm(null, {co: companyId, deal: nid}), 250);
       return ok;
-    }, {wide: true});
+    }, {wide: true, foot: `<button type="button" class="btn" id="dfRemBtn" data-act="dfSaveRem"${isOpen(d) ? '' : ' hidden'}>${ic('bell')}Save &amp; set reminder</button>`});
 }
 const REMINDER_TYPES = ['1st Follow Up on Purge','2nd Follow Up on Purge','3rd Follow Up on Purge','4th Follow Up on Purge','5th Follow Up on Purge','6th Follow Up on Purge','7th Follow Up on Purge','Final Follow Up'];
 function nextReminderType(coId){
@@ -3140,6 +3143,7 @@ const A = {
   oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.tagName === 'SELECT' && el.showPicker) try { el.showPicker(); } catch {} } },
   loadSample: () => setDemo(true),
   demoOn: () => setDemo(true),
+  dfSaveRem: () => { const f = $('#mform'), t = $('#dfThen'); if (!f || !t) return; t.value = 'reminder'; if (f.reportValidity && !f.reportValidity()) { t.value = ''; return; } f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', {cancelable: true})); setTimeout(() => { if (t.isConnected) t.value = ''; }, 0); },
   demoOff: () => setDemo(false),
   resetDemo: () => confirmModal('Clear all data?', 'Every account, contact, opportunity and reminder saved in this browser will be removed. Export first from Settings if you want a copy.', 'Clear everything', async () => { for (const c of COLS) S[c] = {}; try { localStorage.removeItem(LS_KEY); } catch {} ui.view = 'today'; ui.detail = null; schedule(); toast('All data cleared'); }),
   oppPage: d => { ui.oppEdit = null; if (!S.deals[d.id]) return; ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; },
@@ -3246,7 +3250,7 @@ const CHANGE = {
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
   tplFmt: () => updTplPrev(),
   draftTo: el => { if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
-  dfStage: el => { const closed = el.value === 'won' || el.value === 'lost'; const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
+  dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = el.value === 'won' || el.value === 'lost'; const closed = el.value === 'won' || el.value === 'lost'; const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
   dfSource: el => { const w = $('#dfSrcOther'); if (w) w.hidden = el.value !== 'Other'; },
   dfFcc: el => { const w = $('#dfNoClose'); if (w) w.hidden = el.value !== 'No'; },
   dfCo: el => { const nc = $('#dfNewCo'); if (nc) { nc.hidden = el.value !== '__new'; if (!nc.hidden) nc.querySelector('input').focus(); } const ct = $('#dfCt'); if (!ct) return; const cur = ct.value; const opts = el.value === '__new' ? [['', '— None —']] : ctOpts(el.value); ct.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); if (opts.some(o => o[0] === cur)) ct.value = cur; },
