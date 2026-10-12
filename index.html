@@ -73,7 +73,7 @@ main{overflow:auto;min-width:0}
 .lg-msg{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:8px 10px;font-size:.88rem;margin:0}.lg-card .brand{padding:0}
 .users{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.urow{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;flex-wrap:wrap}
 .urow small{display:block;color:var(--muted)}.uact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.uact select{width:auto}.chip.warn{background:var(--warn-soft);color:var(--warn)}
-.banner.sa{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}.sa-b{display:flex;gap:8px}.banner{background:var(--info-soft);color:var(--info);border-radius:8px;padding:10px 14px;font-size:.9rem;font-weight:500}
+.banner.demo{background:var(--warn-soft);color:var(--warn)}.banner.sa{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}.sa-b{display:flex;gap:8px}.banner{background:var(--info-soft);color:var(--info);border-radius:8px;padding:10px 14px;font-size:.9rem;font-weight:500}
 .loading{color:var(--muted);padding:60px 0;text-align:center}
 
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:7px 13px;border-radius:8px;font-weight:600;font-size:.88rem;cursor:pointer;white-space:nowrap;text-decoration:none}
@@ -869,7 +869,8 @@ let team = {ids:[]};
 let db = null, U = null, AI = null, DL = null, MCP = null;
 const EM = {}; // companyId -> {status, items, err, partial, at}
 let ME = {id:null, name:''};
-let canWrite = true, live = false, booted = false, STANDALONE = false, SUPA = null;
+let canWrite = true, live = false, booted = false, STANDALONE = false, SUPA = null, DEMO = false;
+const REAL = {}; // live records kept aside while demo mode shows sample data
 const P = {}; // id -> profile
 const ui = {view:'today', detail:null, q:'', mine:false, ai:{}, aiBusy:{}, coTab:{}, actFilter:'all'};
 let X = null;
@@ -998,7 +999,7 @@ async function put(col, id, data){
   const doc = clean({...data, updatedAt: Date.now()});
   if (!doc.createdAt) doc.createdAt = Date.now();
   if (!doc.createdBy && ME.id) doc.createdBy = ME.id;
-  if (!live) { S[col][id] = doc; saveLocal(); schedule(); return true; }
+  if (!live || DEMO) { S[col][id] = doc; saveLocal(); schedule(); return true; }
   try { await db.collection(col).doc(id).set(doc); return true; }
   catch(e){ writeErr(e); return false; }
 }
@@ -1006,20 +1007,20 @@ async function patch(col, id, fields){
   await bootReady;
   if (!S[col][id]) return false;
   const f = clean({...fields, updatedAt: Date.now()});
-  if (!live) { S[col][id] = {...S[col][id], ...f}; saveLocal(); schedule(); return true; }
+  if (!live || DEMO) { S[col][id] = {...S[col][id], ...f}; saveLocal(); schedule(); return true; }
   try { await db.collection(col).doc(id).update(f); return true; }
   catch(e){ writeErr(e); return false; }
 }
 async function del(col, id){
   await bootReady;
-  if (!live) { delete S[col][id]; saveLocal(); schedule(); return true; }
+  if (!live || DEMO) { delete S[col][id]; saveLocal(); schedule(); return true; }
   try { await db.collection(col).doc(id).delete(); return true; }
   catch(e){ writeErr(e); return false; }
 }
 // ---------- standalone (GitHub Pages) mode: records live in this browser ----------
 const LS_KEY = 'papertrail-v1';
 let saveT = 0;
-function saveLocal(){ if (!STANDALONE) return; clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch { toast("Couldn't save in this browser. Export your records from Settings.", 'bad'); } }, 150); }
+function saveLocal(){ if (!STANDALONE || DEMO) return; clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch { toast("Couldn't save in this browser. Export your records from Settings.", 'bad'); } }, 150); }
 function loadLocal(){
   try { const raw = localStorage.getItem(LS_KEY); if (raw) { const o = JSON.parse(raw); for (const c of COLS) if (o && o[c] && typeof o[c] === 'object') S[c] = o[c]; } } catch {}
   ME = {id: 'jason', name: 'Jason'}; P.kate = {name: 'Kate'}; P.ann = {name: 'Ann'}; P.sarah = {name: 'Sarah'}; P.austin = {name: 'Austin'}; team = {ids: ['kate', 'ann', 'sarah', 'austin']};
@@ -1059,6 +1060,90 @@ function loadSample(){
   ac('c4', 'p4', 'noconnect', 'No answer, will try again next week.', 300, 'ann');
   ac('c5', 'p5', 'meeting', 'Walked the server room with Lisa. 30 drives, wants certificates.', 110, 'kate');
   saveLocal(); schedule(); toast('Sample data loaded');
+}
+// ---------- demo mode: realistic sample data that never touches real records ----------
+const DEMO_PEOPLE = {demo_kate: 'Kate Dillon', demo_ann: 'Ann Ross', demo_sarah: 'Sarah Velasquez', demo_austin: 'Austin Connelly'};
+let demoSaved = null;
+function buildDemo(){
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647; const pick = a => a[Math.floor(rnd() * a.length)];
+  const t = today(), now = Date.now(), day = 864e5, me = ME.id || 'jason';
+  const reps = [me, 'demo_kate', 'demo_ann', 'demo_sarah', 'demo_austin'];
+  const repName = id => id === me ? (ME.name || 'Jason').split(' ')[0] : DEMO_PEOPLE[id].split(' ')[0];
+  const out = {}; COLS.forEach(c => out[c] = {});
+  const cos = [
+    ['Harbor Family Dental', '120 SE Ocean Blvd', 'Stuart', '34994'], ['Palm City Title & Escrow', '2800 SW Martin Hwy', 'Palm City', '34990'],
+    ['Jensen Beach Pediatrics', '3500 NW Federal Hwy', 'Jensen Beach', '34957'], ['Seacoast Accounting Group', '900 SE Monterey Rd', 'Stuart', '34994'],
+    ['Hobe Sound Law Office', '11500 SE Dixie Hwy', 'Hobe Sound', '33455'], ['Treasure Coast Orthopedics', '1050 SE Indian St', 'Stuart', '34997'],
+    ['Port St. Lucie Insurance Partners', '1700 SW Gatlin Blvd', 'Port St. Lucie', '34953'], ['Indian River Veterinary Clinic', '650 SE Port St Lucie Blvd', 'Port St. Lucie', '34984'],
+    ['Sewall\'s Point Wealth Advisors', '3 S Sewalls Point Rd', 'Stuart', '34996'], ['Tequesta Family Medicine', '395 Tequesta Dr', 'Tequesta', '33469'],
+    ['Okeechobee Property Management', '4400 SE Federal Hwy', 'Stuart', '34997'], ['Martin County Chiropractic', '2100 SE Ocean Blvd', 'Stuart', '34996'],
+    ['Fort Pierce Dermatology', '2400 S 25th St', 'Fort Pierce', '34981'], ['Coastal Realty Group', '50 SW Osceola St', 'Stuart', '34994'],
+    ['Juno Beach Physical Therapy', '14000 US Hwy 1', 'Juno Beach', '33408'], ['Palm Beach Gardens Pharmacy', '4600 PGA Blvd', 'Palm Beach Gardens', '33418'],
+    ['St. Lucie Tax & Bookkeeping', '1900 SE Port St Lucie Blvd', 'Port St. Lucie', '34952'], ['Hutchinson Island Marina', '1500 NE Ocean Blvd', 'Jensen Beach', '34957']];
+  const first = ['Maria', 'Greg', 'Dana', 'Robert', 'Lisa', 'Kevin', 'Angela', 'Tom', 'Rachel', 'Carlos', 'Megan', 'Steve', 'Priya', 'Doug', 'Heather', 'Luis', 'Tina', 'Mark'];
+  const last = ['Alvarez', 'Thompson', 'Whitfield', 'Chen', 'Moreno', 'Patel', 'Brooks', 'Reyes', 'Kim', 'Ortiz', 'Hayes', 'Novak', 'Shah', 'Fowler', 'Grant', 'Vega', 'Burke', 'Dalton'];
+  const titles = ['Office Manager', 'Practice Administrator', 'Owner', 'Compliance Officer', 'Paralegal', 'Operations Manager', 'Partner', 'Front Desk Lead'];
+  cos.forEach((c, i) => {
+    const id = 'dc' + i, owner = reps[i % reps.length];
+    out.companies[id] = {name: c[0], address: c[1], city: c[2], state: 'FL', zip: c[3], phone: `(772) 555-${String(100 + i * 7).padStart(4, '0')}`, ownerId: owner, createdAt: now - (30 + i * 9) * day};
+    const pid = 'dp' + i, fn = first[i], ln = last[i];
+    const dom = c[0].toLowerCase().replace(/[^a-z]/g, '').slice(0, 14) + '.example';
+    out.contacts[pid] = {companyId: id, firstName: fn, lastName: ln, title: titles[i % titles.length], email: i === 2 ? '' : `${fn.toLowerCase()}@${dom}`, email2: i === 2 ? `${fn.toLowerCase()}.${ln.toLowerCase()}@gmail.example` : '', phone: `(772) 555-${String(300 + i * 11).padStart(4, '0')}`, ownerId: owner, createdAt: now - (28 + i * 9) * day};
+    if (i % 4 === 0) out.contacts[pid + 'b'] = {companyId: id, firstName: pick(first), lastName: pick(last), title: 'Assistant', email: `info@${dom}`, phone: '', ownerId: owner, createdAt: now - (20 + i) * day};
+  });
+  const types = [['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 185, 175], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Monthly', 715, 55], ['Medical Waste', 'Recurring', 'Medical Waste', 'Monthly', 780, 65],
+    ['Hard Drive Destruction', 'Purge', 'Hard Drive/ Media', 'As Needed', 450, 225], ['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 340, 185], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Bi-Weekly', 1170, 45]];
+  const srcs = ['Local and Organic', 'AdWords', 'Shred Nations', 'Previous Client', 'Chat GPT', 'A3', 'Existing Client'];
+  const notes = ['185/95 for 2 bins', '30 boxes @175/85', 'console @55 monthly', '15 gallon @65; monthly', '12 drives, wants certificates', '2 consoles bi-weekly @45', '4 drawer file cabinet @185/95', 'large purge, 40+ boxes'];
+  const stagesPlan = ['won', 'won', 'won', 'won', 'won', 'won', 'won', 'won', 'won', 'lost', 'lost', 'lost', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'contract', 'contract', 'lead', 'lead', 'lead', 'lead', 'lead', 'won', 'quoted'];
+  stagesPlan.forEach((st, i) => {
+    const ci = i % cos.length, ty = types[(i * 5) % types.length], owner = out.companies['dc' + ci].ownerId, ago = 2 + Math.floor(rnd() * 85);
+    const val = Math.round(ty[4] * (0.7 + rnd() * 1.1) / 5) * 5, won = st === 'won', lost = st === 'lost';
+    const closedAgo = Math.max(0, ago - 2 - Math.floor(rnd() * 8));
+    const d = {companyId: 'dc' + ci, contactId: 'dp' + ci, type: ty[0], name: ty[0], stage: st, value: val, priceQuoted: st === 'lead' ? 0 : ty[5],
+      service: ty[1], serviceType: ty[2], interval: ty[3], source: pick(srcs), initialCall: repName(owner), ownerId: owner,
+      firstCallClose: won && rnd() > .5 ? 'Yes' : 'No', notes: pick(notes), createdAt: now - ago * day};
+    if (d.firstCallClose === 'No' && !won) d.noCloseReason = pick(['Not Decision Maker', 'Readiness', 'Gathering Quotes']);
+    if (won || lost) { d.closedAt = addDays(t, -closedAgo); d.closedBy = owner; }
+    if (won) d.serviceDate = addDays(t, rnd() > .4 ? -Math.floor(rnd() * closedAgo) : 3 + Math.floor(rnd() * 12));
+    if (lost) d.lostReason = pick(['Price', 'Went with competitor', 'Unresponsive']);
+    out.deals['dd' + i] = d;
+  });
+  const fu = ['1st Follow Up on Purge', '2nd Follow Up on Purge', '3rd Follow Up on Purge', 'Final Follow Up', 'Check in on signed agreement', 'Confirm service window'];
+  [[-3, 6], [-1, 12], [-1, 14], [0, 13], [0, 21], [0, 22], [1, 15], [2, 16], [4, 17], [6, 19], [9, 18], [12, 24]].forEach(([off, di], i) => {
+    const dl = out.deals['dd' + di]; if (!dl) return;
+    out.tasks['dt' + i] = {companyId: dl.companyId, dealId: 'dd' + di, title: fu[i % fu.length], due: addDays(t, off), assigneeId: dl.ownerId, done: false, createdAt: now - 3 * day};
+  });
+  const acts = [['inbound', 'Called in for a quote on a one-time cleanout.'], ['email', 'Sent: Your shredding quote\nQuote attached, happy to answer questions.'], ['voicemail', 'Left a message about the proposal.'],
+    ['call', 'Walked through pricing, wants to check with the owner.'], ['email', 'Received: RE: Your shredding quote\nLooks good, let\'s get it scheduled.'], ['meeting', 'Site visit, counted 6 file cabinets.'],
+    ['noconnect', 'No answer, will try again tomorrow.'], ['job', 'Purge completed, certificate of destruction sent.'], ['note', 'Prefers email over phone calls.']];
+  for (let i = 0; i < 40; i++) { const ci = Math.floor(rnd() * cos.length), a = pick(acts), h = 2 + Math.floor(rnd() * 24 * 25);
+    out.activities['da' + i] = {companyId: 'dc' + ci, contactId: 'dp' + ci, type: a[0], text: a[1], at: now - h * 36e5, by: out.companies['dc' + ci].ownerId, createdAt: now - h * 36e5}; }
+  [[0, 'Monthly shredding service agreement', 660], [5, 'Medical waste service agreement', 780], [8, 'Bi-weekly console service', 1170]].forEach(([ci, title, value], i) => {
+    out.contracts['dk' + i] = {companyId: 'dc' + ci, title, value, start: addDays(t, -300 + i * 40), end: addDays(t, 65 - i * 30 + i * 90), termMonths: 12, autoRenew: i !== 1, status: 'active', ownerId: out.companies['dc' + ci].ownerId, createdAt: now - 300 * day};
+  });
+  return out;
+}
+function setDemo(on){
+  if (on === DEMO) return;
+  if (on) {
+    demoSaved = {S: {}, team: team, P: {...P}};
+    for (const c of COLS) demoSaved.S[c] = S[c];
+    const d = buildDemo();
+    for (const c of COLS) S[c] = Object.keys(d[c]).length || !['templates', 'journeys'].includes(c) ? d[c] : S[c];
+    for (const [id, n] of Object.entries(DEMO_PEOPLE)) P[id] = {name: n};
+    team = {ids: [...new Set([...(team.ids || []), ...Object.keys(DEMO_PEOPLE)])]};
+    DEMO = true; ui.detail = null; ui.view = 'today';
+    toast('Demo mode on: showing sample data');
+  } else {
+    DEMO = false;
+    for (const c of COLS) S[c] = live && REAL[c] ? REAL[c] : (demoSaved ? demoSaved.S[c] : S[c]) || {};
+    if (demoSaved) { team = demoSaved.team; for (const id of Object.keys(DEMO_PEOPLE)) if (!demoSaved.P[id]) delete P[id]; }
+    demoSaved = null; ui.detail = null; ui.view = 'today';
+    toast('Demo mode off: back to your real records');
+  }
+  try { sessionStorage.setItem('pt-demo', DEMO ? '1' : '0'); } catch {}
+  closeModal(); schedule();
 }
 async function logAct(a){ return put('activities', uid(), {at: Date.now(), by: ME.id, ...a}); }
 
@@ -1128,6 +1213,18 @@ function fishEgg(el){
   if (fishClicks.length >= 5) { fishClicks = []; const on = !FISH; setFish(on); closeModal(); toast(on ? "Gone fishin'! 🎣" : 'Back to the office.'); if (on) setTimeout(confetti, 150); }
 }
 
+// ---------- browser history: Back moves between screens inside Paper Trail ----------
+const navState = () => ({v: ui.view, co: ui.pageCo || null, opp: ui.pageOpp || null, t: ui.cpTab || null, d: ui.detail ? {col: ui.detail.col, id: ui.detail.id} : null});
+const navHash = st => '#' + (st.v === 'company' && st.co ? 'account' : st.v === 'opp' && st.opp ? 'opportunity' : st.v);
+function pushNav(){ try { const st = navState(); if (JSON.stringify(history.state) === JSON.stringify(st)) return; history.pushState(st, '', navHash(st)); } catch {} }
+window.addEventListener('popstate', e => {
+  const st = e.state; if (!st || !st.v) return;
+  if (!$('#modal').hidden) closeModal();
+  if (QB && !$('#qbHost').hidden) { try { QB.close(); } catch {} }
+  ui.view = st.v; ui.pageCo = st.co; ui.pageOpp = st.opp; ui.cpTab = st.t || 'details'; ui.detail = st.d && S[st.d.col] && S[st.d.col][st.d.id] ? st.d : null; ui.q = ''; ui.oppEdit = null;
+  render(); $('#main').scrollTop = 0;
+});
+
 // ---------- rendering ----------
 let raf = 0;
 function schedule(){ if (raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); }
@@ -1170,7 +1267,8 @@ function navHtml(){
 
 function viewHtml(){
   let banner = '';
-  if (booted && STANDALONE) banner = `<div class="banner sa"><span>Demo mode: records save in this browser only. Outlook email and the Claude features work in the claude.ai version.</span>${canWrite ? `<span class="sa-b">${L('companies').length ? '' : `<button class="btn sm pri" data-act="loadSample">Load sample data</button>`}<button class="btn sm ghost" data-act="resetDemo">Clear all data</button></span>` : ''}</div>`;
+  if (booted && DEMO) banner = `<div class="banner sa demo"><span><b>Demo mode</b> · Sample data for showing Paper Trail. Nothing you do here is saved, and your real records are untouched.</span><span class="sa-b"><button class="btn sm" data-act="demoOff">Exit demo mode</button></span></div>`;
+  else if (booted && STANDALONE) banner = `<div class="banner sa"><span>Records save in this browser only. Set up Supabase (see README) to share them with your team.</span>${canWrite ? `<span class="sa-b">${L('companies').length ? '' : `<button class="btn sm pri" data-act="demoOn">Try demo mode</button>`}<button class="btn sm ghost" data-act="resetDemo">Clear all data</button></span>` : ''}</div>`;
   else if (booted && !live) banner = `<div class="banner">Preview mode: changes stay in this tab only. Open this CRM in claude.ai while signed in to work with your team's shared records.</div>`;
   else if (!canWrite) banner = `<div class="banner">You have view-only access. Ask the owner for Contributor access to add or change records.</div>`;
   if (!booted || (live && !COLS.every(c => loaded[c]))) return banner + `<div class="loading">Loading your records…</div>`;
@@ -2259,6 +2357,7 @@ function settingsModal(){
     ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
     ${SUPA ? row('users', 'Users', isAdmin() ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', `<button type="button" class="btn" data-act="users">${isAdmin() ? 'Manage users' : 'View'}</button>`)
       : row('users', 'Team', 'Choose which teammates can be assigned accounts, opportunities and reminders.', `<button type="button" class="btn" data-act="team">Manage team</button>`)}
+    ${row('spark', 'Demo mode', DEMO ? 'On. Paper Trail is showing sample data. Your real records are untouched.' : 'Fill Paper Trail with realistic sample accounts, opportunities and activity for a demo. Nothing is saved, and your real records stay hidden until you turn it off.', `<button type="button" class="btn${DEMO ? '' : ' pri'}" data-act="${DEMO ? 'demoOff' : 'demoOn'}">${DEMO ? 'Turn off' : 'Turn on'}</button>`)}
     ${row('mail', 'Email templates', 'Edit the ready-made emails your team picks from when emailing a customer.', `<button type="button" class="btn" data-act="tplManage">Edit templates</button>`)}
     ${canWrite && isAdmin() ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from a Spiro export or any CSV file.', `<button type="button" class="btn" data-act="import">Import CSV</button>`) : ''}
     ${row('down', 'Export', 'Download every account and contact as a CSV file you can open in Excel.', `<button type="button" class="btn" data-act="export">Export CSV</button>`)}
@@ -3030,18 +3129,20 @@ function journeyLibraryModal(){
 
 // ---------- actions ----------
 const A = {
-  go: d => { ui.view = d.v; ui.q = ''; try { history.replaceState(null, '', '#' + d.v); } catch {} render(); $('#main').scrollTop = 0; },
+  go: d => { ui.view = d.v; ui.q = ''; ui.detail = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
-  open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
-  closeDetail: () => { ui.detail = null; render(); },
+  open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
+  closeDetail: () => { ui.detail = null; render(); pushNav(); },
   search: () => searchModal(),
   dupOpen: d => { closeModal(); if (d.col === 'companies') A.coPage({id: d.id}); else if (d.col === 'tasks') taskForm(d.id); else if (d.col === 'contracts') contractForm(d.id); else if (d.col === 'quotes') A.editQuote({id: d.id}); else A.open({col: d.col, id: d.id}); },
   oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.tagName === 'SELECT' && el.showPicker) try { el.showPicker(); } catch {} } },
-  loadSample: () => loadSample(),
+  loadSample: () => setDemo(true),
+  demoOn: () => setDemo(true),
+  demoOff: () => setDemo(false),
   resetDemo: () => confirmModal('Clear all data?', 'Every account, contact, opportunity and reminder saved in this browser will be removed. Export first from Settings if you want a copy.', 'Clear everything', async () => { for (const c of COLS) S[c] = {}; try { localStorage.removeItem(LS_KEY); } catch {} ui.view = 'today'; ui.detail = null; schedule(); toast('All data cleared'); }),
-  oppPage: d => { ui.oppEdit = null; if (!S.deals[d.id]) return; ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); $('#main').scrollTop = 0; },
-  coPage: d => { ui.pageCo = d.id; ui.cpTab = d.t || 'details'; ui.view = 'company'; ui.detail = null; ui.q = ''; render(); $('#main').scrollTop = 0; syncEmailsFor(d.id); },
-  cpTab: d => { ui.cpTab = d.t; render(); },
+  oppPage: d => { ui.oppEdit = null; if (!S.deals[d.id]) return; ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; },
+  coPage: d => { ui.pageCo = d.id; ui.cpTab = d.t || 'details'; ui.view = 'company'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; syncEmailsFor(d.id); },
+  cpTab: d => { ui.cpTab = d.t; render(); pushNav(); },
   addActivity: d => activityModal({co: d.co, ct: d.ct, deal: d.deal}),
   coGrp: d => { ui.openCo = ui.openCo || {}; ui.openCo[d.id] = !ui.openCo[d.id]; render(); },
   openCoActivity: d => { ui.coTab[d.id] = 'activity'; A.open({col: 'companies', id: d.id}); },
@@ -3106,7 +3207,7 @@ const A = {
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
   settings: () => settingsModal(),
   fishEgg: (d, el) => fishEgg(el),
-  import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } importModal(); },
+  import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } if (DEMO) { toast('Turn off demo mode before importing real data.', 'bad'); return; } importModal(); },
   users: () => usersModal(),
   account: () => accountModal(),
   signOut: async () => { closeModal(); await SUPA.sb.auth.signOut(); location.reload(); },
@@ -4223,6 +4324,7 @@ function accountModal(){
 // ---------- boot ----------
 async function boot(){
   const h = (location.hash || '').slice(1); if (VIEWS.some(v => v[0] === h)) ui.view = h;
+  try { history.replaceState(navState(), '', navHash(navState())); } catch {}
   render();
   const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
   let [u, d, s, dl, mc] = await Promise.all([use('user'), use('db'), use('sample'), use('downloads'), use('mcp')]);
@@ -4234,13 +4336,14 @@ async function boot(){
   if (d) {
     db = d; live = true;
     for (const c of COLS) {
-      db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); S[c] = o; loaded[c] = true; schedule(); },
+      db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); REAL[c] = o; if (!DEMO) S[c] = o; loaded[c] = true; schedule(); },
         err => { loaded[c] = true; if (err && err.code === 'revoked') { canWrite = false; toast('Your access to this CRM changed. Reload to continue.', 'bad'); } else toast("Lost the live connection to your records. Reload the page.", 'bad'); schedule(); });
     }
     if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
   }
   if (!d && !window.claude) { STANDALONE = true; loadLocal(); }
   booted = true; bootDone();
+  try { if (sessionStorage.getItem('pt-demo') === '1') setDemo(true); } catch {}
   setTimeout(() => checkReplies(), 5000);
   setTimeout(() => syncRecent(), 7000);
   setInterval(() => { if (document.visibilityState !== 'hidden') { syncRecent(); checkReplies(); } }, 15 * 60e3);
