@@ -33,7 +33,12 @@
   --scrim:rgba(0,0,0,.55); --shadow:0 18px 50px rgba(0,0,0,.55); color-scheme:dark}
 
 html,body{height:100%}
-body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--fg);font:.9375rem/1.5 var(--body);-webkit-font-smoothing:antialiased}
+html[data-text="sm"]{font-size:14.5px}html[data-text="lg"]{font-size:17.5px}html[data-text="xl"]{font-size:19px}
+html[data-font="system"]{--display:system-ui,-apple-system,"Segoe UI",sans-serif;--body:system-ui,-apple-system,"Segoe UI",sans-serif}
+html[data-font="serif"]{--display:Georgia,"Times New Roman",serif;--body:Georgia,"Times New Roman",serif}
+html[data-density="compact"] .panel{padding:12px;gap:8px}html[data-density="compact"] td{padding:6px 10px}html[data-density="compact"] .rowi{padding:5px 10px}
+html[data-density="compact"] .wrap{gap:14px}html[data-density="compact"] .navi{padding:5px 10px}html[data-density="compact"] .rem{padding-top:6px;padding-bottom:6px}
 *{box-sizing:border-box}
 button,input,select,textarea{font:inherit;color:inherit}
 h1,h2,h3{font-family:var(--display);margin:0;line-height:1.15;text-wrap:balance;letter-spacing:-.01em}
@@ -278,7 +283,22 @@ td .t2{display:block;color:var(--muted);font-size:.8rem}
 .lt input:checked+span{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
 .lt input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .logbox .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.chips{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:4px}.chips .chk{color:var(--fg)}.chk{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
+.lookgrid{display:flex;flex-direction:column;gap:14px}.lookseg{flex-wrap:wrap}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;padding-top:4px}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0;position:relative;display:inline-block}
+.sw.on{box-shadow:0 0 0 2px var(--fg)}.sw.custom input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:0;padding:0}
+.pgfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 4px 0}.mtbl td{vertical-align:top}.mtbl .chk{color:var(--fg);align-items:flex-start;white-space:pre-wrap}.drop{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;border:2px dashed var(--line);border-radius:12px;padding:26px 16px;cursor:pointer;color:var(--muted);background:var(--surface)}
+.drop .ic{width:26px;height:26px;color:var(--accent)}.drop b{color:var(--fg);font-weight:600}.drop .lnkish{color:var(--accent);text-decoration:underline}
+.drop.over,.drop:hover,.drop:focus-visible{border-color:var(--accent);background:var(--accent-soft)}
+.attlist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.attlist:empty{display:none}
+.attlist li{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 10px;background:var(--surface)}
+.attlist li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attlist em,.fchip em{font-style:normal;color:var(--muted);font-size:.78rem}
+.fchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.fchip{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px;font-size:.82rem;cursor:pointer;color:var(--fg)}
+.fchip:hover{border-color:var(--accent);color:var(--accent)}.fchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}.fchip .ic{width:15px;height:15px}
+.attbar{display:flex;justify-content:flex-end;margin:-4px 0 8px}
+.ft.file,.ft.contract{background:var(--accent-soft);color:var(--accent)}
+.ralist{display:flex;flex-direction:column;gap:6px;padding-top:4px}.chk.ra{color:var(--fg)}.chk.ra em{font-style:normal;font-weight:700;color:var(--muted);margin-left:2px}.chk.ra input:disabled+*{opacity:.5}.chips{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:4px}.chips .chk{color:var(--fg)}.chk{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted)}
 .chk select{padding:2px 4px}
 
 input[type=text],input[type=email],input[type=password],input[type=tel],input[type=number],input[type=date],input[type=url],input[type=search],input:not([type]),select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;width:100%;min-width:0}
@@ -858,7 +878,7 @@ const INTERVALS = ['As Needed','Weekly','Bi-Weekly','Every 2 weeks','Every 4 wee
 const INITIAL_CALL = ['Jason','Kate','Ann','Austin','Sarah','House'];
 const NO_CLOSE = ['Not Decision Maker','Readiness','Gathering Quotes','Schedule','Unknown','Other'];
 const LOSS_REASONS = ['Price','Went with competitor','Unresponsive','No longer needed','Timing','Other'];
-const ACT = {voicemail:'Left Voicemail',noconnect:"Didn't Connect",inbound:'Inbound Call',call:'Outbound Call',email:'Email',meeting:'Meeting',note:'Note',job:'Job done',done:'Reminder',stage:'Update'};
+const ACT = {file:'Attachment',contract:'Contract',voicemail:'Left Voicemail',noconnect:"Didn't Connect",inbound:'Inbound Call',call:'Outbound Call',email:'Email',meeting:'Meeting',note:'Note',job:'Job done',done:'Reminder',stage:'Update'};
 const LOG_TYPES = ['voicemail','noconnect','inbound','call','email','meeting','note','job'];
 const MS = 'Microsoft 365';
 const GENERIC_MAIL = /^(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|aol|icloud|me|mac|comcast|bellsouth|att|sbcglobal|verizon|protonmail|proton|gmx|mail|zoho|cox|charter|earthlink|allpointsprotects)\./;
@@ -1172,13 +1192,13 @@ function setDemo(on){
     for (const c of COLS) S[c] = Object.keys(d[c]).length || !['templates', 'journeys'].includes(c) ? d[c] : S[c];
     for (const [id, n] of Object.entries(DEMO_PEOPLE)) P[id] = {name: n};
     team = {ids: [...new Set([...(team.ids || []), ...Object.keys(DEMO_PEOPLE)])]};
-    DEMO = true; ui.detail = null; ui.view = 'today';
+    DEMO = true; ui.detail = null; ui.view = startView();
     toast('Demo mode on: showing sample data');
   } else {
     DEMO = false;
     for (const c of COLS) S[c] = live && REAL[c] ? REAL[c] : (demoSaved ? demoSaved.S[c] : S[c]) || {};
     if (demoSaved) { team = demoSaved.team; for (const id of Object.keys(DEMO_PEOPLE)) if (!demoSaved.P[id]) delete P[id]; }
-    demoSaved = null; ui.detail = null; ui.view = 'today';
+    demoSaved = null; ui.detail = null; ui.view = startView();
     toast('Demo mode off: back to your real records');
   }
   try { sessionStorage.setItem('pt-demo', DEMO ? '1' : '0'); } catch {}
@@ -1217,7 +1237,7 @@ async function trashRestore(tid){
 async function trashPurge(){
   if (!isAdmin() || DEMO) return;
   const cut = Date.now() - TRASH_DAYS * 864e5;
-  for (const t of L('trash').filter(x => (x.deletedAt || 0) < cut)) await del('trash', t.id);
+  for (const t of L('trash').filter(x => (x.deletedAt || 0) < cut)) { const fl = (t.data && t.data.files) || []; if (fl.length && !L(t.col === 'contracts' ? 'activities' : 'contracts').some(x => (x.files || []).some(f => fl.some(g => g.path === f.path)))) await FILES.remove(fl.map(f => f.path)); await del('trash', t.id); }
 }
 
 // ---------- full backup & restore ----------
@@ -1298,6 +1318,7 @@ function attention(){
 
 // ---------- hidden fishing theme ----------
 let FISH = false;
+try { const k = Object.keys(localStorage).find(x => x.startsWith('apcrm-look-')); if (k) { const v = JSON.parse(localStorage.getItem(k)); const r = document.documentElement; if (v && (v.mode === 'light' || v.mode === 'dark')) r.dataset.theme = v.mode; } } catch {}
 const BOBBER = '<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="#A32418" stroke="#2B1D12" stroke-width="2"/><path d="M2.5 17a14.5 14.5 0 0029 0z" fill="#FBF4E2"/><path d="M2 17h30" stroke="#2B1D12" stroke-width="2"/></svg>';
 const BOBBER_SM = '<svg width="26" height="34" viewBox="0 0 30 40"><path d="M15 0v8" stroke="#2B1D12" stroke-width="2"/><ellipse cx="15" cy="22" rx="12" ry="14" fill="#FBF4E2" stroke="#2B1D12" stroke-width="2"/><path d="M3 21a12 14 0 0124 0z" fill="#A32418"/><path d="M3 21h24" stroke="#2B1D12" stroke-width="2"/></svg>';
 function setFish(on){
@@ -1328,6 +1349,53 @@ window.addEventListener('popstate', e => {
   ui.view = st.v; ui.pageCo = st.co; ui.pageOpp = st.opp; ui.cpTab = st.t || 'details'; ui.detail = st.d && S[st.d.col] && S[st.d.col][st.d.id] ? st.d : null; ui.q = ''; ui.oppEdit = null;
   render(); $('#main').scrollTop = 0;
 });
+
+// ---------- appearance: each person's own look, saved to their login ----------
+const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today'};
+const ACCENTS = [['', 'Teal (default)', '#0D6B61'], ['#2563EB', 'Blue', '#2563EB'], ['#1E3A8A', 'Navy', '#1E3A8A'], ['#7C3AED', 'Purple', '#7C3AED'], ['#DB2777', 'Pink', '#DB2777'], ['#DC2626', 'Red', '#DC2626'], ['#EA580C', 'Orange', '#EA580C'], ['#15803D', 'Green', '#15803D'], ['#475569', 'Slate', '#475569'], ['#111827', 'Black', '#111827']];
+let LOOK = {...LOOK_DEFAULT};
+const lookKey = () => 'apcrm-look-' + (ME.id || 'me');
+const hexRgb = h => { const m = String(h).replace('#', '').match(/^([0-9a-f]{6})$/i); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const mix = (a, b, t) => { const A = hexRgb(a), B = hexRgb(b); if (!A || !B) return a; return '#' + A.map((v, i) => Math.round(v * (1 - t) + B[i] * t).toString(16).padStart(2, '0')).join(''); };
+const lum = h => { const c = hexRgb(h); if (!c) return 0; const [r, g, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+const isDark = () => LOOK.mode === 'dark' || (LOOK.mode === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+const startView = () => LOOK.start && VIEWS.some(v => v[0] === LOOK.start) ? LOOK.start : 'today';
+function applyLook(){
+  const r = document.documentElement;
+  if (LOOK.mode === 'light' || LOOK.mode === 'dark') r.dataset.theme = LOOK.mode; else delete r.dataset.theme;
+  r.dataset.text = LOOK.text || 'md'; r.dataset.density = LOOK.density || 'comfy'; r.dataset.font = LOOK.font || 'default';
+  const a = LOOK.accent;
+  if (a && hexRgb(a)) {
+    const dark = isDark(); const acc = dark && lum(a) < .18 ? mix(a, '#ffffff', .45) : a;
+    r.style.setProperty('--accent', acc);
+    r.style.setProperty('--accent-soft', dark ? mix(acc, '#141E1C', .78) : mix(acc, '#ffffff', .86));
+    r.style.setProperty('--accent-fg', lum(acc) > .4 ? '#111111' : '#ffffff');
+  } else ['--accent', '--accent-soft', '--accent-fg'].forEach(v => r.style.removeProperty(v));
+}
+function loadLookLocal(){ try { const v = JSON.parse(localStorage.getItem(lookKey()) || 'null'); if (v) LOOK = {...LOOK_DEFAULT, ...v}; } catch {} applyLook(); }
+let lookT = 0;
+function saveLook(){
+  applyLook(); try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); } catch {}
+  clearTimeout(lookT); lookT = setTimeout(async () => { if (!live || !db || !ME.id) return; try { await db.doc('prefs/' + ME.id).set({look: LOOK, updatedAt: Date.now()}); } catch {} }, 600);
+}
+function syncLookFromDb(){
+  if (!live || !db || !ME.id) return;
+  try { db.doc('prefs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v && v.look && JSON.stringify(v.look) !== JSON.stringify(LOOK)) { LOOK = {...LOOK_DEFAULT, ...v.look}; try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); } catch {} applyLook(); schedule(); } }, () => {}); } catch {}
+}
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (LOOK.mode === 'system') applyLook(); }); } catch {}
+function lookModal(){
+  const seg = (k, opts) => `<div class="segs lookseg" role="group">${opts.map(([v, l]) => `<button type="button" class="${(LOOK[k] || LOOK_DEFAULT[k]) === v ? 'on' : ''}" data-act="lookSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  const cur = LOOK.accent || '';
+  openModal('Appearance', `<p class="sub" style="margin-bottom:12px">Just for you. Changes show right away and follow your login to any device.</p>
+    <div class="lookgrid">
+      ${F('Mode', seg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']]))}
+      <div class="f"><span>Accent color</span><div class="swatches">${ACCENTS.map(([v, l, h]) => `<button type="button" class="sw${cur === v ? ' on' : ''}" data-act="lookSet" data-k="accent" data-v="${v}" title="${l}" aria-label="${l}" style="background:${h}"></button>`).join('')}<label class="sw custom${cur && !ACCENTS.some(x => x[0] === cur) ? ' on' : ''}" title="Pick any color" style="background:${cur && !ACCENTS.some(x => x[0] === cur) ? cur : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)'}"><input type="color" id="lookColor" value="${cur || '#0D6B61'}" data-input="lookColor" aria-label="Pick any color"></label></div></div>
+      ${F('Text size', seg('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']]))}
+      ${F('Spacing', seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
+      ${F('Font', seg('font', [['default', 'Modern'], ['system', 'System'], ['serif', 'Classic']]))}
+      ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
+    </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
+}
 
 // ---------- rendering ----------
 let raf = 0;
@@ -1386,6 +1454,9 @@ function viewHtml(){
 }
 
 const head = (title, sub, actions='') => `<div class="vh"><div><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div><div class="vh-act">${actions}</div></div>`;
+const PAGE = 100;
+const pg = (key, rows) => rows.slice(0, (ui.lim && ui.lim[key]) || PAGE);
+const pgFoot = (key, n) => { const shown = Math.min(n, (ui.lim && ui.lim[key]) || PAGE); return n > shown ? `<div class="pgfoot"><span class="sub">Showing ${shown.toLocaleString()} of ${n.toLocaleString()}. Search to find anyone faster.</span><button class="btn sm" data-act="pgMore" data-k="${key}">Show ${Math.min(PAGE * 5, n - shown).toLocaleString()} more</button></div>` : ''; };
 const searchBox = ph => `<label class="search">${ic('search')}<input id="q" data-keep type="search" placeholder="${esc(ph)}" value="${esc(ui.q)}" autocomplete="off" aria-label="Search"></label>`;
 const mineSeg = () => `<div class="segs" role="group" aria-label="Whose records"><button class="${!ui.mine?'on':''}" data-act="mine" data-m="0">Everyone</button><button class="${ui.mine?'on':''}" data-act="mine" data-m="1">Mine</button></div>`;
 const addBtn = (label, act, d) => canWrite ? `<button class="btn pri" data-act="${act}"${attrs(d)}>${ic('plus')}${label}</button>` : '';
@@ -1442,7 +1513,7 @@ function taskRow(k){
 function feedItem(a, withCo){
   const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
   const first = nl > -1 ? txt.slice(0, nl) : txt, rest = nl > -1 ? txt.slice(nl + 1).trim() : '';
-  return `<li class="fi"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}<small>${esc(pname(a.by))} · ${rel(a.at)}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div></li>`;
+  return `<li class="fi"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}${fileChips(a.files)}<small>${esc(pname(a.by))} · ${rel(a.at)}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div></li>`;
 }
 function coActivityGroups(){
   const since = Date.now() - 30 * 864e5; const g = {};
@@ -1490,11 +1561,11 @@ V.pipeline = () => {
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
   + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${rows.map(d => {
+  : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
       const lt = X.lastAct[d.id];
       return `<tr data-act="oppPage" data-id="${d.id}"><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
-    }).join('') || `<tr><td colspan="${show==='open'?5:7}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>`);
+    }).join('') || `<tr><td colspan="${show==='open'?5:7}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`);
 };
 function dealCard(d){
   const n = daysSince(lastTouch(d));
@@ -1616,7 +1687,7 @@ V.company = () => {
   const counts = {activity: g.acts.filter(a => a.type !== 'stage').length, reminders: g.tasks.filter(k => !k.done).length, contacts: g.contacts.length, opps: g.deals.length, quotes: g.quotes.length, contracts: g.contracts.length, journeys: L('enrollments').filter(e => e.companyId === id).length};
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
   const W = canWrite;
-  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}`;
+  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="companies" data-id="${id}" title="Fold a duplicate account into this one">Merge</button>` : ''}`;
   let body = '';
   if (tab === 'details') {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
@@ -1648,11 +1719,11 @@ V.companies = () => {
   const total = Object.keys(S.companies).length;
   return head('Accounts', `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${rows.map(c => {
+  : `<div class="tbl"><table><thead><tr><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
       return `<tr data-act="coPage" data-id="${c.id}"><td><b>${esc(c.name)}</b>${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
-    }).join('') || `<tr><td colspan="5" class="sub">No accounts match.</td></tr>`}</tbody></table></div>`);
+    }).join('') || `<tr><td colspan="5" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
 V.contacts = () => {
@@ -1660,7 +1731,7 @@ V.contacts = () => {
   const total = Object.keys(S.contacts).length;
   return head('Contacts', `${total} contact${total===1?'':'s'}`, searchBox('Search contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${rows.map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(c.phone||c.mobile||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>`);
+  : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${pg('contacts', rows).map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(c.phone||c.mobile||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>${pgFoot('contacts', rows.length)}`);
 };
 
 V.quotes = () => {
@@ -1672,16 +1743,10 @@ V.quotes = () => {
 };
 
 V.contracts = () => {
-  const t = today();
-  const rows = L('contracts').filter(mine).filter(c => match(ui.q, c.title, cname(c.companyId))).sort((a,b) => (a.end||'9999') < (b.end||'9999') ? -1 : 1);
-  const act = rows.filter(c => (c.status||'active') === 'active');
-  return head('Contracts', `${act.length} active · ${money(sum(act,c=>c.value))}/yr under contract`, searchBox('Search contracts') + mineSeg() + addBtn('Contract','newContract'))
-  + (!rows.length && !ui.q ? `<section class="panel">${emptyState('No contracts yet', 'Record each service agreement with its term and annual value. You will be reminded 60 days before it ends, or 30 days before it auto-renews.', `<button class="btn pri" data-act="newContract">${ic('plus')}Add a contract</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Account</th><th>Agreement</th><th>Term</th><th>Ends</th><th>Renewal</th><th class="r">Value/yr</th><th></th></tr></thead><tbody>${rows.map(c => {
-      const st = c.status||'active'; const n = isDate(c.end) ? dayDiff(t, c.end) : null;
-      const chip = st !== 'active' ? `<span class="chip">${st === 'ended' ? 'Ended' : 'Cancelled'}</span>` : n == null ? '—' : n < 0 ? `<span class="chip bad">Expired</span>` : `<span class="chip ${n<=21?'bad':n<=60?'warn':''}">${n} days</span>`;
-      return `<tr data-act="editContract" data-id="${c.id}"><td>${link('companies', c.companyId) || '—'}</td><td>${esc(c.title||'Service agreement')}</td><td class="num">${fmtDate(c.start)} – ${fmtDate(c.end)}</td><td>${chip}</td><td>${c.autoRenew ? '<span class="chip acc">Auto-renews</span>' : '<span class="sub">Manual</span>'}</td><td class="r num">${money(c.value)}</td><td>${canWrite && st === 'active' ? `<button class="btn sm" data-act="renew" data-id="${c.id}">Renew</button>` : ''}</td></tr>`;
-    }).join('') || `<tr><td colspan="7" class="sub">No contracts match.</td></tr>`}</tbody></table></div>`);
+  const rows = L('contracts').filter(mine).filter(c => match(ui.q, c.title, c.note, cname(c.companyId), ...(c.files || []).map(f => f.name))).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return head('Contracts', `${rows.length} contract${rows.length === 1 ? '' : 's'}`, searchBox('Search contracts') + mineSeg() + addBtn('Contract','newContract'))
+  + (!rows.length && !ui.q ? `<section class="panel">${emptyState('No contracts yet', 'Attach a signed agreement to an account and save it as a contract. It shows up here and in the account’s activity.', `<button class="btn pri" data-act="newContract">${ic('plus')}Add a contract</button>`)}</section>`
+  : `<div class="tbl"><table><thead><tr><th>Account</th><th>Contract</th><th>Files</th><th>Added</th><th>By</th></tr></thead><tbody>${rows.map(c => `<tr data-act="editContract" data-id="${c.id}"><td>${link('companies', c.companyId) || '—'}</td><td><b>${esc(c.title || 'Contract')}</b>${c.note && String(c.note).split('\n')[0].slice(0, 120) !== c.title ? `<span class="t2">${esc(String(c.note).split('\n')[0].slice(0, 80))}</span>` : c.note ? '' : isDate(c.end) ? `<span class="t2">${fmtDate(c.start)} – ${fmtDate(c.end)}</span>` : ''}</td><td>${fileChips(c.files) || '—'}</td><td class="num">${c.createdAt ? fmtDate(ymd(new Date(c.createdAt))) : '—'}</td><td>${esc(nm(c.addedBy || c.ownerId)) || '—'}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">No contracts match.</td></tr>`}</tbody></table></div>`);
 };
 
 // ---------- detail drawers ----------
@@ -1723,7 +1788,7 @@ const contactRow = c => `<li class="rowi" data-act="open" data-col="contacts" da
 const dealRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name)}</b><small>${money(d.value)}${isDate(d.closeDate) ? ' · close ' + fmtDate(d.closeDate) : ''}</small></div><span class="end">${stageChip(d)}</span></li>`;
 const oppHistRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name || 'Opportunity')}</b><small>${[d.serviceType, d.value ? money(d.value) : '', !isOpen(d) && isDate(d.closedAt) ? 'closed ' + fmtDate(d.closedAt) : '', d.stage === 'lost' ? (d.lostReason ? 'reason: ' + d.lostReason : '') : isOpen(d) ? '' : isDate(d.serviceDate) ? (d.serviceDate <= today() ? 'serviced ' : 'service scheduled ') + fmtDate(d.serviceDate) : (d.stage === 'won' ? 'no service date' : '')].filter(Boolean).map(esc).join(' · ')}</small></div><span class="end">${stageChip(d)}</span></li>`;
 const quoteRow = q => `<li class="rowi" data-act="editQuote" data-id="${q.id}"><div><b class="mono">${esc(q.number)}</b><small>${money2(qTotal(q))} · valid until ${fmtDate(q.validUntil)}</small></div><span class="end">${qChip(q)}</span></li>`;
-const contractRow = c => `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Service agreement')}</b><small>${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr${c.autoRenew ? ' · auto-renews' : ''}</small></div><span class="end">${(c.status||'active') === 'active' ? dueChip(c.end) : '<span class="chip">Ended</span>'}</span></li>`;
+const contractRow = c => c.files || !isDate(c.start) ? `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Contract')}</b><small>${(c.files || []).length} file${(c.files || []).length === 1 ? '' : 's'} · added ${c.createdAt ? fmtDate(ymd(new Date(c.createdAt))) : ''}${c.addedBy || c.ownerId ? ' by ' + esc(nm(c.addedBy || c.ownerId)) : ''}</small></div><span class="end">${ic('doc')}</span></li>` : `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Service agreement')}</b><small>${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr${c.autoRenew ? ' · auto-renews' : ''}</small></div><span class="end">${(c.status||'active') === 'active' ? dueChip(c.end) : '<span class="chip">Ended</span>'}</span></li>`;
 const tasksList = ts => ts.length ? `<ul class="tasks">${ts.map(taskRow).join('')}</ul>` : `<p class="empty-s">No open reminders.</p>`;
 const closeBtn = `<button class="icon-btn" data-act="closeDetail" aria-label="Close">${ic('x')}</button>`;
 
@@ -1826,24 +1891,24 @@ function emailItem(m, coId){
   const when = m.at ? `${fmtDate(ymd(new Date(m.at)))}, ${new Date(m.at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}` : '';
   return `<li class="fi"><span class="ft ${m.inbound?'in':'out'}">${m.inbound?'Received':'Sent'}</span><div><p class="subj">${esc(m.subject)}${m.att ? ' <span class="chip">Attachment</span>' : ''}</p>${m.summary ? `<p class="snip">${esc(m.summary)}</p>` : ''}<small>${esc(who_)} · ${when}${m.web ? ` · <a class="lnk" href="${esc(m.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}${canWrite ? ` · <button class="lnk" data-act="logEmail" data-co="${coId}" data-mid="${esc(m.id)}">Save to timeline</button>` : ''}</small></div></li>`;
 }
-const ACT_FILTERS = [['all','All'],['email','Emails'],['log','Calls, meetings & notes'],['done','Completed reminders'],['job','Closed jobs'],['doc','Quotes & contracts']];
+const ACT_FILTERS = [['all','All'],['email','Emails'],['log','Calls, meetings & notes'],['done','Completed reminders'],['job','Closed jobs'],['doc','Files, quotes & contracts']];
 function coActivity(id){
   if (MCP && !EM[id]) setTimeout(() => loadEmails(id), 0);
   const g = gr(id); const f = ui.actFilter || 'all';
   const ev = [];
   const logged = new Set(g.acts.filter(a => a.emailId).map(a => a.emailId));
-  for (const a of g.acts) if (!isSysAct(a)) ev.push({k: a.type === 'email' ? 'email' : a.type === 'job' ? 'job' : a.type === 'stage' ? 'update' : a.type === 'done' ? 'done' : 'log', at: a.at || 0, html: feedItem(a, false)});
+  for (const a of g.acts) if (!isSysAct(a)) ev.push({k: a.type === 'email' ? 'email' : a.type === 'job' ? 'job' : a.type === 'stage' ? 'update' : a.type === 'done' ? 'done' : (a.type === 'file' || a.type === 'contract') ? 'doc' : 'log', at: a.at || 0, html: feedItem(a, false)});
   for (const d of g.deals) if (!isOpen(d) && isDate(d.closedAt)) ev.push({k: 'job', at: parseYmd(d.closedAt).getTime() + 43200000,
     html: `<li class="fi"><span class="ft ${d.stage}">${d.stage === 'won' ? 'Won' : 'Lost'}</span><div><p class="subj">${link('deals', d.id)}</p><small>${money(d.value)}${d.service ? ' · ' + esc(d.service) : ''}${d.stage === 'lost' && d.lostReason ? ' · ' + esc(d.lostReason) : ''} · closed ${fmtDate(d.closedAt)}${d.ownerId ? ' · ' + esc(pname(d.ownerId)) : ''}</small></div></li>`});
   for (const q of g.quotes) { const when = q.sentAt || q.createdAt; if (!when) continue; ev.push({k: 'doc', at: when,
     html: `<li class="fi"><span class="ft doc">Quote</span><div><p class="subj"><button class="lnk mono" data-act="editQuote" data-id="${q.id}">${esc(q.number)}</button> ${qChip(q)}</p><small>${money2(qTotal(q))} · ${q.sentAt ? 'sent' : 'created'} ${fmtDate(ymd(new Date(when)))}</small></div></li>`}); }
-  for (const c of g.contracts) if (isDate(c.start)) ev.push({k: 'doc', at: parseYmd(c.start).getTime(),
+  for (const c of g.contracts) if (isDate(c.start) && !c.files) ev.push({k: 'doc', at: parseYmd(c.start).getTime(),
     html: `<li class="fi"><span class="ft doc">Contract</span><div><p class="subj"><button class="lnk" data-act="editContract" data-id="${c.id}">${esc(c.title || 'Service agreement')}</button></p><small>${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr${c.autoRenew ? ' · auto-renews' : ''}</small></div></li>`});
   for (const m of (EM[id]?.items || [])) if (!logged.has(m.id)) ev.push({k: 'email', at: m.at, html: emailItem(m, id)});
   const counts = {all: ev.length}; ev.forEach(e => counts[e.k] = (counts[e.k] || 0) + 1);
   const shown = ev.filter(e => f === 'all' || e.k === f).sort((a, b) => b.at - a.at);
-  const none = {all: 'Nothing here yet. Log a call, email, meeting or finished job above.', email: 'No emails yet.', done: 'No completed reminders yet. Check off a reminder and it shows up here.', job: 'No closed jobs yet. Won and lost opportunities and jobs you log as done show up here.', log: 'No calls, meetings or notes logged yet.', doc: 'No quotes or contracts yet.'}[f];
-  return `${mailBar(id)}${logBox({companyid: id})}
+  const none = {all: 'Nothing here yet. Log a call, email, meeting or finished job above.', email: 'No emails yet.', done: 'No completed reminders yet. Check off a reminder and it shows up here.', job: 'No closed jobs yet. Won and lost opportunities and jobs you log as done show up here.', log: 'No calls, meetings or notes logged yet.', doc: 'No files, quotes or contracts yet.'}[f];
+  return `${mailBar(id)}${logBox({companyid: id})}${canWrite ? `<div class="attbar"><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach files</button></div>` : ''}
   <div class="filt" role="group" aria-label="Filter activity">${ACT_FILTERS.map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-act="actFilter" data-f="${k}">${l}${counts[k] ? ` ${counts[k]}` : ''}</button>`).join('')}</div>
   ${shown.length ? `<ul class="feed">${shown.slice(0, 200).map(e => e.html).join('')}</ul>` : `<p class="empty-s">${none}</p>`}`;
 }
@@ -1874,7 +1939,7 @@ const DETAIL = {
     const acts = X.acts.filter(a => a.contactId === id);
     const deals = L('deals').filter(d => d.contactId === id);
     return `<div class="dh"><div><p class="eyebrow">Contact</p><h2>${esc(pname_(c))}</h2><p class="sub">${esc(c.title||'')}${c.companyId ? (c.title ? ' at ' : '') : ''}</p>${c.companyId ? `<div>${link('companies', c.companyId)}</div>` : ''}</div>${closeBtn}</div>
-    <div class="dacts">${canWrite ? `<button class="btn sm pri" data-act="newDeal" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${esc(c.companyId||'')}">${ic('bell')}Reminder</button><button class="btn sm" data-act="jStart" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('route')}Journey</button><button class="btn sm" data-act="editContact" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="contacts" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delContact" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
+    <div class="dacts">${canWrite ? `<button class="btn sm pri" data-act="newDeal" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${esc(c.companyId||'')}">${ic('bell')}Reminder</button><button class="btn sm" data-act="jStart" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('route')}Journey</button><button class="btn sm" data-act="editContact" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="contacts" data-id="${id}" title="Fold a duplicate contact into this one">Merge</button>` : ''}<button class="btn sm" data-act="draft" data-col="contacts" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delContact" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     <dl class="facts">${fact('Work email', c.email ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(c.email)}</button>` : (c.email2 && canWrite ? `<button class="lnk sub" data-act="editContact" data-id="${id}">Add when they share it</button>` : ''), c.email)}${c.email2 ? fact('Personal email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({contactid:id, companyid:c.companyId})}
@@ -2326,15 +2391,38 @@ async function runImport(_, form){
   const get = (r, k) => imp.map[k] != null ? String(r[imp.map[k]] ?? '').trim() : '';
   const coByName = {}; for (const c of L('companies')) coByName[norm(c.name)] = c.id;
   const ctByEmail = {}; for (const c of L('contacts')) for (const e of ctAddrs(c)) ctByEmail[e] = c.id;
-  const ctByName = {}; for (const c of L('contacts')) ctByName[norm(pname_(c))] = c.id;
+  const ctByName = {}; for (const c of L('contacts')) ctByName[(c.companyId || '') + '|' + norm(pname_(c))] = c.id;
+  const ctAnyName = {}; for (const c of L('contacts')) ctAnyName[norm(pname_(c))] = c.id;
   const dealByKey = {}; for (const d of L('deals')) dealByKey[norm(d.name) + '|' + (d.companyId||'')] = d.id;
   let created = 0, updated = 0, skipped = 0, noCo = 0;
   const btn = form.querySelector('[type=submit]');
-  const ensureCo = async name => { const k = norm(name); if (!k) return ''; if (coByName[k]) return coByName[k]; const id = uid(); if (await put('companies', id, {name, ownerId: ME.id, source: 'Imported'})) { coByName[k] = id; created++; return id; } return ''; };
-  const write = async (col, id, rec) => { for (let a = 0; a < 2; a++) { try { await bootReady; const doc = clean({...rec, updatedAt: Date.now(), createdAt: rec.createdAt || Date.now(), createdBy: rec.createdBy || ME.id}); if (live) await db.collection(col).doc(id).set(doc); else { S[col][id] = doc; } return true; } catch(e){ if (e && (e.code === 'resource_exhausted' || e.code === 'unavailable') && a === 0) { await new Promise(r => setTimeout(r, 1500)); continue; } writeErr(e); return false; } } return false; };
+  const queue = []; const BATCH = 400;
+  const flush = async () => {
+    if (!queue.length) return true;
+    const jobs = queue.splice(0);
+    if (!live) { saveLocal(); return true; }
+    const byCol = {}; for (const [c, id, doc] of jobs) (byCol[c] = byCol[c] || []).push([id, doc]);
+    try {
+      for (const [c, rows] of Object.entries(byCol)) {
+        const coll = db.collection(c);
+        if (coll.setMany) await coll.setMany(rows);
+        else for (let k = 0; k < rows.length; k += 10) await Promise.all(rows.slice(k, k + 10).map(([id, doc]) => coll.doc(id).set(doc)));
+      }
+      return true;
+    } catch (e) { writeErr(e); return false; }
+  };
+  let failed = false;
+  const write = async (col, id, rec) => {
+    if (failed) return false;
+    const doc = clean({...rec, updatedAt: Date.now(), createdAt: rec.createdAt || Date.now(), createdBy: rec.createdBy || ME.id});
+    S[col][id] = doc; queue.push([col, id, doc]);
+    if (queue.length >= BATCH) { if (!await flush()) { failed = true; return false; } }
+    return true;
+  };
+  const ensureCo = async name => { const k = norm(name); if (!k) return ''; if (coByName[k]) return coByName[k]; const id = uid(); if (await write('companies', id, {name, ownerId: ME.id, source: 'Imported'})) { coByName[k] = id; created++; return id; } return ''; };
   for (let i = 0; i < imp.rows.length; i++) {
     const r = imp.rows[i];
-    if (btn && i % 10 === 0) btn.textContent = `Importing ${i + 1} of ${imp.rows.length}…`;
+    if (i % 100 === 0) { if (btn) btn.textContent = `Importing ${i + 1} of ${imp.rows.length}…`; await new Promise(r => setTimeout(r, 0)); }
     if (imp.type === 'accounts') {
       const name = get(r, 'name'); if (!name) { skipped++; continue; }
       const rec = {name, phone: phoneNorm(get(r,'phone')), address: get(r,'address'), city: get(r,'city'), state: get(r,'state') || (S.companies[coByName[norm(name)]]?.state ? '' : 'FL'), zip: get(r,'zip'), notes: get(r,'notes'), ownerId: ownerFrom(get(r,'owner'))};
@@ -2347,21 +2435,22 @@ async function runImport(_, form){
       if (!first && !last && get(r,'fullName')) { const p = get(r,'fullName').split(/\s+/); first = p.shift(); last = p.join(' '); }
       const email = get(r,'email');
       if (!first && !last && !email) { skipped++; continue; }
-      const exC = (email && ctByEmail[email.toLowerCase()]) || ctByName[norm(first + ' ' + last)];
+      const exC = email && ctByEmail[email.toLowerCase()];
       const companyId = get(r,'company') ? await ensureCo(get(r,'company')) : (exC && S.contacts[exC]?.companyId) || '';
       if (!companyId) { noCo++; continue; }
       const rec = {firstName: first, lastName: last, title: get(r,'title'), email, phone: phoneNorm(get(r,'phone')), mobile: phoneNorm(get(r,'mobile')), notes: get(r,'notes'), companyId, ownerId: ownerFrom(get(r,'owner'))};
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
-      if (companyId && get(r,'address')) { const co = S.companies[companyId]; if (co && !co.address) await patch('companies', companyId, {address: get(r,'address'), city: get(r,'city'), state: get(r,'state'), zip: get(r,'zip')}); }
-      const ex = (email && ctByEmail[email.toLowerCase()]) || ctByName[norm(first + ' ' + last)];
+      if (companyId && get(r,'address')) { const co = S.companies[companyId]; if (co && !co.address) await write('companies', companyId, {...co, address: get(r,'address'), city: get(r,'city'), state: get(r,'state'), zip: get(r,'zip')}); }
+      const byNm = ctByName[companyId + '|' + norm(first + ' ' + last)];
+      const ex = (email && ctByEmail[email.toLowerCase()]) || (byNm && (!email || !ctAddrs(S.contacts[byNm]).length) ? byNm : '');
       if (ex) { if (await write('contacts', ex, {...S.contacts[ex], ...rec})) updated++; else break; }
-      else { const id = uid(); if (await write('contacts', id, rec)) { if (email) ctByEmail[email.toLowerCase()] = id; ctByName[norm(first + ' ' + last)] = id; created++; } else break; }
+      else { const id = uid(); if (await write('contacts', id, rec)) { if (email) ctByEmail[email.toLowerCase()] = id; ctByName[companyId + '|' + norm(first + ' ' + last)] = id; ctAnyName[norm(first + ' ' + last)] = id; created++; } else break; }
     } else {
       const name = get(r,'name'); if (!name) { skipped++; continue; }
       const companyId = get(r,'company') ? await ensureCo(get(r,'company')) : '';
       if (!companyId) { noCo++; continue; }
       const cv = get(r,'contact').toLowerCase();
-      const contactId = cv ? (ctByEmail[cv] || ctByName[norm(cv)] || '') : '';
+      const contactId = cv ? (ctByEmail[cv] || ctByName[companyId + '|' + norm(cv)] || ctAnyName[norm(cv)] || '') : '';
       const st = mapStage(get(r,'stage'));
       const rec = {name, type: name, companyId, contactId, stage: st, value: num(get(r,'value')), priceQuoted: num(get(r,'priceQuoted')), service: get(r,'service'), serviceType: get(r,'serviceType'), interval: get(r,'interval'), serviceDate: toYmd(get(r,'serviceDate')), closeDate: toYmd(get(r,'closeDate')), source: get(r,'source'), sourceOther: get(r,'sourceOther'), initialCall: get(r,'initialCall'), firstCallClose: get(r,'firstCallClose'), noCloseReason: get(r,'noCloseReason'), lostReason: get(r,'lostReason'), ownerId: ownerFrom(get(r,'owner'))};
       if (st === 'won' || st === 'lost') rec.closedAt = rec.closeDate || today();
@@ -2372,7 +2461,10 @@ async function runImport(_, form){
       else { const id = uid(); if (await write('deals', id, rec)) { dealByKey[key] = id; created++; } else break; }
     }
   }
-  if (!live) schedule();
+  if (btn) btn.textContent = 'Saving…';
+  const okFlush = !failed && await flush();
+  schedule();
+  if (!okFlush) { toast('Some records could not be saved. Check your connection and import the same file again; nothing will be duplicated.', 'bad'); return false; }
   toast(`Import done: ${created} added, ${updated} updated${skipped ? `, ${skipped} empty rows skipped` : ''}${noCo ? `, ${noCo} skipped because they had no account name` : ''}.`);
   return true;
 }
@@ -2470,11 +2562,14 @@ function settingsModal(){
     ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
     ${SUPA ? row('users', 'Users', isAdmin() ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', `<button type="button" class="btn" data-act="users">${isAdmin() ? 'Manage users' : 'View'}</button>`)
       : row('users', 'Team', 'Choose which teammates can be assigned accounts, opportunities and reminders.', `<button type="button" class="btn" data-act="team">Manage team</button>`)}
+    ${row('spark', 'Appearance', 'Your own colors, mode, text size, spacing, font and start page. Only changes how Paper Trail looks for you.', `<button type="button" class="btn" data-act="look">Customize</button>`)}
     ${row('spark', 'Demo mode', DEMO ? 'On. Paper Trail is showing sample data. Your real records are untouched.' : 'Fill Paper Trail with realistic sample accounts, opportunities and activity for a demo. Nothing is saved, and your real records stay hidden until you turn it off.', `<button type="button" class="btn${DEMO ? '' : ' pri'}" data-act="${DEMO ? 'demoOff' : 'demoOn'}">${DEMO ? 'Turn off' : 'Turn on'}</button>`)}
     ${row('mail', 'Email templates', 'Edit the ready-made emails your team picks from when emailing a customer.', `<button type="button" class="btn" data-act="tplManage">Edit templates</button>`)}
     ${canWrite && isAdmin() ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from a Spiro export or any CSV file.', `<button type="button" class="btn" data-act="import">Import CSV</button>`) : ''}
+    ${canWrite ? row('users', 'Find duplicates', 'Spot accounts and contacts that look like the same thing, and merge them.', `<button type="button" class="btn" data-act="dupFind">Find duplicates</button>`) : ''}
     ${row('down', 'Export', 'Download every account and contact as a CSV file you can open in Excel.', `<button type="button" class="btn" data-act="export">Export CSV</button>`)}
     ${isAdmin() ? row('doc', 'Backup', `Download a full backup of everything, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : ''}
+    ${isAdmin() ? row('users', 'Reassign records', 'Move accounts, contacts, opportunities, reminders and more from one person to another.', `<button type="button" class="btn" data-act="reassign">Reassign</button>`) : ''}
     ${isAdmin() ? row('trash', 'Trash', `Deleted records, kept for ${TRASH_DAYS} days so you can restore them.${L('trash').length ? ` ${L('trash').length} item${L('trash').length === 1 ? '' : 's'} now.` : ''}`, `<button type="button" class="btn" data-act="trash">Open trash</button>`) : ''}
     <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button>
   </div>`, null);
@@ -3244,7 +3339,7 @@ function journeyLibraryModal(){
 
 // ---------- actions ----------
 const A = {
-  go: d => { ui.view = d.v; ui.q = ''; ui.detail = null; render(); pushNav(); $('#main').scrollTop = 0; },
+  go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
   open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
   closeDetail: () => { ui.detail = null; render(); pushNav(); },
@@ -3253,6 +3348,14 @@ const A = {
   oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.tagName === 'SELECT' && el.showPicker) try { el.showPicker(); } catch {} } },
   loadSample: () => setDemo(true),
   demoOn: () => setDemo(true),
+  merge: d => mergeModal(d.col, d.id),
+  dupFind: () => dupFinder(),
+  dupTab: d => dupFinder(d.c),
+  dupReview: d => { ui.dupReturn = true; mergeModal(d.c, d.keep, d.other); },
+  pgMore: d => { ui.lim = ui.lim || {}; ui.lim[d.k] = ((ui.lim[d.k]) || PAGE) + PAGE * 5; schedule(); },
+  look: () => lookModal(),
+  lookSet: d => { LOOK[d.k] = d.v; saveLook(); schedule(); lookModal(); },
+  lookReset: () => { LOOK = {...LOOK_DEFAULT}; saveLook(); schedule(); lookModal(); toast('Back to the default look'); },
   trash: () => trashModal(),
   trashRestore: d => trashRestore(d.id),
   backup: () => backupDownload(),
@@ -3310,7 +3413,12 @@ const A = {
   newContact: d => contactForm(null, d), editContact: d => contactForm(d.id),
   newDeal: d => dealForm(null, d), editDeal: d => dealForm(d.id),
   newTask: d => taskForm(null, d), editTask: d => taskForm(d.id),
-  newContract: d => contractForm(null, d), editContract: d => contractForm(d.id),
+  newContract: d => FILES.ok() ? attachModal(d.co, 'contract') : contractForm(null, d), editContract: d => { const c = S.contracts[d.id]; if (c && (c.files || !isDate(c.start))) contractView(d.id); else contractForm(d.id); },
+  attach: d => attachModal(d.co, 'general'),
+  attSave: d => attSave(d.k),
+  attRemove: d => { attPending.splice(+d.i, 1); attRender(); },
+  fileOpen: async d => { try { await FILES.open(d.path, d.name); } catch (e) { toast((e && e.message) || "Couldn't open that file.", 'bad'); } },
+  delContractFile: d => { closeModal(); confirmModal('Delete this contract?', 'It moves to Trash, where an admin can restore it for 30 days. The entry in Activities stays.', 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted'); }); },
   newQuote: d => { if (!canWrite) return; quoteBuilder().open({co: d.co, deal: d.deal}); },
   editQuote: d => { const q = S.quotes[d.id]; if (q && q.state) quoteBuilder().open({quoteId: d.id}); else quoteForm(d.id); },
   renew: d => renewModal(d.id),
@@ -3332,14 +3440,16 @@ const A = {
   import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } if (DEMO) { toast('Turn off demo mode before importing real data.', 'bad'); return; } importModal(); },
   users: () => usersModal(),
   account: () => accountModal(),
-  signOut: async () => { closeModal(); await SUPA.sb.auth.signOut(); location.reload(); },
-  uActive: d => { const u = USERS.find(x => x.id === d.id); if (u) uPatch(d.id, {active: !u.active}); },
+  signOut: async () => { closeModal(); await IDB.clear(); await SUPA.sb.auth.signOut(); location.reload(); },
+  uActive: async d => { const u = USERS.find(x => x.id === d.id); if (!u) return; const off = u.active; await uPatch(d.id, {active: !u.active});
+    if (off && raTotal(d.id)) reassignModal(d.id, {title: `Reassign ${u.name}'s records?`, intro: `${esc(u.name)} is deactivated and owns ${raTotal(d.id)} record${raTotal(d.id) === 1 ? '' : 's'}. Choose who takes them over, or skip and do it later from Settings.`, skip: 'Not now'}); },
+  reassign: d => reassignModal(d.id || ''),
   uCode: async d => { const {error} = await SUPA.sb.from('invites').upsert({profile_id: d.id, code: inviteCode(), expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'}); if (error) toast("Couldn't make a new code: " + error.message, 'bad'); else { toast('New code made. It works for 7 days.'); await loadProfiles(); usersModal(); } },
   export: () => exportCsv(),
   expOpen: d => exportModal(d.t),
   team: () => teamModal(),
   teamAdd: d => { saveTeam([...(team.ids||[]), d.id]); const li = document.querySelector(`#teamHits [data-id="${CSS.escape(d.id)}"]`); if (li) li.textContent = 'Added'; },
-  teamDel: d => saveTeam((team.ids||[]).filter(i => i !== d.id)),
+  teamDel: async d => { await saveTeam((team.ids||[]).filter(i => i !== d.id)); if (raTotal(d.id)) reassignModal(d.id, {title: `Reassign ${nm(d.id)}'s records?`, intro: `${esc(nm(d.id))} was removed from the team and still owns ${raTotal(d.id)} record${raTotal(d.id) === 1 ? '' : 's'}.`, skip: 'Not now'}); },
   summarize: d => summarize(d.id),
   coach: d => coach(d.id),
   coachTask: async d => { const c = ui.ai[d.k]?.coach; const dealId = d.k.slice(2); const deal = S.deals[dealId]; if (!c || !c.task) return; if (await put('tasks', uid(), {title: c.task.title, due: addDays(today(), Math.max(0, Math.min(60, parseInt(c.task.dueInDays) || 2))), assigneeId: ME.id, companyId: deal?.companyId, dealId})) toast('Reminder set'); },
@@ -3374,6 +3484,10 @@ const CHANGE = {
   rowStage: el => changeStage(el.dataset.id, el.value),
   oppField: el => oppSaveField(el),
   expCount: () => expCount(),
+  attFiles: el => { attAdd([...(el.files || [])]); el.value = ''; },
+  mergePick: el => { const ret = ui.dupReturn; mergeModal(el.dataset.col, el.dataset.keep, el.value); ui.dupReturn = ret; },
+  lookColor: el => { LOOK.accent = el.value; saveLook(); document.querySelectorAll('.swatches .sw').forEach(b => b.classList.remove('on')); const c = el.closest('.sw'); if (c) { c.classList.add('on'); c.style.background = el.value; } },
+  raFrom: el => { const l = $('#raList'); if (l) l.innerHTML = raRows(el.value); const to = $('#raTo'); if (to) { const cur = to.value; to.innerHTML = [['', '— Choose who takes over —'], ...(SUPA && !DEMO ? USERS.filter(u => u.active).map(u => u.id) : people()).filter(i => i && i !== el.value).map(i => [i, nm(i) || pname(i)]).sort((a, b) => a[1].localeCompare(b[1]))].map(([v, l2]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l2)}</option>`).join(''); } },
   uRole: el => { if (el.dataset.id) uPatch(el.dataset.id, {role: el.value}); },
   impType: el => { imp.type = el.value; if (imp.headers.length) imp.map = guessMap(imp.type, imp.headers); renderImpBody(); },
   impFile: el => { const file = el.files && el.files[0]; if (!file) return; const r = new FileReader(); r.onload = () => { const rows = parseCSV(String(r.result)); imp.name = file.name; imp.headers = rows[0] || []; imp.rows = rows.slice(1);
@@ -3425,6 +3539,11 @@ document.addEventListener('keydown', e => {
   if (e.target.classList && e.target.classList.contains('sr') && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); const all = [...document.querySelectorAll('#gres .sr')]; const i = all.indexOf(e.target) + (e.key === 'ArrowDown' ? 1 : -1); if (i < 0) $('#gq').focus(); else all[Math.min(i, all.length - 1)].focus(); return; }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.dcard, tbody tr[data-act]')) { e.preventDefault(); e.target.click(); }
 });
+document.addEventListener('click', e => { const z = e.target.closest && e.target.closest('#dropZone'); if (z && !e.target.closest('input')) $('#attInput')?.click(); });
+document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'dropZone') { e.preventDefault(); $('#attInput')?.click(); } });
+['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { const z = e.target.closest && e.target.closest('#dropZone'); if (z) { e.preventDefault(); z.classList.add('over'); } }));
+document.addEventListener('dragleave', e => { const z = e.target.closest && e.target.closest('#dropZone'); if (z && !z.contains(e.relatedTarget)) z.classList.remove('over'); });
+document.addEventListener('drop', e => { const z = e.target.closest && e.target.closest('#dropZone'); if (!z) { if ($('#dropZone')) e.preventDefault(); return; } e.preventDefault(); z.classList.remove('over'); attAdd([...(e.dataTransfer?.files || [])]); });
 document.addEventListener('submit', e => { const f = e.target; if (!f.dataset.form) return; e.preventDefault(); FORMS[f.dataset.form]?.(f, formData(f)); });
 document.addEventListener('change', e => {
   const el = e.target;
@@ -3440,7 +3559,7 @@ document.addEventListener('input', e => {
   if (el.id === 'tplBody') { updTplPrev(); return; }
   if (el.id === 'dCc' || el.id === 'dBcc') { acShow(el); return; }
   if (el.id === 'jsIn' || el.id === 'jsDate') { jsPreview(); return; }
-  if (el.id === 'q') { ui.q = el.value; schedule(); return; }
+  if (el.id === 'q') { ui.q = el.value; ui.lim = {}; schedule(); return; }
   if (el.id === 'gq') { $('#gres').innerHTML = searchResults(el.value); return; }
   if (el.closest && el.closest('#qItems')) { updQuoteTotal(); return; }
   if (el.id === 'teamQ' && U) { const v = el.value; U.search(v).then(hits => { if ($('#teamQ')?.value !== v) return; hits.forEach(h => { P[h.id] = h; }); const ul = $('#teamHits'); if (!ul) return; ul.innerHTML = hits.filter(h => h.id !== ME.id).map(h => `<li data-id="${esc(h.id)}"><span>${h.avatarUrl ? `<img class="av" src="${esc(h.avatarUrl)}" alt="">` : ''}<span>${esc(h.name)}</span></span>${(team.ids||[]).includes(h.id) ? '<span class="sub">On the team</span>' : `<button type="button" class="btn sm" data-act="teamAdd" data-id="${esc(h.id)}">Add</button>`}</li>`).join('') || (v ? '<li class="sub">No one found.</li>' : ''); }); }
@@ -4288,37 +4407,72 @@ async function deleteQuoteNow(id){
 
 // ---------- hosted mode: Supabase logins, users and shared data ----------
 const isAdmin = () => !SUPA || ME.role === 'admin';
+// Saved copy of records in this browser (IndexedDB), so each visit only downloads what changed
+const IDB = (() => {
+  let p = null;
+  const open = () => p || (p = new Promise((res, rej) => { try { const r = indexedDB.open('papertrail-cache', 1); r.onupgradeneeded = () => r.result.createObjectStore('c'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }));
+  const tx = (mode, fn) => open().then(d => new Promise(res => { try { const t = d.transaction('c', mode); const st = t.objectStore('c'); const out = fn(st); t.oncomplete = () => res(out && out.result); t.onerror = () => res(null); t.onabort = () => res(null); } catch { res(null); } })).catch(() => null);
+  return {get: k => tx('readonly', st => st.get(k)), set: (k, v) => tx('readwrite', st => { st.put(v, k); }), clear: () => tx('readwrite', st => { st.clear(); })};
+})();
 const SB_PAGE = 1000;
-function makeSupaDb(sb){
+function makeSupaDb(sb, uidKey){
   const subs = {}; // col -> [{map, cb, ready}]
-  const fire = c => (subs[c] || []).forEach(x => { if (x.ready) x.cb(x.snap()); });
+  const maxTs = {}; const fireT = {}; const saveT = {};
+  const ckey = c => `${uidKey}|${c}`;
+  const bump = (c, ts) => { if (ts && (!maxTs[c] || ts > maxTs[c])) maxTs[c] = ts; };
+  const persist = c => { clearTimeout(saveT[c]); saveT[c] = setTimeout(() => { const x = (subs[c] || [])[0]; if (x && x.ready) IDB.set(ckey(c), {map: x.map, max: maxTs[c] || '', at: Date.now()}); }, 2500); };
+  const fire = c => { clearTimeout(fireT[c]); fireT[c] = setTimeout(() => { (subs[c] || []).forEach(x => { if (x.ready) x.cb(x.snap()); }); persist(c); }, 120); };
   const ch = sb.channel('pt-records').on('postgres_changes', {event: '*', schema: 'public', table: 'records'}, ev => {
     const row = ev.eventType === 'DELETE' ? ev.old : ev.new; if (!row || !row.col) return;
     for (const x of subs[row.col] || []) { if (ev.eventType === 'DELETE') delete x.map[row.id]; else x.map[row.id] = row.data || {}; }
+    if (ev.eventType !== 'DELETE') bump(row.col, row.updated_at);
     fire(row.col);
   });
   ch.subscribe();
-  async function loadAll(c){
-    const map = {};
+  async function pages(build){
+    const out = [];
     for (let from = 0; ; from += SB_PAGE) {
-      const {data, error} = await sb.from('records').select('id,data').eq('col', c).range(from, from + SB_PAGE - 1);
+      const {data, error} = await build().range(from, from + SB_PAGE - 1);
       if (error) throw error;
-      for (const r of data || []) map[r.id] = r.data || {};
+      out.push(...(data || []));
       if (!data || data.length < SB_PAGE) break;
     }
+    return out;
+  }
+  async function loadAll(c){
+    const cached = await IDB.get(ckey(c));
+    if (cached && cached.map && cached.max) {
+      const map = cached.map; maxTs[c] = cached.max;
+      const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', cached.max).order('id'));
+      for (const r of changed) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
+      const {count, error} = await sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c);
+      if (error) throw error;
+      if (count !== Object.keys(map).length) {   // out of step: drop what the server no longer has, fetch anything missing
+        const ids = new Set((await pages(() => sb.from('records').select('id').eq('col', c).order('id'))).map(r => r.id));
+        for (const id of Object.keys(map)) if (!ids.has(id)) delete map[id];
+        const missing = [...ids].filter(id => !(id in map));
+        for (let k = 0; k < missing.length; k += 200) {
+          const {data, error: e2} = await sb.from('records').select('id,data,updated_at').eq('col', c).in('id', missing.slice(k, k + 200));
+          if (e2) throw e2; for (const r of data || []) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
+        }
+      }
+      return map;
+    }
+    const map = {};
+    for (const r of await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).order('id'))) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
     return map;
   }
   const fail = e => { const err = new Error((e && e.message) || 'Database error'); err.code = e && e.code === '42501' ? 'permission-denied' : (e && e.code) || 'unknown'; return err; };
   function docRef(c, id){
     return {
-      async set(data){ const {error} = await sb.from('records').upsert({col: c, id, data, updated_at: new Date().toISOString()}, {onConflict: 'col,id'}); if (error) throw fail(error); },
+      async set(data){ const {error} = await sb.from('records').upsert({col: c, id, data}, {onConflict: 'col,id'}); if (error) throw fail(error); },
       async update(patch){ const {error} = await sb.rpc('merge_record', {p_col: c, p_id: id, p_patch: patch}); if (error) throw fail(error); },
       async delete(){ const {error} = await sb.from('records').delete().eq('col', c).eq('id', id); if (error) throw fail(error); },
       onSnapshot(cb, onErr){
-        const x = {map: {}, ready: false, cb: () => cb({exists: id in x.map, data: () => x.map[id]})};
-        x.snap = () => null; (subs[c] = subs[c] || []).push(x);
-        loadAll(c).then(m => { x.map = m; x.ready = true; x.snap = () => null; cb({exists: id in m, data: () => m[id]}); }).catch(e => onErr && onErr(fail(e)));
+        const x = {map: {}, ready: false, snap: () => null};
         x.cb = () => cb({exists: id in x.map, data: () => x.map[id]});
+        (subs[c] = subs[c] || []).push(x);
+        loadAll(c).then(m => { x.map = m; x.ready = true; x.cb(); }).catch(e => onErr && onErr(fail(e)));
         return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
       }
     };
@@ -4331,8 +4485,17 @@ function makeSupaDb(sb){
           const x = {map: {}, ready: false, cb};
           x.snap = () => ({docs: Object.entries(x.map).map(([id, d]) => ({id, data: () => d}))});
           (subs[c] = subs[c] || []).push(x);
-          loadAll(c).then(m => { x.map = m; x.ready = true; cb(x.snap()); }).catch(e => onErr && onErr(fail(e)));
+          loadAll(c).then(m => { x.map = m; x.ready = true; cb(x.snap()); persist(c); }).catch(e => onErr && onErr(fail(e)));
           return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
+        },
+        async setMany(rows){   // rows: [[id, data], ...] saved 500 at a time
+          for (let k = 0; k < rows.length; k += 500) {
+            const chunk = rows.slice(k, k + 500);
+            const {error} = await sb.from('records').upsert(chunk.map(([id, data]) => ({col: c, id, data})), {onConflict: 'col,id'});
+            if (error) throw fail(error);
+            for (const x of subs[c] || []) for (const [id, data] of chunk) x.map[id] = data;   // don't wait on live updates, which can lag during big imports
+          }
+          fire(c);
         }
       };
     },
@@ -4413,7 +4576,7 @@ async function supaStart(){
   await loadProfiles();
   sb.channel('pt-profiles').on('postgres_changes', {event: '*', schema: 'public', table: 'profiles'}, () => loadProfiles().catch(() => {})).subscribe();
   sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.reload(); });
-  return makeSupaDb(sb);
+  return makeSupaDb(sb, (cfg.supabaseUrl || '') + '|' + (SUPA.uid || ''));
 }
 const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o = ''; const r = new Uint32Array(8); crypto.getRandomValues(r); for (const n of r) o += a[n % a.length]; return o.slice(0, 4) + '-' + o.slice(4); };
 function usersModal(){
@@ -4422,7 +4585,7 @@ function usersModal(){
     return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${esc(u.email)}</small></div>
       <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>`}
       ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-        <button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}">${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
+        <button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button><button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}">${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
   openModal('Users', `<p class="sub">${admin ? 'Add the people who use Paper Trail. Each new person gets an invite code that works for 7 days: send them the site link and the code, and they choose their own password under “First time here?”.' : 'People who use Paper Trail. Only an admin can add users.'}</p>
     <ul class="users" id="usersList">${USERS.map(row).join('') || '<li class="sub">No users yet.</li>'}</ul>
     ${admin ? `<h3 style="margin-top:14px">Add a user</h3><div class="grid3">${F('Name', inp('uName', '', 'text', 'placeholder="Kate Dillon"'))}${F('Work email', inp('uEmail', '', 'email', 'placeholder="kate@allpointsprotects.com"'))}${F('Role', sel('uRole', [['manager', 'Manager'], ['admin', 'Admin']], 'manager'))}</div>
@@ -4451,6 +4614,220 @@ function accountModal(){
     }, {foot: `<button type="button" class="btn ghost" data-act="signOut" style="margin-right:auto">Sign out</button>`});
 }
 
+// ---------- reassign records from one person to another ----------
+const RA_KINDS = [
+  ['companies', 'Accounts', 'ownerId', () => true],
+  ['contacts', 'Contacts', 'ownerId', () => true],
+  ['dealsOpen', 'Open opportunities', 'ownerId', d => isOpen(d)],
+  ['dealsClosed', 'Closed opportunities (past jobs)', 'ownerId', d => !isOpen(d)],
+  ['tasks', 'Open reminders', 'assigneeId', k => !k.done],
+  ['contracts', 'Contracts', 'ownerId', () => true],
+  ['quotes', 'Quotes', 'ownerId', () => true]];
+const raCol = k => k.startsWith('deals') ? 'deals' : k;
+const raItems = (from, k) => { const [key, , field, ok] = RA_KINDS.find(x => x[0] === k); return L(raCol(key)).filter(r => r[field] === from && ok(r)); };
+const raTotal = from => RA_KINDS.reduce((n, [k]) => n + raItems(from, k).length, 0);
+function reassignModal(from, opts = {}){
+  if (!isAdmin()) { toast('Only an admin can reassign records.', 'bad'); return; }
+  const everyone = people().filter(Boolean);
+  const activeIds = SUPA && !DEMO ? USERS.filter(u => u.active).map(u => u.id) : everyone;
+  const fromOpts = [['', '— Choose a person —'], ...everyone.map(i => [i, nm(i) || pname(i)]).sort((a, b) => a[1].localeCompare(b[1]))];
+  const toOpts = f => [['', '— Choose who takes over —'], ...activeIds.filter(i => i !== f).map(i => [i, nm(i) || pname(i)]).sort((a, b) => a[1].localeCompare(b[1]))];
+  const body = f => `${opts.intro ? `<p class="sub" style="margin-bottom:10px">${opts.intro}</p>` : ''}
+    <div class="grid2">${F('From', sel('raFrom', fromOpts, f, 'id="raFrom" data-change="raFrom"'))}${F('To', sel('raTo', toOpts(f), '', 'id="raTo"'))}</div>
+    <div class="f"><span>What moves over</span><div class="ralist" id="raList">${raRows(f)}</div></div>
+    <p class="sub">Each record's owner changes to the new person. Activity history, who closed a deal, and the records themselves stay the same.</p>`;
+  openModal(opts.title || 'Reassign records', body(from || ''), 'Reassign', async f => {
+    if (!f.raFrom || !f.raTo) { toast('Choose who to move from and who takes over.', 'bad'); return false; }
+    if (f.raFrom === f.raTo) { toast('Pick two different people.', 'bad'); return false; }
+    const jobs = [];
+    for (const [k, , field] of RA_KINDS) if (f['ra_' + k]) for (const r of raItems(f.raFrom, k)) jobs.push([raCol(k), r.id, field]);
+    if (!jobs.length) { toast('Nothing selected to move.', 'bad'); return false; }
+    const b = $('#mform [type=submit]'); let done = 0;
+    for (const [col, id, field] of jobs) { if (await patch(col, id, {[field]: f.raTo})) done++; if (b && done % 10 === 0) b.textContent = `Moving ${done} of ${jobs.length}…`; }
+    toast(`Moved ${done} record${done === 1 ? '' : 's'} from ${nm(f.raFrom)} to ${nm(f.raTo)}`);
+    return true;
+  }, {foot: opts.skip ? `<button type="button" class="btn ghost" data-act="closeModal" style="margin-right:auto">${opts.skip}</button>` : ''});
+}
+function raRows(from){
+  if (!from) return '<p class="sub">Choose a person to see what they own.</p>';
+  return RA_KINDS.map(([k, label]) => { const n = raItems(from, k).length;
+    return `<label class="chk ra"><input type="checkbox" name="ra_${k}" ${n && k !== 'dealsClosed' ? 'checked' : ''} ${n ? '' : 'disabled'}> ${label} <em>${n}</em></label>`; }).join('');
+}
+
+// ---------- merge duplicates ----------
+const MRG_FIELDS = {
+  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['ownerId', 'Owner'], ['notes', 'Notes']],
+  contacts: [['firstName', 'First name'], ['lastName', 'Last name'], ['title', 'Title'], ['companyId', 'Account'], ['email', 'Work email'], ['email2', 'Personal email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['ownerId', 'Owner'], ['notes', 'Notes']]};
+const coKey = n => norm(String(n || '').toLowerCase().replace(/\s*-\s*copy\b.*$/, '').replace(/[.,'’&()]/g, ' ').replace(/\b(the|llc|l\.?l\.?c|inc|incorporated|pa|p\.?a|pllc|pc|co|corp|corporation|company|ltd|group)\b/g, ' '));
+const mVal = (col, k, r) => { const v = r && r[k]; if (!v) return ''; if (k === 'ownerId') return nm(v); if (k === 'companyId') return cname(v); return String(v); };
+function mergeCandidates(col, id){
+  const r = S[col][id]; if (!r) return [];
+  if (col === 'companies') { const k = coKey(r.name), ph = digits(r.phone);
+    const score = c => (coKey(c.name) === k ? 3 : coKey(c.name).startsWith(k.slice(0, 6)) && k.length > 5 ? 1 : 0) + (ph.length >= 10 && digits(c.phone) === ph ? 2 : 0);
+    return L('companies').filter(c => c.id !== id).map(c => [c, score(c)]).sort((a, b) => b[1] - a[1] || byName(a[0], b[0])); }
+  const ems = ctAddrs(r), nmk = norm(pname_(r));
+  const score = c => (ctAddrs(c).some(e => ems.includes(e)) ? 3 : 0) + (norm(pname_(c)) === nmk ? 2 : 0) + (c.companyId === r.companyId ? 1 : 0);
+  return L('contacts').filter(c => c.id !== id).map(c => [c, score(c)]).sort((a, b) => b[1] - a[1] || pname_(a[0]).localeCompare(pname_(b[0])));
+}
+function mergeModal(col, keepId, otherId){
+  const keep = S[col][keepId]; if (!keep) return;
+  const label = col === 'companies' ? 'account' : 'contact';
+  const nameOfR = r => col === 'companies' ? r.name : pname_(r) + (r.companyId ? ' · ' + cname(r.companyId) : '');
+  const cands = mergeCandidates(col, keepId);
+  const opts = [['', `— Choose the duplicate ${label} —`], ...cands.slice(0, 400).map(([c, sc]) => [c.id, (sc >= 2 ? '★ ' : '') + nameOfR(c)])];
+  const other = otherId && S[col][otherId];
+  const rows = other ? MRG_FIELDS[col].map(([k, l]) => { const a = mVal(col, k, keep), b = mVal(col, k, other);
+    if (a === b || !b) return ''; if (!a) return `<tr><td>${l}</td><td colspan="2"><label class="chk"><input type="radio" name="m_${k}" value="b" checked> ${esc(b)}</label> <span class="sub">(only on the duplicate)</span></td></tr>`;
+    return `<tr><td>${l}</td><td><label class="chk"><input type="radio" name="m_${k}" value="a" checked> ${esc(a)}</label></td><td><label class="chk"><input type="radio" name="m_${k}" value="b"> ${esc(b)}</label>${k === 'notes' ? `<label class="chk"><input type="radio" name="m_${k}" value="both"> Keep both</label>` : ''}</td></tr>`; }).join('') : '';
+  const moving = other ? COLS.filter(c => c !== 'trash').reduce((n, c) => n + L(c).filter(x => x[col === 'companies' ? 'companyId' : 'contactId'] === otherId).length, 0) : 0;
+  openModal(`Merge ${label}s`, `<p class="sub" style="margin-bottom:10px">Keep <b>${esc(nameOfR(keep))}</b> and fold a duplicate into it. Everything linked to the duplicate moves over, and the duplicate goes to Trash.</p>
+    ${F(`Duplicate ${label}`, sel('mOther', opts, otherId || '', `id="mOther" data-change="mergePick" data-col="${col}" data-keep="${keepId}"`))}
+    <p class="sub">★ = likely match (same name, phone or email).</p>
+    ${other ? `${rows ? `<div class="f"><span>Where they differ, choose what to keep</span><div class="tbl"><table class="mtbl"><thead><tr><th>Field</th><th>Keep</th><th>Duplicate</th></tr></thead><tbody>${rows}</tbody></table></div></div>` : '<p class="sub">The details match, so nothing to choose.</p>'}
+      <p class="sub">${moving ? `${moving} linked record${moving === 1 ? '' : 's'} (contacts, opportunities, activity, reminders and so on) will move to the kept ${label}.` : `Nothing else is linked to the duplicate.`}</p>` : ''}`,
+    other ? 'Merge' : null, other ? async f => {
+      const upd = {};
+      for (const [k] of MRG_FIELDS[col]) { const pick = f['m_' + k]; if (pick === 'b') upd[k] = other[k]; else if (pick === 'both') upd[k] = [keep[k], other[k]].filter(Boolean).join('\n\n'); }
+      if (col === 'contacts' && upd.email && keep.email && !keep.email2 && !upd.email2 && upd.email !== keep.email) upd.email2 = keep.email;
+      const link = col === 'companies' ? 'companyId' : 'contactId';
+      const b = $('#mform [type=submit]'); let n = 0;
+      for (const c of COLS.filter(c => c !== 'trash')) for (const r of L(c).filter(x => x[link] === otherId)) { const ch = {[link]: keepId}; if (col === 'companies' && c === 'contacts') {} if (await patch(c, r.id, ch)) n++; if (b && n % 20 === 0) b.textContent = `Moving ${n}…`; }
+      if (Object.keys(upd).length && !await patch(col, keepId, upd)) return false;
+      await del(col, otherId);
+      await logAct({type: 'note', sys: true, text: `Merged ${nameOfR(other)} into this ${label}`, companyId: col === 'companies' ? keepId : keep.companyId, contactId: col === 'contacts' ? keepId : ''});
+      toast(`Merged. ${n} linked record${n === 1 ? '' : 's'} moved.`);
+      if (ui.dupReturn) { ui.dupReturn = false; setTimeout(() => dupFinder(col), 300); }
+      return true;
+    } : null);
+}
+function dupGroups(col){
+  const items = L(col); const parent = {}; const find = x => parent[x] === x ? x : (parent[x] = find(parent[x])); const join = (a, b) => { parent[find(a)] = find(b); };
+  items.forEach(x => parent[x.id] = x.id);
+  const by = {}; const add = (k, id) => { if (!k) return; (by[k] = by[k] || []).push(id); };
+  for (const x of items) {
+    if (col === 'companies') { add('n:' + coKey(x.name), x.id); const ph = digits(x.phone); if (ph.length >= 10) add('p:' + ph, x.id); }
+    else { for (const e of ctAddrs(x)) add('e:' + e, x.id); if (x.companyId && pname_(x)) add('n:' + x.companyId + '|' + norm(pname_(x)), x.id); }
+  }
+  for (const ids of Object.values(by)) for (let i = 1; i < ids.length; i++) join(ids[0], ids[i]);
+  const groups = {}; for (const x of items) (groups[find(x.id)] = groups[find(x.id)] || []).push(x);
+  return Object.values(groups).filter(g => g.length > 1).sort((a, b) => b.length - a.length);
+}
+function dupFinder(col){
+  col = col || ui.dupCol || 'companies'; ui.dupCol = col;
+  const groups = dupGroups(col);
+  const nameOfR = r => col === 'companies' ? `${r.name}${r.city ? ' · ' + r.city : ''}${r.phone ? ' · ' + r.phone : ''}` : `${pname_(r)}${ctMail(r) ? ' · ' + ctMail(r) : ''} · ${cname(r.companyId)}`;
+  const linked = r => col === 'companies' ? gr(r.id).contacts.length + gr(r.id).deals.length + gr(r.id).acts.length : L('deals').filter(d => d.contactId === r.id).length;
+  openModal('Find duplicates', `<div class="segs" role="group" style="margin-bottom:10px">${[['companies', 'Accounts'], ['contacts', 'Contacts']].map(([k, l]) => `<button type="button" class="${col === k ? 'on' : ''}" data-act="dupTab" data-c="${k}">${l}</button>`).join('')}</div>
+    <p class="sub" style="margin-bottom:10px">${groups.length ? `${groups.length} possible duplicate group${groups.length === 1 ? '' : 's'}, matched on ${col === 'companies' ? 'similar name or the same phone number' : 'the same email, or the same name at the same account'}. Review each before merging; similar isn't always the same.` : 'No likely duplicates found.'}</p>
+    <ul class="users">${groups.slice(0, 150).map(g => { const sorted = g.slice().sort((a, b) => linked(b) - linked(a)); const keep = sorted[0];
+      return `<li class="urow"><div>${sorted.map((r, i) => `<div><b>${i === 0 ? '' : '<span class="sub">duplicate: </span>'}${esc(nameOfR(r))}</b> <small style="display:inline">· ${linked(r)} linked</small></div>`).join('')}</div>
+        <div class="uact"><button type="button" class="btn sm pri" data-act="dupReview" data-c="${col}" data-keep="${keep.id}" data-other="${sorted[1].id}">Review &amp; merge</button></div></li>`; }).join('')}</ul>
+    ${groups.length > 150 ? `<p class="sub">Showing the first 150 groups. Merge some, then come back for the rest.</p>` : ''}`, null);
+}
+
+// ---------- attachments: files on accounts, saved as general or as a contract ----------
+const FILE_MAX = 10 * 1024 * 1024, FILE_COUNT = 5;
+const FIDB = (() => {   // demo + no-login site: files stay in this browser
+  let p = null;
+  const open = () => p || (p = new Promise((res, rej) => { try { const r = indexedDB.open('papertrail-files', 1); r.onupgradeneeded = () => r.result.createObjectStore('f'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }));
+  const tx = (mode, fn) => open().then(d => new Promise(res => { try { const t = d.transaction('f', mode); const out = fn(t.objectStore('f')); t.oncomplete = () => res(out && out.result); t.onerror = () => res(null); } catch { res(null); } })).catch(() => null);
+  return {get: k => tx('readonly', st => st.get(k)), set: (k, v) => tx('readwrite', st => { st.put(v, k); }), del: k => tx('readwrite', st => { st.delete(k); })};
+})();
+const FILES = {
+  ok: () => !!(SUPA || STANDALONE || DEMO),
+  remote: () => !!(SUPA && !DEMO),
+  async put(path, file){
+    if (FILES.remote()) { const {error} = await SUPA.sb.storage.from('files').upload(path, file, {contentType: file.type || 'application/octet-stream', upsert: false}); if (error) throw error; }
+    else await FIDB.set(path, file);
+  },
+  async open(path, name){
+    let url;
+    if (FILES.remote()) { const {data, error} = await SUPA.sb.storage.from('files').createSignedUrl(path, 120, {download: name}); if (error) throw error; url = data.signedUrl; }
+    else { const blob = await FIDB.get(path); if (!blob) throw new Error('That file is no longer in this browser.'); url = URL.createObjectURL(blob); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+    const a = document.createElement('a'); a.href = url; a.download = name || 'file'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+  },
+  async remove(paths){
+    if (!paths.length) return;
+    if (FILES.remote()) { try { await SUPA.sb.storage.from('files').remove(paths); } catch {} }
+    else for (const pth of paths) await FIDB.del(pth);
+  }
+};
+const fsize = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+const fileChips = files => (files || []).length ? `<div class="fchips">${files.map(f => `<button type="button" class="fchip" data-act="fileOpen" data-path="${esc(f.path)}" data-name="${esc(f.name)}" title="Download ${esc(f.name)}">${ic('doc')}<span>${esc(f.name)}</span><em>${fsize(f.size || 0)}</em></button>`).join('')}</div>` : '';
+let attPending = [];
+function attachModal(coId, intent){
+  if (!FILES.ok()) { toast('Attachments work on the Paper Trail website. Open it there to add files.', 'bad'); return; }
+  attPending = [];
+  const coPick = coId ? '' : F('Account', sel('attCo', coOpts('— Choose an account —'), '', 'id="attCo" required'));
+  openModal(intent === 'contract' ? 'Add a contract' : 'Add attachments', `${coPick}
+    <div class="drop" id="dropZone" tabindex="0" role="button" aria-label="Choose files to attach">
+      ${ic('up')}<b>Drag and drop your files or <span class="lnkish">browse</span></b>
+      <small>Up to ${FILE_COUNT} files at a time, under 10 MB each.</small>
+      <input type="file" id="attInput" multiple hidden data-change="attFiles">
+    </div>
+    <ul class="attlist" id="attList"></ul>
+    <label class="f"><span>Description (optional)</span><textarea name="attNote" id="attNote" rows="2" placeholder="${intent === 'contract' ? 'e.g. Signed monthly shredding agreement' : 'e.g. Photos of the file room'}"></textarea></label>
+    <input type="hidden" name="attCoFixed" value="${esc(coId || '')}">`, null, null,
+    {foot: `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button type="button" class="btn" data-act="attSave" data-k="general" id="attGen">Save as general</button><button type="button" class="btn pri" data-act="attSave" data-k="contract" id="attCon">${ic('doc')}Save as contract</button>`});
+  attRender();
+}
+function attAdd(list){
+  for (const f of list) {
+    if (attPending.length >= FILE_COUNT) { toast(`Up to ${FILE_COUNT} files at a time.`, 'bad'); break; }
+    if (f.size > FILE_MAX) { toast(`${f.name} is over 10 MB.`, 'bad'); continue; }
+    if (!attPending.some(x => x.name === f.name && x.size === f.size)) attPending.push(f);
+  }
+  attRender();
+}
+function attRender(){
+  const l = $('#attList'); if (!l) return;
+  l.innerHTML = attPending.map((f, i) => `<li>${ic('doc')}<span>${esc(f.name)}</span><em>${fsize(f.size)}</em><button type="button" class="icon-btn" data-act="attRemove" data-i="${i}" aria-label="Remove ${esc(f.name)}">${ic('x')}</button></li>`).join('');
+  ['#attGen', '#attCon'].forEach(x => { const b = $(x); if (b) b.disabled = !attPending.length; });
+}
+async function attSave(kind){
+  const fm = $('#mform'); if (!fm) return;
+  const coId = (fm.attCoFixed && fm.attCoFixed.value) || ($('#attCo') && $('#attCo').value);
+  if (!coId) { toast('Choose an account first.', 'bad'); return; }
+  if (!attPending.length) { toast('Add at least one file.', 'bad'); return; }
+  const note = ($('#attNote') && $('#attNote').value.trim()) || '';
+  const btns = [$('#attGen'), $('#attCon')]; btns.forEach(b => b && (b.disabled = true));
+  const label = kind === 'contract' ? $('#attCon') : $('#attGen');
+  const files = [];
+  try {
+    for (let i = 0; i < attPending.length; i++) {
+      const f = attPending[i]; if (label) label.textContent = `Uploading ${i + 1} of ${attPending.length}…`;
+      const safe = f.name.replace(/[^\w.\- ]+/g, '_').slice(-120);
+      const path = `${coId}/${uid()}/${safe}`;
+      await FILES.put(path, f);
+      files.push({path, name: f.name, size: f.size, type: f.type || ''});
+    }
+  } catch (e) {
+    toast("Couldn't upload: " + ((e && e.message) || 'unknown error'), 'bad'); btns.forEach(b => b && (b.disabled = false)); if (label) label.textContent = kind === 'contract' ? 'Save as contract' : 'Save as general';
+    await FILES.remove(files.map(f => f.path)); return;
+  }
+  const names = files.map(f => f.name).join(', ');
+  if (kind === 'contract') {
+    const cid = uid(); const title = note ? note.split('\n')[0].slice(0, 120) : files[0].name.replace(/\.[^.]+$/, '');
+    await put('contracts', cid, {companyId: coId, title, note, files, status: 'active', ownerId: ME.id, addedBy: ME.id});
+    await logAct({type: 'contract', text: `Contract added: ${title}${note && note !== title ? '\n' + note : ''}`, companyId: coId, contractId: cid, files});
+    toast('Contract saved');
+  } else {
+    await logAct({type: 'file', text: note || `Attached ${names}`, companyId: coId, files});
+    toast(`${files.length} file${files.length === 1 ? '' : 's'} attached`);
+  }
+  attPending = []; closeModal();
+}
+function contractView(id){
+  const c = S.contracts[id]; if (!c) return;
+  openModal('Contract', `${F('Name', inp('title', c.title || 'Contract', 'text', 'required'))}
+    <p class="sub" style="margin:6px 0 10px">${link('companies', c.companyId) || ''} · added ${esc(c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}) : '')}${c.addedBy || c.ownerId ? ' by ' + esc(nm(c.addedBy || c.ownerId)) : ''}</p>
+    <div class="f"><span>Files</span>${fileChips(c.files) || '<p class="sub">No files.</p>'}</div>
+    <label class="f"><span>Notes</span>${ta('note', c.note || '', 3)}</label>`, 'Save', async f => {
+      if (!(f.title || '').trim()) { toast('Give the contract a name.', 'bad'); return false; }
+      return patch('contracts', id, {title: f.title.trim(), note: f.note || ''});
+    }, {foot: canWrite ? `<button type="button" class="btn ghost" data-act="delContractFile" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
+}
+
 // ---------- boot ----------
 async function boot(){
   const h = (location.hash || '').slice(1); if (VIEWS.some(v => v[0] === h)) ui.view = h;
@@ -4472,7 +4849,10 @@ async function boot(){
     if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
   }
   if (!d && !window.claude) { STANDALONE = true; loadLocal(); }
+  loadLookLocal();
+  if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
   booted = true; bootDone();
+  syncLookFromDb();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
   try { const sd = sessionStorage.getItem('pt-demo'); if (sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
   setTimeout(() => checkReplies(), 5000);
