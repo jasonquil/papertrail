@@ -75,6 +75,7 @@ main{overflow:auto;min-width:0}
 #login{position:fixed;inset:0;z-index:80;background:var(--bg);display:grid;place-items:center;padding:16px;overflow:auto}
 .lg-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:14px}
 .lg-card h1{font:800 1.4rem var(--display);margin:6px 0 0}.lg-card form{display:flex;flex-direction:column;gap:12px}.lg-card .btn{justify-content:center}
+.lg-demo{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
 .lg-msg{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:8px 10px;font-size:.88rem;margin:0}.lg-card .brand{padding:0}
 .users{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.urow{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;flex-wrap:wrap}
 .urow small{display:block;color:var(--muted)}.uact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.uact select{width:auto}.chip.warn{background:var(--warn-soft);color:var(--warn)}
@@ -118,7 +119,8 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 
 .stagesel{appearance:none;-webkit-appearance:none;width:auto;border:0;border-radius:999px;padding:3px 24px 3px 10px;font-size:.76rem;font-weight:700;cursor:pointer;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 9px center;color:var(--accent)}
 .stagesel.contract{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.stagesel.won{background-color:var(--good-soft);color:var(--good)}
-.stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}
+.usebar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.usebar.sm{height:5px;margin:6px 0 4px}.usebar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
 .stagesel:focus{box-shadow:0 0 0 3px var(--accent-soft);outline:none}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap;letter-spacing:.01em}
 .chip.bad{background:var(--bad-soft);color:var(--bad)}
@@ -870,7 +872,8 @@ table.p-t{width:100%;border-collapse:collapse;margin-top:14px}
 'use strict';
 // ---------- constants ----------
 const COLS = ['companies','contacts','deals','quotes','activities','tasks','contracts','templates','journeys','enrollments','trash'];
-const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'won',l:'Closed Won',p:100},{k:'lost',l:'Closed Lost',p:0}];
+const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'following',l:'Closed Still Following Up',p:25},{k:'won',l:'Closed Won',p:100},{k:'updated',l:'Updated Contract',p:100},{k:'lost',l:'Closed Lost',p:0}];
+const CLOSED = ['won','updated','lost'];
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
 const OPP_TYPES = ['Shredding Purge','Scheduled Shredding','Medical Waste','Hard Drive Destruction','Product Destruction','Other'];
 const SVC_TYPES = ['Shredding','Medical Waste','Hard Drive/ Media','Shred & Med','Scanning','Product Destruction','Chat - Unknown'];
@@ -922,6 +925,8 @@ let db = null, U = null, AI = null, DL = null, MCP = null;
 const EM = {}; // companyId -> {status, items, err, partial, at}
 let ME = {id:null, name:''};
 let canWrite = true, live = false, booted = false, STANDALONE = false, SUPA = null, DEMO = false;
+let GUEST = false; try { GUEST = /(^|[?&])demo\b/.test(location.search.slice(1)) || sessionStorage.getItem('pt-guest') === '1'; if (GUEST) sessionStorage.setItem('pt-guest', '1'); } catch {}
+const guestExit = () => { try { sessionStorage.removeItem('pt-guest'); sessionStorage.removeItem('pt-demo'); } catch {} location.href = location.pathname; };
 const REAL = {}; // live records kept aside while demo mode shows sample data
 const P = {}; // id -> profile
 const ui = {view:'today', detail:null, q:'', mine:false, ai:{}, aiBusy:{}, coTab:{}, actFilter:'all'};
@@ -959,7 +964,8 @@ const persTag = '<span class="ptag" title="Personal email. Add their work email 
 const ctMailLink = (c, style) => ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${c.id}"${style ? ` style="${style}"` : ''} title="Email ${esc(pname_(c))}">${esc(ctMail(c))}</button>${isPersonalOnly(c) ? persTag : ''}` : '';
 const nameOf = (col,id) => { const r = S[col][id]; if (!r) return 'Deleted record'; if (col==='contacts') return pname_(r); if (col==='quotes') return r.number; return r.name || r.title || 'Untitled'; };
 const stage = d => { const k = LEGACY_STAGE[d.stage] || d.stage || 'lead'; return STAGES.find(s => s.k === k) || STAGES[0]; };
-const isOpen = d => !['won','lost'].includes(d.stage||'lead');
+const isOpen = d => !CLOSED.includes(d.stage||'lead');
+const isWon = d => d.stage === 'won' || d.stage === 'updated';
 const qTotal = q => q.total != null ? +q.total : sum(q.items||[], i => (+i.qty||0) * (+i.price||0));
 const match = (q, ...f) => !q || f.some(v => String(v||'').toLowerCase().includes(q.toLowerCase()));
 const mine = r => !ui.mine || (r.ownerId || r.assigneeId || r.createdBy) === ME.id;
@@ -1013,7 +1019,9 @@ function confetti(){
 function clean(o){ return JSON.parse(JSON.stringify(o)); }
 
 // people
-function pname(id){ if (!id) return 'Unassigned'; if (id === ME.id) return ME.name ? ME.name + ' (you)' : 'You'; return P[id]?.name || 'Teammate'; }
+function pname(id){ if (!id) return 'Unassigned'; if (id === ME.id) return ME.name ? ME.name + ' (you)' : 'You'; return P[id]?.name || (String(id).startsWith('former-') ? formerName(id) : 'Teammate'); }
+const formerName = id => String(id).slice(7).split('-').filter(Boolean).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+const isFormer = id => String(id || '').startsWith('former-') || (P[id] && P[id].active === false);
 function av(id){ const p = id === ME.id && ME.avatarUrl ? ME : P[id]; return p?.avatarUrl ? `<img class="av" src="${esc(p.avatarUrl)}" alt="">` : `<span class="av"></span>`; }
 const who = id => `<span class="who">${av(id)}<span>${esc(pname(id))}</span></span>`;
 let profBusy = false;
@@ -1445,7 +1453,7 @@ function navHtml(){
 
 function viewHtml(){
   let banner = '';
-  if (booted && DEMO) banner = `<div class="banner sa demo"><span><b>Demo mode</b> · Sample data for showing Paper Trail. Nothing you do here is saved, and your real records are untouched.</span><span class="sa-b"><button class="btn sm" data-act="demoOff">Exit demo mode</button></span></div>`;
+  if (booted && DEMO) banner = `<div class="banner sa demo"><span><b>Demo mode</b> · Sample data for showing Paper Trail. Nothing you do here is saved, and your real records are untouched.</span><span class="sa-b"><button class="btn sm" data-act="demoOff">${GUEST ? 'Exit demo and sign in' : 'Exit demo mode'}</button></span></div>`;
   else if (booted && STANDALONE) banner = `<div class="banner sa"><span>Records save in this browser only. Set up Supabase (see README) to share them with your team.</span>${canWrite ? `<span class="sa-b">${L('companies').length ? '' : `<button class="btn sm pri" data-act="demoOn">Try demo mode</button>`}<button class="btn sm ghost" data-act="resetDemo">Clear all data</button></span>` : ''}</div>`;
   else if (booted && !live) banner = `<div class="banner">Preview mode: changes stay in this tab only. Open this CRM in claude.ai while signed in to work with your team's shared records.</div>`;
   else if (!canWrite) banner = `<div class="banner">You have view-only access. Ask the owner for Contributor access to add or change records.</div>`;
@@ -1464,7 +1472,7 @@ const kpi = (label, val, small) => `<div class="kpi"><span>${label}</span><b>${v
 const link = (col, id) => id && S[col][id] ? `<button class="lnk" data-act="open" data-col="${col}" data-id="${id}">${esc(nameOf(col,id))}</button>` : '';
 const dueChip = due => { if (!isDate(due)) return ''; const n = dayDiff(today(), due); const cls = n < 0 ? 'bad' : n === 0 ? 'warn' : ''; const txt = n < 0 ? `${-n}d overdue` : n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : fmtDate(due); return `<span class="chip ${cls}">${txt}</span>`; };
 const stageSel = (d, ch) => `<select class="stagesel ${stage(d).k}" data-change="${ch}" data-id="${d.id}" aria-label="Sales stage">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k === s.k ? 'selected' : ''}>${s.l}</option>`).join('')}</select>`;
-const stageChip = d => `<span class="chip ${d.stage==='won'?'good':d.stage==='lost'?'bad':'acc'}">${stage(d).l}</span>`;
+const stageChip = d => `<span class="chip ${isWon(d)?'good':d.stage==='lost'?'bad':'acc'}">${stage(d).l}</span>`;
 const qChip = q => { const s = q.status||'draft'; return `<span class="chip ${s==='accepted'?'good':s==='declined'?'bad':s==='sent'?'info':''}">${(QSTAT.find(x=>x[0]===s)||QSTAT[0])[1]}</span>`; };
 
 function emptyState(title, text, buttons=''){ return `<div class="empty"><b>${title}</b><p>${text}</p>${canWrite ? `<div class="vh-act">${buttons}</div>` : ''}</div>`; }
@@ -1478,7 +1486,7 @@ V.today = () => {
   const deals = L('deals').filter(d => isOpen(d) && mine(d));
   const weighted = sum(deals, d => (+d.value||0) * stage(d).p / 100);
   const mStart = t.slice(0,8) + '01';
-  const won = L('deals').filter(d => d.stage === 'won' && (d.closedAt||'') >= mStart && mine(d));
+  const won = L('deals').filter(d => isWon(d) && (d.closedAt||'') >= mStart && mine(d));
   const activeC = L('contracts').filter(c => (c.status||'active') === 'active' && mine(c));
   const renewSoon = activeC.filter(c => isDate(c.end) && dayDiff(t, c.end) <= 60);
   const items = attention();
@@ -1554,7 +1562,7 @@ V.reminders = () => {
 V.pipeline = () => {
   const show = ui.oppShow || 'open';
   const all = L('deals').filter(mine);
-  const rows = all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? d.stage === 'won' : show === 'lost' ? d.stage === 'lost' : true)
+  const rows = all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true)
     .filter(d => match(ui.q, d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : ''))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||''));
   const nOpen = all.filter(isOpen).length;
@@ -1589,7 +1597,7 @@ function coSummary(id){
   parts.push(`${c.name} is owned by ${pname(c.ownerId).replace(' (you)', '')}${addr ? ` and is located at ${addr}` : ''}.`);
   if (c.phone) parts.push(`Their phone number is ${c.phone}.`);
   const od = g.deals.filter(isOpen); if (od.length) parts.push(`${od.length} open opportunit${od.length === 1 ? 'y' : 'ies'}, ${money(sum(od, d => d.value))} projected.`);
-  const won = g.deals.filter(d => d.stage === 'won'); if (won.length) parts.push(`${won.length} closed won.`);
+  const won = g.deals.filter(isWon); if (won.length) parts.push(`${won.length} closed won.`);
   const next = g.tasks.filter(k => !k.done && isDate(k.due)).sort((a, b) => a.due < b.due ? -1 : 1)[0]; if (next) parts.push(`Next reminder: ${next.title}, ${fmtDate(next.due)}.`);
   const je = L('enrollments').filter(e => e.companyId === id && e.status === 'active'); if (je.length) parts.push(`${je.length} contact${je.length === 1 ? ' is' : 's are'} on a journey.`);
   return parts.join(' ');
@@ -1674,6 +1682,7 @@ V.opp = () => {
       ${f('First call close', esc(d.firstCallClose), false, 'firstCallClose')}${d.firstCallClose === 'No' || d.noCloseReason ? f('Did not close on first call', esc(d.noCloseReason), false, 'noCloseReason') : cpField('Did not close on first call', '')}${d.stage === 'lost' ? f('Reason for loss', esc(d.lostReason), false, 'lostReason') : cpField('Reason for loss', '')}
       ${closed ? f('Closed date', isDate(d.closedAt) ? fmtDate(d.closedAt) : '', false, 'closedAt') : cpField('Closed date', '')}${closed ? f('Closed by', d.closedBy ? who(d.closedBy) : '', false, 'closedBy') : cpField('Closed by', '')}
       </div></section>
+    ${spiroPanel(d)}
     <div class="cols2"><section class="panel"><div class="ph"><h3>Quotes</h3>${W ? `<button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('plus')}Quote</button>` : ''}</div>${rowsOr(quotes, quoteRow, 'No quotes for this opportunity.')}</section>
     <section class="panel"><div class="ph"><h3>Reminders</h3>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('plus')}Reminder</button>` : ''}</div>${tasksList(tasks)}</section></div>
     ${ens.length ? `<section class="panel"><h3>Journeys</h3>${rowsOr(ens, e => `<li class="rowi" data-act="jOpen" data-id="${e.id}"><div><b>${esc(jName(e.journeyId))}</b><small>${esc(nameOf('contacts', e.contactId))} · ${sentCount(e)} of ${(e.schedule || []).length} sent</small></div><span class="end">${jStatusChip(e)}</span></li>`, '')}</section>` : ''}
@@ -1695,8 +1704,9 @@ V.company = () => {
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}</div>
       <div class="cpgrid">${cpField('Name', esc(c.name))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
       ${cpField('Address', esc(c.address))}${cpField('City', esc(c.city))}${cpField('Zip code', esc(c.zip))}
-      ${cpField('State', esc(c.state))}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${cpField('Contacts', String(g.contacts.length))}
+      ${cpField('State', esc(c.state))}${c.website ? cpField('Website', `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`) : ''}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${cpField('Contacts', String(g.contacts.length))}
       ${cpField('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', true)}</div></section>
+    ${spiroPanel(c)}
     <div class="cols2"><section class="panel"><div class="ph"><h3>Opportunities</h3><button class="lnk" data-act="cpTab" data-t="opps">See all</button></div>${rowsOr(od.slice(0, 8), oppHistRow, 'No opportunities yet.')}${od.length > 8 ? `<p class="sub">${od.length - 8} more on the Opportunities tab</p>` : ''}</section>
     <section class="panel"><div class="ph"><h3>Reminders</h3><button class="lnk" data-act="cpTab" data-t="reminders">See all</button></div>${tasksList(rem.slice(0, 5))}</section></div>`;
   } else if (tab === 'activity') body = `<section class="panel">${coActivity(id)}</section>`;
@@ -1752,6 +1762,8 @@ V.contracts = () => {
 // ---------- detail drawers ----------
 const sec = (title, n, body, addAct, d, label, icon) => `<div class="sec"><div class="sech"><h3>${title}${n != null ? `<span>${n}</span>` : ''}</h3>${addAct && canWrite ? `<button class="btn sm ghost" data-act="${addAct}"${attrs(d)}>${ic(icon || 'plus')}${label || 'Add'}</button>` : ''}</div>${body}</div>`;
 const rowsOr = (arr, fn, none) => arr.length ? `<ul class="rows">${arr.map(fn).join('')}</ul>` : `<p class="empty-s">${none}</p>`;
+const spiroFacts = r => Object.entries((r && r.spiro) || {}).map(([k, v]) => fact(esc(k), esc(v))).join('');
+const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length ? `<section class="panel"><div class="ph"><h3>More from Spiro</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(k), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
 const fact = (k, v, copy) => v ? `<dt>${k}</dt><dd>${v}${copy ? `<button class="copy" data-act="copy" data-t="${esc(copy)}" aria-label="Copy ${k}">${ic('copy')}</button>` : ''}</dd>` : '';
 function logBox(ctx){
   if (!canWrite) return '';
@@ -1899,7 +1911,7 @@ function coActivity(id){
   const logged = new Set(g.acts.filter(a => a.emailId).map(a => a.emailId));
   for (const a of g.acts) if (!isSysAct(a)) ev.push({k: a.type === 'email' ? 'email' : a.type === 'job' ? 'job' : a.type === 'stage' ? 'update' : a.type === 'done' ? 'done' : (a.type === 'file' || a.type === 'contract') ? 'doc' : 'log', at: a.at || 0, html: feedItem(a, false)});
   for (const d of g.deals) if (!isOpen(d) && isDate(d.closedAt)) ev.push({k: 'job', at: parseYmd(d.closedAt).getTime() + 43200000,
-    html: `<li class="fi"><span class="ft ${d.stage}">${d.stage === 'won' ? 'Won' : 'Lost'}</span><div><p class="subj">${link('deals', d.id)}</p><small>${money(d.value)}${d.service ? ' · ' + esc(d.service) : ''}${d.stage === 'lost' && d.lostReason ? ' · ' + esc(d.lostReason) : ''} · closed ${fmtDate(d.closedAt)}${d.ownerId ? ' · ' + esc(pname(d.ownerId)) : ''}</small></div></li>`});
+    html: `<li class="fi"><span class="ft ${d.stage}">${d.stage === 'won' ? 'Won' : d.stage === 'updated' ? 'Updated contract' : 'Lost'}</span><div><p class="subj">${link('deals', d.id)}</p><small>${money(d.value)}${d.service ? ' · ' + esc(d.service) : ''}${d.stage === 'lost' && d.lostReason ? ' · ' + esc(d.lostReason) : ''} · closed ${fmtDate(d.closedAt)}${d.ownerId ? ' · ' + esc(pname(d.ownerId)) : ''}</small></div></li>`});
   for (const q of g.quotes) { const when = q.sentAt || q.createdAt; if (!when) continue; ev.push({k: 'doc', at: when,
     html: `<li class="fi"><span class="ft doc">Quote</span><div><p class="subj"><button class="lnk mono" data-act="editQuote" data-id="${q.id}">${esc(q.number)}</button> ${qChip(q)}</p><small>${money2(qTotal(q))} · ${q.sentAt ? 'sent' : 'created'} ${fmtDate(ymd(new Date(when)))}</small></div></li>`}); }
   for (const c of g.contracts) if (isDate(c.start) && !c.files) ev.push({k: 'doc', at: parseYmd(c.start).getTime(),
@@ -1923,7 +1935,7 @@ const DETAIL = {
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
-    <dl class="facts">${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}</dl>
+    <dl class="facts">${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({companyid:id})}
     ${sec('Contacts', g.contacts.length, rowsOr(g.contacts.sort((a,b)=>pname_(a).localeCompare(pname_(b))), contactRow, 'No contacts yet.'), 'newContact', {co:id})}
@@ -1940,7 +1952,7 @@ const DETAIL = {
     const deals = L('deals').filter(d => d.contactId === id);
     return `<div class="dh"><div><p class="eyebrow">Contact</p><h2>${esc(pname_(c))}</h2><p class="sub">${esc(c.title||'')}${c.companyId ? (c.title ? ' at ' : '') : ''}</p>${c.companyId ? `<div>${link('companies', c.companyId)}</div>` : ''}</div>${closeBtn}</div>
     <div class="dacts">${canWrite ? `<button class="btn sm pri" data-act="newDeal" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${esc(c.companyId||'')}">${ic('bell')}Reminder</button><button class="btn sm" data-act="jStart" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('route')}Journey</button><button class="btn sm" data-act="editContact" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="contacts" data-id="${id}" title="Fold a duplicate contact into this one">Merge</button>` : ''}<button class="btn sm" data-act="draft" data-col="contacts" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delContact" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
-    <dl class="facts">${fact('Work email', c.email ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(c.email)}</button>` : (c.email2 && canWrite ? `<button class="lnk sub" data-act="editContact" data-id="${id}">Add when they share it</button>` : ''), c.email)}${c.email2 ? fact('Personal email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}</dl>
+    <dl class="facts">${fact('Work email', c.email ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(c.email)}</button>` : (c.email2 && canWrite ? `<button class="lnk sub" data-act="editContact" data-id="${id}">Add when they share it</button>` : ''), c.email)}${c.email2 ? fact('Personal email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({contactid:id, companyid:c.companyId})}
     ${sec('Opportunities', deals.length, rowsOr(deals, dealRow, 'No opportunities with this contact.'), 'newDeal', {co:c.companyId, ct:id})}
@@ -1967,7 +1979,7 @@ const DETAIL = {
       ${!isOpen(d) && d.closedBy ? fact('Closed by', who(d.closedBy)) : ''}
       ${d.stage === 'lost' ? fact('Reason for loss', esc(d.lostReason || 'Not recorded')) : ''}
       ${fact('Owner', who(d.ownerId))}
-      
+      ${spiroFacts(d)}
     </dl>
     ${d.notes ? `<p class="notes">${esc(d.notes)}</p>` : ''}
     ${sec('Quotes', quotes.length, rowsOr(quotes, quoteRow, 'No quotes for this opportunity.'), 'newQuote', {co:d.companyId, deal:id})}
@@ -1990,7 +2002,7 @@ const inp = (name, val='', type='text', extra='') => `<input name="${name}" type
 const ta = (name, val='', rows=3) => `<textarea name="${name}" rows="${rows}">${esc(val)}</textarea>`;
 const sel = (name, opts, cur, extra='') => `<select name="${name}" ${extra}>${opts.map(o => { const [v,l] = Array.isArray(o) ? o : [o,o]; return `<option value="${esc(v)}" ${String(v) === String(cur ?? '') ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
 const coOpts = (none='— None —') => [['', none], ...L('companies').sort(byName).map(c => [c.id, c.name])];
-const ownerSel = (name, cur) => { const ids = people(); if (!ids.length) return sel(name, [['', 'You']], ''); return sel(name, ids.map(i => [i, pname(i)]), cur || ME.id); };
+const ownerSel = (name, cur) => { const ids = people().filter(i => i === cur || i === ME.id || !isFormer(i)); if (!ids.length) return sel(name, [['', 'You']], ''); return sel(name, ids.map(i => [i, pname(i)]), cur || ME.id); };
 const cb = (name, checked, label) => `<label class="f inline"><input type="checkbox" name="${name}" ${checked?'checked':''}><span style="font-size:.9rem;color:var(--fg)">${label}</span></label>`;
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
 function confirmModal(title, text, label, fn){ openModal(title, `<p>${text}</p>`, label, fn, {danger:true}); }
@@ -2119,7 +2131,7 @@ function dealForm(id, pre={}){
       let companyId = f.companyId === '__new' ? '' : f.companyId;
       if (!companyId && f.newCompany) { const co = L('companies').find(c => norm(c.name) === norm(f.newCompany)); if (co) companyId = co.id; else { companyId = uid(); if (!await put('companies', companyId, {name: f.newCompany, state: 'FL', ownerId: ME.id})) return false; } }
       if (!companyId) { toast('Every opportunity needs a company. Choose one or add a new one.', 'bad'); return false; }
-      { const dupD = !['won', 'lost'].includes(f.stage) && f.type && L('deals').find(x => x.id !== id && x.companyId === companyId && isOpen(x) && (x.type || x.name) === f.type); if (dupD) { dupWarn(`${esc(cname(companyId))} already has an open ${esc(f.type)} opportunity.`, 'deals', dupD.id); return false; } }
+      { const dupD = !CLOSED.includes(f.stage) && f.type && L('deals').find(x => x.id !== id && x.companyId === companyId && isOpen(x) && (x.type || x.name) === f.type); if (dupD) { dupWarn(`${esc(cname(companyId))} already has an open ${esc(f.type)} opportunity.`, 'deals', dupD.id); return false; } }
       const nid = id || uid(); const prev = id ? S.deals[id] : {};
       const rec = {...prev, companyId, type: f.type, name: f.type, contactId: (prev.contactId && S.contacts[prev.contactId]?.companyId === companyId ? prev.contactId : '') || (pre.ct && S.contacts[pre.ct]?.companyId === companyId ? pre.ct : ''), stage: f.stage, value: num(f.value), priceQuoted: num(f.priceQuoted),
         service: f.service, serviceType: f.serviceType, interval: f.interval, serviceDate: f.serviceDate, source: f.source, sourceOther: f.source === 'Other' ? f.sourceOther : '',
@@ -2256,7 +2268,7 @@ function lostModal(id){
 }
 async function setStage(id, k, value){
   const d = S.deals[id]; if (!d || stage(d).k === k && value == null) return;
-  const f = {stage: k, closedAt: ['won','lost'].includes(k) ? today() : null, closedBy: ['won','lost'].includes(k) ? (ME.id || '') : null};
+  const f = {stage: k, closedAt: CLOSED.includes(k) ? today() : null, closedBy: CLOSED.includes(k) ? (ME.id || '') : null};
   if (k !== 'lost') f.lostReason = '';
   if (value != null && value > 0) f.value = value;
   const ok = await patch('deals', id, f);
@@ -2362,15 +2374,125 @@ function guessMap(type, headers){
   if (type === 'contacts' && map.firstName != null && map.fullName != null) delete map.fullName;
   return map;
 }
-function mapStage(s){ s = norm(s); if (!s) return 'lead'; if (/won|closedwon|signed|win/.test(s)) return 'won'; if (/lost|closedlost|dead|declined/.test(s)) return 'lost'; if (/contract|agreement|verbal|commit/.test(s)) return 'contract'; if (/proposal|quot|pricing|estimate|negot|review|follow/.test(s)) return 'quoted'; return 'lead'; }
+function mapStage(s){ s = norm(s); if (!s) return 'lead'; if (/stillfollow/.test(s)) return 'following'; if (/updatedcontract/.test(s)) return 'updated'; if (/won|closedwon|signed|win/.test(s)) return 'won'; if (/lost|closedlost|dead|declined/.test(s)) return 'lost'; if (/contract|agreement|verbal|commit/.test(s)) return 'contract'; if (/proposal|quot|pricing|estimate|negot|review|follow/.test(s)) return 'quoted'; return 'lead'; }
 function toYmd(s){ s = String(s||'').trim(); if (!s) return ''; if (isDate(s)) return s; let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/); if (m) { let y = +m[3]; if (y < 100) y += 2000; return `${y}-${pad(+m[1])}-${pad(+m[2])}`; } m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/); if (m) return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`; const d = new Date(s); return isNaN(d) ? '' : ymd(d); }
 
-const imp = {type:'accounts', headers:[], rows:[], map:{}, name:''};
+// ---------- Spiro import (all three exports at once, linked by Spiro IDs) ----------
+const SP_KIND = h => { const H = h.map(x => String(x).trim()); return H.includes('Opportunity Id') ? 'deals' : H.includes('Contact Id') ? 'contacts' : H.includes('Company Id') && H.includes('Name') ? 'companies' : ''; };
+const SP_LABEL = {companies: 'Accounts', contacts: 'Contacts', deals: 'Opportunities'};
+const SP_STAGE = {'inquiry received': 'lead', 'proposal out': 'quoted', 'contract out': 'contract', 'closed still following up': 'following', 'closed won': 'won', 'updated contract': 'updated', 'closed lost': 'lost'};
+const spTidy = (v, list) => { v = String(v ?? '').replace(/\s+/g, ' ').trim(); if (!v) return ''; const hit = list && list.find(x => x.toLowerCase() === v.toLowerCase()); return hit || v; };
+const spYN = v => { v = spTidy(v).split(',')[0].trim(); return /^y/i.test(v) ? 'Yes' : /^n/i.test(v) ? 'No' : v; };
+const spSlug = n => 'former-' + String(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const spDate = v => toYmd(String(v || '').trim());
+const spTime = v => { const y = spDate(v); return y ? parseYmd(y).getTime() + 43200000 : 0; };
+const spExtra = (row, pairs) => { const o = {}; for (const [col, label, fn] of pairs) { let v = spTidy(row[col]); if (fn) v = fn(v); if (v && v !== '0' && v !== '0.0') o[label] = v; } return Object.keys(o).length ? o : undefined; };
+function spRows(text){ const rows = parseCSV(text); const H = (rows[0] || []).map(h => String(h).trim()); const out = []; for (let i = 1; i < rows.length; i++) { const r = rows[i], o = {}; for (let j = 0; j < H.length; j++) if (!(H[j] in o)) o[H[j]] = r[j] ?? ''; out.push(o); } return {headers: H, rows: out}; }
+function spPeople(files){
+  // everyone named as an owner, closer or initial caller, matched to Paper Trail users; the rest become former users
+  const known = {}; const first = {};
+  for (const id of new Set([ME.id, ...people(), ...USERS.map(u => u.id)])) { const n = (id === ME.id ? ME.name : P[id]?.name) || ''; if (!n) continue; known[n.toLowerCase()] = id; const f = n.toLowerCase().split(' ')[0]; first[f] = first[f] === undefined ? id : null; }
+  const owners = new Map(), closers = new Map();
+  for (const k of ['companies', 'contacts', 'deals']) for (const r of (files[k] || {rows: []}).rows) { const n = spTidy(r['Owner (User ID) (Read Only)']); if (n) owners.set(n, (owners.get(n) || 0) + 1); }
+  const spCloser = v => spTidy(String(v || '').split(',')[0]); const NOT_PEOPLE = /^(house|other|unknown|n\/?a|none)$/i;
+  for (const r of (files.deals || {rows: []}).rows) { const n = spCloser(r['Closed By']); if (n && !NOT_PEOPLE.test(n)) closers.set(n, (closers.get(n) || 0) + 1); }
+  const map = {}, former = {};
+  for (const n of owners.keys()) { const id = known[n.toLowerCase()]; map[n.toLowerCase()] = id || spSlug(n); if (!id) former[spSlug(n)] = n; }
+  // first-name closers: match a Paper Trail user, then a Spiro owner with that first name, else a former user by first name
+  const ownerFirst = {}; for (const n of owners.keys()) { const f = n.toLowerCase().split(' ')[0]; ownerFirst[f] = ownerFirst[f] === undefined ? map[n.toLowerCase()] : null; }
+  const closer = {};
+  for (const n of closers.keys()) { const f = n.toLowerCase().split(' ')[0]; const id = known[n.toLowerCase()] || first[f] || ownerFirst[f] || map[n.toLowerCase()] || spSlug(n); closer[n.toLowerCase()] = id; if (id.startsWith('former-') && !former[id]) former[id] = n; }
+  return {owner: n => map[spTidy(n).toLowerCase()] || ME.id, closer: n => closer[spCloser(n).toLowerCase()] || '', former, owners};
+}
+function spBuild(files, ppl){
+  const out = {companies: [], contacts: [], deals: []};
+  const existing = {companies: {}, contacts: {}, deals: {}};
+  for (const c of ['companies', 'contacts', 'deals']) for (const r of L(c)) if (r.spiroId) existing[c][r.spiroId] = r.id;
+  const idFor = (c, pre, sid) => existing[c][sid] || pre + sid;
+  // first opportunity date per account, used as the account's created date
+  const coFirst = {}; for (const r of (files.deals || {rows: []}).rows) { const t = spTime(r['Created']); const k = r['Company (Spiro Company Id)']; if (t && k && (!coFirst[k] || t < coFirst[k])) coFirst[k] = t; }
+  const now = Date.now(); const seenCo = new Set();
+  const coRec = r => { const sid = spTidy(r['Company Id']); const id = idFor('companies', 'spc', sid); seenCo.add(id);
+    const notes = [spTidy(r['Description']) && String(r['Description']).trim(), spTidy(r['Profile Notes']) && String(r['Profile Notes']).trim()].filter(Boolean).join('\n\n');
+    return [id, {spiroId: sid, name: spTidy(r['Name']) || 'Unnamed account', phone: phoneNorm(r['Phone']), website: spTidy(r['Website']), address: spTidy(r['Address']), city: spTidy(r['City']), state: spTidy(r['State']), zip: spTidy(r['Zipcode']), notes, ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: coFirst[sid] || S.companies[id]?.createdAt || now, source: 'Spiro',
+      spiro: spExtra(r, [['Phone 2', 'Phone 2'], ['Phone 3', 'Phone 3'], ['Service Agreement on File?', 'Service agreement on file'], ['Credit Card Given', 'Credit card given'], ['Health Care Facility', 'Health care facility'], ['Number of Locations', 'Number of locations'], ['Anniversary Increase %', 'Anniversary increase %'], ['Current Vendor Contract Expiration Date', 'Current vendor contract expires'], ['Acquisition Number', 'Acquisition number'], ['Customer Status', 'Customer status'], ['Tier', 'Tier'], ['Products Medical Status', 'Medical status'], ['Products Medical Notes', 'Medical notes'], ['Products Shredding Status', 'Shredding status'], ['Products Shredding Note', 'Shredding note']])}]; };
+  for (const r of (files.companies || {rows: []}).rows) if (spTidy(r['Company Id'])) out.companies.push(coRec(r));
+  // accounts referenced by contacts or opportunities but missing from the accounts file
+  const needCo = (sid, name, owner) => { if (!sid) return ''; const id = idFor('companies', 'spc', sid); if (!seenCo.has(id) && !S.companies[id]) { seenCo.add(id); out.companies.push([id, {spiroId: sid, name: spTidy(name) || 'Unnamed account', ownerId: ppl.owner(owner), createdAt: coFirst[sid] || now, source: 'Spiro'}]); } return id; };
+  for (const r of (files.contacts || {rows: []}).rows) { const sid = spTidy(r['Contact Id']); if (!sid) continue;
+    const id = idFor('contacts', 'spt', sid);
+    let email = spTidy(r['Email']).toLowerCase(), email2 = spTidy(r['Email (Secondary)']).toLowerCase(); if (email2 === email) email2 = '';
+    const ext = spTidy(r['Phone Ext']);
+    out.contacts.push([id, {spiroId: sid, firstName: spTidy(r['First Name']), lastName: spTidy(r['Last Name']), title: spTidy(r['Title']), email, email2, phone: phoneNorm(r['Phone']) + (ext ? ' x' + ext : ''), mobile: phoneNorm(r['Mobile']), notes: String(r['Description'] || '').trim(),
+      companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: S.contacts[id]?.createdAt || now,
+      spiro: spExtra(r, [['Home Phone', 'Home phone', phoneNorm], ['Fax', 'Fax', phoneNorm], ['Services', 'Services'], ['Day of Service', 'Day of service'], ['Contract Start Date', 'Contract start date'], ['Last Activity Date (Read Only)', 'Last activity in Spiro']])}]); }
+  for (const r of (files.deals || {rows: []}).rows) { const sid = spTidy(r['Opportunity Id']); if (!sid) continue;
+    const id = idFor('deals', 'spo', sid);
+    const st = SP_STAGE[spTidy(r['Sales Stage']).toLowerCase()] || mapStage(r['Sales Stage']);
+    const type = spTidy(r['Opportunity 2'], OPP_TYPES) || spTidy(r['Opportunity'], OPP_TYPES) || 'Opportunity';
+    const close = spDate(r['Close Date']); const closed = CLOSED.includes(st);
+    const fcc = spYN(r['First Call Close']);
+    out.deals.push([id, {spiroId: sid, name: type, type, companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), stage: st,
+      value: num(r['Annual Projected Amount']), priceQuoted: num(r['Price Quoted']), service: spTidy(r['Service'], SERVICES), serviceType: spTidy(r['Service Type'], SVC_TYPES), interval: spTidy(r['Service Interval'], INTERVALS), serviceDate: spDate(r['Service Date']),
+      closeDate: close, closedAt: closed ? (close || spDate(r['Created'])) : '', closedBy: closed ? ppl.closer(r['Closed By']) : '',
+      source: spTidy(r['Lead Source'], SOURCES), sourceOther: spTidy(r['Lead Source Other']), initialCall: spTidy(r['Initial Call'], INITIAL_CALL), firstCallClose: fcc, noCloseReason: spTidy(r['Did not Close on First Call'], NO_CLOSE), lostReason: st === 'lost' ? spTidy(r['Reason for Loss'], LOSS_REASONS) : '',
+      notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
+      spiro: spExtra(r, [['Closed Amount', 'Closed amount', v => num(v) ? money2(num(v)) : ''], ['Estimated Bin Count', 'Estimated bin count'], ['Repeat Client', 'Repeat client', spYN], ['Service Agreement on File', 'Service agreement on file'], ['Contract Anniversary Date', 'Contract anniversary', v => v && fmtDate(spDate(v) || v)], ['Contract END Date', 'Contract end date', v => v && fmtDate(spDate(v) || v)], ['Commission', 'Commission'], ['APER?', 'APER?'], ['Priority', 'Priority'], ['Website', 'Website'], ['Opportunity', 'Spiro opportunity name', v => v && v !== type ? v : ''], ['Closed By', 'Closed by in Spiro', v => /,/.test(v) || /^(house|other)$/i.test(v) ? v : '']])}]); }
+  for (const c of Object.keys(out)) for (const pair of out[c]) { const d = pair[1]; Object.keys(d).forEach(k => { if (d[k] === '' || d[k] === undefined || d[k] === 0 && (k === 'value' || k === 'priceQuoted')) delete d[k]; }); }
+  return out;
+}
+async function spLoadFiles(fileList){
+  const files = {}; const bad = [];
+  for (const f of fileList) { const text = await f.text(); const x = spRows(text); const k = SP_KIND(x.headers); if (!k) { bad.push(f.name); continue; } x.name = f.name; files[k] = x; }
+  return {files, bad};
+}
+function spSummary(){
+  const el = $('#impBody'); if (!el || !imp.spiro) return;
+  const {files, bad} = imp.spiro; const ppl = spPeople(files); imp.spiro.ppl = ppl;
+  const fm = Object.entries(ppl.former);
+  const stc = {}; for (const r of (files.deals || {rows: []}).rows) { const k = spTidy(r['Sales Stage']); stc[k] = (stc[k] || 0) + 1; }
+  el.innerHTML = `<div class="spsum"><p><b>Spiro export found.</b> Everything below is linked by Spiro's own IDs, so accounts with the same name stay separate and importing the same files again updates records instead of duplicating them.</p>
+    <ul class="users">${['companies', 'contacts', 'deals'].map(k => `<li class="urow"><div><b>${SP_LABEL[k]}</b><small>${files[k] ? esc(files[k].name) : 'Not chosen'}</small></div><div class="uact">${files[k] ? `<span class="chip good">${files[k].rows.length.toLocaleString()}</span>` : '<span class="chip">—</span>'}</div></li>`).join('')}</ul>
+    ${bad.length ? `<p class="sub" style="color:var(--bad)">Not a Spiro export, skipped: ${esc(bad.join(', '))}</p>` : ''}
+    ${files.deals ? `<p class="sub">Stages: ${Object.entries(stc).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(k)} ${n.toLocaleString()}`).join(' · ')}</p>` : ''}
+    ${fm.length ? `<p class="sub">These people aren't Paper Trail users, so they'll be added as former users. Their names stay on their records, and you can reassign anything from Settings → Users: <b>${fm.map(([, n]) => esc(n)).join(', ')}</b>.</p>` : ''}
+    <p class="sub">Spiro's “Latest Weekly Summary” is left out. Spiro fields Paper Trail doesn't have appear under “More from Spiro” on each record. Keep this window open until it finishes.</p></div>`;
+  const b = $('#mform [type=submit]'); if (b) b.textContent = `Import ${['companies', 'contacts', 'deals'].reduce((n, k) => n + (files[k] ? files[k].rows.length : 0), 0).toLocaleString()} records`;
+}
+async function spImport(form){
+  if (DEMO) { toast('Turn off demo mode before importing your real data.', 'bad'); return false; }
+  const {files} = imp.spiro; const ppl = imp.spiro.ppl || spPeople(files);
+  const btn = form.querySelector('[type=submit]'); const say = t => { if (btn) btn.textContent = t; };
+  // former users: real (deactivated) profiles on the website, so they show in Users and can be reassigned
+  if (SUPA && !DEMO) { const add = Object.entries(ppl.former).filter(([id]) => !USERS.some(u => u.id === id));
+    if (add.length) { say('Adding former users…'); const {error} = await SUPA.sb.from('profiles').insert(add.map(([id, name]) => ({id, name, email: id.slice(7) + '@former.papertrail.invalid', role: 'manager', active: false})));
+      if (error) { toast("Couldn't add the former users: " + error.message, 'bad'); return false; } await loadProfiles(); } }
+  else for (const [id, name] of Object.entries(ppl.former)) if (!P[id]) P[id] = {name, active: false};
+  say('Preparing…'); await new Promise(r => setTimeout(r, 20));
+  const out = spBuild(files, ppl);
+  const total = out.companies.length + out.contacts.length + out.deals.length; let done = 0, made = 0, upd = 0;
+  for (const c of ['companies', 'contacts', 'deals']) {
+    const rows = out[c].map(([id, d]) => { const prev = S[c][id]; prev ? upd++ : made++; const doc = clean({...(prev || {}), ...d, updatedAt: Date.now(), createdBy: (prev && prev.createdBy) || ME.id}); return [id, doc]; });
+    for (let k = 0; k < rows.length; k += 2000) {
+      const chunk = rows.slice(k, k + 2000);
+      for (const [id, doc] of chunk) S[c][id] = doc;
+      if (live) { try { const coll = db.collection(c); if (coll.setMany) await coll.setMany(chunk); else for (let j = 0; j < chunk.length; j += 10) await Promise.all(chunk.slice(j, j + 10).map(([id, doc]) => coll.doc(id).set(doc))); }
+        catch (e) { writeErr(e); toast(`Stopped after ${done.toLocaleString()} of ${total.toLocaleString()} records. Check your connection and import the same files again; nothing will be duplicated.`, 'bad'); schedule(); return false; } }
+      done += chunk.length; say(`Saving ${SP_LABEL[c].toLowerCase()}… ${Math.round(done / total * 100)}%`); await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  if (!live) saveLocal();
+  schedule();
+  toast(`Spiro import done: ${made.toLocaleString()} added, ${upd.toLocaleString()} updated.`);
+  return true;
+}
+
+const imp = {type:'accounts', headers:[], rows:[], map:{}, name:'', spiro:null};
 function importModal(){
-  imp.headers = []; imp.rows = []; imp.map = {}; imp.name = '';
-  openModal('Import from Spiro or a spreadsheet', `<p class="sub">In Spiro, export your Companies, Contacts and Opportunities as CSV files. Import accounts first, then contacts, then opportunities. Every contact and opportunity needs an account name, so rows without one are skipped. Matching accounts and contacts are updated instead of duplicated.</p>
+  imp.headers = []; imp.rows = []; imp.map = {}; imp.name = ''; imp.spiro = null;
+  openModal('Import from Spiro or a spreadsheet', `<p class="sub"><b>From Spiro:</b> export Companies, Contacts and Opportunities as CSV files and choose all three at once. Paper Trail recognizes them and links everything for you.</p><p class="sub"><b>Another spreadsheet:</b> choose one file at a time. Import accounts first, then contacts, then opportunities. Every contact and opportunity needs an account name, so rows without one are skipped. Matching accounts and contacts are updated instead of duplicated.</p>
     <div class="grid2">${F('What is in this file?', `<select id="impType" data-change="impType">${Object.entries(IMPORT).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')}</select>`)}
-    ${F('CSV file', `<input type="file" id="impFile" accept=".csv,text/csv" data-change="impFile">`)}</div>
+    ${F('CSV file(s)', `<input type="file" id="impFile" accept=".csv,text/csv" multiple data-change="impFile">`)}</div>
     <div id="impBody"></div>`, 'Import', runImport, {wide: true});
 }
 function renderImpBody(){
@@ -2387,6 +2509,7 @@ function ownerFrom(v){
   return ME.id;
 }
 async function runImport(_, form){
+  if (imp.spiro) return spImport(form);
   if (!imp.rows.length) { toast('Choose a CSV file first.', 'bad'); return false; }
   const get = (r, k) => imp.map[k] != null ? String(r[imp.map[k]] ?? '').trim() : '';
   const coByName = {}; for (const c of L('companies')) coByName[norm(c.name)] = c.id;
@@ -2453,7 +2576,7 @@ async function runImport(_, form){
       const contactId = cv ? (ctByEmail[cv] || ctByName[companyId + '|' + norm(cv)] || ctAnyName[norm(cv)] || '') : '';
       const st = mapStage(get(r,'stage'));
       const rec = {name, type: name, companyId, contactId, stage: st, value: num(get(r,'value')), priceQuoted: num(get(r,'priceQuoted')), service: get(r,'service'), serviceType: get(r,'serviceType'), interval: get(r,'interval'), serviceDate: toYmd(get(r,'serviceDate')), closeDate: toYmd(get(r,'closeDate')), source: get(r,'source'), sourceOther: get(r,'sourceOther'), initialCall: get(r,'initialCall'), firstCallClose: get(r,'firstCallClose'), noCloseReason: get(r,'noCloseReason'), lostReason: get(r,'lostReason'), ownerId: ownerFrom(get(r,'owner'))};
-      if (st === 'won' || st === 'lost') rec.closedAt = rec.closeDate || today();
+      if (CLOSED.includes(st)) rec.closedAt = rec.closeDate || today();
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
       const key = norm(name) + '|' + (companyId||'');
       const ex = dealByKey[key];
@@ -2485,10 +2608,11 @@ const mdy = v => { if (!v) return ''; const d = typeof v === 'number' ? new Date
 const ymdOf = v => !v ? '' : typeof v === 'number' ? ymd(new Date(v)) : String(v).slice(0, 10);
 const nm = id => id ? pname(id).replace(' (you)', '') : '';
 const inRange = (v, from, to) => { const d = ymdOf(v); if (!from && !to) return true; if (!d) return false; return (!from || d >= from) && (!to || d <= to); };
+const withData = (list, k) => { const seen = new Set(list); const n = {}; for (const d of L('deals')) { const raw = k === 'type' ? (d.type || d.name) : d[k]; for (const v of k === 'initialCall' ? String(raw || '').split(',').map(x => x.trim()) : [raw]) if (v && !seen.has(v)) n[v] = (n[v] || 0) + 1; } return [...list, ...Object.keys(n).filter(v => n[v] >= (k === 'initialCall' ? 1 : 10)).sort()]; };
 const anyOpt = (list, label) => [['', label || 'Any'], ...list.map(x => Array.isArray(x) ? x : [x, x])];
 const ownerOpts = () => people().map(i => [i, nm(i)]).sort((a, b) => a[1].localeCompare(b[1]));
 const mainContact = coId => gr(coId).contacts.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
-const coStats = coId => { const ds = gr(coId).deals; const won = ds.filter(d => d.stage === 'won'); const last = won.map(d => ymdOf(d.serviceDate) || ymdOf(d.closedAt)).filter(Boolean).sort().pop() || '';
+const coStats = coId => { const ds = gr(coId).deals; const won = ds.filter(isWon); const last = won.map(d => ymdOf(d.serviceDate) || ymdOf(d.closedAt)).filter(Boolean).sort().pop() || '';
   return {open: ds.filter(isOpen).length, won: won.length, wonValue: sum(won, d => d.value), last}; };
 const coStatus = (coId, st) => { if (!st) return true; const x = coStats(coId); return st === 'open' ? x.open > 0 : st === 'won' ? x.won > 0 : st === 'noopen' ? x.open === 0 : st === 'never' ? x.won === 0 : true; };
 const EXP = {
@@ -2506,12 +2630,12 @@ const EXP = {
       const cur = ui.oppShow || 'open'; const on = k => cur === 'all' || (cur === 'open' ? isOpen({stage: k}) : cur === k);
       return `<div class="f"><span>Sales stage</span><div class="chips">${STAGES.map(st => `<label class="chk"><input type="checkbox" name="st_${st.k}" ${on(st.k) ? 'checked' : ''} data-change="expCount"> ${st.l}</label>`).join('')}</div></div>
       <div class="grid3">${F('Date', sel('dateBy', [['created', 'Created'], ['closed', 'Closed date'], ['service', 'Service date']], 'created', 'data-change="expCount"'))}${F('From', inp('from', '', 'date', 'data-change="expCount"'))}${F('To', inp('to', '', 'date', 'data-change="expCount"'))}</div>
-      <div class="grid3">${F('Owner', sel('ownerId', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Closed by', sel('closedBy', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Initial call', sel('initialCall', anyOpt(INITIAL_CALL), '', 'data-change="expCount"'))}</div>
-      <div class="grid2">${F('Opportunity', sel('type', anyOpt(OPP_TYPES), '', 'data-change="expCount"'))}${F('Service', sel('service', anyOpt(SERVICES), '', 'data-change="expCount"'))}${F('Service type', sel('serviceType', anyOpt(SVC_TYPES), '', 'data-change="expCount"'))}${F('Service interval', sel('interval', anyOpt(INTERVALS), '', 'data-change="expCount"'))}</div>`;
+      <div class="grid3">${F('Owner', sel('ownerId', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Closed by', sel('closedBy', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Initial call', sel('initialCall', anyOpt(withData(INITIAL_CALL, 'initialCall')), '', 'data-change="expCount"'))}</div>
+      <div class="grid2">${F('Opportunity', sel('type', anyOpt(withData(OPP_TYPES, 'type')), '', 'data-change="expCount"'))}${F('Service', sel('service', anyOpt(withData(SERVICES, 'service')), '', 'data-change="expCount"'))}${F('Service type', sel('serviceType', anyOpt(withData(SVC_TYPES, 'serviceType')), '', 'data-change="expCount"'))}${F('Service interval', sel('interval', anyOpt(withData(INTERVALS, 'interval')), '', 'data-change="expCount"'))}</div>`;
     },
     rows: f => L('deals').filter(d => STAGES.some(st => f['st_' + st.k] && stage(d).k === st.k)
       && inRange(f.dateBy === 'closed' ? (isOpen(d) ? '' : d.closedAt) : f.dateBy === 'service' ? d.serviceDate : d.createdAt, f.from, f.to)
-      && (!f.ownerId || d.ownerId === f.ownerId) && (!f.closedBy || (!isOpen(d) && d.closedBy === f.closedBy)) && (!f.initialCall || d.initialCall === f.initialCall)
+      && (!f.ownerId || d.ownerId === f.ownerId) && (!f.closedBy || (!isOpen(d) && d.closedBy === f.closedBy)) && (!f.initialCall || String(d.initialCall || '').split(',').map(x => x.trim()).includes(f.initialCall))
       && (!f.type || (d.type || d.name) === f.type) && (!f.service || d.service === f.service) && (!f.serviceType || d.serviceType === f.serviceType) && (!f.interval || d.interval === f.interval))
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
   },
@@ -2560,6 +2684,7 @@ function settingsModal(){
   openModal('Settings', `<div class="sets">
     ${row('mail', 'My connections', 'Connect your Outlook email so you can send from the CRM and see your customer emails on each account.', `<button type="button" class="btn pri" data-act="connections">Open</button>`)}
     ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
+    ${SUPA && !DEMO && isAdmin() ? row('chart', 'Usage', 'See how much of the monthly download allowance each person is using.', `<button type="button" class="btn" data-act="usage">View usage</button>`) : ''}
     ${SUPA ? row('users', 'Users', isAdmin() ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', `<button type="button" class="btn" data-act="users">${isAdmin() ? 'Manage users' : 'View'}</button>`)
       : row('users', 'Team', 'Choose which teammates can be assigned accounts, opportunities and reminders.', `<button type="button" class="btn" data-act="team">Manage team</button>`)}
     ${row('spark', 'Appearance', 'Your own colors, mode, text size, spacing, font and start page. Only changes how Paper Trail looks for you.', `<button type="button" class="btn" data-act="look">Customize</button>`)}
@@ -3363,7 +3488,7 @@ const A = {
   mMore: () => { const MT = ['today', 'reminders', 'pipeline', 'companies']; openModal('More', `<div class="mmore">${VIEWS.filter(v => !MT.includes(v[0])).map(([k, l, i]) => `<button type="button" class="${ui.view === k ? 'on' : ''}" data-act="mGo" data-v="${k}">${ic(i)}<span>${l}</span></button>`).join('')}<button type="button" data-act="mGo" data-v="__settings">${ic('gear')}<span>Settings</span></button></div>`, null); },
   mGo: d => { closeModal(); if (d.v === '__settings') settingsModal(); else A.go({v: d.v}); },
   dfSaveRem: () => { const f = $('#mform'), t = $('#dfThen'); if (!f || !t) return; t.value = 'reminder'; if (f.reportValidity && !f.reportValidity()) { t.value = ''; return; } f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', {cancelable: true})); setTimeout(() => { if (t.isConnected) t.value = ''; }, 0); },
-  demoOff: () => setDemo(false),
+  demoOff: () => GUEST ? guestExit() : setDemo(false),
   resetDemo: () => confirmModal('Clear all data?', 'Every account, contact, opportunity and reminder saved in this browser will be removed. Export first from Settings if you want a copy.', 'Clear everything', async () => { for (const c of COLS) S[c] = {}; try { localStorage.removeItem(LS_KEY); } catch {} ui.view = 'today'; ui.detail = null; schedule(); toast('All data cleared'); }),
   oppPage: d => { ui.oppEdit = null; if (!S.deals[d.id]) return; ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; },
   coPage: d => { ui.pageCo = d.id; ui.cpTab = d.t || 'details'; ui.view = 'company'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; syncEmailsFor(d.id); },
@@ -3417,7 +3542,7 @@ const A = {
   attach: d => attachModal(d.co, 'general'),
   attSave: d => attSave(d.k),
   attRemove: d => { attPending.splice(+d.i, 1); attRender(); },
-  fileOpen: async d => { try { await FILES.open(d.path, d.name); } catch (e) { toast((e && e.message) || "Couldn't open that file.", 'bad'); } },
+  fileOpen: async d => { try { await FILES.open(d.path, d.name); if (FILES.remote()) useAdd('file', +d.size || 0); } catch (e) { toast((e && e.message) || "Couldn't open that file.", 'bad'); } },
   delContractFile: d => { closeModal(); confirmModal('Delete this contract?', 'It moves to Trash, where an admin can restore it for 30 days. The entry in Activities stays.', 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted'); }); },
   newQuote: d => { if (!canWrite) return; quoteBuilder().open({co: d.co, deal: d.deal}); },
   editQuote: d => { const q = S.quotes[d.id]; if (q && q.state) quoteBuilder().open({quoteId: d.id}); else quoteForm(d.id); },
@@ -3439,6 +3564,8 @@ const A = {
   fishEgg: (d, el) => fishEgg(el),
   import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } if (DEMO) { toast('Turn off demo mode before importing real data.', 'bad'); return; } importModal(); },
   users: () => usersModal(),
+  usage: () => usageModal(),
+  usageMonth: d => usageModal(d.m),
   account: () => accountModal(),
   signOut: async () => { closeModal(); await IDB.clear(); await SUPA.sb.auth.signOut(); location.reload(); },
   uActive: async d => { const u = USERS.find(x => x.id === d.id); if (!u) return; const off = u.active; await uPatch(d.id, {active: !u.active});
@@ -3476,7 +3603,7 @@ const CHANGE = {
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
   tplFmt: () => updTplPrev(),
   draftTo: el => { if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
-  dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = el.value === 'won' || el.value === 'lost'; const closed = el.value === 'won' || el.value === 'lost'; const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
+  dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = CLOSED.includes(el.value); const closed = CLOSED.includes(el.value); const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
   dfSource: el => { const w = $('#dfSrcOther'); if (w) w.hidden = el.value !== 'Other'; },
   dfFcc: el => { const w = $('#dfNoClose'); if (w) w.hidden = el.value !== 'No'; },
   dfCo: el => { const nc = $('#dfNewCo'); if (nc) { nc.hidden = el.value !== '__new'; if (!nc.hidden) nc.querySelector('input').focus(); } const ct = $('#dfCt'); if (!ct) return; const cur = ct.value; const opts = el.value === '__new' ? [['', '— None —']] : ctOpts(el.value); ct.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); if (opts.some(o => o[0] === cur)) ct.value = cur; },
@@ -3490,9 +3617,14 @@ const CHANGE = {
   raFrom: el => { const l = $('#raList'); if (l) l.innerHTML = raRows(el.value); const to = $('#raTo'); if (to) { const cur = to.value; to.innerHTML = [['', '— Choose who takes over —'], ...(SUPA && !DEMO ? USERS.filter(u => u.active).map(u => u.id) : people()).filter(i => i && i !== el.value).map(i => [i, nm(i) || pname(i)]).sort((a, b) => a[1].localeCompare(b[1]))].map(([v, l2]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l2)}</option>`).join(''); } },
   uRole: el => { if (el.dataset.id) uPatch(el.dataset.id, {role: el.value}); },
   impType: el => { imp.type = el.value; if (imp.headers.length) imp.map = guessMap(imp.type, imp.headers); renderImpBody(); },
-  impFile: el => { const file = el.files && el.files[0]; if (!file) return; const r = new FileReader(); r.onload = () => { const rows = parseCSV(String(r.result)); imp.name = file.name; imp.headers = rows[0] || []; imp.rows = rows.slice(1);
+  impFile: el => { const file = el.files && el.files[0]; if (!file) return;
+    { const all = [...el.files]; const b = $('#impBody'); if (b) b.innerHTML = '<p class="sub">Reading…</p>';
+      file.slice(0, 4000).text().then(head => { const isSp = SP_KIND(parseCSV(head.split(/\r?\n/)[0] || '')[0] || []);
+        if (all.length > 1 || isSp) { spLoadFiles(all).then(x => { if (!Object.keys(x.files).length) { imp.spiro = null; if (b) b.innerHTML = `<p class="empty-s">These aren't Spiro exports. Choose one file at a time to map its columns.</p>`; return; } imp.spiro = x; const ts = $('#impType'); if (ts) ts.closest('.f').hidden = true; spSummary(); }).catch(() => toast("Couldn't read those files.", 'bad')); return; }
+        imp.spiro = null; const ts = $('#impType'); if (ts) ts.closest('.f').hidden = false; readOne(); }); }
+    function readOne(){ const r = new FileReader(); r.onload = () => { const rows = parseCSV(String(r.result)); imp.name = file.name; imp.headers = rows[0] || []; imp.rows = rows.slice(1);
     const n = file.name.toLowerCase(); const t = /opportunit|deal/.test(n) ? 'deals' : /contact|people|person/.test(n) ? 'contacts' : /compan|account|organi/.test(n) ? 'accounts' : imp.type; imp.type = t; const ts = $('#impType'); if (ts) ts.value = t;
-    imp.map = guessMap(imp.type, imp.headers); renderImpBody(); }; r.onerror = () => toast("Couldn't read that file.", 'bad'); r.readAsText(file); }
+    imp.map = guessMap(imp.type, imp.headers); renderImpBody(); }; r.onerror = () => toast("Couldn't read that file.", 'bad'); r.readAsText(file); } }
 };
 const FORMS = {
   quickTask: async () => { const t = $('#quickTask'), d = $('#quickDue'); const title = t.value.trim(); if (!title) return; t.value = ''; if (await put('tasks', uid(), {title, due: d.value || today(), assigneeId: ME.id})) toast('Reminder set'); else t.value = title; },
@@ -4424,6 +4556,7 @@ function makeSupaDb(sb, uidKey){
   const fire = c => { clearTimeout(fireT[c]); fireT[c] = setTimeout(() => { (subs[c] || []).forEach(x => { if (x.ready) x.cb(x.snap()); }); persist(c); }, 120); };
   const ch = sb.channel('pt-records').on('postgres_changes', {event: '*', schema: 'public', table: 'records'}, ev => {
     const row = ev.eventType === 'DELETE' ? ev.old : ev.new; if (!row || !row.col) return;
+    if (row.col !== 'usage') useAdd('live', jsonSize(row) + 150);
     for (const x of subs[row.col] || []) { if (ev.eventType === 'DELETE') delete x.map[row.id]; else x.map[row.id] = row.data || {}; }
     if (ev.eventType !== 'DELETE') bump(row.col, row.updated_at);
     fire(row.col);
@@ -4431,11 +4564,9 @@ function makeSupaDb(sb, uidKey){
   ch.subscribe();
   async function pages(build){
     const out = [];
-    for (let from = 0; ; from += SB_PAGE) {
-      const {data, error} = await build().range(from, from + SB_PAGE - 1);
-      if (error) throw error;
-      out.push(...(data || []));
-      if (!data || data.length < SB_PAGE) break;
+    for (let from = 0, more = true; more; from += 4 * SB_PAGE) {   // four pages at a time
+      const got = await Promise.all([0, 1, 2, 3].map(i => build().range(from + i * SB_PAGE, from + (i + 1) * SB_PAGE - 1)));
+      for (const {data, error} of got) { if (error) throw error; out.push(...(data || [])); if (!data || data.length < SB_PAGE) { more = false; break; } }
     }
     return out;
   }
@@ -4445,6 +4576,7 @@ function makeSupaDb(sb, uidKey){
       const map = cached.map; maxTs[c] = cached.max;
       const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', cached.max).order('id'));
       for (const r of changed) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
+      useAdd('catch', jsonSize(changed) + 200);
       const {count, error} = await sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c);
       if (error) throw error;
       if (count !== Object.keys(map).length) {   // out of step: drop what the server no longer has, fetch anything missing
@@ -4453,13 +4585,15 @@ function makeSupaDb(sb, uidKey){
         const missing = [...ids].filter(id => !(id in map));
         for (let k = 0; k < missing.length; k += 200) {
           const {data, error: e2} = await sb.from('records').select('id,data,updated_at').eq('col', c).in('id', missing.slice(k, k + 200));
-          if (e2) throw e2; for (const r of data || []) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
+          if (e2) throw e2; for (const r of data || []) { map[r.id] = r.data || {}; bump(c, r.updated_at); } useAdd('catch', jsonSize(data));
         }
       }
       return map;
     }
     const map = {};
-    for (const r of await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).order('id'))) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
+    const all = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).order('id'));
+    for (const r of all) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
+    if (all.length) useAdd('full', jsonSize(all));   // empty collections have no saved copy to reuse, so don't count them
     return map;
   }
   const fail = e => { const err = new Error((e && e.message) || 'Database error'); err.code = e && e.code === '42501' ? 'permission-denied' : (e && e.code) || 'unknown'; return err; };
@@ -4533,13 +4667,14 @@ function loginHtml(mode, msg){
       ${msg ? `<p class="lg-msg" role="alert">${esc(msg)}</p>` : ''}
       <button class="btn pri" type="submit">${first ? 'Create my account' : 'Sign in'}</button>
     </form>
-    <button class="lnk" type="button" data-lg="${first ? 'signin' : 'first'}">${first ? 'Already set up? Sign in' : 'First time here? Set up your account'}</button></div>`;
+    <button class="lnk" type="button" data-lg="${first ? 'signin' : 'first'}">${first ? 'Already set up? Sign in' : 'First time here? Set up your account'}</button>
+    <div class="lg-demo"><button class="btn" type="button" data-lgdemo>${ic('spark')}Open the demo</button><span class="sub">Sample data, no sign-in. Nothing real is shown or saved.</span></div></div>`;
 }
 function supaLogin(sb){
   return new Promise(resolve => {
     const el = document.createElement('div'); el.id = 'login'; document.body.appendChild(el);
     const show = (mode, msg) => { el.innerHTML = loginHtml(mode, msg); const f = el.querySelector('input'); if (f) f.focus(); };
-    el.addEventListener('click', e => { const b = e.target.closest('[data-lg]'); if (b) show(b.dataset.lg); });
+    el.addEventListener('click', e => { if (e.target.closest('[data-lgdemo]')) { try { sessionStorage.setItem('pt-guest', '1'); } catch {} location.reload(); return; } const b = e.target.closest('[data-lg]'); if (b) show(b.dataset.lg); });
     el.addEventListener('submit', async e => {
       e.preventDefault(); const f = e.target; const mode = f.dataset.mode; const btn = f.querySelector('[type=submit]');
       const email = f.email.value.trim().toLowerCase(), password = f.password.value, code = f.code ? f.code.value.trim() : '';
@@ -4578,16 +4713,69 @@ async function supaStart(){
   sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT') location.reload(); });
   return makeSupaDb(sb, (cfg.supabaseUrl || '') + '|' + (SUPA.uid || ''));
 }
+// ---------- usage tracking (website only): roughly how much each person downloads from Supabase ----------
+const USE = {d: null, base: false, full: false, catchup: false, t: 0, busy: false};
+const useMonth = () => today().slice(0, 7);
+const useDev = () => { try { let id = localStorage.getItem('pt-dev'); if (!id) { id = Math.random().toString(36).slice(2, 10); localStorage.setItem('pt-dev', id); } return id; } catch { return 'nostore'; } };
+const useLabel = () => { const u = navigator.userAgent; const b = /Edg\//.test(u) ? 'Edge' : /OPR\//.test(u) ? 'Opera' : /Firefox\//.test(u) ? 'Firefox' : /Chrome\/|CriOS/.test(u) ? 'Chrome' : /Safari\//.test(u) ? 'Safari' : 'Browser';
+  const os = /iPhone/.test(u) ? 'iPhone' : /iPad/.test(u) ? 'iPad' : /Android/.test(u) ? 'Android' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : ''; return b + (os ? ' on ' + os : ''); };
+function useAdd(kind, bytes){
+  if (!SUPA || DEMO) return;
+  const m = useMonth(); if (!USE.d || USE.d.month !== m) { USE.d = {month: m, bytes: 0, full: 0, catchups: 0, live: 0, files: 0, fileBytes: 0}; USE.base = false; }
+  const d = USE.d; bytes = Math.max(0, Math.round(bytes || 0)); d.bytes += bytes;
+  if (kind === 'full' && !USE.full) { USE.full = true; d.full++; }
+  if (kind === 'catch' && !USE.catchup) { USE.catchup = true; d.catchups++; }
+  if (kind === 'live') d.live += bytes;
+  if (kind === 'file') { d.files++; d.fileBytes += bytes; }
+  clearTimeout(USE.t); USE.t = setTimeout(useSave, 8000);
+}
+async function useSave(){
+  if (!SUPA || DEMO || !ME.id || !USE.d || USE.busy) return;
+  USE.busy = true;
+  try {
+    const d = USE.d; const id = `${ME.id}~${d.month}~${useDev()}`;
+    if (!USE.base) {   // pick up this device's earlier total for the month, then keep adding to it
+      const {data, error} = await SUPA.sb.from('records').select('data').eq('col', 'usage').eq('id', id);
+      if (error) throw error;
+      const old = data && data[0] && data[0].data; if (old) for (const k of ['bytes', 'full', 'catchups', 'live', 'files', 'fileBytes']) d[k] += +old[k] || 0;
+      USE.base = true;
+    }
+    await SUPA.sb.from('records').upsert({col: 'usage', id, data: {...d, person: ME.id, device: useLabel(), at: Date.now()}}, {onConflict: 'col,id'});
+  } catch {} finally { USE.busy = false; }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && USE.t) { clearTimeout(USE.t); useSave(); } });
+const jsonSize = x => { try { return JSON.stringify(x).length; } catch { return 0; } };
+async function usageModal(month){
+  if (!isAdmin() || !SUPA) return;
+  const m = month || useMonth(); await useSave();
+  const {data, error} = await SUPA.sb.from('records').select('id,data').eq('col', 'usage').like('id', `%~${m}~%`);
+  if (error) { toast("Couldn't load usage: " + error.message, 'bad'); return; }
+  const by = {}; for (const r of data || []) { const d = r.data || {}; const p = by[d.person] = by[d.person] || {bytes: 0, full: 0, catchups: 0, files: 0, fileBytes: 0, devs: []}; for (const k of ['bytes', 'full', 'catchups', 'files', 'fileBytes']) p[k] += +d[k] || 0; p.devs.push(d); }
+  for (const u of USERS) if (u.active && !by[u.id]) by[u.id] = {bytes: 0, full: 0, catchups: 0, files: 0, fileBytes: 0, devs: []};
+  const total = Object.values(by).reduce((n, p) => n + p.bytes, 0); const LIMIT = 5 * 1024 ** 3;
+  const rows = Object.entries(by).sort((a, b) => b[1].bytes - a[1].bytes);
+  const max = Math.max(1, ...rows.map(([, p]) => p.bytes));
+  const months = [0, 1, 2].map(i => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); return ymd(d).slice(0, 7); });
+  const mLabel = k => parseYmd(k + '-01').toLocaleString('en-US', {month: 'long', year: 'numeric'});
+  const mb = n => n ? fsize(n) : '0 MB';
+  openModal('Usage', `<div class="segs" role="group" style="margin-bottom:10px">${months.map(k => `<button type="button" class="${k === m ? 'on' : ''}" data-act="usageMonth" data-m="${k}">${mLabel(k).split(' ')[0]}</button>`).join('')}</div>
+    <p class="sub" style="margin-bottom:6px">Roughly how much each person downloaded from Supabase in ${mLabel(m)}. Your free plan allows 5 GB a month.</p>
+    <div class="usebar"><i style="width:${Math.min(100, total / LIMIT * 100).toFixed(1)}%"></i></div><p class="sub" style="margin:4px 0 12px"><b>${mb(total)}</b> of 5 GB used by the team (${(total / LIMIT * 100).toFixed(1)}%)</p>
+    <ul class="users">${rows.map(([id, p]) => `<li class="urow" style="display:block"><div style="display:flex;justify-content:space-between;gap:10px"><b>${esc(nm(id) || pname(id))}</b><b class="num">${mb(p.bytes)}</b></div>
+      <div class="usebar sm"><i style="width:${(p.bytes / max * 100).toFixed(1)}%"></i></div>
+      <small>${p.full} full download${p.full === 1 ? '' : 's'} · ${p.catchups} catch-up${p.catchups === 1 ? '' : 's'} · ${p.files} attachment${p.files === 1 ? '' : 's'} opened${p.fileBytes ? ` (${mb(p.fileBytes)})` : ''}${p.devs.length ? ` · ${p.devs.length} browser${p.devs.length === 1 ? '' : 's'}: ${esc([...new Set(p.devs.map(d => d.device))].join(', '))}` : ''}</small></li>`).join('')}</ul>
+    <p class="sub" style="margin-top:10px">A full download happens on a new browser or device, after signing out, after clearing browser data, or in a private window. Lots of full downloads for one person usually means one of those. Figures are estimates and run a little high, because Supabase compresses some data on the way.</p>`, null);
+}
 const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o = ''; const r = new Uint32Array(8); crypto.getRandomValues(r); for (const n of r) o += a[n % a.length]; return o.slice(0, 4) + '-' + o.slice(4); };
 function usersModal(){
   const admin = isAdmin();
-  const row = u => { const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
-    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${esc(u.email)}</small></div>
+  const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former Spiro user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
+    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former Spiro user' : esc(u.email)}</small></div>
       <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>`}
       ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-        <button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button><button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}">${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
+        <button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button><button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}"${/\.invalid$/.test(u.email || '') ? ' hidden' : ''}>${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
   openModal('Users', `<p class="sub">${admin ? 'Add the people who use Paper Trail. Each new person gets an invite code that works for 7 days: send them the site link and the code, and they choose their own password under “First time here?”.' : 'People who use Paper Trail. Only an admin can add users.'}</p>
-    <ul class="users" id="usersList">${USERS.map(row).join('') || '<li class="sub">No users yet.</li>'}</ul>
+    <ul class="users" id="usersList">${USERS.slice().sort((a, b) => /\.invalid$/.test(a.email || '') - /\.invalid$/.test(b.email || '')).map(row).join('') || '<li class="sub">No users yet.</li>'}</ul>
     ${admin ? `<h3 style="margin-top:14px">Add a user</h3><div class="grid3">${F('Name', inp('uName', '', 'text', 'placeholder="Kate Dillon"'))}${F('Work email', inp('uEmail', '', 'email', 'placeholder="kate@allpointsprotects.com"'))}${F('Role', sel('uRole', [['manager', 'Manager'], ['admin', 'Admin']], 'manager'))}</div>
       <p class="sub">Managers can see and change everything except importing data and managing users.</p>` : ''}`,
     admin ? 'Add user' : null, admin ? async f => {
@@ -4643,6 +4831,15 @@ function reassignModal(from, opts = {}){
     for (const [k, , field] of RA_KINDS) if (f['ra_' + k]) for (const r of raItems(f.raFrom, k)) jobs.push([raCol(k), r.id, field]);
     if (!jobs.length) { toast('Nothing selected to move.', 'bad'); return false; }
     const b = $('#mform [type=submit]'); let done = 0;
+    const bulk = live && !DEMO && jobs.length > 50 && db.collection('deals').setMany;
+    if (bulk) {   // big moves (like a former Spiro user's records) go 500 at a time
+      const byCol = {}; for (const [col, id, field] of jobs) if (S[col][id]) { const doc = byCol[col] = byCol[col] || {}; doc[id] = {...(doc[id] || S[col][id]), [field]: f.raTo, updatedAt: Date.now()}; }
+      for (const [col, docs] of Object.entries(byCol)) { const rows = Object.entries(docs);
+        for (let k = 0; k < rows.length; k += 500) { const chunk = rows.slice(k, k + 500);
+          try { await db.collection(col).setMany(chunk); } catch (e) { writeErr(e); toast(`Stopped after ${done} records. Try again to move the rest.`, 'bad'); return false; }
+          for (const [id, d] of chunk) S[col][id] = d; done += chunk.length; if (b) b.textContent = `Moving ${done} of ${jobs.length}…`; } }
+      schedule();
+    } else
     for (const [col, id, field] of jobs) { if (await patch(col, id, {[field]: f.raTo})) done++; if (b && done % 10 === 0) b.textContent = `Moving ${done} of ${jobs.length}…`; }
     toast(`Moved ${done} record${done === 1 ? '' : 's'} from ${nm(f.raFrom)} to ${nm(f.raTo)}`);
     return true;
@@ -4753,7 +4950,7 @@ const FILES = {
   }
 };
 const fsize = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
-const fileChips = files => (files || []).length ? `<div class="fchips">${files.map(f => `<button type="button" class="fchip" data-act="fileOpen" data-path="${esc(f.path)}" data-name="${esc(f.name)}" title="Download ${esc(f.name)}">${ic('doc')}<span>${esc(f.name)}</span><em>${fsize(f.size || 0)}</em></button>`).join('')}</div>` : '';
+const fileChips = files => (files || []).length ? `<div class="fchips">${files.map(f => `<button type="button" class="fchip" data-act="fileOpen" data-path="${esc(f.path)}" data-name="${esc(f.name)}" data-size="${+f.size || 0}" title="Download ${esc(f.name)}">${ic('doc')}<span>${esc(f.name)}</span><em>${fsize(f.size || 0)}</em></button>`).join('')}</div>` : '';
 let attPending = [];
 function attachModal(coId, intent){
   if (!FILES.ok()) { toast('Attachments work on the Paper Trail website. Open it there to add files.', 'bad'); return; }
@@ -4835,7 +5032,7 @@ async function boot(){
   render();
   const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
   let [u, d, s, dl, mc] = await Promise.all([use('user'), use('db'), use('sample'), use('downloads'), use('mcp')]);
-  if (!d && !window.claude && window.PAPER_TRAIL && window.PAPER_TRAIL.supabaseUrl && window.supabase) {
+  if (!d && !window.claude && window.PAPER_TRAIL && window.PAPER_TRAIL.supabaseUrl && window.supabase && !GUEST) {
     try { d = await supaStart(); } catch (e) { $('#main').innerHTML = `<div class="wrap"><p class="banner">Couldn't connect to the Paper Trail database: ${esc((e && e.message) || 'unknown error')}. Check config.js and reload.</p></div>`; return; }
   }
   U = u; AI = s; DL = dl; MCP = mc;
@@ -4848,13 +5045,13 @@ async function boot(){
     }
     if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
   }
-  if (!d && !window.claude) { STANDALONE = true; loadLocal(); }
+  if (!d && !window.claude) { STANDALONE = true; if (!GUEST) loadLocal(); }
   loadLookLocal();
   if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
   booted = true; bootDone();
   syncLookFromDb();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
-  try { const sd = sessionStorage.getItem('pt-demo'); if (sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
+  try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
   setTimeout(() => checkReplies(), 5000);
   setTimeout(() => syncRecent(), 7000);
   setInterval(() => { if (document.visibilityState !== 'hidden') { syncRecent(); checkReplies(); } }, 15 * 60e3);
