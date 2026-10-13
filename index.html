@@ -967,7 +967,25 @@ const stage = d => { const k = LEGACY_STAGE[d.stage] || d.stage || 'lead'; retur
 const isOpen = d => !CLOSED.includes(d.stage||'lead');
 const isWon = d => d.stage === 'won' || d.stage === 'updated';
 const qTotal = q => q.total != null ? +q.total : sum(q.items||[], i => (+i.qty||0) * (+i.price||0));
-const match = (q, ...f) => !q || f.some(v => String(v||'').toLowerCase().includes(q.toLowerCase()));
+// search: "Port St. Lucie", "Port St Lucie" and "Port Saint Lucie" all find each other; words can come in any order
+const SYN = {saint: 'st', street: 'st', fort: 'ft', mount: 'mt', avenue: 'ave', av: 'ave', road: 'rd', boulevard: 'blvd', drive: 'dr', doctor: 'dr', lane: 'ln', court: 'ct', place: 'pl', parkway: 'pkwy', pkway: 'pkwy', highway: 'hwy', terrace: 'ter', circle: 'cir', suite: 'ste', north: 'n', south: 's', east: 'e', west: 'w', northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw', center: 'ctr', centre: 'ctr', company: 'co', corporation: 'corp', incorporated: 'inc', limited: 'ltd', associates: 'assoc', department: 'dept', building: 'bldg', apartment: 'apt', number: 'no', '&': 'and'};
+const NC = new Map();
+const nrm = v => { const s = String(v ?? ''); let o = NC.get(s); if (o !== undefined) return o;
+  o = s.toLowerCase().replace(/['’`]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9@]+/g, ' ').trim().split(' ').map(w => SYN[w] || w).join(' ');
+  if (NC.size > 400000) NC.clear(); NC.set(s, o); return o; };
+const qParts = q => { q = String(q || '').trim(); return {raw: q.toLowerCase().split(/\s+/).filter(Boolean), n: nrm(q).split(' ').filter(Boolean), d: q.replace(/\D/g, '')}; };
+const mkHay = vals => { const r = vals.map(v => String(v ?? '').toLowerCase()).join(' '); return {n: ' ' + vals.map(nrm).join(' '), r, d: r.replace(/\D/g, '')}; };
+const hayHit = (Q, h) => (Q.n.length > 0 && Q.n.every(t => h.n.includes(t))) || (Q.raw.length > 0 && Q.raw.every(t => h.r.includes(t)))
+  || (Q.d.length >= 3 && Q.d.length >= Q.raw.join('').replace(/[\s\-().#+]/g, '').length - 1 && h.d.includes(Q.d));
+const qHit = (Q, f) => hayHit(Q, mkHay(f));
+let HC = new WeakMap(); const hayReset = () => { HC = new WeakMap(); };   // per-record search text, rebuilt when a record (or any account name) changes
+const hay = (rec, tag, f, col) => { const src = (col && rec.id && S[col][rec.id]) || rec; let m = HC.get(src); if (!m) HC.set(src, m = {}); return m[tag] || (m[tag] = mkHay(f())); };
+let _mq = null, _mQ = null;
+const qOf = q => { if (q !== _mq) { _mq = q; _mQ = qParts(q); } return _mQ; };
+const match = (q, ...f) => !q || !String(q).trim() || qHit(qOf(q), f);
+const matchR = (q, rec, tag, f, col) => !q || !String(q).trim() || hayHit(qOf(q), hay(rec, tag, f, col));
+const acctFirst = q => { const n = String(q || '').replace(/^\s*#\s*/, '').trim(); return /^\d{4,7}$/.test(n) ? (a, b) => (String(b.acctNo) === n) - (String(a.acctNo) === n) : null; };
+const acctOf = coId => coId && S.companies[coId] && S.companies[coId].acctNo ? String(S.companies[coId].acctNo) : '';
 const mine = r => !ui.mine || (r.ownerId || r.assigneeId || r.createdBy) === ME.id;
 const lastTouch = r => X.lastAct[r.id] || r.createdAt || 0;
 function fmtPhone(v){
@@ -1054,7 +1072,34 @@ function writeErr(e){
   else if (code === 'resource_exhausted') toast('Too many changes at once. Wait a moment and try again.', 'bad');
   else toast("Couldn't save. Check your connection and try again.", 'bad');
 }
+const ACCT_START = 10001;
+const acctMax = () => { let m = ACCT_START - 1; for (const c of Object.values(S.companies)) if (+c.acctNo > m) m = +c.acctNo; return m; };
+// gives numbers to accounts that don't have one (oldest first) and fixes any duplicates; returns [id, doc] pairs that changed
+function acctFix(){
+  const all = Object.entries(S.companies); const seen = new Map(); const need = [];
+  for (const [id, c] of all.sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0) || (a[0] < b[0] ? -1 : 1))) {
+    const n = +c.acctNo; if (!n) { need.push(id); continue; }
+    if (seen.has(n)) need.push(id); else seen.set(n, id); }
+  if (!need.length) return [];
+  let next = acctMax(); return need.map(id => [id, {...S.companies[id], acctNo: ++next}]);
+}
+let acctT = 0, acctBusy = false;
+function acctHeal(){
+  clearTimeout(acctT); acctT = setTimeout(async () => {
+    if (acctBusy || !booted) return;
+    if (DEMO) { for (const [id, d] of acctFix()) S.companies[id] = d; return; }
+    if (live && SUPA && !isAdmin()) return;   // on the website the admin's browser does the numbering, so two people never hand out the same numbers
+    const ch = acctFix(); if (!ch.length) return; acctBusy = true;
+    try { for (const [id, d] of ch) S.companies[id] = d;
+      if (live) { const coll = db.collection('companies'); if (coll.setMany) await coll.setMany(ch); else for (const [id, d] of ch) await coll.doc(id).set(d); } else saveLocal();
+      schedule();
+    } catch (e) {} finally { acctBusy = false; }
+  }, 1500);
+}
 async function put(col, id, data){
+  if (col === 'companies') hayReset();
+  if (col === 'companies' && !(+data.acctNo) && !(S.companies[id] && +S.companies[id].acctNo)) data = {...data, acctNo: acctMax() + 1};
+  else if (col === 'companies' && !(+data.acctNo) && S.companies[id]) data = {...data, acctNo: S.companies[id].acctNo};
   await bootReady;
   const doc = clean({...data, updatedAt: Date.now()});
   if (!doc.createdAt) doc.createdAt = Date.now();
@@ -1064,6 +1109,7 @@ async function put(col, id, data){
   catch(e){ writeErr(e); return false; }
 }
 async function patch(col, id, fields){
+  if (col === 'companies') hayReset();
   await bootReady;
   if (!S[col][id]) return false;
   const f = clean({...fields, updatedAt: Date.now()});
@@ -1199,6 +1245,7 @@ function setDemo(on){
     const d = buildDemo();
     for (const c of COLS) S[c] = Object.keys(d[c]).length || !['templates', 'journeys'].includes(c) ? d[c] : S[c];
     for (const [id, n] of Object.entries(DEMO_PEOPLE)) P[id] = {name: n};
+    for (const [id, dd] of acctFix()) S.companies[id] = dd;
     team = {ids: [...new Set([...(team.ids || []), ...Object.keys(DEMO_PEOPLE)])]};
     DEMO = true; ui.detail = null; ui.view = startView();
     toast('Demo mode on: showing sample data');
@@ -1563,7 +1610,7 @@ V.pipeline = () => {
   const show = ui.oppShow || 'open';
   const all = L('deals').filter(mine);
   const rows = all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true)
-    .filter(d => match(ui.q, d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : ''))
+    .filter(d => matchR(ui.q, d, 'l', () => [d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : '', acctOf(d.companyId)], 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||''));
   const nOpen = all.filter(isOpen).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
@@ -1702,7 +1749,7 @@ V.company = () => {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
     body = `
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}</div>
-      <div class="cpgrid">${cpField('Name', esc(c.name))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
+      <div class="cpgrid">${cpField('Account #', c.acctNo ? `<b class="num">${c.acctNo}</b><button class="copy" data-act="copy" data-t="${c.acctNo}" aria-label="Copy account number">${ic('copy')}</button>` : '')}${cpField('Name', esc(c.name))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
       ${cpField('Address', esc(c.address))}${cpField('City', esc(c.city))}${cpField('Zip code', esc(c.zip))}
       ${cpField('State', esc(c.state))}${c.website ? cpField('Website', `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`) : ''}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${cpField('Contacts', String(g.contacts.length))}
       ${cpField('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', true)}</div></section>
@@ -1725,19 +1772,19 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = L('companies').filter(mine).filter(c => match(ui.q, c.name, c.city, c.phone, c.address, c.zip)).sort(byName);
+  const rows = L('companies').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b));
   const total = Object.keys(S.companies).length;
   return head('Accounts', `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
+  : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
-      return `<tr data-act="coPage" data-id="${c.id}"><td><b>${esc(c.name)}</b>${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
-    }).join('') || `<tr><td colspan="5" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
+      return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
+    }).join('') || `<tr><td colspan="6" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
 V.contacts = () => {
-  const rows = L('contacts').filter(mine).filter(c => match(ui.q, pname_(c), c.email, c.email2, c.phone, c.title, cname(c.companyId))).sort((a,b) => pname_(a).localeCompare(pname_(b)));
+  const rows = L('contacts').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b)));
   const total = Object.keys(S.contacts).length;
   return head('Contacts', `${total} contact${total===1?'':'s'}`, searchBox('Search contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
@@ -1935,7 +1982,7 @@ const DETAIL = {
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
-    <dl class="facts">${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({companyid:id})}
     ${sec('Contacts', g.contacts.length, rowsOr(g.contacts.sort((a,b)=>pname_(a).localeCompare(pname_(b))), contactRow, 'No contacts yet.'), 'newContact', {co:id})}
@@ -2016,23 +2063,23 @@ function ctOpts(coId){
 }
 
 // ---------- global search ----------
+let gqT = 0;
 function searchModal(){
-  openModal('Search', `<label class="search big">${ic('search')}<input id="gq" type="search" placeholder="Name, email, phone, city, quote number, notes…" autocomplete="off" aria-label="Search all records"></label><div id="gres" class="gres">${searchResults('')}</div>`, null, null, {wide:true});
+  openModal('Search', `<label class="search big">${ic('search')}<input id="gq" type="search" placeholder="Name, account #, email, phone, city, quote number, notes…" autocomplete="off" aria-label="Search all records"></label><div id="gres" class="gres">${searchResults('')}</div>`, null, null, {wide:true});
 }
 function searchResults(q){
   q = q.trim();
   if (!q) return `<p class="empty-s">Search accounts, contacts, opportunities, quotes, contracts and everything you've logged.</p>`;
   const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
-  const qd = q.replace(/\D/g, '');
-  const hit = (...f) => { const h = f.filter(Boolean).join(' ').toLowerCase(); if (toks.every(t => h.includes(t))) return true; if (qd.length >= 3) return h.replace(/\D/g, '').includes(qd); return false; };
+  const Q = qParts(q); const hit = (rec, tag, f, col) => hayHit(Q, hay(rec, tag, f, col)); const af = acctFirst(q);
   const mark = s => { let out = esc(s); const t = toks.sort((a,b) => b.length - a.length)[0]; if (t) { const re = new RegExp('(' + esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'); out = out.replace(re, '<mark>$1</mark>'); } return out; };
   const groups = [
-    ['Accounts', L('companies').filter(c => hit(c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes)).sort(byName).map(c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[[c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
-    ['Contacts', L('contacts').filter(c => hit(pname_(c), c.title, c.email, c.email2, c.phone, c.mobile, c.notes, cname(c.companyId))).sort((a,b) => pname_(a).localeCompare(pname_(b))).map(c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
-    ['Opportunities', L('deals').filter(d => hit(d.name, d.service, d.notes, cname(d.companyId))).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
-    ['Quotes', L('quotes').filter(x => hit(x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc))).map(x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
-    ['Contracts', L('contracts').filter(c => hit(c.title, c.notes, cname(c.companyId))).map(c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
-    ['Notes and activity', X.acts.filter(a => a.type !== 'stage' && hit(a.text)).map(a => { const col = a.dealId && S.deals[a.dealId] ? 'deals' : a.companyId && S.companies[a.companyId] ? 'companies' : a.contactId && S.contacts[a.contactId] ? 'contacts' : null; if (!col) return null; const id = col === 'deals' ? a.dealId : col === 'companies' ? a.companyId : a.contactId; const txt = String(a.text||''); const i = txt.toLowerCase().indexOf(toks[0]); const snip = (i > 40 ? '…' : '') + txt.slice(Math.max(0, i - 40), i + 90) + (txt.length > i + 90 ? '…' : ''); return {a:'open', col, id, t:snip, s:`${ACT[a.type]||'Note'} · ${nameOf(col, id)} · ${rel(a.at)}`}; }).filter(Boolean)]
+    ['Accounts', L('companies').filter(c => hit(c, 'g', () => [c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes, c.acctNo], 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)).map(c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
+    ['Contacts', L('contacts').filter(c => hit(c, 'g', () => [pname_(c), c.title, c.email, c.email2, c.phone, c.mobile, c.notes, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))).map(c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
+    ['Opportunities', L('deals').filter(d => hit(d, 'g', () => [d.name, d.service, d.notes, cname(d.companyId), acctOf(d.companyId)], 'deals')).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
+    ['Quotes', L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')).map(x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
+    ['Contracts', L('contracts').filter(c => hit(c, 'g', () => [c.title, c.notes, cname(c.companyId)], 'contracts')).map(c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
+    ['Notes and activity', X.acts.filter(a => a.type !== 'stage' && hit(a, 'g', () => [a.text], 'activities')).map(a => { const col = a.dealId && S.deals[a.dealId] ? 'deals' : a.companyId && S.companies[a.companyId] ? 'companies' : a.contactId && S.contacts[a.contactId] ? 'contacts' : null; if (!col) return null; const id = col === 'deals' ? a.dealId : col === 'companies' ? a.companyId : a.contactId; const txt = String(a.text||''); const i = txt.toLowerCase().indexOf(toks[0]); const snip = (i > 40 ? '…' : '') + txt.slice(Math.max(0, i - 40), i + 90) + (txt.length > i + 90 ? '…' : ''); return {a:'open', col, id, t:snip, s:`${ACT[a.type]||'Note'} · ${nameOf(col, id)} · ${rel(a.at)}`}; }).filter(Boolean)]
   ];
   const total = groups.reduce((n, g) => n + g[1].length, 0);
   if (!total) return `<p class="empty-s">Nothing matches “${esc(q)}”.</p>`;
@@ -2438,6 +2485,7 @@ function spBuild(files, ppl){
       source: spTidy(r['Lead Source'], SOURCES), sourceOther: spTidy(r['Lead Source Other']), initialCall: spTidy(r['Initial Call'], INITIAL_CALL), firstCallClose: fcc, noCloseReason: spTidy(r['Did not Close on First Call'], NO_CLOSE), lostReason: st === 'lost' ? spTidy(r['Reason for Loss'], LOSS_REASONS) : '',
       notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
       spiro: spExtra(r, [['Closed Amount', 'Closed amount', v => num(v) ? money2(num(v)) : ''], ['Estimated Bin Count', 'Estimated bin count'], ['Repeat Client', 'Repeat client', spYN], ['Service Agreement on File', 'Service agreement on file'], ['Contract Anniversary Date', 'Contract anniversary', v => v && fmtDate(spDate(v) || v)], ['Contract END Date', 'Contract end date', v => v && fmtDate(spDate(v) || v)], ['Commission', 'Commission'], ['APER?', 'APER?'], ['Priority', 'Priority'], ['Website', 'Website'], ['Opportunity', 'Spiro opportunity name', v => v && v !== type ? v : ''], ['Closed By', 'Closed by in Spiro', v => /,/.test(v) || /^(house|other)$/i.test(v) ? v : '']])}]); }
+  { let next = acctMax(); out.companies.slice().sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0)).forEach(([id, d]) => { if (!(S.companies[id] && +S.companies[id].acctNo)) d.acctNo = ++next; }); }
   for (const c of Object.keys(out)) for (const pair of out[c]) { const d = pair[1]; Object.keys(d).forEach(k => { if (d[k] === '' || d[k] === undefined || d[k] === 0 && (k === 'value' || k === 'priceQuoted')) delete d[k]; }); }
   return out;
 }
@@ -2537,7 +2585,7 @@ async function runImport(_, form){
   let failed = false;
   const write = async (col, id, rec) => {
     if (failed) return false;
-    const doc = clean({...rec, updatedAt: Date.now(), createdAt: rec.createdAt || Date.now(), createdBy: rec.createdBy || ME.id});
+    const doc = clean({...rec, updatedAt: Date.now(), createdAt: rec.createdAt || Date.now(), createdBy: rec.createdBy || ME.id}); if (col === 'companies' && !(+doc.acctNo)) doc.acctNo = acctMax() + 1;
     S[col][id] = doc; queue.push([col, id, doc]);
     if (queue.length >= BATCH) { if (!await flush()) { failed = true; return false; } }
     return true;
@@ -2619,7 +2667,7 @@ const EXP = {
   deals: {
     title: 'opportunities', file: 'opportunities',
     cols: [
-      ['Opportunity Id', d => d.id], ['Company', d => cname(d.companyId)], ['Opportunity', d => d.name || d.type],
+      ['Opportunity Id', d => d.id], ['Company', d => cname(d.companyId)], ['Account Number', d => acctOf(d.companyId)], ['Opportunity', d => d.name || d.type],
       ['Contact', d => d.contactId && S.contacts[d.contactId] ? pname_(S.contacts[d.contactId]) : ''], ['Contact Email', d => d.contactId ? ctMail(S.contacts[d.contactId]) : ''],
       ['Sales Stage', d => stage(d).l], ['Closed Date', d => isOpen(d) ? '' : mdy(d.closedAt)], ['Created', d => mdy(d.createdAt)], ['Description', d => d.notes],
       ['Owner', d => nm(d.ownerId)], ['Service', d => d.service], ['Service Interval', d => d.interval], ['Service Date', d => mdy(d.serviceDate)], ['Service Type', d => d.serviceType],
@@ -2642,7 +2690,7 @@ const EXP = {
   companies: {
     title: 'accounts', file: 'accounts',
     cols: [
-      ['Company Id', c => c.id], ['Name', c => c.name], ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
+      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
       ['Owner', c => nm(c.ownerId)], ['Created', c => mdy(c.createdAt)], ['Open Opportunities', c => coStats(c.id).open], ['Won Jobs', c => coStats(c.id).won], ['Last Job Date', c => mdy(coStats(c.id).last)], ['Notes', c => c.notes]],
     form: () => locForm('Account owner'),
     rows: f => L('companies').filter(c => locMatch(c, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.id, f.status) && inRange(c.createdAt, f.from, f.to)).sort(byName)
@@ -2651,7 +2699,7 @@ const EXP = {
     title: 'contacts', file: 'contacts',
     cols: [
       ['First Name', c => c.firstName], ['Last Name', c => c.lastName], ['Email', c => c.email], ['Personal Email', c => c.email2], ['Title', c => c.title],
-      ['Phone', c => c.phone], ['Mobile', c => c.mobile], ['Description', c => c.notes], ['Owner', c => nm(c.ownerId)], ['Company', c => cname(c.companyId)], ['Created', c => mdy(c.createdAt)]],
+      ['Phone', c => c.phone], ['Mobile', c => c.mobile], ['Description', c => c.notes], ['Owner', c => nm(c.ownerId)], ['Company', c => cname(c.companyId)], ['Account Number', c => acctOf(c.companyId)], ['Created', c => mdy(c.createdAt)]],
     form: () => locForm('Contact owner'),
     rows: f => L('contacts').filter(c => { const co = S.companies[c.companyId] || {}; return locMatch(co, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.companyId, f.status) && inRange(c.createdAt, f.from, f.to); })
       .sort((a, b) => cname(a.companyId).localeCompare(cname(b.companyId)) || pname_(a).localeCompare(pname_(b)))
@@ -3692,7 +3740,7 @@ document.addEventListener('input', e => {
   if (el.id === 'dCc' || el.id === 'dBcc') { acShow(el); return; }
   if (el.id === 'jsIn' || el.id === 'jsDate') { jsPreview(); return; }
   if (el.id === 'q') { ui.q = el.value; ui.lim = {}; schedule(); return; }
-  if (el.id === 'gq') { $('#gres').innerHTML = searchResults(el.value); return; }
+  if (el.id === 'gq') { clearTimeout(gqT); gqT = setTimeout(() => { const r = $('#gres'); if (r && $('#gq')) r.innerHTML = searchResults($('#gq').value); }, 120); return; }
   if (el.closest && el.closest('#qItems')) { updQuoteTotal(); return; }
   if (el.id === 'teamQ' && U) { const v = el.value; U.search(v).then(hits => { if ($('#teamQ')?.value !== v) return; hits.forEach(h => { P[h.id] = h; }); const ul = $('#teamHits'); if (!ul) return; ul.innerHTML = hits.filter(h => h.id !== ME.id).map(h => `<li data-id="${esc(h.id)}"><span>${h.avatarUrl ? `<img class="av" src="${esc(h.avatarUrl)}" alt="">` : ''}<span>${esc(h.name)}</span></span>${(team.ids||[]).includes(h.id) ? '<span class="sub">On the team</span>' : `<button type="button" class="btn sm" data-act="teamAdd" data-id="${esc(h.id)}">Add</button>`}</li>`).join('') || (v ? '<li class="sub">No one found.</li>' : ''); }); }
 });
@@ -5040,7 +5088,7 @@ async function boot(){
   if (d) {
     db = d; live = true;
     for (const c of COLS) {
-      db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); REAL[c] = o; if (!DEMO) S[c] = o; loaded[c] = true; schedule(); },
+      db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); REAL[c] = o; if (!DEMO) S[c] = o; loaded[c] = true; if (c === 'companies') { hayReset(); acctHeal(); } schedule(); },
         err => { loaded[c] = true; if (err && err.code === 'revoked') { canWrite = false; toast('Your access to this CRM changed. Reload to continue.', 'bad'); } else toast("Lost the live connection to your records. Reload the page.", 'bad'); schedule(); });
     }
     if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
@@ -5048,7 +5096,7 @@ async function boot(){
   if (!d && !window.claude) { STANDALONE = true; if (!GUEST) loadLocal(); }
   loadLookLocal();
   if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
-  booted = true; bootDone();
+  booted = true; bootDone(); setTimeout(acctHeal, 4000);
   syncLookFromDb();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
   try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
