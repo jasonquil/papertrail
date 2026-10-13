@@ -120,6 +120,8 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .stagesel{appearance:none;-webkit-appearance:none;width:auto;border:0;border-radius:999px;padding:3px 24px 3px 10px;font-size:.76rem;font-weight:700;cursor:pointer;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 9px center;color:var(--accent)}
 .stagesel.contract{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.stagesel.won{background-color:var(--good-soft);color:var(--good)}
 .usebar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.usebar.sm{height:5px;margin:6px 0 4px}.usebar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
+.fznote{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);font-size:.88rem}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
 .stagesel:focus{box-shadow:0 0 0 3px var(--accent-soft);outline:none}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap;letter-spacing:.01em}
@@ -975,7 +977,7 @@ const nrm = v => { const s = String(v ?? ''); let o = NC.get(s); if (o !== undef
   if (NC.size > 400000) NC.clear(); NC.set(s, o); return o; };
 const qParts = q => { q = String(q || '').trim(); return {raw: q.toLowerCase().split(/\s+/).filter(Boolean), n: nrm(q).split(' ').filter(Boolean), d: q.replace(/\D/g, '')}; };
 const mkHay = vals => { const r = vals.map(v => String(v ?? '').toLowerCase()).join(' '); return {n: ' ' + vals.map(nrm).join(' '), r, d: r.replace(/\D/g, '')}; };
-const hayHit = (Q, h) => (Q.n.length > 0 && Q.n.every(t => h.n.includes(t))) || (Q.raw.length > 0 && Q.raw.every(t => h.r.includes(t)))
+const hayHit = (Q, h) => (Q.n.length > 0 && Q.n.every(t => Array.isArray(t) ? t.some(x => h.n.includes(x)) : h.n.includes(t))) || (Q.raw.length > 0 && Q.raw.every(t => h.r.includes(t)))
   || (Q.d.length >= 3 && Q.d.length >= Q.raw.join('').replace(/[\s\-().#+]/g, '').length - 1 && h.d.includes(Q.d));
 const qHit = (Q, f) => hayHit(Q, mkHay(f));
 let HC = new WeakMap(); const hayReset = () => { HC = new WeakMap(); };   // per-record search text, rebuilt when a record (or any account name) changes
@@ -983,7 +985,29 @@ const hay = (rec, tag, f, col) => { const src = (col && rec.id && S[col][rec.id]
 let _mq = null, _mQ = null;
 const qOf = q => { if (q !== _mq) { _mq = q; _mQ = qParts(q); } return _mQ; };
 const match = (q, ...f) => !q || !String(q).trim() || qHit(qOf(q), f);
-const matchR = (q, rec, tag, f, col) => !q || !String(q).trim() || hayHit(qOf(q), hay(rec, tag, f, col));
+const matchR = (q, rec, tag, f, col) => !q || !String(q).trim() || hayHit(FZ || qOf(q), hay(rec, tag, f, col));
+// typo tolerance: when nothing matches, try the closest spellings found in your own records ("Port St Luvie" → "port st lucie")
+let FZ = null, VOC = null, VOCn = 0;
+const lev = (a, b, max) => { if (Math.abs(a.length - b.length) > max) return max + 1; let prev = Array.from({length: b.length + 1}, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { const cur = [i]; let low = i; for (let j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (a[i - 2] === b[j - 1] && a[i - 1] === b[j - 2] && i > 1 && j > 1) cur[j] = Math.min(cur[j], prev[j - 2] + 1); if (cur[j] < low) low = cur[j]; } if (low > max) return max + 1; prev = cur; } return prev[b.length]; };
+function vocab(){
+  const n = Object.keys(S.companies).length + Object.keys(S.contacts).length + Object.keys(S.deals).length;
+  if (VOC && VOCn === n) return VOC;
+  const cnt = new Map(); const add = h => { for (const w of h.n.split(' ')) if (w.length >= 3 && !/^\d+$/.test(w)) cnt.set(w, (cnt.get(w) || 0) + 1); };
+  for (const c of L('companies')) add(hay(c, 'v', () => [c.name, c.city, c.address], 'companies'));
+  for (const c of L('contacts')) add(hay(c, 'v', () => [c.firstName, c.lastName, c.title], 'contacts'));
+  for (const d of L('deals')) add(hay(d, 'v', () => [d.name, d.service], 'deals'));
+  VOC = [...cnt.entries()]; VOCn = n; return VOC;
+}
+function fuzzQ(Q){
+  if (!Q || !Q.n.length) return null; const V = vocab(); let changed = false; const shown = [];
+  const n = Q.n.map(t => { if (t.length < 4 || /^\d+$/.test(t) || V.some(([w]) => w.includes(t))) { shown.push(t); return t; }
+    const max = t.length >= 8 ? 2 : 1; const near = V.filter(([w]) => lev(t, w, max) <= max).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([w]) => w);
+    if (!near.length) { shown.push(t); return t; } changed = true; shown.push(near[0]); return near; });
+  return changed ? {n, raw: [], d: '', label: shown.join(' ')} : null;
+}
+const fzRun = run => { ui.fzNote = ''; let r = run(); if (!r.length && ui.q && String(ui.q).trim()) { const f = fuzzQ(qOf(ui.q)); if (f) { FZ = f; try { r = run(); } finally { FZ = null; } if (r.length) ui.fzNote = f.label; } } return r; };
+const fzNote = () => ui.fzNote && ui.q ? `<p class="fznote">No exact matches for “${esc(ui.q)}”. Showing close matches for <b>${esc(ui.fzNote)}</b>.</p>` : '';
 const acctFirst = q => { const n = String(q || '').replace(/^\s*#\s*/, '').trim(); return /^\d{4,7}$/.test(n) ? (a, b) => (String(b.acctNo) === n) - (String(a.acctNo) === n) : null; };
 const acctOf = coId => coId && S.companies[coId] && S.companies[coId].acctNo ? String(S.companies[coId].acctNo) : '';
 const mine = r => !ui.mine || (r.ownerId || r.assigneeId || r.createdBy) === ME.id;
@@ -1508,7 +1532,7 @@ function viewHtml(){
   return banner + V[ui.view]();
 }
 
-const head = (title, sub, actions='') => `<div class="vh"><div><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div><div class="vh-act">${actions}</div></div>`;
+const head = (title, sub, actions='') => `<div class="vh"><div><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div><div class="vh-act">${actions}</div></div>${fzNote()}`;
 const PAGE = 100;
 const pg = (key, rows) => rows.slice(0, (ui.lim && ui.lim[key]) || PAGE);
 const pgFoot = (key, n) => { const shown = Math.min(n, (ui.lim && ui.lim[key]) || PAGE); return n > shown ? `<div class="pgfoot"><span class="sub">Showing ${shown.toLocaleString()} of ${n.toLocaleString()}. Search to find anyone faster.</span><button class="btn sm" data-act="pgMore" data-k="${key}">Show ${Math.min(PAGE * 5, n - shown).toLocaleString()} more</button></div>` : ''; };
@@ -1609,9 +1633,9 @@ V.reminders = () => {
 V.pipeline = () => {
   const show = ui.oppShow || 'open';
   const all = L('deals').filter(mine);
-  const rows = all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true)
+  const rows = fzRun(() => all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true)
     .filter(d => matchR(ui.q, d, 'l', () => [d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : '', acctOf(d.companyId)], 'deals'))
-    .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||''));
+    .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
   const nOpen = all.filter(isOpen).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
@@ -1749,7 +1773,7 @@ V.company = () => {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
     body = `
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}</div>
-      <div class="cpgrid">${cpField('Account #', c.acctNo ? `<b class="num">${c.acctNo}</b><button class="copy" data-act="copy" data-t="${c.acctNo}" aria-label="Copy account number">${ic('copy')}</button>` : '')}${cpField('Name', esc(c.name))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
+      <div class="cpgrid">${cpField('Name', esc(c.name) + (c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
       ${cpField('Address', esc(c.address))}${cpField('City', esc(c.city))}${cpField('Zip code', esc(c.zip))}
       ${cpField('State', esc(c.state))}${c.website ? cpField('Website', `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`) : ''}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${cpField('Contacts', String(g.contacts.length))}
       ${cpField('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', true)}</div></section>
@@ -1772,7 +1796,7 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = L('companies').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b));
+  const rows = fzRun(() => L('companies').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
   const total = Object.keys(S.companies).length;
   return head('Accounts', `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
@@ -1784,7 +1808,7 @@ V.companies = () => {
 };
 
 V.contacts = () => {
-  const rows = L('contacts').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b)));
+  const rows = fzRun(() => L('contacts').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))));
   const total = Object.keys(S.contacts).length;
   return head('Contacts', `${total} contact${total===1?'':'s'}`, searchBox('Search contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
@@ -2071,7 +2095,7 @@ function searchResults(q){
   q = q.trim();
   if (!q) return `<p class="empty-s">Search accounts, contacts, opportunities, quotes, contracts and everything you've logged.</p>`;
   const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
-  const Q = qParts(q); const hit = (rec, tag, f, col) => hayHit(Q, hay(rec, tag, f, col)); const af = acctFirst(q);
+  const Q = FZ || qParts(q); const hit = (rec, tag, f, col) => hayHit(Q, hay(rec, tag, f, col)); const af = acctFirst(q);
   const mark = s => { let out = esc(s); const t = toks.sort((a,b) => b.length - a.length)[0]; if (t) { const re = new RegExp('(' + esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'); out = out.replace(re, '<mark>$1</mark>'); } return out; };
   const groups = [
     ['Accounts', L('companies').filter(c => hit(c, 'g', () => [c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes, c.acctNo], 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)).map(c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
@@ -2082,6 +2106,8 @@ function searchResults(q){
     ['Notes and activity', X.acts.filter(a => a.type !== 'stage' && hit(a, 'g', () => [a.text], 'activities')).map(a => { const col = a.dealId && S.deals[a.dealId] ? 'deals' : a.companyId && S.companies[a.companyId] ? 'companies' : a.contactId && S.contacts[a.contactId] ? 'contacts' : null; if (!col) return null; const id = col === 'deals' ? a.dealId : col === 'companies' ? a.companyId : a.contactId; const txt = String(a.text||''); const i = txt.toLowerCase().indexOf(toks[0]); const snip = (i > 40 ? '…' : '') + txt.slice(Math.max(0, i - 40), i + 90) + (txt.length > i + 90 ? '…' : ''); return {a:'open', col, id, t:snip, s:`${ACT[a.type]||'Note'} · ${nameOf(col, id)} · ${rel(a.at)}`}; }).filter(Boolean)]
   ];
   const total = groups.reduce((n, g) => n + g[1].length, 0);
+  if (!total && !searchResults.fz) { const f = fuzzQ(Q); if (f) { FZ = f; searchResults.fz = true; let out; try { out = searchResults(q); } finally { FZ = null; searchResults.fz = false; }
+    if (!/class="empty-s"/.test(out)) return `<p class="fznote">No exact matches for “${esc(q)}”. Showing close matches for <b>${esc(f.label)}</b>.</p>` + out; } }
   if (!total) return `<p class="empty-s">Nothing matches “${esc(q)}”.</p>`;
   return groups.filter(g => g[1].length).map(([name, rows]) => `<div class="sg"><h3>${name}<span>${rows.length}</span></h3><ul class="srl">${rows.slice(0, 8).map(r => `<li><button type="button" class="sr" data-act="gopen" data-a="${r.a}"${attrs({col:r.col, id:r.id})}><b>${mark(r.t)}</b><small>${mark(r.s)}</small></button></li>`).join('')}${rows.length > 8 ? `<li class="sub" style="padding:4px 10px">${rows.length - 8} more. Add another word to narrow it down.</li>` : ''}</ul></div>`).join('');
 }
@@ -3739,7 +3765,7 @@ document.addEventListener('input', e => {
   if (el.id === 'tplBody') { updTplPrev(); return; }
   if (el.id === 'dCc' || el.id === 'dBcc') { acShow(el); return; }
   if (el.id === 'jsIn' || el.id === 'jsDate') { jsPreview(); return; }
-  if (el.id === 'q') { ui.q = el.value; ui.lim = {}; schedule(); return; }
+  if (el.id === 'q') { ui.q = el.value; ui.lim = {}; ui.fzNote = ''; schedule(); return; }
   if (el.id === 'gq') { clearTimeout(gqT); gqT = setTimeout(() => { const r = $('#gres'); if (r && $('#gq')) r.innerHTML = searchResults($('#gq').value); }, 120); return; }
   if (el.closest && el.closest('#qItems')) { updQuoteTotal(); return; }
   if (el.id === 'teamQ' && U) { const v = el.value; U.search(v).then(hits => { if ($('#teamQ')?.value !== v) return; hits.forEach(h => { P[h.id] = h; }); const ul = $('#teamHits'); if (!ul) return; ul.innerHTML = hits.filter(h => h.id !== ME.id).map(h => `<li data-id="${esc(h.id)}"><span>${h.avatarUrl ? `<img class="av" src="${esc(h.avatarUrl)}" alt="">` : ''}<span>${esc(h.name)}</span></span>${(team.ids||[]).includes(h.id) ? '<span class="sub">On the team</span>' : `<button type="button" class="btn sm" data-act="teamAdd" data-id="${esc(h.id)}">Add</button>`}</li>`).join('') || (v ? '<li class="sub">No one found.</li>' : ''); }); }
