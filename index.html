@@ -963,19 +963,21 @@ const ctAddrs = c => c ? [...new Set([c.email, c.email2].map(e => String(e || ''
 const ctMail = c => c ? String(c.email || c.email2 || '').trim() : '';
 const isPersonalOnly = c => c && !String(c.email || '').trim() && !!String(c.email2 || '').trim();
 const persTag = '<span class="ptag" title="Personal email. Add their work email when they share it.">personal</span>';
-const ctMailLink = (c, style) => ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${c.id}"${style ? ` style="${style}"` : ''} title="Email ${esc(pname_(c))}">${esc(ctMail(c))}</button>${isPersonalOnly(c) ? persTag : ''}` : '';
+const ctMailLink = (c, style) => ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${c.id}"${style ? ` style="${style}"` : ''} title="Email ${esc(pname_(c))}">${esc(ctMail(c))}</button>` : '';
 const nameOf = (col,id) => { const r = S[col][id]; if (!r) return 'Deleted record'; if (col==='contacts') return pname_(r); if (col==='quotes') return r.number; return r.name || r.title || 'Untitled'; };
 const stage = d => { const k = LEGACY_STAGE[d.stage] || d.stage || 'lead'; return STAGES.find(s => s.k === k) || STAGES[0]; };
 const isOpen = d => !CLOSED.includes(d.stage||'lead');
 const isWon = d => d.stage === 'won' || d.stage === 'updated';
 const qTotal = q => q.total != null ? +q.total : sum(q.items||[], i => (+i.qty||0) * (+i.price||0));
 // search: "Port St. Lucie", "Port St Lucie" and "Port Saint Lucie" all find each other; words can come in any order
-const SYN = {saint: 'st', street: 'st', fort: 'ft', mount: 'mt', avenue: 'ave', av: 'ave', road: 'rd', boulevard: 'blvd', drive: 'dr', doctor: 'dr', lane: 'ln', court: 'ct', place: 'pl', parkway: 'pkwy', pkway: 'pkwy', highway: 'hwy', terrace: 'ter', circle: 'cir', suite: 'ste', north: 'n', south: 's', east: 'e', west: 'w', northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw', center: 'ctr', centre: 'ctr', company: 'co', corporation: 'corp', incorporated: 'inc', limited: 'ltd', associates: 'assoc', department: 'dept', building: 'bldg', apartment: 'apt', number: 'no', '&': 'and'};
+const SYN = {saint: 'st', street: 'st', fort: 'ft', mount: 'mt', avenue: 'ave', av: 'ave', road: 'rd', boulevard: 'blvd', drive: 'dr', doctor: 'dr', lane: 'ln', court: 'ct', place: 'pl', parkway: 'pkwy', pkway: 'pkwy', highway: 'hwy', terrace: 'ter', circle: 'cir', suite: 'ste', north: 'n', south: 's', east: 'e', west: 'w', northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw', center: 'ctr', centre: 'ctr', company: 'co', corporation: 'corp', incorporated: 'inc', limited: 'ltd', associates: 'assoc', department: 'dept', building: 'bldg', apartment: 'apt', number: 'no', '&': 'and',
+  account: 'acct', accounts: 'accts', accounting: 'acctg', management: 'mgmt', international: 'intl', national: 'natl', insurance: 'ins', medical: 'med', professional: 'prof', professionals: 'profs', development: 'dev', technology: 'tech', technologies: 'tech', systems: 'sys', manufacturing: 'mfg', university: 'univ', hospital: 'hosp', government: 'govt', attorney: 'atty', attorneys: 'attys', brothers: 'bros', services: 'svcs', service: 'svc', solutions: 'sol', financial: 'fin', mortgage: 'mtg', construction: 'const', american: 'amer', county: 'cnty', association: 'assn', foundation: 'fdn', community: 'comm', enterprises: 'ent', laboratory: 'lab', laboratories: 'labs', pediatrics: 'peds', orthopedics: 'ortho', orthopaedics: 'ortho', physical: 'phys', therapy: 'ther'};
 const NC = new Map();
 const nrm = v => { const s = String(v ?? ''); let o = NC.get(s); if (o !== undefined) return o;
   o = s.toLowerCase().replace(/['’`]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9@]+/g, ' ').trim().split(' ').map(w => SYN[w] || w).join(' ');
   if (NC.size > 400000) NC.clear(); NC.set(s, o); return o; };
-const qParts = q => { q = String(q || '').trim(); return {raw: q.toLowerCase().split(/\s+/).filter(Boolean), n: nrm(q).split(' ').filter(Boolean), d: q.replace(/\D/g, '')}; };
+const qParts = q => { q = String(q || '').trim().replace(/\b(acct|account|acc|act)\s*(#|no\.?|num(ber)?)?\s*#?\s*(?=\d)/gi, '').trim();   // "acct 10005", "account #10005", "acct#10005" all mean the number
+ return {raw: q.toLowerCase().split(/\s+/).filter(Boolean), n: nrm(q).split(' ').filter(Boolean), d: q.replace(/\D/g, '')}; };
 const mkHay = vals => { const r = vals.map(v => String(v ?? '').toLowerCase()).join(' '); return {n: ' ' + vals.map(nrm).join(' '), r, d: r.replace(/\D/g, '')}; };
 const hayHit = (Q, h) => (Q.n.length > 0 && Q.n.every(t => Array.isArray(t) ? t.some(x => h.n.includes(x)) : h.n.includes(t))) || (Q.raw.length > 0 && Q.raw.every(t => h.r.includes(t)))
   || (Q.d.length >= 3 && Q.d.length >= Q.raw.join('').replace(/[\s\-().#+]/g, '').length - 1 && h.d.includes(Q.d));
@@ -1008,7 +1010,7 @@ function fuzzQ(Q){
 }
 const fzRun = run => { ui.fzNote = ''; let r = run(); if (!r.length && ui.q && String(ui.q).trim()) { const f = fuzzQ(qOf(ui.q)); if (f) { FZ = f; try { r = run(); } finally { FZ = null; } if (r.length) ui.fzNote = f.label; } } return r; };
 const fzNote = () => ui.fzNote && ui.q ? `<p class="fznote">No exact matches for “${esc(ui.q)}”. Showing close matches for <b>${esc(ui.fzNote)}</b>.</p>` : '';
-const acctFirst = q => { const n = String(q || '').replace(/^\s*#\s*/, '').trim(); return /^\d{4,7}$/.test(n) ? (a, b) => (String(b.acctNo) === n) - (String(a.acctNo) === n) : null; };
+const acctFirst = q => { const n = String(q || '').replace(/^\s*(acct|account|acc|act)?\s*(#|no\.?|num(ber)?)?\s*#?\s*/i, '').trim(); return /^\d{4,7}$/.test(n) ? (a, b) => (String(b.acctNo) === n) - (String(a.acctNo) === n) : null; };
 const acctOf = coId => coId && S.companies[coId] && S.companies[coId].acctNo ? String(S.companies[coId].acctNo) : '';
 const mine = r => !ui.mine || (r.ownerId || r.assigneeId || r.createdBy) === ME.id;
 const lastTouch = r => X.lastAct[r.id] || r.createdAt || 0;
@@ -1173,7 +1175,7 @@ function loadSample(){
   const ct = (id, companyId, firstName, lastName, title, email, phone, email2) => S.contacts[id] = {companyId, firstName, lastName, title, email: email || '', email2: email2 || '', phone, ownerId: S.companies[companyId].ownerId, createdAt: now - 38 * day};
   ct('p1', 'c1', 'Maria', 'Alvarez', 'Office Manager', 'maria@harbordental.example', '(772) 555-0143');
   ct('p2', 'c2', 'Greg', 'Thompson', 'Closing Agent', 'greg@palmcitytitle.example', '(772) 555-0179');
-  ct('p3', 'c3', 'Dana', 'Whitfield', 'Practice Administrator', '', '(772) 555-0120', 'dana.whitfield@gmail.example');
+  ct('p3', 'c3', 'Dana', 'Whitfield', 'Practice Administrator', 'dana.whitfield@gmail.example', '(772) 555-0120');
   ct('p4', 'c4', 'Robert', 'Chen', 'Partner', 'rchen@seacoastcpa.example', '(772) 555-0164');
   ct('p5', 'c5', 'Lisa', 'Moreno', 'Paralegal', 'lisa@hobesoundlaw.example', '(772) 555-0108');
   const dl = (id, companyId, contactId, type, stage, extra) => S.deals[id] = {companyId, contactId, type, name: type, stage, ownerId: S.companies[companyId].ownerId, createdAt: now - (extra.ago || 10) * day, ...extra};
@@ -1193,7 +1195,7 @@ function loadSample(){
   ac('c1', 'p1', 'email', 'Sent: Your shredding quote\nQuote for 2 bins attached. Let me know a good day.', 72, 'jason');
   ac('c1', 'p1', 'email', "Received: RE: Your shredding quote\nLooks good, let's book it.", 30, 'jason');
   ac('c2', 'p2', 'voicemail', 'Left a message about the monthly service proposal.', 28, 'kate');
-  ac('c3', 'p3', 'inbound', 'Dana found us through ChatGPT. Gave her personal email for now.', 20, 'jason');
+  ac('c3', 'p3', 'inbound', 'Dana found us through ChatGPT.', 20, 'jason');
   ac('c4', 'p4', 'noconnect', 'No answer, will try again next week.', 300, 'ann');
   ac('c5', 'p5', 'meeting', 'Walked the server room with Lisa. 30 drives, wants certificates.', 110, 'kate');
   saveLocal(); schedule(); toast('Sample data loaded');
@@ -1225,7 +1227,7 @@ function buildDemo(){
     out.companies[id] = {name: c[0], address: c[1], city: c[2], state: 'FL', zip: c[3], phone: `(772) 555-${String(100 + i * 7).padStart(4, '0')}`, ownerId: owner, createdAt: now - (30 + i * 9) * day};
     const pid = 'dp' + i, fn = first[i], ln = last[i];
     const dom = c[0].toLowerCase().replace(/[^a-z]/g, '').slice(0, 14) + '.example';
-    out.contacts[pid] = {companyId: id, firstName: fn, lastName: ln, title: titles[i % titles.length], email: i === 2 ? '' : `${fn.toLowerCase()}@${dom}`, email2: i === 2 ? `${fn.toLowerCase()}.${ln.toLowerCase()}@gmail.example` : '', phone: `(772) 555-${String(300 + i * 11).padStart(4, '0')}`, ownerId: owner, createdAt: now - (28 + i * 9) * day};
+    out.contacts[pid] = {companyId: id, firstName: fn, lastName: ln, title: titles[i % titles.length], email: i === 2 ? `${fn.toLowerCase()}.${ln.toLowerCase()}@gmail.example` : `${fn.toLowerCase()}@${dom}`, email2: '', phone: `(772) 555-${String(300 + i * 11).padStart(4, '0')}`, ownerId: owner, createdAt: now - (28 + i * 9) * day};
     if (i % 4 === 0) out.contacts[pid + 'b'] = {companyId: id, firstName: pick(first), lastName: pick(last), title: 'Assistant', email: `info@${dom}`, phone: '', ownerId: owner, createdAt: now - (20 + i) * day};
   });
   const types = [['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 185, 175], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Monthly', 715, 55], ['Medical Waste', 'Recurring', 'Medical Waste', 'Monthly', 780, 65],
@@ -1712,6 +1714,27 @@ function oppEditor(d, k){
   }
   return '';
 }
+function coEditor(c, k){
+  const at = `id="ce_${k}" data-keep data-change="coField" data-k="${k}" data-id="${c.id}" class="oe"`;
+  switch (k) {
+    case 'ownerId': return ownerSel('oe', c.ownerId || ME.id).replace('<select ', `<select ${at} `);
+    case 'state': return sel('oe', [['', '—'], ...[...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES].map(x => [x, x])], c.state || '', at);
+    case 'notes': return `<textarea ${at} rows="2" placeholder="Add notes">${esc(c.notes || '')}</textarea>`;
+    case 'phone': return `<input ${at} type="tel" placeholder="—" value="${esc(c.phone || '')}">`;
+    case 'zip': return `<input ${at} type="text" inputmode="numeric" placeholder="—" value="${esc(c.zip || '')}">`;
+    default: return `<input ${at} type="text" placeholder="—" value="${esc(c[k] || '')}">`;
+  }
+}
+async function coSaveField(el){
+  const id = el.dataset.id, k = el.dataset.k, c = S.companies[id]; if (!c) return;
+  let v = String(el.value || '').trim();
+  if (k === 'phone') v = phoneNorm(v);
+  if (k === 'website') v = v.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+  if (k === 'name') { if (!v) { toast('An account needs a name.', 'bad'); el.value = c.name || ''; return; }
+    const dup = findDupCompany(v, c.phone, id); if (dup && norm(dup.name) === norm(v)) { toast(`${dup.name} is already in the CRM. Use Merge to combine them.`, 'bad'); el.value = c.name || ''; return; } }
+  if (String(c[k] ?? '') === v) return;
+  if (await patch('companies', id, {[k]: v})) toast('Saved'); else render();
+}
 async function oppSaveField(el){
   const id = el.dataset.id, k = el.dataset.k, d = S.deals[id]; if (!d) return;
   let v = el.value; const up = {};
@@ -1767,16 +1790,18 @@ V.company = () => {
   const counts = {activity: g.acts.filter(a => a.type !== 'stage').length, reminders: g.tasks.filter(k => !k.done).length, contacts: g.contacts.length, opps: g.deals.length, quotes: g.quotes.length, contracts: g.contracts.length, journeys: L('enrollments').filter(e => e.companyId === id).length};
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
   const W = canWrite;
-  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="companies" data-id="${id}" title="Fold a duplicate account into this one">Merge</button>` : ''}`;
+  const cf = (label, val, k, wide) => W ? `<label class="cpf ed${wide ? ' wide' : ''}"><span>${label}</span><div>${coEditor({...c, id}, k)}</div></label>` : cpField(label, val, wide);
+  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="companies" data-id="${id}" title="Fold a duplicate account into this one">Merge</button><button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
   let body = '';
   if (tab === 'details') {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
     body = `
-    <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}</div>
-      <div class="cpgrid">${cpField('Name', esc(c.name) + (c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''))}${cpField('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '')}${cpField('Owner', who(c.ownerId))}
-      ${cpField('Address', esc(c.address))}${cpField('City', esc(c.city))}${cpField('Zip code', esc(c.zip))}
-      ${cpField('State', esc(c.state))}${c.website ? cpField('Website', `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`) : ''}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${cpField('Contacts', String(g.contacts.length))}
-      ${cpField('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', true)}</div></section>
+    <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
+      <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
+      ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
+      ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
+      ${cpField('Contacts', String(g.contacts.length))}
+      ${cf('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', 'notes', true)}</div></section>
     ${spiroPanel(c)}
     <div class="cols2"><section class="panel"><div class="ph"><h3>Opportunities</h3><button class="lnk" data-act="cpTab" data-t="opps">See all</button></div>${rowsOr(od.slice(0, 8), oppHistRow, 'No opportunities yet.')}${od.length > 8 ? `<p class="sub">${od.length - 8} more on the Opportunities tab</p>` : ''}</section>
     <section class="panel"><div class="ph"><h3>Reminders</h3><button class="lnk" data-act="cpTab" data-t="reminders">See all</button></div>${tasksList(rem.slice(0, 5))}</section></div>`;
@@ -2023,7 +2048,7 @@ const DETAIL = {
     const deals = L('deals').filter(d => d.contactId === id);
     return `<div class="dh"><div><p class="eyebrow">Contact</p><h2>${esc(pname_(c))}</h2><p class="sub">${esc(c.title||'')}${c.companyId ? (c.title ? ' at ' : '') : ''}</p>${c.companyId ? `<div>${link('companies', c.companyId)}</div>` : ''}</div>${closeBtn}</div>
     <div class="dacts">${canWrite ? `<button class="btn sm pri" data-act="newDeal" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${esc(c.companyId||'')}">${ic('bell')}Reminder</button><button class="btn sm" data-act="jStart" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('route')}Journey</button><button class="btn sm" data-act="editContact" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="contacts" data-id="${id}" title="Fold a duplicate contact into this one">Merge</button>` : ''}<button class="btn sm" data-act="draft" data-col="contacts" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delContact" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
-    <dl class="facts">${fact('Work email', c.email ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(c.email)}</button>` : (c.email2 && canWrite ? `<button class="lnk sub" data-act="editContact" data-id="${id}">Add when they share it</button>` : ''), c.email)}${c.email2 ? fact('Personal email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Email', ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(ctMail(c))}</button>` : '', ctMail(c))}${c.email && c.email2 ? fact('Other email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({contactid:id, companyid:c.companyId})}
     ${sec('Opportunities', deals.length, rowsOr(deals, dealRow, 'No opportunities with this contact.'), 'newDeal', {co:c.companyId, ct:id})}
@@ -2150,15 +2175,15 @@ function contactForm(id, pre={}){
     ${F('Title', inp('title', c.title))}
     ${F('Account', sel('companyId', withOpt(coOpts('— Choose an account —'), c.companyId, pre.coName), c.companyId))}
     ${id ? '' : F('Or add a new account', inp('newCompany', '', 'text', 'placeholder="New account name"'))}
-    ${F('Work email', inp('email', c.email, 'email', 'placeholder="name@company.com"'))}
-    ${F('Personal email', inp('email2', c.email2, 'email', 'placeholder="If that\'s all they\'ve shared"'))}
+    ${F('Email', inp('email', c.email || c.email2 || '', 'email', 'placeholder="name@example.com"'))}
     ${F('Phone', inp('phone', c.phone, 'tel'))}
     ${F('Mobile', inp('mobile', c.mobile, 'tel'))}
     ${F('Owner', ownerSel('ownerId', c.ownerId))}
-    <p class="sub wide" style="margin:-4px 0 0">Emails go to the work address when there is one, otherwise the personal one. Past emails from either address stay on this contact.</p>
     ${F('Notes', ta('notes', c.notes), 'wide')}</div>`, id ? 'Save' : 'Add contact', async d => {
-      d.email = (d.email || '').trim(); d.email2 = (d.email2 || '').trim();
-      if (d.email && d.email2 && d.email.toLowerCase() === d.email2.toLowerCase()) d.email2 = '';
+      d.email = (d.email || '').trim();
+      { const prev = id ? S.contacts[id] : null; const p1 = prev ? String(prev.email || '').trim() : '', p2 = prev ? String(prev.email2 || '').trim() : '';
+        // a second address from Spiro stays as "Other email", unless the form was showing it as the main one or it now matches the main one
+        if (p2 && (!p1 || p2.toLowerCase() === d.email.toLowerCase())) d.email2 = ''; }
       { const dup = findDupContact(d, id); if (dup) { const shared = ctAddrs(dup).some(e => ctAddrs(d).includes(e)); dupWarn(`${esc(pname_(dup))}${dup.companyId ? ' at ' + esc(cname(dup.companyId)) : ''} is already in the CRM${shared ? ' with this email' : ''}.`, 'contacts', dup.id); return false; } }
       const hadWork = id && String(S.contacts[id].email || '').trim();
       if (!d.companyId && d.newCompany) { const co = L('companies').find(c => norm(c.name) === norm(d.newCompany)); if (co) d.companyId = co.id; else { d.companyId = uid(); if (!await put('companies', d.companyId, {name: d.newCompany, ownerId: d.ownerId || ME.id})) return false; } }
@@ -2166,7 +2191,6 @@ function contactForm(id, pre={}){
       delete d.newCompany;
       const nid = id || uid();
       const ok = await put('contacts', nid, {...(id ? S.contacts[id] : {}), ...d});
-      if (ok && id && !hadWork && d.email && d.email2) toast('Work email added. Emails and journeys will use it from now on.');
       if (ok && !id) { toast('Contact added'); if (!ui.detail) ui.detail = {col:'contacts', id:nid}; schedule(); if (pre.flow) setTimeout(() => dealForm(null, {co: d.companyId || pre.co, coName: d.companyId === pre.co ? pre.coName : '', ct: nid, ctName: [d.firstName, d.lastName].filter(Boolean).join(' '), flow:1}), 250); }
       return ok;
     }, {foot: pre.flow ? `<button type="button" class="btn ghost" data-act="flowSkip" data-co="${esc(pre.co)}" data-coname="${esc(pre.coName||'')}" style="margin-right:auto">Skip to opportunity</button>` : ''});
@@ -2667,7 +2691,7 @@ async function runImport(_, form){
 }
 
 async function exportCsv(){
-  const rows = [['Account','Account phone','Street','City','State','ZIP','Account owner','First name','Last name','Title','Email','Personal email','Phone','Mobile']];
+  const rows = [['Account','Account phone','Street','City','State','ZIP','Account owner','First name','Last name','Title','Email','Other email','Phone','Mobile']];
   const coRow = c => [c.name, c.phone, c.address, c.city, c.state, c.zip, pname(c.ownerId)];
   const blankCo = Array(7).fill('');
   const ctRow = c => [c.firstName, c.lastName, c.title, c.email, c.email2, c.phone, c.mobile];
@@ -2724,7 +2748,7 @@ const EXP = {
   contacts: {
     title: 'contacts', file: 'contacts',
     cols: [
-      ['First Name', c => c.firstName], ['Last Name', c => c.lastName], ['Email', c => c.email], ['Personal Email', c => c.email2], ['Title', c => c.title],
+      ['First Name', c => c.firstName], ['Last Name', c => c.lastName], ['Email', c => c.email], ['Other Email', c => c.email2], ['Title', c => c.title],
       ['Phone', c => c.phone], ['Mobile', c => c.mobile], ['Description', c => c.notes], ['Owner', c => nm(c.ownerId)], ['Company', c => cname(c.companyId)], ['Account Number', c => acctOf(c.companyId)], ['Created', c => mdy(c.createdAt)]],
     form: () => locForm('Contact owner'),
     rows: f => L('contacts').filter(c => { const co = S.companies[c.companyId] || {}; return locMatch(co, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.companyId, f.status) && inRange(c.createdAt, f.from, f.to); })
@@ -3111,7 +3135,7 @@ async function copyRich(el){
 }
 const PURPOSE_TPL = {quote:'t_quote_fu', renewal:'t_renewal', checkin:'t_checkin', followup:'t_quote_fu'};
 let draftCtl = null;
-const toOpts = c => { const out = []; if (String(c.email || '').trim()) out.push([c.id + '|' + c.email.trim().toLowerCase(), `${pname_(c)} <${c.email.trim()}>`]); if (String(c.email2 || '').trim()) out.push([c.id + '|' + c.email2.trim().toLowerCase(), `${pname_(c)} <${c.email2.trim()}> (personal)`]); return out.length ? out : [[c.id + '|', pname_(c) + ' (no email)']]; };
+const toOpts = c => { const out = []; if (String(c.email || '').trim()) out.push([c.id + '|' + c.email.trim().toLowerCase(), `${pname_(c)} <${c.email.trim()}>`]); if (String(c.email2 || '').trim()) out.push([c.id + '|' + c.email2.trim().toLowerCase(), `${pname_(c)} <${c.email2.trim()}>`]); return out.length ? out : [[c.id + '|', pname_(c) + ' (no email)']]; };
 function draftModal(col, id, purpose, jopt, toAddr){
   const r = S[col][id]; if (!r) return;
   let companyId = col === 'companies' ? id : r.companyId, contact = null;
@@ -3170,7 +3194,7 @@ function acShow(el){
   const hit = (...f) => f.some(x => String(x || '').toLowerCase().split(/[\s@.]+/).some(w => w.startsWith(q)) || String(x || '').toLowerCase().startsWith(q));
   const curCo = ui.draft && ui.draft.companyId;
   const cts = L('contacts').filter(c => ctMail(c) && hit(pname_(c), c.email, c.email2, cname(c.companyId))).sort((a, b) => (b.companyId === curCo) - (a.companyId === curCo) || pname_(a).localeCompare(pname_(b)));
-  for (const c of cts) { const sub = [c.title, cname(c.companyId)].filter(Boolean).join(' · '); if (String(c.email || '').trim()) add(pname_(c), c.email.trim(), sub); if (String(c.email2 || '').trim()) add(pname_(c), c.email2.trim(), 'Personal' + (sub ? ' · ' + sub : '')); }
+  for (const c of cts) { const sub = [c.title, cname(c.companyId)].filter(Boolean).join(' · '); if (String(c.email || '').trim()) add(pname_(c), c.email.trim(), sub); if (String(c.email2 || '').trim()) add(pname_(c), c.email2.trim(), sub); }
   for (const [n, e] of STAFF) if (hit(n, e)) add(n, e, 'All Points');
   ac.el = el; ac.items = out.slice(0, 8); ac.i = 0;
   if (!ac.items.length) return acHide();
@@ -3429,7 +3453,7 @@ async function emailJourneyAfterSend(){
 const sendLabel = () => ($('#dJ') && $('#dJ').checked) ? 'Send, then Journey' : 'Send';
 function jsContactOpts(coId){
   const cts = coId ? L('contacts').filter(c => c.companyId === coId) : [];
-  return [['', cts.length ? '— Choose a contact —' : (coId ? 'No contacts at this company' : 'Choose a company first')], ...cts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(c => [c.id, pname_(c) + (c.email ? '' : c.email2 ? ' (personal email)' : ' (no email)')])];
+  return [['', cts.length ? '— Choose a contact —' : (coId ? 'No contacts at this company' : 'Choose a company first')], ...cts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(c => [c.id, pname_(c) + (ctMail(c) ? '' : ' (no email)')])];
 }
 function jsFirstDate(f){
   if (f.first === 'in') return addDays(today(), Math.max(1, parseInt(f.inDays) || 7));
@@ -3628,9 +3652,9 @@ const A = {
   delContact: d => confirmModal('Delete contact?', `${esc(nameOf('contacts', d.id))} will be removed. Logged activity stays on the account.`, 'Delete', async () => { await del('contacts', d.id); ui.detail = null; toast('Contact deleted'); }),
   delDeal: d => confirmModal('Delete opportunity?', `${esc(nameOf('deals', d.id))} will be removed. Logged activity stays on the account.`, 'Delete', async () => { await del('deals', d.id); ui.detail = null; if (ui.view === 'opp' && ui.pageOpp === d.id) ui.view = 'pipeline'; toast('Opportunity deleted'); }),
   delCompany: d => { const g = gr(d.id); const n = g.contacts.length + g.deals.length + g.quotes.length + g.contracts.length + g.tasks.length;
-    confirmModal('Delete account?', `${esc(cname(d.id))} will be removed${n ? `, along with its ${g.contacts.length} contacts, ${g.deals.length} opportunities, ${g.quotes.length} quotes, ${g.contracts.length} contracts and ${g.tasks.length} reminders` : ''}. This can't be undone.`, 'Delete account', async () => {
+    confirmModal('Delete account?', `${esc(cname(d.id))} will be deleted${n ? `, along with its ${[[g.contacts.length, 'contact'], [g.deals.length, 'opportunit|y|ies'], [g.quotes.length, 'quote'], [g.contracts.length, 'contract'], [g.tasks.length, 'reminder']].filter(([k]) => k).map(([k, w]) => { const [b, one, many] = w.split('|'); return `${k} ${b}${k === 1 ? (one || '') : (many || 's')}`; }).join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}. You can restore it from Settings → Trash for 30 days.`, 'Delete account', async () => {
       for (const [c, arr] of [['contacts', g.contacts], ['deals', g.deals], ['quotes', g.quotes], ['contracts', g.contracts], ['tasks', g.tasks]]) for (const r of arr) await del(c, r.id);
-      await del('companies', d.id); ui.detail = null; toast('Account deleted'); }); },
+      await del('companies', d.id); ui.detail = null; if (ui.view === 'company' && ui.pageCo === d.id) { ui.view = 'companies'; pushNav(); } toast('Account deleted'); schedule(); }); },
   qAddRow: () => { $('#qItems').insertAdjacentHTML('beforeend', itemRow({qty:1})); $('#qItems').lastElementChild.querySelector('input').focus(); },
   qDelRow: (d, el) => { const rows = $('#qItems').children; if (rows.length > 1) el.closest('.item').remove(); else el.closest('.item').querySelectorAll('input').forEach(i => i.value = ''); updQuoteTotal(); },
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
@@ -3684,6 +3708,7 @@ const CHANGE = {
   dealStage: el => changeStage(el.dataset.id, el.value),
   rowStage: el => changeStage(el.dataset.id, el.value),
   oppField: el => oppSaveField(el),
+  coField: el => coSaveField(el),
   expCount: () => expCount(),
   attFiles: el => { attAdd([...(el.files || [])]); el.value = ''; },
   mergePick: el => { const ret = ui.dupReturn; mergeModal(el.dataset.col, el.dataset.keep, el.value); ui.dupReturn = ret; },
@@ -4928,7 +4953,7 @@ function raRows(from){
 // ---------- merge duplicates ----------
 const MRG_FIELDS = {
   companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['ownerId', 'Owner'], ['notes', 'Notes']],
-  contacts: [['firstName', 'First name'], ['lastName', 'Last name'], ['title', 'Title'], ['companyId', 'Account'], ['email', 'Work email'], ['email2', 'Personal email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['ownerId', 'Owner'], ['notes', 'Notes']]};
+  contacts: [['firstName', 'First name'], ['lastName', 'Last name'], ['title', 'Title'], ['companyId', 'Account'], ['email', 'Email'], ['email2', 'Other email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['ownerId', 'Owner'], ['notes', 'Notes']]};
 const coKey = n => norm(String(n || '').toLowerCase().replace(/\s*-\s*copy\b.*$/, '').replace(/[.,'’&()]/g, ' ').replace(/\b(the|llc|l\.?l\.?c|inc|incorporated|pa|p\.?a|pllc|pc|co|corp|corporation|company|ltd|group)\b/g, ' '));
 const mVal = (col, k, r) => { const v = r && r[k]; if (!v) return ''; if (k === 'ownerId') return nm(v); if (k === 'companyId') return cname(v); return String(v); };
 function mergeCandidates(col, id){
