@@ -1116,8 +1116,11 @@ function acctHeal(){
     if (DEMO) { for (const [id, d] of acctFix()) S.companies[id] = d; return; }
     if (live && SUPA && !isAdmin()) return;   // on the website the admin's browser does the numbering, so two people never hand out the same numbers
     const ch = acctFix(); if (!ch.length) return; acctBusy = true;
-    try { for (const [id, d] of ch) S.companies[id] = d;
-      if (live) { const coll = db.collection('companies'); if (coll.setMany) await coll.setMany(ch); else for (const [id, d] of ch) await coll.doc(id).set(d); } else saveLocal();
+    try { const nums = ch.map(([id, d]) => [id, d.acctNo]);
+      for (const [id, n] of nums) if (S.companies[id]) S.companies[id] = {...S.companies[id], acctNo: n};
+      if (live) { const coll = db.collection('companies');
+        for (let k = 0; k < nums.length; k += 500) { const chunk = nums.slice(k, k + 500).filter(([id]) => S.companies[id]).map(([id, n]) => [id, {...S.companies[id], acctNo: n}]);   // fresh copy right before saving
+          if (coll.setMany) await coll.setMany(chunk); else for (const [id, d] of chunk) await coll.doc(id).set(d); } } else saveLocal();
       schedule();
     } catch (e) {} finally { acctBusy = false; }
   }, 1500);
@@ -1331,23 +1334,51 @@ async function backupDownload(){
   toast(`Backup saved: ${n} records`); schedule();
 }
 function restoreModal(){
-  openModal('Restore from backup', `<p class="sub">Choose a Paper Trail backup file (.json). Records in the backup that are missing or different here are put back. Nothing currently in Paper Trail is deleted.</p>
-    <label class="f"><span>Backup file</span><input type="file" id="rsFile" accept=".json,application/json"></label><p class="sub" id="rsInfo"></p>`, 'Restore', async () => {
+  openModal('Restore from backup', `<p class="sub">Choose a Paper Trail backup file (.json or .json.gz). Records in the backup that are missing or different here are put back. Nothing currently in Paper Trail is deleted.</p>
+    <label class="f"><span>Backup file</span><input type="file" id="rsFile" accept=".json,.gz,application/json,application/gzip"></label><p class="sub" id="rsInfo"></p>`, 'Restore', async () => {
       const f = $('#rsFile').files && $('#rsFile').files[0]; if (!f) { toast('Choose a backup file first.', 'bad'); return false; }
-      let data; try { data = JSON.parse(await f.text()); } catch { toast("That file isn't a Paper Trail backup.", 'bad'); return false; }
+      let data; try { const head = new Uint8Array(await f.slice(0, 2).arrayBuffer()); const gz = head[0] === 0x1f && head[1] === 0x8b;
+        const text = gz ? await new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text() : await f.text(); data = JSON.parse(text); } catch { toast("That file isn't a Paper Trail backup.", 'bad'); return false; }
       if (!data || data.app !== 'Paper Trail' || !data.records) { toast("That file isn't a Paper Trail backup.", 'bad'); return false; }
-      const todo = []; for (const c of BACKUP_COLS) for (const [id, r] of Object.entries(data.records[c] || {})) if (JSON.stringify(S[c][id]) !== JSON.stringify(r)) todo.push([c, id, r]);
+      const todo = []; for (const c of BACKUP_COLS) for (let [id, r] of Object.entries(data.records[c] || {})) { if (c === 'companies' && !(+r.acctNo) && S.companies[id] && +S.companies[id].acctNo) r = {...r, acctNo: S.companies[id].acctNo}; if (JSON.stringify(S[c][id]) !== JSON.stringify(r)) todo.push([c, id, r]); }
       if (!todo.length) { toast('Everything in that backup is already here.'); return true; }
       const b = $('#mform [type=submit]'); let done = 0;
-      for (const [c, id, r] of todo) { if (await put(c, id, r)) done++; if (b && done % 20 === 0) b.textContent = `Restoring ${done} of ${todo.length}…`; }
-      toast(`Restored ${done} record${done === 1 ? '' : 's'}`); return true;
+      if (live && !DEMO && db.collection('companies').setMany) {   // big restores go 500 at a time
+        const byCol = {}; for (const [c, id, r] of todo) (byCol[c] = byCol[c] || []).push([id, r]);
+        for (const [c, rows] of Object.entries(byCol)) for (let k = 0; k < rows.length; k += 500) { const chunk = rows.slice(k, k + 500);
+          try { await db.collection(c).setMany(chunk); } catch (e) { writeErr(e); toast(`Stopped after ${done} of ${todo.length}. Run the same restore again to finish; nothing will be doubled.`, 'bad'); schedule(); return false; }
+          for (const [id, r] of chunk) S[c][id] = r; done += chunk.length; if (b) b.textContent = `Restoring ${done.toLocaleString()} of ${todo.length.toLocaleString()}…`; }
+        if (todo.some(([c]) => c === 'companies')) hayReset(); schedule();
+      } else for (const [c, id, r] of todo) { if (await put(c, id, r)) done++; if (b && done % 20 === 0) b.textContent = `Restoring ${done} of ${todo.length}…`; }
+      toast(`Restored ${done.toLocaleString()} record${done === 1 ? '' : 's'}`); return true;
     });
 }
 const backupAge = () => { try { const v = +localStorage.getItem('apcrm-lastBackup'); return v ? Math.floor((Date.now() - v) / 864e5) : null; } catch { return null; } };
+// nightly Google Drive backup (runs on GitHub, see .github/workflows/drive-backup.yml); this just shows how it's doing
+const DRIVE_BACKUP = false;   // nightly Drive backup is paused; flip to true once the GitHub job is set up
+let DRV = {loaded: false, d: null, busy: false};
+async function drvLoad(){
+  if (!SUPA || DEMO || DRV.busy) return; DRV.busy = true;
+  try { const {data} = await SUPA.sb.from('records').select('data').eq('col', 'meta').eq('id', 'driveBackup'); DRV.d = data && data[0] ? data[0].data : null; DRV.loaded = true; } catch {} finally { DRV.busy = false; }
+  const el = $('#drvRow'); if (el) el.outerHTML = drvRow(); schedule();
+}
+const ghRepo = () => { const h = location.hostname.match(/^([^.]+)\.github\.io$/); const seg = location.pathname.split('/').filter(Boolean)[0]; return h ? `https://github.com/${h[1]}/${seg || h[1] + '.github.io'}` : ''; };
+function drvRow(){
+  const d = DRV.d; const gh = ghRepo(); const run = gh ? `${gh}/actions/workflows/drive-backup.yml` : '';
+  const when = t => new Date(t).toLocaleString('en-US', {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
+  let txt;
+  if (!DRV.loaded) txt = 'Checking…';
+  else if (!d) txt = 'Copies everything to a folder in your Google Drive every night and keeps the last 30. Not set up yet.';
+  else if (!d.ok) txt = `<span style="color:var(--bad)"><b>The last backup failed</b> (${when(d.at)}): ${esc(d.error || 'unknown error')}</span>`;
+  else { const age = (Date.now() - d.at) / 864e5; txt = `${age > 2 ? `<span style="color:var(--bad)"><b>No backup in ${Math.floor(age)} days.</b></span> ` : ''}Last backup ${when(d.at)}: ${(+d.records || 0).toLocaleString()} records, ${fsize(+d.bytes || 0)}. Runs every night; the last 30 are kept.`; }
+  const btns = `${d && d.folderLink ? `<a class="btn" href="${esc(d.folderLink)}" target="_blank" rel="noopener">Open in Drive</a>` : ''}${run ? `<a class="btn${d ? '' : ' pri'}" href="${esc(run)}" target="_blank" rel="noopener" title="Opens GitHub. Click “Run workflow” there to back up right now.">${d ? 'Back up now' : 'Open GitHub'}</a>` : ''}`;
+  return `<div id="drvRow"><div class="setrow"><span class="seti">${ic('doc')}</span><div><b>Google Drive backup</b><p class="sub">${txt}</p></div><span class="sa-b">${btns}</span></div></div>`;
+}
 function backupNudge(){
   if (!isAdmin() || DEMO || !booted || (!live && !STANDALONE)) return '';
   const n = BACKUP_COLS.reduce((t, c) => t + Object.keys(S[c]).length, 0); if (!n) return '';
   const age = backupAge(); if (age != null && age < 7) return '';
+  if (DRV.d && DRV.d.ok && Date.now() - DRV.d.at < 3 * 864e5) return '';   // the nightly Drive backup has it covered
   return `<div class="banner sa"><span>${age == null ? "You haven't downloaded a full backup yet." : `Your last full backup was ${age} days ago.`} A weekly backup keeps your records safe.</span><span class="sa-b"><button class="btn sm pri" data-act="backup">Back up now</button></span></div>`;
 }
 async function logAct(a){ return put('activities', uid(), {at: Date.now(), by: ME.id, ...a}); }
@@ -2101,6 +2132,36 @@ const coOpts = (none='— None —') => [['', none], ...L('companies').sort(byNa
 const ownerSel = (name, cur) => { const ids = people().filter(i => i === cur || i === ME.id || !isFormer(i)); if (!ids.length) return sel(name, [['', 'You']], ''); return sel(name, ids.map(i => [i, pname(i)]), cur || ME.id); };
 const cb = (name, checked, label) => `<label class="f inline"><input type="checkbox" name="${name}" ${checked?'checked':''}><span style="font-size:.9rem;color:var(--fg)">${label}</span></label>`;
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
+// ---------- delete all data (admin): a clean slate for testing ----------
+const WIPE_COLS = ['companies', 'contacts', 'deals', 'quotes', 'activities', 'tasks', 'contracts', 'enrollments', 'trash'];
+function wipeModal(){
+  if (!isAdmin() || DEMO) return;
+  const n = c => Object.keys(S[c] || {}).length; const total = WIPE_COLS.reduce((t, c) => t + n(c), 0);
+  const formers = SUPA ? USERS.filter(u => /\.invalid$/.test(u.email || '')) : [];
+  openModal('Delete all data', `<p><b>This permanently deletes ${total.toLocaleString()} records</b>: ${n('companies').toLocaleString()} accounts, ${n('contacts').toLocaleString()} contacts, ${n('deals').toLocaleString()} opportunities, plus all quotes, activity, reminders, contracts and attachments, and everything in Trash. It can't be undone and it isn't sent to Trash. Everyone on the team sees the empty Paper Trail right away.</p>
+    <p class="sub">Users, email templates, journeys, appearance settings and usage stay. Account numbers start again at ${ACCT_START}.</p>
+    <p class="sub"><button type="button" class="lnk" data-act="backup">Download a backup first</button> if you might want any of it back.</p>
+    ${formers.length ? `<label class="chk" style="margin:8px 0"><input type="checkbox" name="formers" checked> Also remove the ${formers.length} former Spiro users (they're added again by the next import)</label>` : ''}
+    <label class="f"><span>Type DELETE to confirm</span><input name="confirm" autocomplete="off" placeholder="DELETE"></label>`, 'Delete everything', async f => {
+      if (String(f.confirm || '').trim() !== 'DELETE') { toast('Type DELETE (in capitals) to confirm.', 'bad'); return false; }
+      const b = $('#mform [type=submit]'); const say = t => { if (b) b.textContent = t; };
+      const files = []; for (const c of ['activities', 'contracts']) for (const r of Object.values(S[c])) for (const fl of r.files || []) if (fl.path) files.push(fl.path);
+      for (const t of Object.values(S.trash)) for (const fl of (t.data && t.data.files) || []) if (fl.path) files.push(fl.path);
+      let done = 0;
+      try {
+        for (const c of WIPE_COLS) { const ids = Object.keys(S[c]); if (!ids.length) continue; const base = done;
+          if (live) { const coll = db.collection(c); if (coll.deleteMany) await coll.deleteMany(ids, k => { done = base + k; say(`Deleting… ${Math.round(done / total * 100)}%`); }); else for (const id of ids) { await coll.doc(id).delete(); done++; if (done % 25 === 0) say(`Deleting… ${Math.round(done / total * 100)}%`); } }
+          else done += ids.length;
+          S[c] = {}; if (live) REAL[c] = {};
+        }
+        if (!live) saveLocal();
+        if (files.length && FILES.remote()) { say('Removing attachments…'); for (let k = 0; k < files.length; k += 100) await FILES.remove(files.slice(k, k + 100)); }
+        if (f.formers && formers.length && SUPA) { say('Removing former users…'); const {error} = await SUPA.sb.from('profiles').delete().in('id', formers.map(u => u.id)); if (!error) await loadProfiles(); }
+      } catch (e) { writeErr(e); toast(`Stopped partway (${done.toLocaleString()} of ${total.toLocaleString()} deleted). Run Delete all data again to finish.`, 'bad'); schedule(); return false; }
+      hayReset(); ui.detail = null; ui.view = 'today'; ui.q = ''; try { history.replaceState(navState(), '', navHash(navState())); } catch {}
+      toast(`Deleted ${total.toLocaleString()} records. Paper Trail is empty.`); schedule(); return true;
+    }, {danger: true});
+}
 function confirmModal(title, text, label, fn){ openModal(title, `<p>${text}</p>`, label, fn, {danger:true}); }
 const withOpt = (opts, id, label) => id && !opts.some(o => o[0] === id) ? [...opts, [id, label || 'New record']] : opts;
 const stepTag = (n, label) => `<p class="eyebrow">New account · step ${n} of 3 · ${label}</p>`;
@@ -2792,7 +2853,9 @@ function settingsModal(){
     ${canWrite ? row('users', 'Find duplicates', 'Spot accounts and contacts that look like the same thing, and merge them.', `<button type="button" class="btn" data-act="dupFind">Find duplicates</button>`) : ''}
     ${row('down', 'Export', 'Download every account and contact as a CSV file you can open in Excel.', `<button type="button" class="btn" data-act="export">Export CSV</button>`)}
     ${isAdmin() ? row('doc', 'Backup', `Download a full backup of everything, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : ''}
+    ${DRIVE_BACKUP && SUPA && !DEMO && isAdmin() ? drvRow() : ''}
     ${isAdmin() ? row('users', 'Reassign records', 'Move accounts, contacts, opportunities, reminders and more from one person to another.', `<button type="button" class="btn" data-act="reassign">Reassign</button>`) : ''}
+    ${isAdmin() && canWrite && !DEMO ? row('trash', 'Delete all data', 'Wipe every account, contact, opportunity, quote, activity, reminder and contract for a clean start, for example after a test import. Users, email templates and journeys stay.', `<button type="button" class="btn danger" data-act="wipeAll">Delete all data</button>`) : ''}
     ${isAdmin() ? row('trash', 'Trash', `Deleted records, kept for ${TRASH_DAYS} days so you can restore them.${L('trash').length ? ` ${L('trash').length} item${L('trash').length === 1 ? '' : 's'} now.` : ''}`, `<button type="button" class="btn" data-act="trash">Open trash</button>`) : ''}
     <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button>
   </div>`, null);
@@ -3658,7 +3721,8 @@ const A = {
   qAddRow: () => { $('#qItems').insertAdjacentHTML('beforeend', itemRow({qty:1})); $('#qItems').lastElementChild.querySelector('input').focus(); },
   qDelRow: (d, el) => { const rows = $('#qItems').children; if (rows.length > 1) el.closest('.item').remove(); else el.closest('.item').querySelectorAll('input').forEach(i => i.value = ''); updQuoteTotal(); },
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
-  settings: () => settingsModal(),
+  settings: () => { settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
+  wipeAll: () => wipeModal(),
   fishEgg: (d, el) => fishEgg(el),
   import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } if (DEMO) { toast('Turn off demo mode before importing real data.', 'bad'); return; } importModal(); },
   users: () => usersModal(),
@@ -4721,6 +4785,16 @@ function makeSupaDb(sb, uidKey){
           loadAll(c).then(m => { x.map = m; x.ready = true; cb(x.snap()); persist(c); }).catch(e => onErr && onErr(fail(e)));
           return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
         },
+        async deleteMany(ids, onProgress){   // removes the given ids, 300 per request, 4 requests at a time
+          const chunks = []; for (let k = 0; k < ids.length; k += 300) chunks.push(ids.slice(k, k + 300)); let done = 0;
+          for (let k = 0; k < chunks.length; k += 4) {
+            const res = await Promise.all(chunks.slice(k, k + 4).map(ch => sb.from('records').delete().eq('col', c).in('id', ch)));
+            for (const {error} of res) if (error) throw fail(error);
+            for (const ch of chunks.slice(k, k + 4)) { for (const x of subs[c] || []) for (const id of ch) delete x.map[id]; done += ch.length; }
+            if (onProgress) onProgress(done);
+          }
+          fire(c);
+        },
         async setMany(rows){   // rows: [[id, data], ...] saved 500 at a time
           for (let k = 0; k < rows.length; k += 500) {
             const chunk = rows.slice(k, k + 500);
@@ -4932,9 +5006,9 @@ function reassignModal(from, opts = {}){
     const b = $('#mform [type=submit]'); let done = 0;
     const bulk = live && !DEMO && jobs.length > 50 && db.collection('deals').setMany;
     if (bulk) {   // big moves (like a former Spiro user's records) go 500 at a time
-      const byCol = {}; for (const [col, id, field] of jobs) if (S[col][id]) { const doc = byCol[col] = byCol[col] || {}; doc[id] = {...(doc[id] || S[col][id]), [field]: f.raTo, updatedAt: Date.now()}; }
-      for (const [col, docs] of Object.entries(byCol)) { const rows = Object.entries(docs);
-        for (let k = 0; k < rows.length; k += 500) { const chunk = rows.slice(k, k + 500);
+      const byCol = {}; for (const [col, id, field] of jobs) if (S[col][id]) { const m = byCol[col] = byCol[col] || {}; (m[id] = m[id] || []).push(field); }
+      for (const [col, fieldsById] of Object.entries(byCol)) { const ids = Object.keys(fieldsById);
+        for (let k = 0; k < ids.length; k += 500) { const chunk = ids.slice(k, k + 500).filter(id => S[col][id]).map(id => { const d = {...S[col][id], updatedAt: Date.now()}; for (const fl of fieldsById[id]) d[fl] = f.raTo; return [id, d]; });   // fresh copy right before saving
           try { await db.collection(col).setMany(chunk); } catch (e) { writeErr(e); toast(`Stopped after ${done} records. Try again to move the rest.`, 'bad'); return false; }
           for (const [id, d] of chunk) S[col][id] = d; done += chunk.length; if (b) b.textContent = `Moving ${done} of ${jobs.length}…`; } }
       schedule();
@@ -5147,7 +5221,7 @@ async function boot(){
   if (!d && !window.claude) { STANDALONE = true; if (!GUEST) loadLocal(); }
   loadLookLocal();
   if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
-  booted = true; bootDone(); setTimeout(acctHeal, 4000);
+  booted = true; bootDone(); setTimeout(acctHeal, 4000); setTimeout(() => { if (DRIVE_BACKUP && SUPA && !DEMO && isAdmin()) drvLoad(); }, 5000);
   syncLookFromDb();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
   try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
