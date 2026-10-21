@@ -120,6 +120,9 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .stagesel{appearance:none;-webkit-appearance:none;width:auto;border:0;border-radius:999px;padding:3px 24px 3px 10px;font-size:.76rem;font-weight:700;cursor:pointer;background:var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 9px center;color:var(--accent)}
 .stagesel.contract{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.stagesel.won{background-color:var(--good-soft);color:var(--good)}
 .usebar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.usebar.sm{height:5px;margin:6px 0 4px}.usebar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.tags{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:1px}.tag{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);white-space:nowrap}.tag i{width:7px;height:7px;border-radius:50%;flex:none}
+.tagedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px}.tagedit .tag{font-size:.82rem;padding:3px 6px 3px 10px}.tagx{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px}.tagx:hover{color:var(--bad)}.tagin{width:150px;font:inherit;font-size:.86rem;border:1px dashed var(--line);border-radius:999px;padding:3px 10px;background:transparent;color:var(--fg)}.tagin:focus{outline:none;border-style:solid;border-color:var(--accent);background:var(--surface)}
+.tagfilter{width:auto;max-width:200px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
 .acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
 .fznote{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);font-size:.88rem}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
@@ -1832,6 +1835,7 @@ V.company = () => {
       ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
       ${cpField('Contacts', String(g.contacts.length))}
+      <div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>
       ${cf('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', 'notes', true)}</div></section>
     ${spiroPanel(c)}
     <div class="cols2"><section class="panel"><div class="ph"><h3>Opportunities</h3><button class="lnk" data-act="cpTab" data-t="opps">See all</button></div>${rowsOr(od.slice(0, 8), oppHistRow, 'No opportunities yet.')}${od.length > 8 ? `<p class="sub">${od.length - 8} more on the Opportunities tab</p>` : ''}</section>
@@ -1852,14 +1856,14 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = fzRun(() => L('companies').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
+  const rows = fzRun(() => L('companies').filter(mine).filter(c => !ui.tagF || coTags(c).some(t => tagKey(t) === ui.tagF)).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
   const total = Object.keys(S.companies).length;
-  return head('Accounts', `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
+  return head('Accounts', ui.tagF ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
-      return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
+      return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
     }).join('') || `<tr><td colspan="6" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
@@ -2058,7 +2062,7 @@ const DETAIL = {
     const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
     const openTasks = g.tasks.filter(k => !k.done).sort((a,b) => (a.due||'9') < (b.due||'9') ? -1 : 1);
     const web = c.website ? (/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website) : '';
-    return `<div class="dh"><div><p class="eyebrow">Account</p><h2>${esc(c.name)}</h2><p class="sub">${esc([c.city, c.state].filter(Boolean).join(', '))}</p></div>${closeBtn}</div>
+    return `<div class="dh"><div><p class="eyebrow">Account</p><h2>${esc(c.name)}</h2><p class="sub">${esc([c.city, c.state].filter(Boolean).join(', '))}</p>${tagChips(c) ? `<div style="margin-top:6px">${tagChips(c).replace('class="tags"', 'class="tags" style="margin-left:0"')}</div>` : ''}</div>${closeBtn}</div>
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
@@ -2132,6 +2136,123 @@ const coOpts = (none='— None —') => [['', none], ...L('companies').sort(byNa
 const ownerSel = (name, cur) => { const ids = people().filter(i => i === cur || i === ME.id || !isFormer(i)); if (!ids.length) return sel(name, [['', 'You']], ''); return sel(name, ids.map(i => [i, pname(i)]), cur || ME.id); };
 const cb = (name, checked, label) => `<label class="f inline"><input type="checkbox" name="${name}" ${checked?'checked':''}><span style="font-size:.9rem;color:var(--fg)">${label}</span></label>`;
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
+
+// ---------- account tags ----------
+const DEFAULT_TAGS = ['Shredding', 'Medical Waste', 'ITAD', 'Electronics', 'Residential', 'Business', 'Financial', 'Real Estate', 'Legal', 'Dental', 'Medical Office', 'Government', 'Education', 'Insurance', 'Accounting/CPA', 'Property Management', 'Nonprofit'];
+const tagKey = t => String(t || '').trim().toLowerCase();
+const cleanTag = t => String(t || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+const coTags = c => Array.isArray(c && c.tags) ? c.tags : [];
+function allTags(){   // your list, plus anything someone has added to an account
+  const n = new Map(); for (const t of DEFAULT_TAGS) n.set(tagKey(t), {t, n: 0});
+  for (const c of Object.values(S.companies)) for (const t of coTags(c)) { const k = tagKey(t); const e = n.get(k) || {t, n: 0}; e.n++; n.set(k, e); }
+  return [...n.values()];
+}
+const TAG_HUES = {shredding: 212, 'medical waste': 0, itad: 272, electronics: 188, residential: 28, business: 320, financial: 135, 'real estate': 46, legal: 245, dental: 172, 'medical office': 345, government: 200, education: 95, insurance: 292, 'accounting/cpa': 155, 'property management': 15, nonprofit: 62};
+const tagHue = t => { if (tagKey(t) in TAG_HUES) return TAG_HUES[tagKey(t)]; let h = 0; for (const ch of tagKey(t)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
+const tagChip = (t, x) => `<span class="tag"><i style="background:hsl(${tagHue(t)} 60% 48%)"></i>${esc(t)}${x || ''}</span>`;
+const tagChips = (c, max) => { const ts = coTags(c); if (!ts.length) return ''; const show = max ? ts.slice(0, max) : ts; return `<span class="tags">${show.map(t => tagChip(t)).join('')}${max && ts.length > max ? `<span class="sub">+${ts.length - max}</span>` : ''}</span>`; };
+function tagEditor(c){
+  const ts = coTags(c);
+  const opts = allTags().filter(x => !ts.some(t => tagKey(t) === tagKey(x.t))).sort((a, b) => a.t.localeCompare(b.t));
+  return `<div class="tagedit">${ts.map(t => tagChip(t, canWrite ? `<button type="button" class="tagx" data-act="tagDel" data-id="${c.id}" data-t="${esc(t)}" aria-label="Remove ${esc(t)}">×</button>` : '')).join('')}
+    ${canWrite ? `<input class="tagin" list="tagList_${c.id}" data-tagadd="${c.id}" placeholder="${ts.length ? '+ Add tag' : '+ Add a tag'}" aria-label="Add a tag"><datalist id="tagList_${c.id}">${opts.map(x => `<option value="${esc(x.t)}">`).join('')}</datalist>` : (ts.length ? '' : '<span class="sub">—</span>')}</div>`;
+}
+async function tagAdd(id, t){
+  t = cleanTag(t); const c = S.companies[id]; if (!t || !c) return;
+  const known = allTags().find(x => tagKey(x.t) === tagKey(t)); if (known) t = known.t;   // match the existing spelling
+  if (coTags(c).some(x => tagKey(x) === tagKey(t))) return;
+  const tags = [...coTags(c), t]; S.companies[id] = {...c, tags}; hayReset(); schedule();   // show it right away, so quick edits build on each other
+  if (await patch('companies', id, {tags})) toast(known ? `Tagged ${t}` : `New tag “${t}” added`);
+}
+async function tagDel(id, t){ const c = S.companies[id]; if (!c) return; const tags = coTags(c).filter(x => tagKey(x) !== tagKey(t)); S.companies[id] = {...c, tags}; hayReset(); schedule(); await patch('companies', id, {tags}); }
+const tagFilterSel = () => { const ts = allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)); return ts.length ? `<select class="tagfilter" data-change="tagF" aria-label="Filter by tag"><option value="">All tags</option>${ts.map(x => `<option value="${esc(tagKey(x.t))}" ${ui.tagF === tagKey(x.t) ? 'selected' : ''}>${esc(x.t)} (${x.n.toLocaleString()})</option>`).join('')}</select>` : ''; };
+
+// Settings → Tags: counts, rename/merge, delete, and suggest tags from history
+function tagsModal(){
+  const ts = allTags().sort((a, b) => b.n - a.n || a.t.localeCompare(b.t));
+  openModal('Tags', `<p class="sub" style="margin-bottom:10px">Tags group accounts so you can filter, search and download them. Anyone can add a new tag right on an account. Rename one here to fix spelling or merge two tags; delete takes it off every account.</p>
+    ${isAdmin() && canWrite ? `<div class="setrow" style="margin-bottom:12px"><span class="seti">${ic('spark')}</span><div><b>Suggest tags from history</b><p class="sub">Tags accounts from their opportunities (Shredding, Medical Waste, ITAD…), their names (Dental, Legal, Real Estate…) and whether they look like a person or a business. You review before anything is saved.</p></div><button type="button" class="btn pri" data-act="tagSuggest">Suggest tags</button></div>` : ''}
+    <ul class="users">${ts.map(x => `<li class="urow"><div>${tagChip(x.t)} <small style="display:inline">${x.n.toLocaleString()} account${x.n === 1 ? '' : 's'}</small></div>${canWrite ? `<div class="uact"><button type="button" class="btn sm ghost" data-act="tagRename" data-t="${esc(x.t)}">Rename</button>${x.n ? `<button type="button" class="btn sm ghost" data-act="tagDrop" data-t="${esc(x.t)}">Delete</button>` : ''}</div>` : ''}</li>`).join('')}</ul>`, null);
+}
+async function tagBulk(fn, label){   // apply fn(tags) => newTags to every account; saves only what changed, 500 at a time
+  const ids = Object.keys(S.companies).filter(id => { const a = coTags(S.companies[id]); const b = fn(a); return JSON.stringify(a) !== JSON.stringify(b); });
+  if (!ids.length) return 0;
+  if (live && !DEMO && db.collection('companies').setMany) {
+    for (let k = 0; k < ids.length; k += 500) { const chunk = ids.slice(k, k + 500).filter(id => S.companies[id]).map(id => [id, {...S.companies[id], tags: fn(coTags(S.companies[id])), updatedAt: Date.now()}]);
+      await db.collection('companies').setMany(chunk); for (const [id, d] of chunk) S.companies[id] = d; const b = $('#mform [type=submit]'); if (b && label) b.textContent = `${label} ${Math.min(k + 500, ids.length).toLocaleString()} of ${ids.length.toLocaleString()}…`; }
+    hayReset(); schedule();
+  } else for (const id of ids) await patch('companies', id, {tags: fn(coTags(S.companies[id]))});
+  return ids.length;
+}
+function tagRenameModal(from){
+  openModal(`Rename “${from}”`, `${F('New name', inp('to', from, 'text', 'required maxlength="40"'))}<p class="sub">If another tag already has this name, the two are merged.</p>`, 'Rename', async f => {
+    const to = cleanTag(f.to); if (!to) { toast('Enter a name.', 'bad'); return false; }
+    const known = allTags().find(x => tagKey(x.t) === tagKey(to) && tagKey(x.t) !== tagKey(from)); const name = known ? known.t : to;
+    const n = await tagBulk(ts => { if (!ts.some(t => tagKey(t) === tagKey(from))) return ts; const out = []; for (const t of ts.map(t => tagKey(t) === tagKey(from) ? name : t)) if (!out.some(x => tagKey(x) === tagKey(t))) out.push(t); return out; }, 'Renaming');
+    toast(`${known ? 'Merged into' : 'Renamed to'} “${name}” on ${n.toLocaleString()} account${n === 1 ? '' : 's'}`); setTimeout(tagsModal, 250); return true;
+  });
+}
+function tagDropModal(t){
+  const n = allTags().find(x => tagKey(x.t) === tagKey(t))?.n || 0;
+  confirmModal(`Delete “${t}”?`, `The tag comes off ${n.toLocaleString()} account${n === 1 ? '' : 's'}. The accounts themselves aren't touched.`, 'Delete tag', async () => {
+    const k = await tagBulk(ts => ts.filter(x => tagKey(x) !== tagKey(t)), 'Removing'); toast(`Removed “${t}” from ${k.toLocaleString()} account${k === 1 ? '' : 's'}`); setTimeout(tagsModal, 250); });
+}
+// suggestions
+const TAG_RULES = [
+  ['Dental', /\b(dental|dentist(ry)?|dds|dmd|orthodont\w*|endodont\w*|periodont\w*|oral surg\w*|smile[s]?)\b/],
+  ['Legal', /\b(law|lawyers?|attorneys?|atty|esq|legal|litigation|counsel|law offices?|law firm|paralegal)\b/],
+  ['Medical Office', /\b(md|m d|do|medical|medicine|clinic|health|healthcare|pediatric\w*|physicians?|dermatology|chiropract\w*|physical therapy|rehab\w*|urgent care|family practice|orthopa?edic\w*|cardio\w*|oncology|surgery|surgical|radiology|imaging|hospital|hosp|wellness|vein|eye|optometr\w*|ophthalm\w*|podiatr\w*|urology|ob ?gyn|obgyn|pharmacy|lab(s|oratory)?|veterinar\w*|animal hospital|hospice|home health|nursing|med spa|medspa|aesthetics?)\b/],
+  ['Government', /\b(city of|county|town of|village of|state of|department|dept|police|sheriff|fire rescue|fire department|courthouse|clerk of|school board|housing authority|federal|municipal|government|govt)\b/],
+  ['Education', /\b(school|schools|academy|university|univ|college|elementary|middle school|high school|charter|montessori|preschool|learning center|education)\b/],
+  ['Insurance', /\b(insurance|insurances|ins agency|state farm|allstate|farm bureau|geico|underwriters?)\b/],
+  ['Accounting/CPA', /\b(cpa|cpas|accounting|accountants?|tax|taxes|bookkeeping|payroll|h ?& ?r block|jackson hewitt)\b/],
+  ['Financial', /\b(bank|banking|credit union|financial|finance|wealth|investments?|capital|advisors?|advisory|mortgage|lending|loans?|brokerage|securities|edward jones|merrill|wells fargo|chase|truist|seacoast bank)\b/],
+  ['Real Estate', /\b(realty|real estate|realtors?|properties|keller williams|coldwell|re ?max|century 21|sotheby\w*|berkshire hathaway|title|homes|home builders?|builders)\b/],
+  ['Property Management', /\b(property management|property mgmt|management company|hoa|homeowners|condo(minium)? assoc\w*|apartments|apartment homes|community association|poa)\b/],
+  ['Nonprofit', /\b(foundation|church|ministr(y|ies)|charit\w*|non ?profit|nonprofit|united way|habitat|ymca|salvation army|goodwill|association|assn|society|club|lodge|temple|synagogue|parish|diocese)\b/],
+  ['Electronics', /\b(electronics?|e ?waste|ewaste|computers?|it services|technology|tech|recycling)\b/]
+];
+const BIZ_WORDS = /\b(llc|l l c|inc|corp|corporation|co|company|pa|p a|pllc|pc|ltd|lp|llp|group|associates|assoc|services|svcs|solutions|enterprises|ent|partners|center|ctr|office|offices|agency|studio|shop|store|restaurant|cafe|hotel|motel|church|school|bank|clinic|realty|construction|plumbing|electric|roofing|landscaping|pest|auto|motors|logistics|storage|marketing|consulting|design|management|mgmt|industries|international|intl|national|natl|systems|sys|holdings|ventures|trust|capital|the)\b/;
+function tagSuggestions(){
+  const add = {}; const put_ = (id, t) => { const c = S.companies[id]; if (!c || coTags(c).some(x => tagKey(x) === tagKey(t))) return; (add[t] = add[t] || new Set()).add(id); };
+  const cts = {}; for (const ct of Object.values(S.contacts)) if (ct.companyId) (cts[ct.companyId] = cts[ct.companyId] || []).push(ct);
+  for (const d of Object.values(S.deals)) { if (!d.companyId) continue; const st = String(d.serviceType || ''), nm_ = String(d.type || d.name || '');
+    if (/shred/i.test(st) || /shred|purge/i.test(nm_)) put_(d.companyId, 'Shredding');
+    if (/med/i.test(st) || /medical waste|sharps|biohazard|red bag/i.test(nm_)) put_(d.companyId, 'Medical Waste');
+    if (/hard drive|media/i.test(st) || /hard ?drive|\bhd\b|media destruction|itad|data destruction/i.test(nm_)) put_(d.companyId, 'ITAD');
+    if (/electronic|e-?waste/i.test(st + ' ' + nm_)) put_(d.companyId, 'Electronics'); }
+  for (const [id, c] of Object.entries(S.companies)) {
+    const n = nrm(c.name || ''); if (!n) continue; let industry = false;
+    for (const [t, re] of TAG_RULES) if (re.test(n)) { put_(id, t); if (t !== 'Electronics') industry = true; }
+    const people = (cts[id] || []).map(ct => nrm(pname_(ct))).filter(Boolean);
+    const words = n.split(' ');
+    const personLike = !BIZ_WORDS.test(n) && !industry && !c.website && words.length <= 3 && /^[a-z ]+$/.test(n) &&
+      (people.some(p => p === n || p.split(' ').reverse().join(' ') === n || (words.length === 1 && p.split(' ')[0] === n)) || (words.length === 1 && !people.length));
+    if (personLike) put_(id, 'Residential'); else if (BIZ_WORDS.test(n) || industry || c.website || words.length >= 2) put_(id, 'Business');
+  }
+  return Object.entries(add).map(([t, set]) => ({t, ids: [...set]})).sort((a, b) => b.ids.length - a.ids.length);
+}
+function tagSuggestModal(){
+  const sug = tagSuggestions();
+  if (!sug.length) { toast('No new suggestions. Your accounts are already tagged.'); return; }
+  openModal('Suggested tags', `<p class="sub" style="margin-bottom:10px">Untick anything you don't want. Tags are only added, never removed, and running this again only suggests what's new. You can take any tag off an account later.</p>
+    <ul class="users">${sug.map(x => `<li class="urow" style="display:block"><label class="chk" style="font-weight:600"><input type="checkbox" name="sg_${esc(tagKey(x.t))}" checked> ${tagChip(x.t)} add to ${x.ids.length.toLocaleString()} account${x.ids.length === 1 ? '' : 's'}</label>
+      <small>e.g. ${x.ids.slice(0, 5).map(id => esc(S.companies[id].name)).join(' · ')}${x.ids.length > 5 ? ' …' : ''}</small></li>`).join('')}</ul>
+    <p class="sub" style="margin-top:8px">Residential means the account name looks like a person (and usually matches its contact). Spot-check a few after, using the tag filter on Accounts.</p>`, 'Add tags', async f => {
+      const pick = sug.filter(x => f['sg_' + tagKey(x.t)]); if (!pick.length) { toast('Nothing selected.', 'bad'); return false; }
+      const want = {}; for (const x of pick) for (const id of x.ids) (want[id] = want[id] || []).push(x.t);
+      const ids = Object.keys(want); const b = $('#mform [type=submit]');
+      try {
+        if (live && !DEMO && db.collection('companies').setMany) {
+          for (let k = 0; k < ids.length; k += 500) { const chunk = ids.slice(k, k + 500).filter(id => S.companies[id]).map(id => { const cur = coTags(S.companies[id]); const add2 = want[id].filter(t => !cur.some(x => tagKey(x) === tagKey(t))); return [id, {...S.companies[id], tags: [...cur, ...add2], updatedAt: Date.now()}]; });
+            await db.collection('companies').setMany(chunk); for (const [id, d] of chunk) S.companies[id] = d; if (b) b.textContent = `Tagging ${Math.min(k + 500, ids.length).toLocaleString()} of ${ids.length.toLocaleString()}…`; }
+          hayReset(); schedule();
+        } else for (const id of ids) await patch('companies', id, {tags: [...coTags(S.companies[id]), ...want[id].filter(t => !coTags(S.companies[id]).some(x => tagKey(x) === tagKey(t)))]});
+      } catch (e) { writeErr(e); return false; }
+      toast(`Tagged ${ids.length.toLocaleString()} account${ids.length === 1 ? '' : 's'}`); return true;
+    }, {wide: true});
+}
+
 // ---------- delete all data (admin): a clean slate for testing ----------
 const WIPE_COLS = ['companies', 'contacts', 'deals', 'quotes', 'activities', 'tasks', 'contracts', 'enrollments', 'trash'];
 function wipeModal(){
@@ -2184,7 +2305,7 @@ function searchResults(q){
   const Q = FZ || qParts(q); const hit = (rec, tag, f, col) => hayHit(Q, hay(rec, tag, f, col)); const af = acctFirst(q);
   const mark = s => { let out = esc(s); const t = toks.sort((a,b) => b.length - a.length)[0]; if (t) { const re = new RegExp('(' + esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'); out = out.replace(re, '<mark>$1</mark>'); } return out; };
   const groups = [
-    ['Accounts', L('companies').filter(c => hit(c, 'g', () => [c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes, c.acctNo], 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)).map(c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
+    ['Accounts', L('companies').filter(c => hit(c, 'g', () => [c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)).map(c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
     ['Contacts', L('contacts').filter(c => hit(c, 'g', () => [pname_(c), c.title, c.email, c.email2, c.phone, c.mobile, c.notes, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))).map(c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
     ['Opportunities', L('deals').filter(d => hit(d, 'g', () => [d.name, d.service, d.notes, cname(d.companyId), acctOf(d.companyId)], 'deals')).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
     ['Quotes', L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')).map(x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
@@ -2801,7 +2922,7 @@ const EXP = {
   companies: {
     title: 'accounts', file: 'accounts',
     cols: [
-      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
+      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ['Tags', c => coTags(c).join('; ')], ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
       ['Owner', c => nm(c.ownerId)], ['Created', c => mdy(c.createdAt)], ['Open Opportunities', c => coStats(c.id).open], ['Won Jobs', c => coStats(c.id).won], ['Last Job Date', c => mdy(coStats(c.id).last)], ['Notes', c => c.notes]],
     form: () => locForm('Account owner'),
     rows: f => L('companies').filter(c => locMatch(c, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.id, f.status) && inRange(c.createdAt, f.from, f.to)).sort(byName)
@@ -2820,10 +2941,11 @@ function locForm(ownerLabel){
   const cities = [...new Set(L('companies').map(c => (c.city || '').trim()).filter(Boolean))].sort();
   const states = [...new Set(L('companies').map(c => (c.state || '').trim()).filter(Boolean))].sort();
   return `<div class="grid2">${F(ownerLabel, sel('ownerId', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Jobs', sel('status', [['', 'Any'], ['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], '', 'data-change="expCount"'))}</div>
+    ${allTags().some(x => x.n) ? `<div class="grid2">${F('Account tag', sel('tag', anyOpt(allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)).map(x => [tagKey(x.t), `${x.t} (${x.n.toLocaleString()})`])), '', 'data-change="expCount"'))}</div>` : ''}
     <div class="grid3">${F('City', sel('city', anyOpt(cities), '', 'data-change="expCount"'))}${F('State', sel('state', anyOpt(states), '', 'data-change="expCount"'))}${F('ZIP starts with', inp('zip', '', 'text', 'inputmode="numeric" data-input="expCount"'))}</div>
     <div class="grid2">${F('Created from', inp('from', '', 'date', 'data-change="expCount"'))}${F('Created to', inp('to', '', 'date', 'data-change="expCount"'))}</div>`;
 }
-const locMatch = (co, f) => (!f.city || (co.city || '').trim() === f.city) && (!f.state || (co.state || '').trim() === f.state) && (!f.zip || String(co.zip || '').startsWith(f.zip.trim()));
+const locMatch = (co, f) => (!f.tag || coTags(co).some(t => tagKey(t) === f.tag)) && (!f.city || (co.city || '').trim() === f.city) && (!f.state || (co.state || '').trim() === f.state) && (!f.zip || String(co.zip || '').startsWith(f.zip.trim()));
 function expRows(){ const fm = $('#mform'); if (!fm || !ui.exp) return []; return EXP[ui.exp].rows(formData(fm)); }
 function expCount(){ const n = expRows().length; const b = $('#mform [type=submit]'); if (b) { b.disabled = !n; b.textContent = n ? `Download ${n} ${n === 1 ? EXP[ui.exp].title.replace(/ies$/, 'y').replace(/s$/, '') : EXP[ui.exp].title}` : 'Nothing matches'; } }
 function exportModal(t){
@@ -2855,6 +2977,7 @@ function settingsModal(){
     ${isAdmin() ? row('doc', 'Backup', `Download a full backup of everything, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : ''}
     ${DRIVE_BACKUP && SUPA && !DEMO && isAdmin() ? drvRow() : ''}
     ${isAdmin() ? row('users', 'Reassign records', 'Move accounts, contacts, opportunities, reminders and more from one person to another.', `<button type="button" class="btn" data-act="reassign">Reassign</button>`) : ''}
+    ${row('tag', 'Tags', 'See every account tag and how many accounts use it. Rename, merge or delete tags, or suggest tags for your accounts from their history.', `<button type="button" class="btn" data-act="tags">Manage tags</button>`)}
     ${isAdmin() && canWrite && !DEMO ? row('trash', 'Delete all data', 'Wipe every account, contact, opportunity, quote, activity, reminder and contract for a clean start, for example after a test import. Users, email templates and journeys stay.', `<button type="button" class="btn danger" data-act="wipeAll">Delete all data</button>`) : ''}
     ${isAdmin() ? row('trash', 'Trash', `Deleted records, kept for ${TRASH_DAYS} days so you can restore them.${L('trash').length ? ` ${L('trash').length} item${L('trash').length === 1 ? '' : 's'} now.` : ''}`, `<button type="button" class="btn" data-act="trash">Open trash</button>`) : ''}
     <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button>
@@ -3723,6 +3846,11 @@ const A = {
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
   settings: () => { settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   wipeAll: () => wipeModal(),
+  tags: () => tagsModal(),
+  tagSuggest: () => tagSuggestModal(),
+  tagRename: d => tagRenameModal(d.t),
+  tagDrop: d => tagDropModal(d.t),
+  tagDel: d => tagDel(d.id, d.t),
   fishEgg: (d, el) => fishEgg(el),
   import: () => { if (!isAdmin()) { toast('Only an admin can import data.', 'bad'); return; } if (DEMO) { toast('Turn off demo mode before importing real data.', 'bad'); return; } importModal(); },
   users: () => usersModal(),
@@ -3772,6 +3900,7 @@ const CHANGE = {
   dealStage: el => changeStage(el.dataset.id, el.value),
   rowStage: el => changeStage(el.dataset.id, el.value),
   oppField: el => oppSaveField(el),
+  tagF: el => { ui.tagF = el.value; ui.lim = {}; schedule(); },
   coField: el => coSaveField(el),
   expCount: () => expCount(),
   attFiles: el => { attAdd([...(el.files || [])]); el.value = ''; },
@@ -3843,6 +3972,7 @@ document.addEventListener('submit', e => { const f = e.target; if (!f.dataset.fo
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.type === 'tel') el.value = phoneNorm(el.value);
+  if (el.dataset.tagadd) { const v = el.value; el.value = ''; if (cleanTag(v)) tagAdd(el.dataset.tagadd, v); return; }
   if (el.dataset.change) { CHANGE[el.dataset.change]?.(el); return; }
   if (el.dataset.map) { imp.map[el.dataset.map] = el.value === '' ? undefined : +el.value; if (el.value === '') delete imp.map[el.dataset.map]; }
 });
