@@ -122,7 +122,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .usebar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.usebar.sm{height:5px;margin:6px 0 4px}.usebar i{display:block;height:100%;background:var(--accent);border-radius:99px}
 .tags{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:1px}.tag{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);white-space:nowrap}.tag i{width:7px;height:7px;border-radius:50%;flex:none}
 .tagedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px}.tagedit .tag{font-size:.82rem;padding:3px 6px 3px 10px}.tagx{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px}.tagx:hover{color:var(--bad)}.tagin{width:150px;font:inherit;font-size:.86rem;border:1px dashed var(--line);border-radius:999px;padding:3px 10px;background:transparent;color:var(--fg)}.tagin:focus{outline:none;border-style:solid;border-color:var(--accent);background:var(--surface)}
-.tagfilter{width:auto;max-width:200px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
+.tagfilter{width:auto;max-width:200px}.fltbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-6px 0 12px}.fchip2{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;font-weight:600;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}.fchip2 button{border:0;background:none;color:inherit;cursor:pointer;font-size:1rem;line-height:1;padding:0 4px}.btn.on{border-color:var(--accent);color:var(--accent)}.fcount{font-style:normal;background:var(--accent);color:var(--surface);border-radius:999px;padding:0 6px;font-size:.72rem}.fltgrid{gap:10px 12px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
 .acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
 .fznote{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);font-size:.88rem}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
@@ -1568,7 +1568,7 @@ function viewHtml(){
   return banner + V[ui.view]();
 }
 
-const head = (title, sub, actions='') => `<div class="vh"><div><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div><div class="vh-act">${actions}</div></div>${fzNote()}`;
+const head = (title, sub, actions='') => `<div class="vh"><div><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div><div class="vh-act">${actions}</div></div>${({companies: 1, contacts: 1, pipeline: 1})[ui.view] ? fltBar(ui.view === 'pipeline' ? 'deals' : ui.view) : ''}${fzNote()}`;
 const PAGE = 100;
 const pg = (key, rows) => rows.slice(0, (ui.lim && ui.lim[key]) || PAGE);
 const pgFoot = (key, n) => { const shown = Math.min(n, (ui.lim && ui.lim[key]) || PAGE); return n > shown ? `<div class="pgfoot"><span class="sub">Showing ${shown.toLocaleString()} of ${n.toLocaleString()}. Search to find anyone faster.</span><button class="btn sm" data-act="pgMore" data-k="${key}">Show ${Math.min(PAGE * 5, n - shown).toLocaleString()} more</button></div>` : ''; };
@@ -1668,13 +1668,14 @@ V.reminders = () => {
 
 V.pipeline = () => {
   const show = ui.oppShow || 'open';
-  const all = L('deals').filter(mine);
+  const all = L('deals').filter(mine).filter(d => fltPass('deals', d));
   const rows = fzRun(() => all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true)
     .filter(d => matchR(ui.q, d, 'l', () => [d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : '', acctOf(d.companyId)], 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
   const nOpen = all.filter(isOpen).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
-  return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
+  ui.lastRows = {...(ui.lastRows || {}), deals: rows};
+  return head('Opportunities', fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + fltBtn('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
   + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -1856,9 +1857,10 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = fzRun(() => L('companies').filter(mine).filter(c => !ui.tagF || coTags(c).some(t => tagKey(t) === ui.tagF)).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
+  const rows = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
   const total = Object.keys(S.companies).length;
-  return head('Accounts', ui.tagF ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
+  ui.lastRows = {...(ui.lastRows || {}), companies: rows};
+  return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
@@ -1868,9 +1870,10 @@ V.companies = () => {
 };
 
 V.contacts = () => {
-  const rows = fzRun(() => L('contacts').filter(mine).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))));
+  const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))));
   const total = Object.keys(S.contacts).length;
-  return head('Contacts', `${total} contact${total===1?'':'s'}`, searchBox('Search contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
+  ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
+  return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${pg('contacts', rows).map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(c.phone||c.mobile||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>${pgFoot('contacts', rows.length)}`);
 };
@@ -2138,6 +2141,7 @@ const cb = (name, checked, label) => `<label class="f inline"><input type="check
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
 
 // ---------- account tags ----------
+const ITAD_MIN = 1000;   // electronics jobs at or above this amount are ITAD (businesses only); below it, Electronics
 const DEFAULT_TAGS = ['Shredding', 'Medical Waste', 'ITAD', 'Electronics', 'Residential', 'Business', 'Financial', 'Real Estate', 'Legal', 'Dental', 'Medical Office', 'Government', 'Education', 'Insurance', 'Accounting/CPA', 'Property Management', 'Nonprofit'];
 const tagKey = t => String(t || '').trim().toLowerCase();
 const cleanTag = t => String(t || '').replace(/\s+/g, ' ').trim().slice(0, 40);
@@ -2165,13 +2169,13 @@ async function tagAdd(id, t){
   if (await patch('companies', id, {tags})) toast(known ? `Tagged ${t}` : `New tag “${t}” added`);
 }
 async function tagDel(id, t){ const c = S.companies[id]; if (!c) return; const tags = coTags(c).filter(x => tagKey(x) !== tagKey(t)); S.companies[id] = {...c, tags}; hayReset(); schedule(); await patch('companies', id, {tags}); }
-const tagFilterSel = () => { const ts = allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)); return ts.length ? `<select class="tagfilter" data-change="tagF" aria-label="Filter by tag"><option value="">All tags</option>${ts.map(x => `<option value="${esc(tagKey(x.t))}" ${ui.tagF === tagKey(x.t) ? 'selected' : ''}>${esc(x.t)} (${x.n.toLocaleString()})</option>`).join('')}</select>` : ''; };
+const tagFilterSel = () => { const ts = allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)); const cur = fltOf('companies').tag || ''; return ts.length ? `<select class="tagfilter" data-change="tagF" aria-label="Filter by tag"><option value="">All tags</option>${ts.map(x => `<option value="${esc(tagKey(x.t))}" ${cur === tagKey(x.t) ? 'selected' : ''}>${esc(x.t)} (${x.n.toLocaleString()})</option>`).join('')}</select>` : ''; };
 
 // Settings → Tags: counts, rename/merge, delete, and suggest tags from history
 function tagsModal(){
   const ts = allTags().sort((a, b) => b.n - a.n || a.t.localeCompare(b.t));
   openModal('Tags', `<p class="sub" style="margin-bottom:10px">Tags group accounts so you can filter, search and download them. Anyone can add a new tag right on an account. Rename one here to fix spelling or merge two tags; delete takes it off every account.</p>
-    ${isAdmin() && canWrite ? `<div class="setrow" style="margin-bottom:12px"><span class="seti">${ic('spark')}</span><div><b>Suggest tags from history</b><p class="sub">Tags accounts from their opportunities (Shredding, Medical Waste, ITAD…), their names (Dental, Legal, Real Estate…) and whether they look like a person or a business. You review before anything is saved.</p></div><button type="button" class="btn pri" data-act="tagSuggest">Suggest tags</button></div>` : ''}
+    ${isAdmin() && canWrite ? `<div class="setrow" style="margin-bottom:12px"><span class="seti">${ic('spark')}</span><div><b>Suggest tags from history</b><p class="sub">Tags accounts from their opportunities (Shredding, Medical Waste, and electronics jobs: ITAD at $1,000 and up for businesses, Electronics under $1,000 or for residential), their names (Dental, Legal, Real Estate…) and whether they look like a person or a business. You review before anything is saved.</p></div><button type="button" class="btn pri" data-act="tagSuggest">Suggest tags</button></div>` : ''}
     <ul class="users">${ts.map(x => `<li class="urow"><div>${tagChip(x.t)} <small style="display:inline">${x.n.toLocaleString()} account${x.n === 1 ? '' : 's'}</small></div>${canWrite ? `<div class="uact"><button type="button" class="btn sm ghost" data-act="tagRename" data-t="${esc(x.t)}">Rename</button>${x.n ? `<button type="button" class="btn sm ghost" data-act="tagDrop" data-t="${esc(x.t)}">Delete</button>` : ''}</div>` : ''}</li>`).join('')}</ul>`, null);
 }
 async function tagBulk(fn, label){   // apply fn(tags) => newTags to every account; saves only what changed, 500 at a time
@@ -2209,27 +2213,34 @@ const TAG_RULES = [
   ['Financial', /\b(bank|banking|credit union|financial|finance|wealth|investments?|capital|advisors?|advisory|mortgage|lending|loans?|brokerage|securities|edward jones|merrill|wells fargo|chase|truist|seacoast bank)\b/],
   ['Real Estate', /\b(realty|real estate|realtors?|properties|keller williams|coldwell|re ?max|century 21|sotheby\w*|berkshire hathaway|title|homes|home builders?|builders)\b/],
   ['Property Management', /\b(property management|property mgmt|management company|hoa|homeowners|condo(minium)? assoc\w*|apartments|apartment homes|community association|poa)\b/],
-  ['Nonprofit', /\b(foundation|church|ministr(y|ies)|charit\w*|non ?profit|nonprofit|united way|habitat|ymca|salvation army|goodwill|association|assn|society|club|lodge|temple|synagogue|parish|diocese)\b/],
-  ['Electronics', /\b(electronics?|e ?waste|ewaste|computers?|it services|technology|tech|recycling)\b/]
+  ['Nonprofit', /\b(foundation|church|ministr(y|ies)|charit\w*|non ?profit|nonprofit|united way|habitat|ymca|salvation army|goodwill|association|assn|society|club|lodge|temple|synagogue|parish|diocese)\b/]
 ];
 const BIZ_WORDS = /\b(llc|l l c|inc|corp|corporation|co|company|pa|p a|pllc|pc|ltd|lp|llp|group|associates|assoc|services|svcs|solutions|enterprises|ent|partners|center|ctr|office|offices|agency|studio|shop|store|restaurant|cafe|hotel|motel|church|school|bank|clinic|realty|construction|plumbing|electric|roofing|landscaping|pest|auto|motors|logistics|storage|marketing|consulting|design|management|mgmt|industries|international|intl|national|natl|systems|sys|holdings|ventures|trust|capital|the)\b/;
 function tagSuggestions(){
   const add = {}; const put_ = (id, t) => { const c = S.companies[id]; if (!c || coTags(c).some(x => tagKey(x) === tagKey(t))) return; (add[t] = add[t] || new Set()).add(id); };
   const cts = {}; for (const ct of Object.values(S.contacts)) if (ct.companyId) (cts[ct.companyId] = cts[ct.companyId] || []).push(ct);
-  for (const d of Object.values(S.deals)) { if (!d.companyId) continue; const st = String(d.serviceType || ''), nm_ = String(d.type || d.name || '');
-    if (/shred/i.test(st) || /shred|purge/i.test(nm_)) put_(d.companyId, 'Shredding');
-    if (/med/i.test(st) || /medical waste|sharps|biohazard|red bag/i.test(nm_)) put_(d.companyId, 'Medical Waste');
-    if (/hard drive|media/i.test(st) || /hard ?drive|\bhd\b|media destruction|itad|data destruction/i.test(nm_)) put_(d.companyId, 'ITAD');
-    if (/electronic|e-?waste/i.test(st + ' ' + nm_)) put_(d.companyId, 'Electronics'); }
+  const resi = {};   // which accounts are people, not businesses
   for (const [id, c] of Object.entries(S.companies)) {
     const n = nrm(c.name || ''); if (!n) continue; let industry = false;
-    for (const [t, re] of TAG_RULES) if (re.test(n)) { put_(id, t); if (t !== 'Electronics') industry = true; }
+    for (const [t, re] of TAG_RULES) if (re.test(n)) { put_(id, t); industry = true; }
     const people = (cts[id] || []).map(ct => nrm(pname_(ct))).filter(Boolean);
     const words = n.split(' ');
     const personLike = !BIZ_WORDS.test(n) && !industry && !c.website && words.length <= 3 && /^[a-z ]+$/.test(n) &&
       (people.some(p => p === n || p.split(' ').reverse().join(' ') === n || (words.length === 1 && p.split(' ')[0] === n)) || (words.length === 1 && !people.length));
+    const tagged = coTags(c).map(tagKey);
+    resi[id] = tagged.includes('residential') || (!tagged.includes('business') && personLike);
     if (personLike) put_(id, 'Residential'); else if (BIZ_WORDS.test(n) || industry || c.website || words.length >= 2) put_(id, 'Business');
   }
+  // electronics jobs (hard drives, media, e-waste): $1,000 and up is ITAD for businesses; smaller jobs, and residential accounts, are Electronics
+  const big = {}, small = {};
+  for (const d of Object.values(S.deals)) { if (!d.companyId || !S.companies[d.companyId]) continue; const st = String(d.serviceType || ''), nm_ = String(d.type || d.name || '');
+    if (/shred/i.test(st) || /shred|purge/i.test(nm_)) put_(d.companyId, 'Shredding');
+    if (/med/i.test(st) || /medical waste|sharps|biohazard|red bag/i.test(nm_)) put_(d.companyId, 'Medical Waste');
+    if (/hard drive|media|electronic|e-?waste/i.test(st) || /hard ?drive|\bhd\b|media destruction|itad|data destruction|electronic|e-?waste/i.test(nm_)) {
+      const amt = Math.max(+d.value || 0, +d.priceQuoted || 0);
+      if (amt >= ITAD_MIN && !resi[d.companyId]) big[d.companyId] = true; else small[d.companyId] = true; } }
+  for (const id of Object.keys(big)) put_(id, 'ITAD');
+  for (const id of Object.keys(small)) if (!big[id]) put_(id, 'Electronics');
   return Object.entries(add).map(([t, set]) => ({t, ids: [...set]})).sort((a, b) => b.ids.length - a.ids.length);
 }
 function tagSuggestModal(){
@@ -2238,7 +2249,7 @@ function tagSuggestModal(){
   openModal('Suggested tags', `<p class="sub" style="margin-bottom:10px">Untick anything you don't want. Tags are only added, never removed, and running this again only suggests what's new. You can take any tag off an account later.</p>
     <ul class="users">${sug.map(x => `<li class="urow" style="display:block"><label class="chk" style="font-weight:600"><input type="checkbox" name="sg_${esc(tagKey(x.t))}" checked> ${tagChip(x.t)} add to ${x.ids.length.toLocaleString()} account${x.ids.length === 1 ? '' : 's'}</label>
       <small>e.g. ${x.ids.slice(0, 5).map(id => esc(S.companies[id].name)).join(' · ')}${x.ids.length > 5 ? ' …' : ''}</small></li>`).join('')}</ul>
-    <p class="sub" style="margin-top:8px">Residential means the account name looks like a person (and usually matches its contact). Spot-check a few after, using the tag filter on Accounts.</p>`, 'Add tags', async f => {
+    <p class="sub" style="margin-top:8px">Electronics jobs (hard drives, media, e-waste) of $1,000 or more make a business ITAD; smaller jobs, and any residential account, get Electronics. Residential means the account name looks like a person (and usually matches its contact). Spot-check a few after, using the tag filter on Accounts.</p>`, 'Add tags', async f => {
       const pick = sug.filter(x => f['sg_' + tagKey(x.t)]); if (!pick.length) { toast('Nothing selected.', 'bad'); return false; }
       const want = {}; for (const x of pick) for (const id of x.ids) (want[id] = want[id] || []).push(x.t);
       const ids = Object.keys(want); const b = $('#mform [type=submit]');
@@ -2251,6 +2262,102 @@ function tagSuggestModal(){
       } catch (e) { writeErr(e); return false; }
       toast(`Tagged ${ids.length.toLocaleString()} account${ids.length === 1 ? '' : 's'}`); return true;
     }, {wide: true});
+}
+
+
+// ---------- list filters (Accounts, Contacts, Opportunities) ----------
+const coOf = r => S.companies[r.companyId] || {};
+const uniq = (arr) => [...new Set(arr.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+const tagOpts = () => allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)).map(x => [tagKey(x.t), `${x.t} (${x.n.toLocaleString()})`]);
+const nOpts = vals => { const m = new Map(); for (const v of vals) { const k = nrm(v); if (!k) continue; const e = m.get(k) || {n: 0, by: {}}; e.n++; const t = String(v).trim(); e.by[t] = (e.by[t] || 0) + 1; m.set(k, e); } return [...m.entries()].map(([k, e]) => [k, Object.entries(e.by).sort((a, b) => b[1] - a[1])[0][0]]).sort((a, b) => a[1].localeCompare(b[1])); };   // "Port St. Lucie", "Port St Lucie" and "Port Saint Lucie" are one choice
+const cityOpts = () => nOpts(Object.values(S.companies).map(c => c.city));
+const stateOpts = () => uniq(Object.values(S.companies).map(c => c.state));
+const YN = [['yes', 'Yes'], ['no', 'No']];
+const has = (v, want) => !!String(v || '').trim() === (want === 'yes');
+const FL = {
+  companies: [
+    {k: 'tag', l: 'Tag', opts: tagOpts, test: (c, v) => coTags(c).some(t => tagKey(t) === v)},
+    {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (c, v) => c.ownerId === v},
+    {k: 'status', l: 'Jobs', opts: () => [['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], test: (c, v) => coStatus(c.id, v)},
+    {k: 'city', l: 'City', opts: cityOpts, test: (c, v) => nrm(c.city) === v},
+    {k: 'state', l: 'State', opts: stateOpts, test: (c, v) => (c.state || '').trim() === v},
+    {k: 'zip', l: 'ZIP starts with', text: true, test: (c, v) => String(c.zip || '').startsWith(v)},
+    {k: 'phone', l: 'Has a phone', opts: () => YN, test: (c, v) => has(c.phone, v)},
+    {k: 'address', l: 'Has an address', opts: () => YN, test: (c, v) => has(c.address, v)},
+    {k: 'website', l: 'Has a website', opts: () => YN, test: (c, v) => has(c.website, v)},
+    {k: 'contract', l: 'Active contract', opts: () => YN, test: (c, v) => gr(c.id).contracts.some(x => (x.status || 'active') === 'active') === (v === 'yes')},
+    {k: 'created', l: 'Created', date: c => c.createdAt}],
+  contacts: [
+    {k: 'tag', l: 'Account tag', opts: tagOpts, test: (c, v) => coTags(coOf(c)).some(t => tagKey(t) === v)},
+    {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (c, v) => c.ownerId === v},
+    {k: 'status', l: 'Account jobs', opts: () => [['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], test: (c, v) => coStatus(c.companyId, v)},
+    {k: 'title', l: 'Title', opts: () => nOpts(Object.values(S.contacts).map(c => c.title)), test: (c, v) => nrm(c.title) === v},
+    {k: 'city', l: 'City', opts: cityOpts, test: (c, v) => nrm(coOf(c).city) === v},
+    {k: 'state', l: 'State', opts: stateOpts, test: (c, v) => (coOf(c).state || '').trim() === v},
+    {k: 'email', l: 'Has an email', opts: () => YN, test: (c, v) => has(ctMail(c), v)},
+    {k: 'phone', l: 'Has a phone', opts: () => YN, test: (c, v) => has(c.phone || c.mobile, v)},
+    {k: 'mobile', l: 'Has a mobile', opts: () => YN, test: (c, v) => has(c.mobile, v)},
+    {k: 'created', l: 'Created', date: c => c.createdAt}],
+  deals: [
+    {k: 'stage', l: 'Sales stage', opts: () => STAGES.map(st => [st.k, st.l]), test: (d, v) => stage(d).k === v},
+    {k: 'tag', l: 'Account tag', opts: tagOpts, test: (d, v) => coTags(coOf(d)).some(t => tagKey(t) === v)},
+    {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (d, v) => d.ownerId === v},
+    {k: 'closedBy', l: 'Closed by', opts: () => ownerOpts(), test: (d, v) => !isOpen(d) && d.closedBy === v},
+    {k: 'initialCall', l: 'Initial call', opts: () => withData(INITIAL_CALL, 'initialCall'), test: (d, v) => String(d.initialCall || '').split(',').map(x => x.trim()).includes(v)},
+    {k: 'type', l: 'Opportunity', opts: () => withData(OPP_TYPES, 'type'), test: (d, v) => (d.type || d.name) === v},
+    {k: 'service', l: 'Service', opts: () => withData(SERVICES, 'service'), test: (d, v) => d.service === v},
+    {k: 'serviceType', l: 'Service type', opts: () => withData(SVC_TYPES, 'serviceType'), test: (d, v) => d.serviceType === v},
+    {k: 'interval', l: 'Service interval', opts: () => withData(INTERVALS, 'interval'), test: (d, v) => d.interval === v},
+    {k: 'source', l: 'Lead source', opts: () => withData(SOURCES, 'source'), test: (d, v) => d.source === v},
+    {k: 'firstCallClose', l: 'First call close', opts: () => [['Yes', 'Yes'], ['No', 'No']], test: (d, v) => d.firstCallClose === v},
+    {k: 'noCloseReason', l: 'Did not close on first call', opts: () => withData(NO_CLOSE, 'noCloseReason'), test: (d, v) => d.noCloseReason === v},
+    {k: 'lostReason', l: 'Reason for loss', opts: () => withData(LOSS_REASONS, 'lostReason'), test: (d, v) => d.lostReason === v},
+    {k: 'city', l: 'Account city', opts: cityOpts, test: (d, v) => nrm(coOf(d).city) === v},
+    {k: 'value', l: 'Annual projected ($)', num: d => +d.value || 0},
+    {k: 'priceQuoted', l: 'Price quoted ($)', num: d => +d.priceQuoted || 0},
+    {k: 'created', l: 'Created', date: d => d.createdAt},
+    {k: 'closeDate', l: 'Close date', date: d => d.closeDate},
+    {k: 'closedAt', l: 'Closed date', date: d => isOpen(d) ? '' : d.closedAt},
+    {k: 'serviceDate', l: 'Service date', date: d => d.serviceDate}]
+};
+const fltOf = t => (ui.flt = ui.flt || {})[t] || {};
+const fltActive = t => { const f = fltOf(t); return FL[t].filter(x => x.date ? (f[x.k + '_from'] || f[x.k + '_to']) : x.num ? (f[x.k + '_min'] !== undefined && f[x.k + '_min'] !== '' || f[x.k + '_max'] !== undefined && f[x.k + '_max'] !== '') : f[x.k]); };
+function fltTest(t, r, f){
+  for (const x of FL[t]) {
+    if (x.date) { const a = f[x.k + '_from'], b = f[x.k + '_to']; if ((a || b) && !inRange(x.date(r), a, b)) return false; continue; }
+    if (x.num) { const a = f[x.k + '_min'], b = f[x.k + '_max'], v = x.num(r); if (a !== undefined && a !== '' && v < +a) return false; if (b !== undefined && b !== '' && v > +b) return false; continue; }
+    const v = f[x.k]; if (v && !x.test(r, x.text ? String(v).trim() : v)) return false;
+  }
+  return true;
+}
+const fltPass = (t, r) => { const f = fltOf(t); return !Object.keys(f).length || fltTest(t, r, f); };
+const fltLabel = (t, x, f) => { if (x.date) { const a = f[x.k + '_from'], b = f[x.k + '_to']; return `${x.l}: ${a && b ? `${fmtDate(a)} – ${fmtDate(b)}` : a ? `from ${fmtDate(a)}` : `through ${fmtDate(b)}`}`; }
+  if (x.num) { const a = f[x.k + '_min'], b = f[x.k + '_max']; const m = v => '$' + (+v).toLocaleString(); return `${x.l.replace(' ($)', '')}: ${a !== '' && a !== undefined && b !== '' && b !== undefined ? `${m(a)} – ${m(b)}` : a !== '' && a !== undefined ? `${m(a)}+` : `up to ${m(b)}`}`; }
+  const v = f[x.k]; if (x.text) return `${x.l}: ${v}`; const o = (x.opts() || []).map(o => Array.isArray(o) ? o : [o, o]).find(o => String(o[0]) === String(v)); return `${x.l}: ${o ? String(o[1]).replace(/ \([\d,]+\)$/, '') : v}`; };
+const fltBtn = t => { const n = fltActive(t).length; return `<button class="btn${n ? ' on' : ''}" data-act="fltOpen" data-t="${t}">${ic('cols')}Filters${n ? ` <em class="fcount">${n}</em>` : ''}</button>`; };
+const fltBar = t => { const f = fltOf(t); const act = fltActive(t); if (!act.length) return ''; return `<div class="fltbar">${act.map(x => `<span class="fchip2">${esc(fltLabel(t, x, f))}<button type="button" data-act="fltDel" data-t="${t}" data-k="${x.k}" aria-label="Remove filter">×</button></span>`).join('')}<button type="button" class="lnk" data-act="fltClear" data-t="${t}">Clear all</button></div>`; };
+function fltModal(t){
+  const f = fltOf(t); const NAMES = {companies: 'accounts', contacts: 'contacts', deals: 'opportunities'};
+  const field = x => {
+    if (x.date) return `<div class="f"><span>${x.l}</span><div class="grid2" style="gap:6px">${inp(x.k + '_from', f[x.k + '_from'] || '', 'date', 'data-change="fltCount" aria-label="' + x.l + ' from"')}${inp(x.k + '_to', f[x.k + '_to'] || '', 'date', 'data-change="fltCount" aria-label="' + x.l + ' to"')}</div></div>`;
+    if (x.num) return `<div class="f"><span>${x.l}</span><div class="grid2" style="gap:6px">${inp(x.k + '_min', f[x.k + '_min'] ?? '', 'number', 'placeholder="Min" min="0" data-input="fltCount" aria-label="' + x.l + ' minimum"')}${inp(x.k + '_max', f[x.k + '_max'] ?? '', 'number', 'placeholder="Max" min="0" data-input="fltCount" aria-label="' + x.l + ' maximum"')}</div></div>`;
+    if (x.text) return F(x.l, inp(x.k, f[x.k] || '', 'text', 'data-input="fltCount"'));
+    return F(x.l, sel(x.k, anyOpt(x.opts()), f[x.k] || '', 'data-change="fltCount"'));
+  };
+  ui.fltT = t;
+  openModal(`Filter ${NAMES[t]}`, `<div class="grid3 fltgrid">${FL[t].map(field).join('')}</div><p class="sub">Filters work together with the search box${t === 'deals' ? ' and the Open/Won/Lost buttons' : ''}. Download uses them too.</p>`, 'Show', fd => {
+    const keep = {}; for (const [k, v] of Object.entries(fd)) if (v !== '' && v != null) keep[k] = v;
+    ui.flt[t] = keep; ui.lim = {}; schedule(); return true;
+  }, {wide: true, foot: `<button type="button" class="btn ghost" data-act="fltReset" style="margin-right:auto">Reset</button>`});
+  fltCount();
+}
+function fltCount(){
+  const t = ui.fltT, fm = $('#mform'); if (!t || !fm) return;
+  const f = {}; for (const [k, v] of Object.entries(formData(fm))) if (v !== '' && v != null) f[k] = v;
+  const base = t === 'companies' ? L('companies') : t === 'contacts' ? L('contacts') : L('deals');
+  const n = base.filter(mine).filter(r => fltTest(t, r, f)).length; const b = fm.querySelector('[type=submit]');
+  const NAMES = {companies: ['account', 'accounts'], contacts: ['contact', 'contacts'], deals: ['opportunity', 'opportunities']};
+  if (b) b.textContent = `Show ${n.toLocaleString()} ${NAMES[t][n === 1 ? 0 : 1]}`;
 }
 
 // ---------- delete all data (admin): a clean slate for testing ----------
@@ -2946,11 +3053,13 @@ function locForm(ownerLabel){
     <div class="grid2">${F('Created from', inp('from', '', 'date', 'data-change="expCount"'))}${F('Created to', inp('to', '', 'date', 'data-change="expCount"'))}</div>`;
 }
 const locMatch = (co, f) => (!f.tag || coTags(co).some(t => tagKey(t) === f.tag)) && (!f.city || (co.city || '').trim() === f.city) && (!f.state || (co.state || '').trim() === f.state) && (!f.zip || String(co.zip || '').startsWith(f.zip.trim()));
-function expRows(){ const fm = $('#mform'); if (!fm || !ui.exp) return []; return EXP[ui.exp].rows(formData(fm)); }
+function expRows(){ const fm = $('#mform'); if (!fm || !ui.exp) return []; const f = formData(fm); if (f.useShown && ui.expShown) return ui.expShown; return EXP[ui.exp].rows(f); }
 function expCount(){ const n = expRows().length; const b = $('#mform [type=submit]'); if (b) { b.disabled = !n; b.textContent = n ? `Download ${n} ${n === 1 ? EXP[ui.exp].title.replace(/ies$/, 'y').replace(/s$/, '') : EXP[ui.exp].title}` : 'Nothing matches'; } }
 function exportModal(t){
   const X_ = EXP[t]; if (!X_) return; ui.exp = t;
-  openModal(`Download ${X_.title}`, `${X_.form()}<p class="sub">Downloads as a CSV file that opens in Excel. Columns: ${X_.cols.map(c => c[0]).join(', ')}.</p>`, 'Download', async () => {
+  const shown = (ui.lastRows && ui.lastRows[t]) || null; const narrowed = shown && (fltActive(t).length || ui.q || ui.mine || (t === 'deals' && (ui.oppShow || 'open') !== 'all'));
+  ui.expShown = narrowed ? shown : null;
+  openModal(`Download ${X_.title}`, `${narrowed ? `<label class="chk" style="margin-bottom:10px;font-weight:600"><input type="checkbox" name="useShown" checked data-change="expShown"> Just the ${shown.length.toLocaleString()} ${X_.title} on screen now (your filters and search)</label><div id="expForm" hidden>` : '<div id="expForm">'}${X_.form()}</div><p class="sub">Downloads as a CSV file that opens in Excel. Columns: ${X_.cols.map(c => c[0]).join(', ')}.</p>`, 'Download', async () => {
     const rows = expRows(); if (!rows.length) { toast('Nothing matches those filters.', 'bad'); return false; }
     const out = [X_.cols.map(c => c[0]), ...rows.map(r => X_.cols.map(c => { const v = c[1](r); return v == null ? '' : v; }))];
     await saveFile(`${X_.file}-${today()}.csv`, '﻿' + out.map(r => r.map(csvCell).join(',')).join('\r\n'), 'Download');
@@ -3846,6 +3955,10 @@ const A = {
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
   settings: () => { settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   wipeAll: () => wipeModal(),
+  fltOpen: d => fltModal(d.t),
+  fltDel: d => { const f = {...fltOf(d.t)}; for (const k of Object.keys(f)) if (k === d.k || k === d.k + '_from' || k === d.k + '_to' || k === d.k + '_min' || k === d.k + '_max') delete f[k]; ui.flt[d.t] = f; ui.lim = {}; schedule(); },
+  fltClear: d => { ui.flt[d.t] = {}; ui.lim = {}; schedule(); },
+  fltReset: () => { const fm = $('#mform'); if (!fm) return; fm.querySelectorAll('select, input').forEach(el => { el.value = ''; }); fltCount(); },
   tags: () => tagsModal(),
   tagSuggest: () => tagSuggestModal(),
   tagRename: d => tagRenameModal(d.t),
@@ -3900,7 +4013,9 @@ const CHANGE = {
   dealStage: el => changeStage(el.dataset.id, el.value),
   rowStage: el => changeStage(el.dataset.id, el.value),
   oppField: el => oppSaveField(el),
-  tagF: el => { ui.tagF = el.value; ui.lim = {}; schedule(); },
+  tagF: el => { ui.flt = ui.flt || {}; const f = {...fltOf('companies')}; if (el.value) f.tag = el.value; else delete f.tag; ui.flt.companies = f; ui.lim = {}; schedule(); },
+  fltCount: () => fltCount(),
+  expShown: el => { const w = $('#expForm'); if (w) w.hidden = el.checked; expCount(); },
   coField: el => coSaveField(el),
   expCount: () => expCount(),
   attFiles: el => { attAdd([...(el.files || [])]); el.value = ''; },
