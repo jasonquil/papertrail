@@ -122,7 +122,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .usebar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.usebar.sm{height:5px;margin:6px 0 4px}.usebar i{display:block;height:100%;background:var(--accent);border-radius:99px}
 .tags{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:1px}.tag{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);white-space:nowrap}.tag i{width:7px;height:7px;border-radius:50%;flex:none}
 .tagedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px}.tagedit .tag{font-size:.82rem;padding:3px 6px 3px 10px}.tagx{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px}.tagx:hover{color:var(--bad)}.tagin{width:150px;font:inherit;font-size:.86rem;border:1px dashed var(--line);border-radius:999px;padding:3px 10px;background:transparent;color:var(--fg)}.tagin:focus{outline:none;border-style:solid;border-color:var(--accent);background:var(--surface)}
-.tagfilter{width:auto;max-width:200px}.fltbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-6px 0 12px}.fchip2{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;font-weight:600;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}.fchip2 button{border:0;background:none;color:inherit;cursor:pointer;font-size:1rem;line-height:1;padding:0 4px}.btn.on{border-color:var(--accent);color:var(--accent)}.fcount{font-style:normal;background:var(--accent);color:var(--surface);border-radius:999px;padding:0 6px;font-size:.72rem}.fltgrid{gap:10px 12px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
+.tagfilter{width:auto;max-width:200px}.fltbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-6px 0 12px}.fchip2{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;font-weight:600;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}.fchip2 button{border:0;background:none;color:inherit;cursor:pointer;font-size:1rem;line-height:1;padding:0 4px}.btn.on{border-color:var(--accent);color:var(--accent)}.fcount{font-style:normal;background:var(--accent);color:var(--surface);border-radius:999px;padding:0 6px;font-size:.72rem}.fltgrid{gap:10px 12px}.savedsel{width:auto;max-width:220px}.savedname{font-size:.84rem;color:var(--fg);margin-right:2px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
 .acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
 .fznote{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);font-size:.88rem}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
@@ -876,7 +876,7 @@ table.p-t{width:100%;border-collapse:collapse;margin-top:14px}
 (() => {
 'use strict';
 // ---------- constants ----------
-const COLS = ['companies','contacts','deals','quotes','activities','tasks','contracts','templates','journeys','enrollments','trash'];
+const COLS = ['companies','contacts','deals','quotes','activities','tasks','contracts','templates','journeys','enrollments','views','trash'];
 const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'following',l:'Closed Still Following Up',p:25},{k:'won',l:'Closed Won',p:100},{k:'updated',l:'Updated Contract',p:100},{k:'lost',l:'Closed Lost',p:0}];
 const CLOSED = ['won','updated','lost'];
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
@@ -1293,7 +1293,7 @@ function setDemo(on){
 }
 // ---------- trash: deleted records can be restored for 30 days ----------
 const TRASH_DAYS = 30;
-const TRASH_TYPES = {companies: 'Account', contacts: 'Contact', deals: 'Opportunity', quotes: 'Quote', activities: 'Activity', tasks: 'Reminder', contracts: 'Contract', templates: 'Email template', journeys: 'Journey', enrollments: 'Journey enrollment'};
+const TRASH_TYPES = {views: 'Saved filter', companies: 'Account', contacts: 'Contact', deals: 'Opportunity', quotes: 'Quote', activities: 'Activity', tasks: 'Reminder', contracts: 'Contract', templates: 'Email template', journeys: 'Journey', enrollments: 'Journey enrollment'};
 function trashLabel(col, r){
   if (!r) return '';
   if (col === 'contacts') return pname_(r);
@@ -1675,7 +1675,7 @@ V.pipeline = () => {
   const nOpen = all.filter(isOpen).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   ui.lastRows = {...(ui.lastRows || {}), deals: rows};
-  return head('Opportunities', fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + fltBtn('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
   + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -1860,7 +1860,7 @@ V.companies = () => {
   const rows = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
-  return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
+  return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
@@ -1873,7 +1873,7 @@ V.contacts = () => {
   const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))));
   const total = Object.keys(S.contacts).length;
   ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
-  return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
+  return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${pg('contacts', rows).map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(c.phone||c.mobile||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>${pgFoot('contacts', rows.length)}`);
 };
@@ -2279,19 +2279,13 @@ const FL = {
   companies: [
     {k: 'tag', l: 'Tag', opts: tagOpts, test: (c, v) => coTags(c).some(t => tagKey(t) === v)},
     {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (c, v) => c.ownerId === v},
-    {k: 'status', l: 'Jobs', opts: () => [['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], test: (c, v) => coStatus(c.id, v)},
     {k: 'city', l: 'City', opts: cityOpts, test: (c, v) => nrm(c.city) === v},
     {k: 'state', l: 'State', opts: stateOpts, test: (c, v) => (c.state || '').trim() === v},
     {k: 'zip', l: 'ZIP starts with', text: true, test: (c, v) => String(c.zip || '').startsWith(v)},
-    {k: 'phone', l: 'Has a phone', opts: () => YN, test: (c, v) => has(c.phone, v)},
-    {k: 'address', l: 'Has an address', opts: () => YN, test: (c, v) => has(c.address, v)},
-    {k: 'website', l: 'Has a website', opts: () => YN, test: (c, v) => has(c.website, v)},
-    {k: 'contract', l: 'Active contract', opts: () => YN, test: (c, v) => gr(c.id).contracts.some(x => (x.status || 'active') === 'active') === (v === 'yes')},
     {k: 'created', l: 'Created', date: c => c.createdAt}],
   contacts: [
     {k: 'tag', l: 'Account tag', opts: tagOpts, test: (c, v) => coTags(coOf(c)).some(t => tagKey(t) === v)},
     {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (c, v) => c.ownerId === v},
-    {k: 'status', l: 'Account jobs', opts: () => [['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], test: (c, v) => coStatus(c.companyId, v)},
     {k: 'title', l: 'Title', opts: () => nOpts(Object.values(S.contacts).map(c => c.title)), test: (c, v) => nrm(c.title) === v},
     {k: 'city', l: 'City', opts: cityOpts, test: (c, v) => nrm(coOf(c).city) === v},
     {k: 'state', l: 'State', opts: stateOpts, test: (c, v) => (coOf(c).state || '').trim() === v},
@@ -2337,7 +2331,7 @@ const fltLabel = (t, x, f) => { if (x.date) { const a = f[x.k + '_from'], b = f[
   if (x.num) { const a = f[x.k + '_min'], b = f[x.k + '_max']; const m = v => '$' + (+v).toLocaleString(); return `${x.l.replace(' ($)', '')}: ${a !== '' && a !== undefined && b !== '' && b !== undefined ? `${m(a)} – ${m(b)}` : a !== '' && a !== undefined ? `${m(a)}+` : `up to ${m(b)}`}`; }
   const v = f[x.k]; if (x.text) return `${x.l}: ${v}`; const o = (x.opts() || []).map(o => Array.isArray(o) ? o : [o, o]).find(o => String(o[0]) === String(v)); return `${x.l}: ${o ? String(o[1]).replace(/ \([\d,]+\)$/, '') : v}`; };
 const fltBtn = t => { const n = fltActive(t).length; return `<button class="btn${n ? ' on' : ''}" data-act="fltOpen" data-t="${t}">${ic('cols')}Filters${n ? ` <em class="fcount">${n}</em>` : ''}</button>`; };
-const fltBar = t => { const f = fltOf(t); const act = fltActive(t); if (!act.length) return ''; return `<div class="fltbar">${act.map(x => `<span class="fchip2">${esc(fltLabel(t, x, f))}<button type="button" data-act="fltDel" data-t="${t}" data-k="${x.k}" aria-label="Remove filter">×</button></span>`).join('')}<button type="button" class="lnk" data-act="fltClear" data-t="${t}">Clear all</button></div>`; };
+const fltBar = t => { const f = fltOf(t); const act = fltActive(t); if (!act.length) return ''; const on = viewOn(t); return `<div class="fltbar">${on ? `<b class="savedname">${esc(on.name)}:</b>` : ''}${act.map(x => `<span class="fchip2">${esc(fltLabel(t, x, f))}<button type="button" data-act="fltDel" data-t="${t}" data-k="${x.k}" aria-label="Remove filter">×</button></span>`).join('')}<button type="button" class="lnk" data-act="fltClear" data-t="${t}">Clear all</button>${on && on.owner === ME.id ? '' : `<button type="button" class="lnk" data-act="viewSave" data-t="${t}">Save these filters</button>`}</div>`; };
 function fltModal(t){
   const f = fltOf(t); const NAMES = {companies: 'accounts', contacts: 'contacts', deals: 'opportunities'};
   const field = x => {
@@ -2350,7 +2344,7 @@ function fltModal(t){
   openModal(`Filter ${NAMES[t]}`, `<div class="grid3 fltgrid">${FL[t].map(field).join('')}</div><p class="sub">Filters work together with the search box${t === 'deals' ? ' and the Open/Won/Lost buttons' : ''}. Download uses them too.</p>`, 'Show', fd => {
     const keep = {}; for (const [k, v] of Object.entries(fd)) if (v !== '' && v != null) keep[k] = v;
     ui.flt[t] = keep; ui.lim = {}; schedule(); return true;
-  }, {wide: true, foot: `<button type="button" class="btn ghost" data-act="fltReset" style="margin-right:auto">Reset</button>`});
+  }, {wide: true, foot: `<button type="button" class="btn ghost" data-act="fltReset">Reset</button><button type="button" class="btn ghost" data-act="fltSaveAs" style="margin-right:auto">Save as…</button>`});
   fltCount();
 }
 function fltCount(){
@@ -2360,6 +2354,43 @@ function fltCount(){
   const n = base.filter(mine).filter(r => fltTest(t, r, f)).length; const b = fm.querySelector('[type=submit]');
   const NAMES = {companies: ['account', 'accounts'], contacts: ['contact', 'contacts'], deals: ['opportunity', 'opportunities']};
   if (b) b.textContent = `Show ${n.toLocaleString()} ${NAMES[t][n === 1 ? 0 : 1]}`;
+}
+
+
+// ---------- saved filters ----------
+const NOUN = {companies: 'accounts', contacts: 'contacts', deals: 'opportunities'};
+const viewsFor = t => L('views').filter(v => v.t === t && (v.owner === ME.id || v.shared)).sort((a, b) => (a.owner === ME.id ? 0 : 1) - (b.owner === ME.id ? 0 : 1) || String(a.name).localeCompare(String(b.name)));
+const sameF = (a, b) => JSON.stringify(Object.entries(a || {}).sort()) === JSON.stringify(Object.entries(b || {}).sort());
+const viewOn = t => { const id = (ui.viewOn || {})[t]; const v = id && S.views[id]; return v && sameF(v.f, fltOf(t)) && (t !== 'deals' || !v.show || v.show === (ui.oppShow || 'open')) ? {...v, id} : null; };
+const savedSel = t => { const vs = viewsFor(t); const on = viewOn(t); const n = fltActive(t).length;
+  if (!vs.length && !n) return '';
+  return `<select class="savedsel" data-change="viewPick" data-t="${t}" aria-label="Saved filters"><option value="">${on ? '' : 'Saved filters'}</option>${vs.map(v => `<option value="${v.id}" ${on && on.id === v.id ? 'selected' : ''}>${esc(v.name)}${v.owner !== ME.id ? ` (${esc(nm(v.owner) || 'shared')})` : v.shared ? ' (shared)' : ''}</option>`).join('')}${n ? `<option value="__save">＋ Save these filters…</option>` : ''}${vs.length ? `<option value="__manage">Manage saved filters…</option>` : ''}</select>`; };
+function viewApply(t, id){
+  const v = S.views[id]; if (!v) return;
+  ui.flt = ui.flt || {}; ui.flt[t] = {...(v.f || {})}; if (t === 'deals' && v.show) ui.oppShow = v.show;
+  ui.viewOn = {...(ui.viewOn || {}), [t]: id}; ui.lim = {}; schedule();
+}
+function viewSaveModal(t, f){
+  f = f || fltOf(t); const on = viewOn(t); const mineOn = on && on.owner === ME.id ? on : null;
+  if (!Object.keys(f).length) { toast('Pick some filters first, then save them.', 'bad'); return; }
+  const summary = FL[t].filter(x => x.date ? (f[x.k + '_from'] || f[x.k + '_to']) : x.num ? ((f[x.k + '_min'] ?? '') !== '' || (f[x.k + '_max'] ?? '') !== '') : f[x.k]).map(x => fltLabel(t, x, f));
+  openModal('Save filters', `<p class="sub" style="margin-bottom:10px">${summary.map(esc).join(' · ')}${t === 'deals' ? ` · ${({open: 'Open', won: 'Won', lost: 'Lost', all: 'All'})[ui.oppShow || 'open']} opportunities` : ''}</p>
+    ${F('Name', inp('name', mineOn ? mineOn.name : '', 'text', `required maxlength="60" placeholder="e.g. Dental offices in Stuart"`))}
+    <label class="chk" style="margin-top:6px"><input type="checkbox" name="shared" ${mineOn && mineOn.shared ? 'checked' : ''}> Share with the team</label>
+    <p class="sub">${mineOn ? `Saving with the same name updates “${esc(mineOn.name)}”. ` : ''}Saved filters show up in the Saved filters list on ${NOUN[t]}. Only you see them unless you share.</p>`, 'Save', async fd => {
+      const name = String(fd.name || '').trim().slice(0, 60); if (!name) { toast('Give it a name.', 'bad'); return false; }
+      const ex = L('views').find(v => v.t === t && v.owner === ME.id && String(v.name).toLowerCase() === name.toLowerCase());
+      const id = ex ? ex.id : uid();
+      const ok = await put('views', id, {...(ex ? S.views[id] : {}), t, name, f: {...f}, show: t === 'deals' ? (ui.oppShow || 'open') : '', shared: !!fd.shared, owner: ME.id});
+      if (ok) { ui.flt[t] = {...f}; ui.viewOn = {...(ui.viewOn || {}), [t]: id}; toast(ex ? `Updated “${name}”` : `Saved “${name}”`); schedule(); }
+      return ok;
+    });
+}
+function viewManageModal(t){
+  const vs = viewsFor(t);
+  openModal(`Saved filters: ${NOUN[t]}`, vs.length ? `<ul class="users">${vs.map(v => { const mine_ = v.owner === ME.id;
+    return `<li class="urow"><div><b>${esc(v.name)}</b><small>${mine_ ? (v.shared ? 'Shared with the team' : 'Only you') : `Shared by ${esc(nm(v.owner) || 'a teammate')}`}</small></div>
+      <div class="uact"><button type="button" class="btn sm" data-act="viewUse" data-t="${t}" data-id="${v.id}">Show</button>${mine_ ? `<button type="button" class="btn sm ghost" data-act="viewRename" data-id="${v.id}">Rename</button><button type="button" class="btn sm ghost" data-act="viewShare" data-id="${v.id}">${v.shared ? 'Stop sharing' : 'Share'}</button>` : ''}${mine_ || isAdmin() ? `<button type="button" class="btn sm ghost" data-act="viewDel" data-id="${v.id}" data-t="${t}">Delete</button>` : ''}</div></li>`; }).join('')}</ul>` : '<p class="empty-s">No saved filters yet. Set some filters, then choose “Save these filters…”.</p>', null);
 }
 
 // ---------- delete all data (admin): a clean slate for testing ----------
@@ -3958,6 +3989,12 @@ const A = {
   settings: () => { settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   wipeAll: () => wipeModal(),
   fltOpen: d => fltModal(d.t),
+  fltSaveAs: () => { const t = ui.fltT, fm = $('#mform'); if (!t || !fm) return; const f = {}; for (const [k, v] of Object.entries(formData(fm))) if (v !== '' && v != null) f[k] = v; if (!Object.keys(f).length) { toast('Pick some filters first.', 'bad'); return; } ui.flt[t] = f; ui.lim = {}; schedule(); setTimeout(() => viewSaveModal(t, f), 150); },
+  viewSave: d => viewSaveModal(d.t),
+  viewUse: d => { closeModal(); viewApply(d.t, d.id); },
+  viewRename: d => { const v = S.views[d.id]; if (!v) return; openModal('Rename saved filter', F('Name', inp('name', v.name, 'text', 'required maxlength="60"')), 'Save', async fd => { const name = String(fd.name || '').trim(); if (!name) return false; const ok = await patch('views', d.id, {name}); if (ok) setTimeout(() => viewManageModal(v.t), 200); return ok; }); },
+  viewShare: async d => { const v = S.views[d.id]; if (!v) return; if (await patch('views', d.id, {shared: !v.shared})) { toast(v.shared ? 'Only you see it now' : 'Shared with the team'); setTimeout(() => viewManageModal(v.t), 200); } },
+  viewDel: d => { const v = S.views[d.id]; if (!v) return; confirmModal('Delete saved filter?', `“${esc(v.name)}” will be removed${v.shared ? ' for everyone' : ''}. Your accounts, contacts and opportunities aren't touched.`, 'Delete', async () => { await del('views', d.id); toast('Saved filter deleted'); setTimeout(() => viewManageModal(d.t), 200); }); },
   fltDel: d => { const f = {...fltOf(d.t)}; for (const k of Object.keys(f)) if (k === d.k || k === d.k + '_from' || k === d.k + '_to' || k === d.k + '_min' || k === d.k + '_max') delete f[k]; ui.flt[d.t] = f; ui.lim = {}; schedule(); },
   fltClear: d => { ui.flt[d.t] = {}; ui.lim = {}; schedule(); },
   fltReset: () => { const fm = $('#mform'); if (!fm) return; fm.querySelectorAll('select, input').forEach(el => { el.value = ''; }); fltCount(); },
@@ -4017,6 +4054,7 @@ const CHANGE = {
   oppField: el => oppSaveField(el),
   tagF: el => { ui.flt = ui.flt || {}; const f = {...fltOf('companies')}; if (el.value) f.tag = el.value; else delete f.tag; ui.flt.companies = f; ui.lim = {}; schedule(); },
   fltCount: () => fltCount(),
+  viewPick: el => { const t = el.dataset.t, v = el.value; if (v === '__save') { el.value = ''; viewSaveModal(t); return; } if (v === '__manage') { el.value = ''; viewManageModal(t); return; } if (v) viewApply(t, v); else { ui.flt[t] = {}; ui.viewOn = {...(ui.viewOn || {}), [t]: null}; ui.lim = {}; schedule(); } },
   expShown: el => { const w = $('#expForm'); if (w) w.hidden = el.checked; expCount(); },
   coField: el => coSaveField(el),
   expCount: () => expCount(),
