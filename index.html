@@ -1836,7 +1836,7 @@ V.company = () => {
       ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
       ${cpField('Contacts', String(g.contacts.length))}
-      <div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>
+      ${TAGS_ON ? `<div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>` : ''}
       ${cf('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', 'notes', true)}</div></section>
     ${spiroPanel(c)}
     <div class="cols2"><section class="panel"><div class="ph"><h3>Opportunities</h3><button class="lnk" data-act="cpTab" data-t="opps">See all</button></div>${rowsOr(od.slice(0, 8), oppHistRow, 'No opportunities yet.')}${od.length > 8 ? `<p class="sub">${od.length - 8} more on the Opportunities tab</p>` : ''}</section>
@@ -2141,6 +2141,7 @@ const cb = (name, checked, label) => `<label class="f inline"><input type="check
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
 
 // ---------- account tags ----------
+const TAGS_ON = false;   // account tags are built but not released yet; flip to true to turn them on
 const ITAD_MIN = 1000;   // electronics jobs at or above this amount are ITAD (businesses only); below it, Electronics
 const DEFAULT_TAGS = ['Shredding', 'Medical Waste', 'ITAD', 'Electronics', 'Residential', 'Business', 'Financial', 'Real Estate', 'Legal', 'Dental', 'Medical Office', 'Government', 'Education', 'Insurance', 'Accounting/CPA', 'Property Management', 'Nonprofit'];
 const tagKey = t => String(t || '').trim().toLowerCase();
@@ -2154,7 +2155,7 @@ function allTags(){   // your list, plus anything someone has added to an accoun
 const TAG_HUES = {shredding: 212, 'medical waste': 0, itad: 272, electronics: 188, residential: 28, business: 320, financial: 135, 'real estate': 46, legal: 245, dental: 172, 'medical office': 345, government: 200, education: 95, insurance: 292, 'accounting/cpa': 155, 'property management': 15, nonprofit: 62};
 const tagHue = t => { if (tagKey(t) in TAG_HUES) return TAG_HUES[tagKey(t)]; let h = 0; for (const ch of tagKey(t)) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; };
 const tagChip = (t, x) => `<span class="tag"><i style="background:hsl(${tagHue(t)} 60% 48%)"></i>${esc(t)}${x || ''}</span>`;
-const tagChips = (c, max) => { const ts = coTags(c); if (!ts.length) return ''; const show = max ? ts.slice(0, max) : ts; return `<span class="tags">${show.map(t => tagChip(t)).join('')}${max && ts.length > max ? `<span class="sub">+${ts.length - max}</span>` : ''}</span>`; };
+const tagChips = (c, max) => { if (!TAGS_ON) return ''; const ts = coTags(c); if (!ts.length) return ''; const show = max ? ts.slice(0, max) : ts; return `<span class="tags">${show.map(t => tagChip(t)).join('')}${max && ts.length > max ? `<span class="sub">+${ts.length - max}</span>` : ''}</span>`; };
 function tagEditor(c){
   const ts = coTags(c);
   const opts = allTags().filter(x => !ts.some(t => tagKey(t) === tagKey(x.t))).sort((a, b) => a.t.localeCompare(b.t));
@@ -2169,7 +2170,7 @@ async function tagAdd(id, t){
   if (await patch('companies', id, {tags})) toast(known ? `Tagged ${t}` : `New tag “${t}” added`);
 }
 async function tagDel(id, t){ const c = S.companies[id]; if (!c) return; const tags = coTags(c).filter(x => tagKey(x) !== tagKey(t)); S.companies[id] = {...c, tags}; hayReset(); schedule(); await patch('companies', id, {tags}); }
-const tagFilterSel = () => { const ts = allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)); const cur = fltOf('companies').tag || ''; return ts.length ? `<select class="tagfilter" data-change="tagF" aria-label="Filter by tag"><option value="">All tags</option>${ts.map(x => `<option value="${esc(tagKey(x.t))}" ${cur === tagKey(x.t) ? 'selected' : ''}>${esc(x.t)} (${x.n.toLocaleString()})</option>`).join('')}</select>` : ''; };
+const tagFilterSel = () => { if (!TAGS_ON) return ''; const ts = allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)); const cur = fltOf('companies').tag || ''; return ts.length ? `<select class="tagfilter" data-change="tagF" aria-label="Filter by tag"><option value="">All tags</option>${ts.map(x => `<option value="${esc(tagKey(x.t))}" ${cur === tagKey(x.t) ? 'selected' : ''}>${esc(x.t)} (${x.n.toLocaleString()})</option>`).join('')}</select>` : ''; };
 
 // Settings → Tags: counts, rename/merge, delete, and suggest tags from history
 function tagsModal(){
@@ -2320,6 +2321,7 @@ const FL = {
     {k: 'closedAt', l: 'Closed date', date: d => isOpen(d) ? '' : d.closedAt},
     {k: 'serviceDate', l: 'Service date', date: d => d.serviceDate}]
 };
+if (!TAGS_ON) for (const t of Object.keys(FL)) FL[t] = FL[t].filter(x => x.k !== 'tag');
 const fltOf = t => (ui.flt = ui.flt || {})[t] || {};
 const fltActive = t => { const f = fltOf(t); return FL[t].filter(x => x.date ? (f[x.k + '_from'] || f[x.k + '_to']) : x.num ? (f[x.k + '_min'] !== undefined && f[x.k + '_min'] !== '' || f[x.k + '_max'] !== undefined && f[x.k + '_max'] !== '') : f[x.k]); };
 function fltTest(t, r, f){
@@ -3029,7 +3031,7 @@ const EXP = {
   companies: {
     title: 'accounts', file: 'accounts',
     cols: [
-      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ['Tags', c => coTags(c).join('; ')], ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
+      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ...(TAGS_ON ? [['Tags', c => coTags(c).join('; ')]] : []), ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
       ['Owner', c => nm(c.ownerId)], ['Created', c => mdy(c.createdAt)], ['Open Opportunities', c => coStats(c.id).open], ['Won Jobs', c => coStats(c.id).won], ['Last Job Date', c => mdy(coStats(c.id).last)], ['Notes', c => c.notes]],
     form: () => locForm('Account owner'),
     rows: f => L('companies').filter(c => locMatch(c, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.id, f.status) && inRange(c.createdAt, f.from, f.to)).sort(byName)
@@ -3048,7 +3050,7 @@ function locForm(ownerLabel){
   const cities = [...new Set(L('companies').map(c => (c.city || '').trim()).filter(Boolean))].sort();
   const states = [...new Set(L('companies').map(c => (c.state || '').trim()).filter(Boolean))].sort();
   return `<div class="grid2">${F(ownerLabel, sel('ownerId', anyOpt(ownerOpts()), '', 'data-change="expCount"'))}${F('Jobs', sel('status', [['', 'Any'], ['open', 'Has an open opportunity'], ['won', 'Has a won job'], ['noopen', 'No open opportunity'], ['never', 'Never won a job']], '', 'data-change="expCount"'))}</div>
-    ${allTags().some(x => x.n) ? `<div class="grid2">${F('Account tag', sel('tag', anyOpt(allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)).map(x => [tagKey(x.t), `${x.t} (${x.n.toLocaleString()})`])), '', 'data-change="expCount"'))}</div>` : ''}
+    ${TAGS_ON && allTags().some(x => x.n) ? `<div class="grid2">${F('Account tag', sel('tag', anyOpt(allTags().filter(x => x.n).sort((a, b) => a.t.localeCompare(b.t)).map(x => [tagKey(x.t), `${x.t} (${x.n.toLocaleString()})`])), '', 'data-change="expCount"'))}</div>` : ''}
     <div class="grid3">${F('City', sel('city', anyOpt(cities), '', 'data-change="expCount"'))}${F('State', sel('state', anyOpt(states), '', 'data-change="expCount"'))}${F('ZIP starts with', inp('zip', '', 'text', 'inputmode="numeric" data-input="expCount"'))}</div>
     <div class="grid2">${F('Created from', inp('from', '', 'date', 'data-change="expCount"'))}${F('Created to', inp('to', '', 'date', 'data-change="expCount"'))}</div>`;
 }
@@ -3086,7 +3088,7 @@ function settingsModal(){
     ${isAdmin() ? row('doc', 'Backup', `Download a full backup of everything, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : ''}
     ${DRIVE_BACKUP && SUPA && !DEMO && isAdmin() ? drvRow() : ''}
     ${isAdmin() ? row('users', 'Reassign records', 'Move accounts, contacts, opportunities, reminders and more from one person to another.', `<button type="button" class="btn" data-act="reassign">Reassign</button>`) : ''}
-    ${row('tag', 'Tags', 'See every account tag and how many accounts use it. Rename, merge or delete tags, or suggest tags for your accounts from their history.', `<button type="button" class="btn" data-act="tags">Manage tags</button>`)}
+    ${TAGS_ON ? row('tag', 'Tags', 'See every account tag and how many accounts use it. Rename, merge or delete tags, or suggest tags for your accounts from their history.', `<button type="button" class="btn" data-act="tags">Manage tags</button>`) : ''}
     ${isAdmin() && canWrite && !DEMO ? row('trash', 'Delete all data', 'Wipe every account, contact, opportunity, quote, activity, reminder and contract for a clean start, for example after a test import. Users, email templates and journeys stay.', `<button type="button" class="btn danger" data-act="wipeAll">Delete all data</button>`) : ''}
     ${isAdmin() ? row('trash', 'Trash', `Deleted records, kept for ${TRASH_DAYS} days so you can restore them.${L('trash').length ? ` ${L('trash').length} item${L('trash').length === 1 ? '' : 's'} now.` : ''}`, `<button type="button" class="btn" data-act="trash">Open trash</button>`) : ''}
     <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button>
