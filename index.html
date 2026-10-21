@@ -1565,6 +1565,7 @@ function viewHtml(){
   else if (booted && !live) banner = `<div class="banner">Preview mode: changes stay in this tab only. Open this CRM in claude.ai while signed in to work with your team's shared records.</div>`;
   else if (!canWrite) banner = `<div class="banner">You have view-only access. Ask the owner for Contributor access to add or change records.</div>`;
   if (!booted || (live && !COLS.every(c => loaded[c]))) return banner + `<div class="loading">Loading your records…</div>`;
+  if (ui.view !== 'pipeline') ui.stick = null;   // leaving Opportunities lets moved rows go where they belong
   return banner + V[ui.view]();
 }
 
@@ -1668,10 +1669,15 @@ V.reminders = () => {
 
 V.pipeline = () => {
   const show = ui.oppShow || 'open';
+  if (ui.stick && ui.stick.ctx !== oppCtx()) ui.stick = null;   // rows you just changed stay put until you switch lists or pages
+  const stuck = id => !!(ui.stick && ui.stick.ids.has(id));
   const all = L('deals').filter(mine).filter(d => fltPass('deals', d));
-  const rows = fzRun(() => all.filter(d => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true)
+  const rows0 = fzRun(() => all.filter(d => stuck(d.id) || (show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true))
     .filter(d => matchR(ui.q, d, 'l', () => [d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : '', acctOf(d.companyId)], 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
+  let rows = rows0;
+  if (ui.stick) { const pos = new Map(ui.stick.order.map((id, i) => [id, i])); rows = rows0.slice().sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e9) - (pos.has(b.id) ? pos.get(b.id) : 1e9)); }   // keep the order you were looking at
+  ui.oppOrder = rows.map(d => d.id);
   const nOpen = all.filter(isOpen).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   ui.lastRows = {...(ui.lastRows || {}), deals: rows};
@@ -2318,6 +2324,7 @@ const FL = {
 };
 if (!TAGS_ON) for (const t of Object.keys(FL)) FL[t] = FL[t].filter(x => x.k !== 'tag');
 const fltOf = t => (ui.flt = ui.flt || {})[t] || {};
+const oppCtx = () => JSON.stringify([ui.view, ui.oppShow || 'open', ui.q, fltOf('deals'), !!ui.mine]);
 const fltActive = t => { const f = fltOf(t); return FL[t].filter(x => x.date ? (f[x.k + '_from'] || f[x.k + '_to']) : x.num ? (f[x.k + '_min'] !== undefined && f[x.k + '_min'] !== '' || f[x.k + '_max'] !== undefined && f[x.k + '_max'] !== '') : f[x.k]); };
 function fltTest(t, r, f){
   for (const x of FL[t]) {
@@ -4051,7 +4058,7 @@ const CHANGE = {
   dfFcc: el => { const w = $('#dfNoClose'); if (w) w.hidden = el.value !== 'No'; },
   dfCo: el => { const nc = $('#dfNewCo'); if (nc) { nc.hidden = el.value !== '__new'; if (!nc.hidden) nc.querySelector('input').focus(); } const ct = $('#dfCt'); if (!ct) return; const cur = ct.value; const opts = el.value === '__new' ? [['', '— None —']] : ctOpts(el.value); ct.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); if (opts.some(o => o[0] === cur)) ct.value = cur; },
   dealStage: el => changeStage(el.dataset.id, el.value),
-  rowStage: el => changeStage(el.dataset.id, el.value),
+  rowStage: el => { if (ui.view === 'pipeline') { const ctx = oppCtx(); if (!ui.stick || ui.stick.ctx !== ctx) ui.stick = {ctx, ids: new Set(), order: ui.oppOrder || []}; ui.stick.ids.add(el.dataset.id); } changeStage(el.dataset.id, el.value); },
   oppField: el => oppSaveField(el),
   tagF: el => { ui.flt = ui.flt || {}; const f = {...fltOf('companies')}; if (el.value) f.tag = el.value; else delete f.tag; ui.flt.companies = f; ui.lim = {}; schedule(); },
   fltCount: () => fltCount(),
