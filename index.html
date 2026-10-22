@@ -2000,6 +2000,12 @@ function normEmail(m, emails, dom){
 }
 const MAIL_BLOCKING = ['needs_reauth','server_not_connected','selection_required','not_in_manifest','blocked_by_policy','not_granted','capability_disabled','capability_removed','approval_required','server_not_found'];
 function mailErr(e){
+  if (GRAPH) switch (e && e.code) {
+    case 'server_not_connected': return "Outlook isn't connected yet. Go to Settings → My connections and click Connect Outlook.";
+    case 'needs_reauth': return 'Your Microsoft sign-in has expired. Go to Settings → My connections and click Connect Outlook.';
+    case 'approval_required': return 'Microsoft needs an admin to approve Paper Trail. Ask your Microsoft 365 admin to grant consent for it.';
+    case 'tool_error': return 'Outlook said: ' + (e.message || 'something went wrong.');
+  }
   switch (e && e.code) {
     case 'server_not_connected': case 'server_not_found': return "Outlook isn't connected yet. Go to Settings → My connections to connect it.";
     case 'needs_reauth': return 'Your Microsoft 365 sign-in has expired. Reconnect it in claude.ai Settings → Connectors, then try again.';
@@ -3137,11 +3143,130 @@ function settingsModal(){
 // ---------- my connections ----------
 const prefGet = (k, d) => { try { const v = localStorage.getItem('apcrm-' + k); return v == null ? d : JSON.parse(v); } catch { return d; } };
 const prefSet = (k, v) => { try { localStorage.setItem('apcrm-' + k, JSON.stringify(v)); } catch {} };
+
+// ---------- Outlook on the website: Microsoft sign-in (PKCE, no server) + Microsoft Graph, shaped like the Claude connector ----------
+const GRAPH_CFG = (() => { const c = window.PAPER_TRAIL || {}; return c.msClientId && c.msTenantId ? {client: c.msClientId, tenant: c.msTenantId} : null; })();
+let GRAPH = null;
+const MS_SCOPES = 'openid profile offline_access User.Read Mail.Read Mail.Send';
+const MS_KEY = 'pt-ms';
+const msRedirect = () => location.origin + location.pathname.replace(/index\.html$/, '');
+function makeGraph(cfg){
+  const auth = `https://login.microsoftonline.com/${cfg.tenant}/oauth2/v2.0`;
+  let tok = null; try { tok = JSON.parse(localStorage.getItem(MS_KEY) || 'null'); } catch {}
+  const save = t => { tok = t; try { t ? localStorage.setItem(MS_KEY, JSON.stringify(t)) : localStorage.removeItem(MS_KEY); } catch {} };
+  const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const err = (code, message, extra) => Object.assign(new Error(message || code), {code}, extra || {});
+  async function tokenCall(body){
+    const res = await fetch(auth + '/token', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({client_id: cfg.client, scope: MS_SCOPES, ...body})});
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw err(/invalid_grant|interaction_required|login_required|consent_required/.test(j.error || '') ? 'needs_reauth' : 'tool_error', j.error_description ? String(j.error_description).split('\r\n')[0] : 'Microsoft sign-in failed', {ms: j.error, msCodes: j.error_codes});
+    const t = {access: j.access_token, refresh: j.refresh_token || (tok && tok.refresh), exp: Date.now() + (j.expires_in - 120) * 1000, at: Date.now()};
+    if (j.id_token) { try { const c = JSON.parse(atob(j.id_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); t.email = c.preferred_username || c.email || ''; t.name = c.name || ''; } catch {} } else if (tok) { t.email = tok.email; t.name = tok.name; }
+    save(t); return t;
+  }
+  let refreshing = null;
+  async function silent(){   // Microsoft's sign-in for web pages lasts 24 hours; renew quietly in a hidden frame while the Microsoft session is still alive
+    const verifier = b64u(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    const state = b64u(crypto.getRandomValues(new Uint8Array(12)));
+    const f = document.createElement('iframe'); f.name = 'pt-ms-silent'; f.style.display = 'none';
+    f.src = `${auth}/authorize?` + new URLSearchParams({client_id: cfg.client, response_type: 'code', redirect_uri: msRedirect(), response_mode: 'query', scope: MS_SCOPES, code_challenge: challenge, code_challenge_method: 'S256', state, prompt: 'none', ...(tok && tok.email ? {login_hint: tok.email} : {})});
+    document.body.appendChild(f);
+    try {
+      const code = await new Promise((resolve, reject) => { const t0 = Date.now(); const iv = setInterval(() => {
+        if (Date.now() - t0 > 15000) { clearInterval(iv); return reject(err('needs_reauth', 'Microsoft sign-in expired.')); }
+        let href = ''; try { href = f.contentWindow.location.href; } catch { return; }
+        if (!href || !href.startsWith(msRedirect())) return; clearInterval(iv);
+        const q = new URL(href).searchParams; if (q.get('state') !== state || !q.get('code')) return reject(err('needs_reauth', 'Microsoft sign-in expired.')); resolve(q.get('code')); }, 300); });
+      return await tokenCall({grant_type: 'authorization_code', code, redirect_uri: msRedirect(), code_verifier: verifier});
+    } finally { f.remove(); }
+  }
+  async function access(){
+    if (!tok || !tok.refresh) throw err(tok && tok.expired ? 'needs_reauth' : 'server_not_connected', 'Outlook is not connected.');
+    if (tok.access && Date.now() < tok.exp) return tok.access;
+    refreshing = refreshing || tokenCall({grant_type: 'refresh_token', refresh_token: tok.refresh}).catch(e => e.code === 'needs_reauth' ? silent() : Promise.reject(e)).finally(() => { refreshing = null; });
+    try { return (await refreshing).access; } catch (e) { if (e.code === 'needs_reauth') save({...tok, access: '', refresh: '', expired: true}); throw e; }
+  }
+  // sign in with a popup: Microsoft sends the code back to this same page, which we read from the popup
+  async function login(){
+    const verifier = b64u(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    const state = b64u(crypto.getRandomValues(new Uint8Array(12)));
+    const url = `${auth}/authorize?` + new URLSearchParams({client_id: cfg.client, response_type: 'code', redirect_uri: msRedirect(), response_mode: 'query', scope: MS_SCOPES, code_challenge: challenge, code_challenge_method: 'S256', state, prompt: 'select_account', ...(tok && tok.email ? {login_hint: tok.email} : {})});
+    const w = window.open(url, 'pt-ms-login', 'width=520,height=680');
+    if (!w) throw err('tool_error', 'Your browser blocked the Microsoft sign-in window. Allow pop-ups for this site and try again.');
+    const code = await new Promise((resolve, reject) => {
+      const t0 = Date.now();
+      const iv = setInterval(() => {
+        if (Date.now() - t0 > 600000) { clearInterval(iv); try { w.close(); } catch {} return reject(err('cancelled', 'Sign-in timed out.')); }
+        if (w.closed) { clearInterval(iv); return reject(err('cancelled', 'Sign-in window was closed.')); }
+        let href = ''; try { href = w.location.href; } catch { return; }   // still on Microsoft's site
+        if (!href || !href.startsWith(msRedirect())) return;
+        const q = new URL(href).searchParams; clearInterval(iv); w.close();
+        if (q.get('state') !== state) return reject(err('tool_error', 'Sign-in got mixed up. Please try again.'));
+        if (q.get('error')) return reject(err(/consent|admin/i.test(q.get('error_description') || '') ? 'approval_required' : 'tool_error', (q.get('error_description') || q.get('error')).split('\r\n')[0].replace(/^AADSTS\d+:\s*/, ''), {ms: q.get('error')}));
+        resolve(q.get('code'));
+      }, 400);
+    });
+    return tokenCall({grant_type: 'authorization_code', code, redirect_uri: msRedirect(), code_verifier: verifier});
+  }
+  async function api(path, opts = {}){
+    const a = await access();
+    const res = await fetch('https://graph.microsoft.com/v1.0' + path, {...opts, headers: {Authorization: 'Bearer ' + a, ...(opts.body ? {'Content-Type': 'application/json'} : {}), ...(opts.headers || {})}});
+    if (res.status === 401) { tok.access = ''; tok.exp = 0; const a2 = await access(); const r2 = await fetch('https://graph.microsoft.com/v1.0' + path, {...opts, headers: {Authorization: 'Bearer ' + a2, ...(opts.body ? {'Content-Type': 'application/json'} : {}), ...(opts.headers || {})}}); if (r2.ok) return r2.status === 202 || r2.status === 204 ? {} : r2.json(); throw err('needs_reauth', 'Microsoft sign-in expired.'); }
+    if (res.status === 429 || res.status === 503) throw err('busy', 'Outlook is busy.', {retryable: true, retryAfterMs: (+res.headers.get('retry-after') || 2) * 1000});
+    if (!res.ok) { const j = await res.json().catch(() => ({})); throw err(res.status === 403 ? 'approval_required' : 'tool_error', (j.error && j.error.message) || `Outlook returned ${res.status}`); }
+    return res.status === 202 || res.status === 204 ? {} : res.json();
+  }
+  const addr = x => x && x.emailAddress && x.emailAddress.address ? String(x.emailAddress.address).toLowerCase() : '';
+  const recips = list => (list || []).map(r => ({emailAddress: {address: r}}));
+  const shape = m => ({id: m.id, uri: m.id, internetMessageId: m.internetMessageId, subject: m.subject, sender: addr(m.from) || addr(m.sender), recipients: [...(m.toRecipients || []), ...(m.ccRecipients || [])].map(addr).filter(Boolean), receivedDateTime: m.receivedDateTime, sentDateTime: m.sentDateTime, bodyPreview: m.bodyPreview, webLink: m.webLink, hasAttachments: m.hasAttachments});
+  const SEL = '$select=id,internetMessageId,subject,from,sender,toRecipients,ccRecipients,receivedDateTime,sentDateTime,bodyPreview,webLink,hasAttachments';
+  const tools = {
+    async get_me(){ const me = await api('/me?$select=displayName,mail,userPrincipalName'); return {payload: me}; },
+    async outlook_email_search(i){
+      const term = i.sender ? (String(i.sender).includes('@') ? `from:${i.sender}` : String(i.sender)) : i.recipient ? `to:${i.recipient}` : String(i.query || '');   // a bare domain is searched as text; results are matched to the account afterwards
+      const r = await api(`/me/messages?$search=${encodeURIComponent('"' + term.replace(/"/g, '') + '"')}&$top=${Math.min(+i.limit || 15, 50)}&${SEL}`);
+      return {payload: {value: (r.value || []).map(shape)}};
+    },
+    async read_resource(i){ const m = await api(`/me/messages/${encodeURIComponent(i.uri)}?$select=body,bodyPreview`); return {payload: m}; },
+    async outlook_send_mail(i){
+      await api('/me/sendMail', {method: 'POST', body: JSON.stringify({message: {subject: i.subject || '', body: {contentType: /html/i.test(i.bodyType || '') ? 'HTML' : 'Text', content: i.body || ''}, toRecipients: recips(i.to), ccRecipients: recips(i.cc), bccRecipients: recips(i.bcc)}, saveToSentItems: true})});
+      return {payload: {ok: true}};
+    },
+    async outlook_create_draft(i){
+      const m = await api('/me/messages', {method: 'POST', body: JSON.stringify({subject: i.subject || '', body: {contentType: /html/i.test(i.bodyType || '') ? 'HTML' : 'Text', content: i.body || ''}, toRecipients: recips(i.to), ccRecipients: recips(i.cc), bccRecipients: recips(i.bcc)})});
+      return {payload: {id: m.id, webLink: m.webLink}};
+    }
+  };
+  const signedIn = () => !!(tok && (tok.refresh || tok.expired));
+  return {
+    graph: true,
+    who: () => tok ? {email: tok.email || '', name: tok.name || ''} : null,
+    expired: () => !!(tok && tok.expired),
+    signedIn, login, logout: () => save(null),
+    async callTool(_server, name, input){ const f = tools[name]; if (!f) throw err('tool_error', 'Not available'); if (!signedIn()) throw err(tok && tok.expired ? 'needs_reauth' : 'server_not_connected', 'Outlook is not connected.'); return f(input || {}); },
+    async listTools(){ return {servers: [{server: MS, authStatus: tok && tok.expired ? 'needs_reauth' : 'ok', tools: Object.keys(tools).map(name => ({name}))}]}; },
+    perms: {
+      state: async () => signedIn() ? 'granted' : 'prompt',
+      request: async () => { await GRAPH.login(); return {['mcp:' + MS]: 'granted'}; },
+      manage: async () => {}
+    }
+  };
+}
+
 let PERMS = null; const permsP = () => PERMS ? Promise.resolve(PERMS) : ((window.claude && window.claude.use) ? window.claude.use('permissions').catch(() => null) : Promise.resolve(null)).then(p => (PERMS = p));
 const conn = {status: 'checking', email: '', name: '', err: ''};
 function connRow(){
   const pill = {connected: '<span class="chip good">Connected</span>', off: '<span class="chip warn">Not allowed for this page</span>', missing: '<span class="chip">Not connected</span>', reauth: '<span class="chip bad">Sign-in expired</span>', unavailable: '<span class="chip">Unavailable here</span>', checking: '<span class="chip">Checking…</span>', ready: '<span class="chip">Not connected yet</span>'}[conn.status] || '';
-  const msg = {
+  const msg = GRAPH ? {
+    connected: `Connected as <b>${esc(conn.name || conn.email)}</b>${conn.name && conn.email ? ` (${esc(conn.email)})` : ''}. Emails you send from Paper Trail go out from your Outlook and land in your Sent Items. Your emails with customers show on each account's Activity tab.`,
+    reauth: 'Your Microsoft sign-in has expired. Click Connect Outlook to sign in again.',
+    checking: 'Checking your Outlook connection…',
+    ready: 'Click Connect Outlook and sign in with your All Points Microsoft account. Only you can see your mailbox; Paper Trail saves an email to an account only when you send it or choose to log it.',
+    missing: 'Click Connect Outlook and sign in with your All Points Microsoft account.',
+    off: 'Click Connect Outlook to sign in again.'
+  }[conn.status] || esc(conn.err) : {
     connected: `Connected as <b>${esc(conn.name || conn.email)}</b>${conn.name && conn.email ? ` (${esc(conn.email)})` : ''}. You can send email from any account, contact or opportunity, and your emails with customers show on each account's Activity tab.`,
     off: 'Outlook is turned off for this page. Click Manage permissions and switch Microsoft 365 on.',
     missing: 'First add Microsoft 365 to your Claude account: in claude.ai, open Settings → Connectors, choose Microsoft 365 and sign in with your Outlook account. Then come back here and click Connect Outlook.',
@@ -3150,7 +3275,8 @@ function connRow(){
     checking: 'Checking your Outlook connection…',
     ready: 'Click Connect Outlook and allow access when claude.ai asks.'
   }[conn.status] || esc(conn.err);
-  const btns = conn.status === 'connected' ? `<button type="button" class="btn" data-act="connCheck">Refresh</button><button type="button" class="btn ghost" data-act="connManage">Manage permissions</button>`
+  const btns = GRAPH ? (conn.status === 'connected' ? `<button type="button" class="btn" data-act="connCheck">Refresh</button><button type="button" class="btn ghost" data-act="connManage">Disconnect</button>` : conn.status === 'checking' ? '' : `<button type="button" class="btn pri" data-act="connConnect">Connect Outlook</button>`)
+    : conn.status === 'connected' ? `<button type="button" class="btn" data-act="connCheck">Refresh</button><button type="button" class="btn ghost" data-act="connManage">Manage permissions</button>`
     : conn.status === 'off' ? `<button type="button" class="btn pri" data-act="connManage">Manage permissions</button>`
     : conn.status === 'unavailable' || conn.status === 'checking' ? '' : `<button type="button" class="btn pri" data-act="connConnect">Connect Outlook</button>`;
   return `<div class="setrow conn"><span class="seti">${ic('mail')}</span><div><b>Outlook email</b> ${pill}<p class="sub">${msg}</p>${conn.err && conn.status !== 'connected' ? `<p class="sub" style="color:var(--bad)">${esc(conn.err)}</p>` : ''}</div><div class="vh-act">${btns}</div></div>`;
@@ -3189,6 +3315,10 @@ function applyConnErr(e){
 }
 async function connConnect(){
   if (!MCP) return;
+  if (GRAPH) { conn.status = 'checking'; conn.err = ''; connPaint();
+    try { await GRAPH.login(); const me = await meCall(true); conn.email = me.mail || me.userPrincipalName || ''; conn.name = me.displayName || ''; conn.status = 'connected'; toast('Outlook connected'); prefSet('outlookOn', true); for (const k of Object.keys(EM)) delete EM[k]; schedule(); }
+    catch (e) { conn.status = e && e.code === 'cancelled' ? 'ready' : 'ready'; conn.err = e && e.code === 'cancelled' ? '' : (e && e.code === 'approval_required' ? 'Microsoft says an admin has to approve Paper Trail first. Ask your Microsoft 365 admin to open Entra → App registrations → Paper Trail → API permissions and click “Grant admin consent”. ' : '') + (e && e.message ? 'Microsoft said: ' + e.message : ''); }
+    return connPaint(); }
   conn.status = 'checking'; connPaint();
   const perms = await permsP();
   if (perms) { const r = await perms.request(['mcp:' + MS]).catch(() => ({})); if (r['mcp:' + MS] === 'denied') { conn.status = 'off'; return connPaint(); } }
@@ -3197,6 +3327,7 @@ async function connConnect(){
   connPaint();
 }
 async function connManage(){
+  if (GRAPH) { GRAPH.logout(); conn.status = 'ready'; conn.email = conn.name = ''; for (const k of Object.keys(EM)) delete EM[k]; toast('Outlook disconnected'); connPaint(); schedule(); return; }
   const perms = await permsP();
   if (!perms) return toast("Open this page's Permissions menu to switch Microsoft 365 on.", 'bad');
   try { await perms.manage(); } catch { toast("Open this page's Permissions menu to switch Microsoft 365 on.", 'bad'); }
@@ -3549,6 +3680,7 @@ const EMAIL_RE = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
 const splitEmails = v => String(v || '').split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
 const OUT_TAGS = new Set(['P','BR','A','B','STRONG','I','EM','STRIKE','S','CODE','PRE','DIV','HR','UL','OL','LI','H1','H2','H3','H4','H5','H6','TABLE','THEAD','TBODY','TR','TD','TH']);
 function outlookHtml(){
+  if (GRAPH && ui.draftHtml && $('#draftHtml')) return {html: $('#draftHtml').innerHTML, lost: false};   // Microsoft Graph keeps images and styling
   // Outlook's connector only accepts a narrow set of tags: keep text and links, drop images and inline styling
   if (!ui.draftHtml) {
     const t = $('#draftOut').value.trim();
@@ -4017,7 +4149,7 @@ const A = {
   usage: () => usageModal(),
   usageMonth: d => usageModal(d.m),
   account: () => accountModal(),
-  signOut: async () => { closeModal(); await IDB.clear(); await SUPA.sb.auth.signOut(); location.reload(); },
+  signOut: async () => { closeModal(); try { localStorage.removeItem(MS_KEY); } catch {} await IDB.clear(); await SUPA.sb.auth.signOut(); location.reload(); },
   uActive: async d => { const u = USERS.find(x => x.id === d.id); if (!u) return; const off = u.active; await uPatch(d.id, {active: !u.active});
     if (off && raTotal(d.id)) reassignModal(d.id, {title: `Reassign ${u.name}'s records?`, intro: `${esc(u.name)} is deactivated and owns ${raTotal(d.id)} record${raTotal(d.id) === 1 ? '' : 's'}. Choose who takes them over, or skip and do it later from Settings.`, skip: 'Not now'}); },
   reassign: d => reassignModal(d.id || ''),
@@ -5493,6 +5625,7 @@ function contractView(id){
 
 // ---------- boot ----------
 async function boot(){
+  if (/[?&](code|error)=/.test(location.search) && (window.name === 'pt-ms-login' || window.name === 'pt-ms-silent')) { document.body.innerHTML = '<p style="font:16px system-ui;padding:24px">Signing you in…</p>'; return; }
   const h = (location.hash || '').slice(1); if (VIEWS.some(v => v[0] === h)) ui.view = h;
   try { history.replaceState(navState(), '', navHash(navState())); } catch {}
   render();
@@ -5502,6 +5635,7 @@ async function boot(){
     try { d = await supaStart(); } catch (e) { $('#main').innerHTML = `<div class="wrap"><p class="banner">Couldn't connect to the Paper Trail database: ${esc((e && e.message) || 'unknown error')}. Check config.js and reload.</p></div>`; return; }
   }
   U = u; AI = s; DL = dl; MCP = mc;
+  if (!MCP && GRAPH_CFG && SUPA && !DEMO) { GRAPH = makeGraph(GRAPH_CFG); MCP = GRAPH; PERMS = GRAPH.perms; }
   if (U) { try { ME = await U.me(); } catch {} try { const cw = await U.can('data.write'); if (cw === false) canWrite = false; } catch {} }
   if (d) {
     db = d; live = true;
