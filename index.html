@@ -3122,7 +3122,6 @@ function settingsModal(){
   const row = (icon, title, text, btn) => `<div class="setrow"><span class="seti">${ic(icon)}</span><div><b>${title}</b><p class="sub">${text}</p></div>${btn}</div>`;
   openModal('Settings', `<div class="sets">
     ${GRAPH || SUPA ? row('mail', 'My email signature', SIG.html ? 'Your signature, with logos, is added to emails you send from Paper Trail.' : 'Set up the signature (with your logos) that goes at the bottom of emails you send from Paper Trail.', `<button type="button" class="btn" data-act="sigEdit">${SIG.html ? 'Edit signature' : 'Set up'}</button>`) : ''}
-    ${GRAPH && (window.PAPER_TRAIL || {}).emailTracking ? `<label class="setrow" style="cursor:pointer"><span class="seti">${ic('chart')}</span><div><b>Track my emails</b><p class="sub">See when people open the emails you send from Paper Trail and click their links. This is your own setting; it doesn't change anyone else's.</p></div><input type="checkbox" data-change="trackMine" ${SIG.track !== false ? 'checked' : ''} aria-label="Track my emails"></label>` : ''}
     ${row('mail', 'My connections', 'Connect your Outlook email so you can send from the CRM and see your customer emails on each account.', `<button type="button" class="btn pri" data-act="connections">Open</button>`)}
     ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
     ${SUPA && !DEMO && isAdmin() ? row('chart', 'Usage', 'See how much of the monthly download allowance each person is using.', `<button type="button" class="btn" data-act="usage">View usage</button>`) : ''}
@@ -3386,6 +3385,7 @@ function connRow(){
 function connModal(){
   openModal('My connections', `<div class="sets" id="connBox">${connRow()}
     <label class="setrow" style="cursor:pointer"><span class="seti">${ic('task')}</span><div><b>Log my customer emails automatically</b><p class="sub">When you open an account's Activity tab, emails between you and that account's contacts are saved to its timeline so your whole team can see them. Emails you send from the CRM are always logged.</p></div><input type="checkbox" id="autoLog" data-change="autoLog" ${prefGet('autoLog', true) ? 'checked' : ''} style="width:20px;height:20px"></label>
+    ${GRAPH && (window.PAPER_TRAIL || {}).emailTracking ? `<label class="setrow" style="cursor:pointer"><span class="seti">${ic('chart')}</span><div><b>Track my emails</b><p class="sub">See when people open the emails you send from Paper Trail and click their links. This is your own setting; it doesn't change anyone else's.</p></div><input type="checkbox" data-change="trackMine" ${SIG.track !== false ? 'checked' : ''} aria-label="Track my emails" style="width:20px;height:20px"></label>` : ''}
   </div>`, null);
   connCheck();
 }
