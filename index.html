@@ -3122,6 +3122,7 @@ function settingsModal(){
   const row = (icon, title, text, btn) => `<div class="setrow"><span class="seti">${ic(icon)}</span><div><b>${title}</b><p class="sub">${text}</p></div>${btn}</div>`;
   openModal('Settings', `<div class="sets">
     ${GRAPH || SUPA ? row('mail', 'My email signature', SIG.html ? 'Your signature, with logos, is added to emails you send from Paper Trail.' : 'Set up the signature (with your logos) that goes at the bottom of emails you send from Paper Trail.', `<button type="button" class="btn" data-act="sigEdit">${SIG.html ? 'Edit signature' : 'Set up'}</button>`) : ''}
+    ${GRAPH && (window.PAPER_TRAIL || {}).emailTracking ? `<label class="setrow" style="cursor:pointer"><span class="seti">${ic('chart')}</span><div><b>Track my emails</b><p class="sub">See when people open the emails you send from Paper Trail and click their links. This is your own setting; it doesn't change anyone else's.</p></div><input type="checkbox" data-change="trackMine" ${SIG.track !== false ? 'checked' : ''} aria-label="Track my emails"></label>` : ''}
     ${row('mail', 'My connections', 'Connect your Outlook email so you can send from the CRM and see your customer emails on each account.', `<button type="button" class="btn pri" data-act="connections">Open</button>`)}
     ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
     ${SUPA && !DEMO && isAdmin() ? row('chart', 'Usage', 'See how much of the monthly download allowance each person is using.', `<button type="button" class="btn" data-act="usage">View usage</button>`) : ''}
@@ -3261,16 +3262,16 @@ function makeGraph(cfg){
 
 
 // ---------- my email signature (per person, with logos) ----------
-let SIG = {html: '', on: true};
+let SIG = {html: '', on: true, track: true};   // per person: signature and whether my emails are tracked
 const sigKey = () => 'pt-sig-' + (ME.id || 'me');
 function sigLoad(){
   try { const v = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (v) SIG = {...SIG, ...v}; } catch {}
   if (!live || !db || !ME.id) return;
-  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v) { SIG = {html: v.html || '', on: v.on !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} } }, () => {}); } catch {}
+  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v) { SIG = {html: v.html || '', on: v.on !== false, track: v.track !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} } }, () => {}); } catch {}
 }
 async function sigSave(next){
   SIG = {...SIG, ...next}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {}
-  if (live && db && ME.id && !DEMO) { try { await db.doc('sigs/' + ME.id).set({html: SIG.html, on: SIG.on, updatedAt: Date.now()}); } catch (e) { writeErr(e); return false; } }
+  if (live && db && ME.id && !DEMO) { try { await db.doc('sigs/' + ME.id).set({html: SIG.html, on: SIG.on, track: SIG.track !== false, updatedAt: Date.now()}); } catch (e) { writeErr(e); return false; } }
   return true;
 }
 // keep text, links and real images; drop Outlook's hidden-attachment images (cid:, file:) that can't travel
@@ -3319,7 +3320,7 @@ function draftFilesHtml(){ const fs = ui.draftFiles || []; if (!fs.length) retur
 const paintDraftFiles = () => { const el = $('#dFiles'); if (el) el.innerHTML = draftFilesHtml(); };
 
 // ---------- email open & click tracking (website only; needs the "track" edge function and update 4) ----------
-const TRACK_ON = () => !!(SUPA && !DEMO && GRAPH && (window.PAPER_TRAIL || {}).emailTracking);
+const TRACK_ON = () => !!(SUPA && !DEMO && GRAPH && (window.PAPER_TRAIL || {}).emailTracking && SIG.track !== false);
 const trackBase = () => String((window.PAPER_TRAIL || {}).supabaseUrl || '').replace(/\/$/, '') + '/functions/v1/track';
 async function addTracking(html){
   const token = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'[b % 64]).join('');
@@ -4313,6 +4314,7 @@ const CHANGE = {
   oppField: el => oppSaveField(el),
   tagF: el => { ui.flt = ui.flt || {}; const f = {...fltOf('companies')}; if (el.value) f.tag = el.value; else delete f.tag; ui.flt.companies = f; ui.lim = {}; schedule(); },
   fltCount: () => fltCount(),
+  trackMine: async el => { if (await sigSave({track: el.checked})) toast(el.checked ? 'Your emails will be tracked' : 'Tracking is off for your emails'); },
   sigImg: el => { sigInsertFiles([...(el.files || [])]); el.value = ''; },
   dFiles: el => { ui.draftFiles = [...(ui.draftFiles || []), ...(el.files || [])]; el.value = ''; paintDraftFiles(); },
   viewPick: el => { const t = el.dataset.t, v = el.value; if (v === '__save') { el.value = ''; viewSaveModal(t); return; } if (v === '__manage') { el.value = ''; viewManageModal(t); return; } if (v) viewApply(t, v); else { ui.flt[t] = {}; ui.viewOn = {...(ui.viewOn || {}), [t]: null}; ui.lim = {}; schedule(); } },
