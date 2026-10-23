@@ -2,7 +2,10 @@
 // Deploy in Supabase → Edge Functions → name it "track" → turn OFF "Verify JWT" (email programs can't sign in).
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
-const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+// the project's secret key (works with both the older service_role key and the newer sb_secret_ keys)
+const secretKeys = (() => { try { return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}"); } catch { return {}; } })();
+const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || secretKeys.default || Object.values(secretKeys)[0] || "";
+const sb = createClient(Deno.env.get("SUPABASE_URL")!, String(key));
 const GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"), (c) => c.charCodeAt(0));
 const pixel = () => new Response(GIF, { headers: { "content-type": "image/gif", "cache-control": "no-store, no-cache, must-revalidate, max-age=0" } });
 
