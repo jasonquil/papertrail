@@ -125,6 +125,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .tagfilter{width:auto;max-width:200px}.fltbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-6px 0 12px}.fchip2{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;font-weight:600;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}.fchip2 button{border:0;background:none;color:inherit;cursor:pointer;font-size:1rem;line-height:1;padding:0 4px}.btn.on{border-color:var(--accent);color:var(--accent)}.fcount{font-style:normal;background:var(--accent);color:var(--surface);border-radius:999px;padding:0 6px;font-size:.72rem}.fltgrid{gap:10px 12px}.savedsel{width:auto;max-width:220px}.savedname{font-size:.84rem;color:var(--fg);margin-right:2px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
 .acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
 .trk{color:var(--good);font-weight:600}.trk.none{color:var(--muted);font-weight:500}.trk b{font-weight:700}
+.sigbox{min-height:140px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#222;overflow:auto}.sigbox img{max-width:100%}.sigtools{display:flex;gap:6px;margin-bottom:8px}.sigprev{margin:6px 0 10px;padding:10px;border:1px dashed var(--line);border-radius:8px;background:#fff;color:#222;max-height:160px;overflow:auto;font-size:.9rem}.sigprev img{max-width:100%}
 .fznote{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);font-size:.88rem}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--pur-soft);color:var(--pur);--x:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
 .stagesel:focus{box-shadow:0 0 0 3px var(--accent-soft);outline:none}
@@ -3120,6 +3121,7 @@ function exportModal(t){
 function settingsModal(){
   const row = (icon, title, text, btn) => `<div class="setrow"><span class="seti">${ic(icon)}</span><div><b>${title}</b><p class="sub">${text}</p></div>${btn}</div>`;
   openModal('Settings', `<div class="sets">
+    ${GRAPH || SUPA ? row('mail', 'My email signature', SIG.html ? 'Your signature, with logos, is added to emails you send from Paper Trail.' : 'Set up the signature (with your logos) that goes at the bottom of emails you send from Paper Trail.', `<button type="button" class="btn" data-act="sigEdit">${SIG.html ? 'Edit signature' : 'Set up'}</button>`) : ''}
     ${row('mail', 'My connections', 'Connect your Outlook email so you can send from the CRM and see your customer emails on each account.', `<button type="button" class="btn pri" data-act="connections">Open</button>`)}
     ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
     ${SUPA && !DEMO && isAdmin() ? row('chart', 'Usage', 'See how much of the monthly download allowance each person is using.', `<button type="button" class="btn" data-act="usage">View usage</button>`) : ''}
@@ -3232,7 +3234,8 @@ function makeGraph(cfg){
     },
     async read_resource(i){ const m = await api(`/me/messages/${encodeURIComponent(i.uri)}?$select=body,bodyPreview`); return {payload: m}; },
     async outlook_send_mail(i){
-      await api('/me/sendMail', {method: 'POST', body: JSON.stringify({message: {subject: i.subject || '', body: {contentType: /html/i.test(i.bodyType || '') ? 'HTML' : 'Text', content: i.body || ''}, toRecipients: recips(i.to), ccRecipients: recips(i.cc), bccRecipients: recips(i.bcc)}, saveToSentItems: true})});
+      const attachments = (i.attachments || []).map(a => ({'@odata.type': '#microsoft.graph.fileAttachment', name: a.name, contentType: a.contentType, contentBytes: a.contentBytes, ...(a.isInline ? {isInline: true, contentId: a.contentId} : {})}));
+      await api('/me/sendMail', {method: 'POST', body: JSON.stringify({message: {subject: i.subject || '', body: {contentType: /html/i.test(i.bodyType || '') ? 'HTML' : 'Text', content: i.body || ''}, toRecipients: recips(i.to), ccRecipients: recips(i.cc), bccRecipients: recips(i.bcc), ...(attachments.length ? {attachments} : {})}, saveToSentItems: true})});
       return {payload: {ok: true}};
     },
     async outlook_create_draft(i){
@@ -3255,6 +3258,65 @@ function makeGraph(cfg){
     }
   };
 }
+
+
+// ---------- my email signature (per person, with logos) ----------
+let SIG = {html: '', on: true};
+const sigKey = () => 'pt-sig-' + (ME.id || 'me');
+function sigLoad(){
+  try { const v = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (v) SIG = {...SIG, ...v}; } catch {}
+  if (!live || !db || !ME.id) return;
+  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v) { SIG = {html: v.html || '', on: v.on !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} } }, () => {}); } catch {}
+}
+async function sigSave(next){
+  SIG = {...SIG, ...next}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {}
+  if (live && db && ME.id && !DEMO) { try { await db.doc('sigs/' + ME.id).set({html: SIG.html, on: SIG.on, updatedAt: Date.now()}); } catch (e) { writeErr(e); return false; } }
+  return true;
+}
+// keep text, links and real images; drop Outlook's hidden-attachment images (cid:, file:) that can't travel
+function sigClean(html){
+  const doc = new DOMParser().parseFromString(`<div id="r">${html || ''}</div>`, 'text/html'); const root = doc.getElementById('r'); let dropped = 0;
+  root.querySelectorAll('script,style,meta,link,title,xml,o\\:p').forEach(n => n.remove());
+  for (const el of root.querySelectorAll('*')) { for (const at of [...el.attributes]) if (/^on/i.test(at.name) || (at.name === 'href' && /^\s*javascript:/i.test(at.value))) el.removeAttribute(at.name); }
+  for (const img of root.querySelectorAll('img')) { const src = img.getAttribute('src') || ''; if (!/^(data:image\/|https:\/\/)/i.test(src)) { img.remove(); dropped++; } }
+  return {html: root.innerHTML.trim(), dropped};
+}
+const fileToDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+async function shrinkImage(file, maxW = 600){   // logos: keep them small so emails stay light
+  const url = await fileToDataUrl(file); if (file.size < 120000 && !/svg/.test(file.type)) return url;
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  const w = Math.min(maxW, img.naturalWidth || maxW), h = Math.round((img.naturalHeight || w) * w / (img.naturalWidth || w));
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+  return c.toDataURL('image/png');
+}
+async function sigInsertFiles(files){
+  const box = $('#sigBox'); if (!box) return;
+  for (const f of files) { if (!/^image\//.test(f.type)) continue; const src = await shrinkImage(f); box.focus(); document.execCommand('insertHTML', false, `<img src="${src}" alt="${esc(f.name.replace(/\.[^.]+$/, ''))}" style="max-width:300px">`); }
+}
+function sigModal(){
+  openModal('My email signature', `<p class="sub" style="margin-bottom:8px">Added to the bottom of emails you send from Paper Trail. Paste your signature from Outlook, then add your logos with <b>Add image</b> (Outlook keeps signature pictures hidden, so they don't come along when you copy). You can also paste or drag an image straight in.</p>
+    <div class="sigtools"><label class="btn sm">${ic('up')}Add image<input type="file" id="sigImg" accept="image/*" multiple hidden data-change="sigImg"></label><button type="button" class="btn sm ghost" data-act="sigClear">Clear</button></div>
+    <div id="sigBox" class="mailprev sigbox" contenteditable="true">${SIG.html || ''}</div>
+    <p class="sub" id="sigNote"></p>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" name="on" ${SIG.on ? 'checked' : ''}> Add it to my emails automatically</label>`, 'Save signature', async f => {
+      const {html, dropped} = sigClean($('#sigBox').innerHTML);
+      if (html.length > 1500000) { toast('That signature is too big. Use smaller logo images.', 'bad'); return false; }
+      const ok = await sigSave({html, on: !!f.on}); if (ok) toast(dropped ? `Signature saved. ${dropped} picture${dropped === 1 ? '' : 's'} from Outlook couldn't come along; add ${dropped === 1 ? 'it' : 'them'} with Add image.` : 'Signature saved'); return ok;
+    }, {wide: true});
+}
+// turn images into email attachments shown in place (how Outlook does signatures), so they show without "download pictures"
+function inlineImages(html){
+  const doc = new DOMParser().parseFromString(`<div id="r">${html}</div>`, 'text/html'); const root = doc.getElementById('r'); const atts = []; let n = 0;
+  for (const img of root.querySelectorAll('img')) { const m = String(img.getAttribute('src') || '').match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i); if (!m) continue;
+    const cid = `pt${++n}.${Date.now().toString(36)}@papertrail`; const ext = (m[1].split('/')[1] || 'png').replace('jpeg', 'jpg').replace(/\+.*/, '');
+    atts.push({name: `image${n}.${ext}`, contentType: m[1], contentBytes: m[2], isInline: true, contentId: cid}); img.setAttribute('src', 'cid:' + cid); }
+  return {html: root.innerHTML, atts};
+}
+// files attached in the composer
+const ATT_MAX = 2.8 * 1048576;
+function draftFilesHtml(){ const fs = ui.draftFiles || []; if (!fs.length) return ''; const tot = fs.reduce((t, f) => t + f.size, 0);
+  return `${fs.map((f, i) => `<span class="fchip2">${ic('doc')} ${esc(f.name)} <small>${fsize(f.size)}</small><button type="button" data-act="dFileDel" data-i="${i}" aria-label="Remove ${esc(f.name)}">×</button></span>`).join('')}${tot > ATT_MAX ? `<p class="sub" style="color:var(--bad);width:100%">Attachments are ${fsize(tot)}. Emails sent from Paper Trail can carry about 3 MB of files for now. Remove some, or attach big files in Outlook.</p>` : ''}`; }
+const paintDraftFiles = () => { const el = $('#dFiles'); if (el) el.innerHTML = draftFilesHtml(); };
 
 // ---------- email open & click tracking (website only; needs the "track" edge function and update 4) ----------
 const TRACK_ON = () => !!(SUPA && !DEMO && GRAPH && (window.PAPER_TRAIL || {}).emailTracking);
@@ -3648,6 +3710,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (col === 'contacts') contact = {id, ...r}; else if (col === 'deals' && r.contactId && S.contacts[r.contactId]) contact = {id: r.contactId, ...S.contacts[r.contactId]};
   else if (companyId) contact = gr(companyId).contacts.find(c => c.email) || gr(companyId).contacts.find(c => ctMail(c)) || gr(companyId).contacts[0] || null;
   if (jopt && jopt.companyId) companyId = jopt.companyId;
+  ui.draftFiles = [];
   ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey}; ui.draftHtml = false; ui.sendOk = false;
   const contacts = companyId ? gr(companyId).contacts : (contact ? [contact] : []);
   const tpls = templates();
@@ -3666,9 +3729,11 @@ function draftModal(col, id, purpose, jopt, toAddr){
     ${F('Subject', `<div class="qt"><input id="draftSubj" placeholder="Subject"><button type="button" class="btn sm" data-act="copySubj">${ic('copy')}Copy</button></div>`)}
     ${F('Message', `<textarea id="draftOut" rows="13" placeholder="Choose a template, or type your message."></textarea><div id="draftHtml" class="mailprev" contenteditable="true" hidden></div>`)}
     <p class="sub" id="dHint"></p>
+    ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
+    ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${SIG.html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
     ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk"><input type="checkbox" id="dJ" data-change="dJ"> Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up"><span class="sub">days</span></span></div>` : ''}
     <div class="mailbar" id="dNote" hidden></div>`, null, null,
-    {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button><button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
+    {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('up')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
   if (pick) applyTemplate(pick);
   if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); $('#draftOut').value = fillTemplate(jopt.body, data); }
 }
@@ -3767,10 +3832,21 @@ async function sendMail(){
   if (lost && !ui.sendOk) { ui.sendOk = true; return draftNote('<span>Heads up: Outlook will remove the images and colored text in this message, including your signature logos. Click <b>Send</b> again to send it anyway, or use <b>Copy message</b> and paste it into Outlook to keep them.</span>', true); }
   const btn = $('#dSend'); btn.disabled = true; btn.lastChild.textContent = 'Sending…';
   try {
+    let attachments = [];
+    if (GRAPH) {
+      const files = ui.draftFiles || []; const tot = files.reduce((t, x) => t + x.size, 0);
+      if (tot > ATT_MAX) throw Object.assign(new Error(`Attachments are ${fsize(tot)}; the limit is about 3 MB for now.`), {code: 'tool_error'});
+      if (SIG.html && $('#dSig') && $('#dSig').checked) html += `<br><div class="pt-signature">${SIG.html}</div>`;
+    }
     if (TRACK_ON()) { try { track = await addTracking(html); if (track.token) html = track.html; } catch { track = null; } }
-    await MCP.callTool(MS, 'outlook_send_mail', {to: f.to, ...(f.cc.length ? {cc: f.cc} : {}), ...(f.bcc.length ? {bcc: f.bcc} : {}), subject: f.subject, body: html, bodyType: 'html'}, {cache: false});
+    if (GRAPH) {
+      const inl = inlineImages(html); html = inl.html; attachments = inl.atts;
+      for (const fl of ui.draftFiles || []) { const d = await fileToDataUrl(fl); attachments.push({name: fl.name, contentType: fl.type || 'application/octet-stream', contentBytes: String(d).split(',')[1] || ''}); }
+    }
+    await MCP.callTool(MS, 'outlook_send_mail', {to: f.to, ...(f.cc.length ? {cc: f.cc} : {}), ...(f.bcc.length ? {bcc: f.bcc} : {}), subject: f.subject, body: html, bodyType: 'html', ...(attachments.length ? {attachments} : {})}, {cache: false});
     const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut').value.trim();
-    logAct({type: 'email', text: f.subject + '\n' + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId, ...(track && track.token ? {track: track.token, links: track.links} : {})});
+    const fnames = (ui.draftFiles || []).map(x => x.name);
+    logAct({type: 'email', text: f.subject + '\n' + body + (fnames.length ? `\n\nAttached: ${fnames.join(', ')}` : ''), companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId, ...(track && track.token ? {track: track.token, links: track.links} : {})});
     if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent');
     await emailJourneyAfterSend();
     closeModal(); toast('Email sent');
@@ -4207,6 +4283,9 @@ const A = {
   draftGo: () => draftGo(),
   copyDraft: () => { if (ui.draftHtml) { const el = $('#draftHtml'); if (el && elText(el).trim()) copyRich(el); return; } const v = $('#draftOut')?.value; if (v) copyText(v); else toast('Choose a template or write a message first.', 'bad'); },
   sendMail: () => sendMail(),
+  sigEdit: () => { const keep = ui.draft && $('#dSend'); sigModal(); },
+  sigClear: () => { const b = $('#sigBox'); if (b) b.innerHTML = ''; },
+  dFileDel: d => { (ui.draftFiles || []).splice(+d.i, 1); paintDraftFiles(); },
   outlookDraft: () => outlookDraft(),
   copySubj: () => { const v = $('#draftSubj')?.value; if (v) copyText(v); },
   tplManage: () => tplManageModal(),
@@ -4234,6 +4313,8 @@ const CHANGE = {
   oppField: el => oppSaveField(el),
   tagF: el => { ui.flt = ui.flt || {}; const f = {...fltOf('companies')}; if (el.value) f.tag = el.value; else delete f.tag; ui.flt.companies = f; ui.lim = {}; schedule(); },
   fltCount: () => fltCount(),
+  sigImg: el => { sigInsertFiles([...(el.files || [])]); el.value = ''; },
+  dFiles: el => { ui.draftFiles = [...(ui.draftFiles || []), ...(el.files || [])]; el.value = ''; paintDraftFiles(); },
   viewPick: el => { const t = el.dataset.t, v = el.value; if (v === '__save') { el.value = ''; viewSaveModal(t); return; } if (v === '__manage') { el.value = ''; viewManageModal(t); return; } if (v) viewApply(t, v); else { ui.flt[t] = {}; ui.viewOn = {...(ui.viewOn || {}), [t]: null}; ui.lim = {}; schedule(); } },
   expShown: el => { const w = $('#expForm'); if (w) w.hidden = el.checked; expCount(); },
   coField: el => coSaveField(el),
@@ -4304,6 +4385,11 @@ document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === 
 document.addEventListener('dragleave', e => { const z = e.target.closest && e.target.closest('#dropZone'); if (z && !z.contains(e.relatedTarget)) z.classList.remove('over'); });
 document.addEventListener('drop', e => { const z = e.target.closest && e.target.closest('#dropZone'); if (!z) { if ($('#dropZone')) e.preventDefault(); return; } e.preventDefault(); z.classList.remove('over'); attAdd([...(e.dataTransfer?.files || [])]); });
 document.addEventListener('submit', e => { const f = e.target; if (!f.dataset.form) return; e.preventDefault(); FORMS[f.dataset.form]?.(f, formData(f)); });
+document.addEventListener('paste', e => { const box = e.target.closest && e.target.closest('#sigBox'); if (!box) return; const files = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => /^image\//.test(f.type));
+  const html = e.clipboardData && e.clipboardData.getData('text/html');
+  if (html) { e.preventDefault(); const {html: h, dropped} = sigClean(html); document.execCommand('insertHTML', false, h); if (files.length) sigInsertFiles(files); else if (dropped) { const n = $('#sigNote'); if (n) n.textContent = `${dropped} picture${dropped === 1 ? '' : 's'} from Outlook couldn't come along. Add ${dropped === 1 ? 'it' : 'them'} with Add image, or right-click the logo in Outlook, choose Copy, and paste it here.`; } return; }
+  if (files.length) { e.preventDefault(); sigInsertFiles(files); } });
+document.addEventListener('drop', e => { const box = e.target.closest && e.target.closest('#sigBox'); if (!box) return; const files = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter(f => /^image\//.test(f.type)); if (files.length) { e.preventDefault(); sigInsertFiles(files); } }, true);
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.type === 'tel') el.value = phoneNorm(el.value);
@@ -5689,7 +5775,7 @@ async function boot(){
   loadLookLocal();
   if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
   booted = true; bootDone(); setTimeout(acctHeal, 4000); setTimeout(() => { if (DRIVE_BACKUP && SUPA && !DEMO && isAdmin()) drvLoad(); }, 5000);
-  syncLookFromDb();
+  syncLookFromDb(); sigLoad();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
   try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
   setTimeout(() => checkReplies(), 5000);
