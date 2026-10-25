@@ -557,6 +557,24 @@ html:root[data-fish="tackle"]{
 @keyframes tkBob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(5px) rotate(5deg)}}
 @keyframes tkSwing{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
 @media (prefers-reduced-motion:reduce){[data-fish="tackle"] .tk-float svg,[data-fish="tackle"] .tk-float .rp,[data-fish="tackle"] .tk-lure{animation:none}}
+/* settings: sidebar sections */
+.setsheet .sb{padding:0}
+.setwrap{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:440px}
+.setnav{background:var(--surface-2);border-right:1px solid var(--line);padding:12px 10px;display:flex;flex-direction:column;gap:2px;border-bottom-left-radius:14px}
+.setnav button{display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:8px;background:none;font:inherit;font-weight:500;color:var(--fg);cursor:pointer;text-align:left}
+.setnav button svg{width:17px;height:17px;flex:none;color:var(--muted)}
+.setnav button:hover{background:var(--bg)}
+.setnav button.on{background:var(--accent-soft);color:var(--accent);font-weight:600}.setnav button.on svg{color:var(--accent)}
+.setnav button.red,.setnav button.red svg{color:var(--bad)}
+.setsep{height:1px;background:var(--line);margin:8px 6px}
+.setpane{padding:18px 22px 26px;gap:0!important}
+.setpane h4{margin:0;font:700 1.15rem var(--display)}
+.setpane>p.sub{margin:2px 0 10px}
+.setpane .setrow{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:13px 0;grid-template-columns:minmax(0,1fr) auto}
+.setpane .seti{display:none}
+.setpane .setrow b{font-weight:600}.setpane .setrow p.sub{margin:1px 0 0;font-size:.86rem}
+.chip.ok{background:var(--good-soft);color:var(--good)}
+@media (max-width:640px){.setwrap{grid-template-columns:1fr;min-height:0}.setnav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);border-radius:0}.setnav button{white-space:nowrap}.setsep{display:none}.setpane .setrow{grid-template-columns:minmax(0,1fr)}.setpane .setrow .btn,.setpane .setrow .sa-b{justify-self:start}}
 .fishegg{position:absolute;right:12px;bottom:10px;width:14px;height:8px;border:0;padding:0;background:none;color:var(--muted);opacity:.35;cursor:default;line-height:0}
 .fishegg:hover{opacity:.6}.fishegg svg{width:14px;height:8px;display:block}
 .fishegg.wig{animation:fishWig .35s ease-in-out}
@@ -3146,27 +3164,43 @@ function exportModal(t){
 // ---------- settings ----------
 function settingsModal(){
   const row = (icon, title, text, btn) => `<div class="setrow"><span class="seti">${ic(icon)}</span><div><b>${title}</b><p class="sub">${text}</p></div>${btn}</div>`;
-  openModal('Settings', `<div class="sets">
-    ${GRAPH || SUPA ? row('mail', 'My email signature', SIG.html ? 'Your signature, with logos, is added to emails you send from Paper Trail.' : 'Set up the signature (with your logos) that goes at the bottom of emails you send from Paper Trail.', `<button type="button" class="btn" data-act="sigEdit">${SIG.html ? 'Edit signature' : 'Set up'}</button>`) : ''}
-    ${row('mail', 'My connections', 'Connect your Outlook email so you can send from the CRM and see your customer emails on each account.', `<button type="button" class="btn pri" data-act="connections">Open</button>`)}
-    ${SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, `<button type="button" class="btn" data-act="account">Open</button>`) : ''}
-    ${SUPA && !DEMO && isAdmin() ? row('chart', 'Usage', 'See how much of the monthly download allowance each person is using.', `<button type="button" class="btn" data-act="usage">View usage</button>`) : ''}
-    ${SUPA ? row('users', 'Users', isAdmin() ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', `<button type="button" class="btn" data-act="users">${isAdmin() ? 'Manage users' : 'View'}</button>`)
-      : row('users', 'Team', 'Choose which teammates can be assigned accounts, opportunities and reminders.', `<button type="button" class="btn" data-act="team">Manage team</button>`)}
-    ${row('spark', 'Appearance', 'Your own colors, mode, text size, spacing, font and start page. Only changes how Paper Trail looks for you.', `<button type="button" class="btn" data-act="look">Customize</button>`)}
-    ${row('spark', 'Demo mode', DEMO ? 'On. Paper Trail is showing sample data. Your real records are untouched.' : 'Fill Paper Trail with realistic sample accounts, opportunities and activity for a demo. Nothing is saved, and your real records stay hidden until you turn it off.', `<button type="button" class="btn${DEMO ? '' : ' pri'}" data-act="${DEMO ? 'demoOff' : 'demoOn'}">${DEMO ? 'Turn off' : 'Turn on'}</button>`)}
-    ${row('mail', 'Email templates', 'Edit the ready-made emails your team picks from when emailing a customer.', `<button type="button" class="btn" data-act="tplManage">Edit templates</button>`)}
-    ${canWrite && isAdmin() ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from a Spiro export or any CSV file.', `<button type="button" class="btn" data-act="import">Import CSV</button>`) : ''}
-    ${canWrite ? row('users', 'Find duplicates', 'Spot accounts and contacts that look like the same thing, and merge them.', `<button type="button" class="btn" data-act="dupFind">Find duplicates</button>`) : ''}
-    ${row('down', 'Export', 'Download every account and contact as a CSV file you can open in Excel.', `<button type="button" class="btn" data-act="export">Export CSV</button>`)}
-    ${isAdmin() ? row('doc', 'Backup', `Download a full backup of everything, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : ''}
-    ${DRIVE_BACKUP && SUPA && !DEMO && isAdmin() ? drvRow() : ''}
-    ${isAdmin() ? row('users', 'Reassign records', 'Move accounts, contacts, opportunities, reminders and more from one person to another.', `<button type="button" class="btn" data-act="reassign">Reassign</button>`) : ''}
-    ${TAGS_ON ? row('tag', 'Tags', 'See every account tag and how many accounts use it. Rename, merge or delete tags, or suggest tags for your accounts from their history.', `<button type="button" class="btn" data-act="tags">Manage tags</button>`) : ''}
-    ${isAdmin() && canWrite && !DEMO ? row('trash', 'Delete all data', 'Wipe every account, contact, opportunity, quote, activity, reminder and contract for a clean start, for example after a test import. Users, email templates and journeys stay.', `<button type="button" class="btn danger" data-act="wipeAll">Delete all data</button>`) : ''}
-    ${isAdmin() ? row('trash', 'Trash', `Deleted records, kept for ${TRASH_DAYS} days so you can restore them.${L('trash').length ? ` ${L('trash').length} item${L('trash').length === 1 ? '' : 's'} now.` : ''}`, `<button type="button" class="btn" data-act="trash">Open trash</button>`) : ''}
-    <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button>
-  </div>`, null);
+  const btn = (act, label, cls = '') => `<button type="button" class="btn${cls ? ' ' + cls : ''}" data-act="${act}">${label}</button>`;
+  const adm = isAdmin();
+  const ms = typeof conn !== 'undefined' && conn.status === 'connected';
+  const demo = row('spark', 'Demo mode', DEMO ? 'On. Showing sample data; your real records are untouched.' : 'Show realistic sample data for a demo. Nothing is saved, and real records stay hidden.', btn(DEMO ? 'demoOff' : 'demoOn', DEMO ? 'Turn off' : 'Turn on'));
+  const secs = [
+    ['you', 'You', 'users', 'Just for you. Follows your login to any device.', [
+      SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, btn('account', 'Open')) : '',
+      row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
+      GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
+      row('spark', 'Appearance', 'Colors, mode, text size, spacing, font and start page.', btn('look', 'Customize')),
+      adm ? '' : demo]],
+    ['team', 'Team', 'users', 'Shared with everyone on the team.', [
+      SUPA ? row('users', 'Users', adm ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', btn('users', adm ? 'Manage' : 'View'))
+        : row('users', 'Team', 'Choose which teammates can be assigned records.', btn('team', 'Manage')),
+      row('mail', 'Email templates', 'The ready-made emails your team picks from.', btn('tplManage', 'Edit')),
+      TAGS_ON ? row('tag', 'Tags', 'Rename, merge or delete account tags, or suggest tags from history.', btn('tags', 'Manage')) : '']],
+    ['data', 'Data', 'down', 'Move records in and out of Paper Trail.', [
+      canWrite && adm ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from Spiro or any CSV.', btn('import', 'Import CSV')) : '',
+      row('down', 'Export', 'Download every account and contact as a CSV for Excel.', btn('export', 'Export CSV')),
+      canWrite ? row('users', 'Find duplicates', 'Spot look-alike accounts and contacts and merge them.', btn('dupFind', 'Find')) : '',
+      adm ? row('doc', 'Backup', `Download a full backup, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : '',
+      DRIVE_BACKUP && SUPA && !DEMO && adm ? drvRow() : '']],
+    ['admin', 'Admin', 'chart', 'Only Admins see this section.', adm ? [
+      SUPA && !DEMO ? row('chart', 'Usage', 'How much of the monthly download allowance each person uses.', btn('usage', 'View')) : '',
+      row('users', 'Reassign records', 'Move records from one person to another.', btn('reassign', 'Reassign')),
+      demo] : []],
+    ['trash', 'Trash & reset', 'trash', 'Careful: some of these can\'t be undone.', adm ? [
+      row('trash', 'Trash', `Deleted records, kept ${TRASH_DAYS} days so you can restore them.${L('trash').length ? ` ${L('trash').length} item${L('trash').length === 1 ? '' : 's'} now.` : ''}`, btn('trash', 'Open trash')),
+      canWrite && !DEMO ? row('trash', 'Delete all data', 'Wipe every account, contact, opportunity, quote, activity, reminder and contract for a clean start. Users, email templates and journeys stay.', btn('wipeAll', 'Delete all data', 'danger')) : ''] : []]
+  ].map(([k, t, i, d, rows]) => [k, t, i, d, rows.filter(Boolean)]).filter(x => x[4].length);
+  if (!secs.some(x => x[0] === ui.setTab)) ui.setTab = secs[0][0];
+  const cur = secs.find(x => x[0] === ui.setTab);
+  openModal('Settings', `<div class="setwrap"><nav class="setnav" role="tablist">${secs.map(([k, t, i]) => `${k === 'trash' ? '<span class="setsep"></span>' : ''}<button type="button" role="tab" aria-selected="${k === ui.setTab}" class="${k === ui.setTab ? 'on' : ''}${k === 'trash' ? ' red' : ''}" data-act="setTab" data-v="${k}">${ic(i)}<span>${t}</span></button>`).join('')}</nav>
+    <div class="setpane sets"><h4>${cur[1]}</h4><p class="sub">${cur[3]}</p>${cur[4].join('')}
+    <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button></div></div>`, null, null, {wide: true});
+  $('#mform').classList.add('setsheet');
+  try { $('.setnav .on')?.scrollIntoView({block: 'nearest', inline: 'nearest'}); } catch {}
 }
 
 // ---------- my connections ----------
@@ -4258,6 +4292,7 @@ const A = {
   dupReview: d => { ui.dupReturn = true; mergeModal(d.c, d.keep, d.other); },
   pgMore: d => { ui.lim = ui.lim || {}; ui.lim[d.k] = ((ui.lim[d.k]) || PAGE) + PAGE * 5; schedule(); },
   look: () => lookModal(),
+  setTab: d => { ui.setTab = d.v; settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   lookSet: d => { LOOK[d.k] = d.v; saveLook(); schedule(); lookModal(); },
   lookReset: () => { LOOK = {...LOOK_DEFAULT}; saveLook(); schedule(); lookModal(); toast('Back to the default look'); },
   trash: () => trashModal(),
