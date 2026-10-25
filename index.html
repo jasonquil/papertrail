@@ -636,6 +636,19 @@ tr.sel td{background:var(--accent-soft)!important}
 .jsx-steps li{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--surface-2)}
 .jsx-d{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.jsx-d b{display:block;color:var(--fg);font-size:.8rem;letter-spacing:0;text-transform:none}
 .jsx-steps li>div>b{font-size:.86rem;display:block}
+.jsx-steps li:has(.jsx-row-btn){display:block;padding:0}
+.jsx-row-btn{display:grid;grid-template-columns:56px minmax(0,1fr) 18px;gap:10px;width:100%;text-align:left;background:none;border:0;font:inherit;color:inherit;padding:9px 6px;margin:0 -6px;width:calc(100% + 12px);border-radius:8px;cursor:pointer}
+.jsx-row-btn:hover{background:var(--surface-2)}
+.jsx-chev{opacity:0;color:var(--muted);align-self:center}.jsx-chev svg{width:14px;height:14px}
+.jsx-row-btn:hover .jsx-chev,.jsx-row-btn:focus-visible .jsx-chev{opacity:1}
+.jsx-steps li.jsx-open{background:var(--bg);margin:0 -16px;padding:10px 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.jsx-ed{display:flex;flex-direction:column;gap:8px;min-width:0}
+.jsx-ed .f{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted);font-weight:600}
+.jsx-ed input,.jsx-ed textarea{font-size:.86rem;width:100%}
+.jsx-ed textarea{resize:vertical;line-height:1.45}
+.jsx-ed .sub{margin:0;font-size:.76rem}
+.jsx-tog{display:flex;justify-content:space-between;align-items:center;background:none;border:0;padding:0;font:inherit;color:var(--fg);cursor:pointer;text-align:left}
+.jsx-tog span{color:var(--accent);font-weight:600;font-size:.82rem}
 .jsx-steps p{margin:2px 0 0;color:var(--muted);font-size:.8rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .jsx-go{border-top:1px solid var(--line);padding:12px 16px;display:flex;flex-direction:column;gap:9px;background:var(--bg);position:sticky;bottom:0}
 .jsx-seg{display:flex}.jsx-seg button{flex:1}
@@ -4727,7 +4740,15 @@ function jsxCard(j){
     ${jTrack(st)}
     <span class="jsx-meta"><span><b>${jCountTxt(st)}</b> · ${jSpanTxt(jSpanDays(st))}</span>${x.reply != null ? `<span><b>${x.reply}%</b> reply</span>` : ''}<span>${x.used ? `Used <b>${x.used}×</b>` : 'New'}</span></span></button>`;
 }
+function jsxCustomize(i, key, val){
+  const s = ui.js; const j = journeyOf(s.jid); if (!j) return;
+  const was = !!s.custom;
+  if (!s.custom) s.custom = JSON.parse(JSON.stringify(jSteps(j)));
+  if (s.custom[i]) s.custom[i][key] = val;
+  if (!was) { const p = document.querySelector('#jsxPrev .jsx-ph p'); const ct = S.contacts[s.ct]; const first = ct ? (ct.firstName || pname_(ct)) : 'them'; if (p && !p.querySelector('.jsx-cust')) p.insertAdjacentHTML('beforeend', ` · <b class="jsx-cust">customized for ${esc(first)}</b> <button type="button" class="lnk" data-act="jsxUncustom">Undo</button>`); }
+}
 function jsxFirst(){ const s = ui.js; return s.first === 'in' ? addDays(today(), Math.max(1, parseInt(s.inDays) || 3)) : s.first === 'date' && isDate(s.date) ? (s.date < today() ? today() : s.date) : today(); }
+const jsxGrow = el => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 420) + 'px'; };
 function jsxPaint(){
   const s = ui.js; const main = $('#jsxMain'), prev = $('#jsxPrev'); if (!main || !prev) return;
   document.querySelectorAll('.jsx-rail [data-act="jsxCat"]').forEach(b => b.classList.toggle('on', !s.q && b.dataset.v === s.cat));
@@ -4745,7 +4766,12 @@ function jsxPaint(){
   const fill = t => fillTemplate(t, data);
   const day = d => parseYmd(d).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
   prev.innerHTML = `<div class="jsx-ph"><h4>${esc(j.name)}</h4><p class="sub">${ct ? `What ${esc(first)} gets` : 'Choose a contact to preview'}${s.custom ? ` · <b class="jsx-cust">customized for ${esc(first)}</b> <button type="button" class="lnk" data-act="jsxUncustom">Undo</button>` : ''}</p></div>
-    <ol class="jsx-steps">${sched.map(x => { const st = steps[x.step]; const call = isCallStep(st); const body = fill(call ? st.note || '' : st.body || '').replace(/^.*?,\s*\n+/, ''); return `<li><span class="jsx-d">${x.due === today() ? 'Today' : 'Day ' + Math.round((parseYmd(x.due) - parseYmd(sched[0].due)) / 864e5)}<b>${day(x.due)}</b></span><div>${call ? `<b class="jsx-callt">${ic('phone')}${esc(fill(st.note || 'Call reminder').split(':')[0])}</b><p>${esc(fill(st.note || '').replace(/^[^:]*:\s*/, ''))}</p>` : `<b>${esc(fill(st.subject || '(no subject)'))}</b><p>${esc(body)}</p>`}</div></li>`; }).join('')}</ol>
+    <ol class="jsx-steps">${sched.map(x => { const st = steps[x.step]; const call = isCallStep(st); const body = fill(call ? st.note || '' : st.body || '').replace(/^.*?,\s*\n+/, ''); const open = s.exp === x.step; const dl = `<span class="jsx-d">${x.due === today() ? 'Today' : 'Day ' + Math.round((parseYmd(x.due) - parseYmd(sched[0].due)) / 864e5)}<b>${day(x.due)}</b></span>`;
+      if (open) return `<li class="jsx-open">${dl}<div class="jsx-ed"><button type="button" class="jsx-tog" data-act="jsxExp" data-i="${x.step}" aria-expanded="true">${call ? `<b class="jsx-callt">${ic('phone')}Call step</b>` : `<b>Email ${x.step + 1}</b>`}<span>Done</span></button>
+        ${call ? `<label class="f"><span>Call note</span><textarea rows="4" data-input="jsxNote" data-i="${x.step}">${esc(fill(st.note || ''))}</textarea></label>`
+        : `<label class="f"><span>Subject</span><input type="text" value="${esc(fill(st.subject || ''))}" data-input="jsxSubj" data-i="${x.step}"></label><label class="f"><span>Message</span><textarea rows="10" data-input="jsxBody" data-i="${x.step}">${esc(fill(st.body || ''))}</textarea></label>`}
+        <p class="sub">Changes apply to ${ct ? esc(first) : 'this person'} only. The journey itself stays the same.</p></div></li>`;
+      return `<li><button type="button" class="jsx-row-btn" data-act="jsxExp" data-i="${x.step}" aria-expanded="false" title="Click to open and edit">${dl}<div>${call ? `<b class="jsx-callt">${ic('phone')}${esc(fill(st.note || 'Call reminder').split(':')[0])}</b><p>${esc(fill(st.note || '').replace(/^[^:]*:\s*/, ''))}</p>` : `<b>${esc(fill(st.subject || '(no subject)'))}</b><p>${esc(body)}</p>`}</div><span class="jsx-chev">${ic('edit')}</span></button></li>`; }).join('')}</ol>
     <div class="jsx-go">
       <div class="segs jsx-seg" role="group" aria-label="First step">${[['today', 'Today'], ['in', 'In a few days'], ['date', 'Pick a date']].map(([k, l]) => `<button type="button" class="${s.first === k ? 'on' : ''}" data-act="jsxFirstSet" data-v="${k}">${l}</button>`).join('')}</div>
       ${s.first === 'in' ? `<label class="jsx-row"><span>Days from now</span><input type="number" min="1" max="90" value="${esc(s.inDays)}" data-input="jsxIn" style="width:80px"></label>` : ''}
@@ -4953,11 +4979,12 @@ const A = {
   jEdit: d => journeyEditModal(d.id),
   jeCopy: d => journeyEditModal(d.id, {copy: true}),
   jsxCat: d => { ui.js.cat = d.v; ui.js.q = ''; const q = $('#jsxQ'); if (q) q.value = ''; jsxPaint(); },
-  jsxPick: d => { if (ui.js.jid !== d.id) { ui.js.jid = d.id; ui.js.custom = null; ui.js.onReply = null; ui.js.skip = null; } jsxPaint(); },
+  jsxPick: d => { if (ui.js.jid !== d.id) { ui.js.jid = d.id; ui.js.custom = null; ui.js.exp = null; ui.js.onReply = null; ui.js.skip = null; } jsxPaint(); },
   jsxGo: d => jsxStart(d.id),
   jsxFirstSet: d => { ui.js.first = d.v; jsxPaint(); },
   jsxCustom: () => { const j = journeyOf(ui.js.jid); if (!j) return; if (!ui.js.ct) { toast('Choose a contact first.', 'bad'); return; } journeyEditModal(j.id, {personal: true, steps: ui.js.custom || jSteps(j), contactId: ui.js.ct}); },
-  jsxUncustom: () => { ui.js.custom = null; jsxPaint(); },
+  jsxUncustom: () => { ui.js.custom = null; ui.js.exp = null; jsxPaint(); },
+  jsxExp: d => { const i = +d.i; ui.js.exp = ui.js.exp === i ? null : i; jsxPaint(); if (ui.js.exp === i) { const f = document.querySelector(`#jsxPrev [data-i="${i}"]:is(input,textarea)`); if (f) { f.focus(); f.setSelectionRange?.(f.value.length, f.value.length); } document.querySelectorAll('#jsxPrev .jsx-ed textarea').forEach(jsxGrow); } },
   jeFocus: d => { ui.je.focus = +d.i; jePaint('strip'); document.querySelectorAll('.je-step').forEach(x => x.classList.toggle('on', +x.dataset.i === ui.je.focus)); $('#jeS' + d.i)?.scrollIntoView({block: 'center', behavior: 'smooth'}); },
   jeAdd: d => { const at = Math.max(0, Math.min(+d.at, ui.je.steps.length)); ui.je.steps.splice(at, 0, d.t === 'call' ? {type: 'call', delay: at ? 3 : 0, note: 'Call {first_name}: '} : {type: 'email', delay: at ? 7 : 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}); ui.je.focus = at; jePaint(); const el = $('#jeS' + at); if (el) { el.scrollIntoView({block: 'center'}); el.querySelector('.je-subj, .je-note')?.focus(); } },
   jeMove: d => { const i = +d.i, k = i + (+d.d); const st = ui.je.steps; if (k < 0 || k >= st.length) return; [st[i], st[k]] = [st[k], st[i]]; if (k === 0 || i === 0) { st[0].delay = 0; } ui.je.focus = k; jePaint(); },
@@ -5091,8 +5118,11 @@ const A = {
 };
 const CHANGE = {
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
-  jsxCo: el => { const s = ui.js; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
-  jsxCt: el => { ui.js.ct = el.value; jsxPaint(); },
+  jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
+  jsxCt: el => { if (ui.js.custom && ui.js.ct !== el.value) { ui.js.custom = null; ui.js.exp = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } ui.js.ct = el.value; jsxPaint(); },
+  jsxSubj: el => jsxCustomize(+el.dataset.i, 'subject', el.value),
+  jsxBody: el => { jsxGrow(el); jsxCustomize(+el.dataset.i, 'body', el.value); },
+  jsxNote: el => { jsxGrow(el); jsxCustomize(+el.dataset.i, 'note', el.value); },
   jsxQ: el => { ui.js.q = el.value; jsxPaint(); },
   jsxIn: el => { ui.js.inDays = el.value; clearTimeout(ui.jsxT); ui.jsxT = setTimeout(() => { jsxPaint(); const i = document.querySelector('[data-input="jsxIn"]'); if (i) { i.focus(); i.setSelectionRange?.(9, 9); } }, 500); },
   jsxDate: el => { ui.js.date = el.value; jsxPaint(); },
