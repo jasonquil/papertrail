@@ -37,6 +37,9 @@ body{background:var(--bg);color:var(--fg);font:.9375rem/1.5 var(--body);-webkit-
 html[data-text="sm"]{font-size:14.5px}html[data-text="lg"]{font-size:17.5px}html[data-text="xl"]{font-size:19px}
 html[data-font="system"]{--display:system-ui,-apple-system,"Segoe UI",sans-serif;--body:system-ui,-apple-system,"Segoe UI",sans-serif}
 html[data-font="serif"]{--display:Georgia,"Times New Roman",serif;--body:Georgia,"Times New Roman",serif}
+html[data-font="manrope"]{--display:"Manrope",system-ui,sans-serif;--body:"Manrope",system-ui,sans-serif}
+html[data-font="jakarta"]{--display:"Plus Jakarta Sans",system-ui,sans-serif;--body:"Plus Jakarta Sans",system-ui,sans-serif}
+html[data-font="fraunces"]{--display:"Fraunces",Georgia,serif;--body:"DM Sans",system-ui,sans-serif}
 html[data-density="compact"] .panel{padding:12px;gap:8px}html[data-density="compact"] td{padding:6px 10px}html[data-density="compact"] .rowi{padding:5px 10px}
 html[data-density="compact"] .wrap{gap:14px}html[data-density="compact"] .navi{padding:5px 10px}html[data-density="compact"] .rem{padding-top:6px;padding-bottom:6px}
 *{box-sizing:border-box}
@@ -1482,10 +1485,14 @@ const mix = (a, b, t) => { const A = hexRgb(a), B = hexRgb(b); if (!A || !B) ret
 const lum = h => { const c = hexRgb(h); if (!c) return 0; const [r, g, b] = c.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
 const isDark = () => LOOK.mode === 'dark' || (LOOK.mode === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
 const startView = () => LOOK.start && VIEWS.some(v => v[0] === LOOK.start) ? LOOK.start : 'today';
+// extra fonts load only for the people who pick them
+const LOOK_FONTS = {manrope: 'Manrope:wght@400..800', jakarta: 'Plus+Jakarta+Sans:wght@400..800', fraunces: 'DM+Sans:opsz,wght@9..40,400..700&family=Fraunces:opsz,wght@9..144,500..800'};
+function lookFont(f){ const q = LOOK_FONTS[f]; if (!q || document.getElementById('lookFont-' + f)) return; const l = document.createElement('link'); l.id = 'lookFont-' + f; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + q + '&display=swap'; document.head.appendChild(l); }
 function applyLook(){
   const r = document.documentElement;
   if (LOOK.mode === 'light' || LOOK.mode === 'dark') r.dataset.theme = LOOK.mode; else delete r.dataset.theme;
   r.dataset.text = LOOK.text || 'md'; r.dataset.density = LOOK.density || 'comfy'; r.dataset.font = LOOK.font || 'default';
+  lookFont(LOOK.font);
   const a = LOOK.accent;
   if (a && hexRgb(a)) {
     const dark = isDark(); const acc = dark && lum(a) < .18 ? mix(a, '#ffffff', .45) : a;
@@ -1514,7 +1521,7 @@ function lookModal(){
       <div class="f"><span>Accent color</span><div class="swatches">${ACCENTS.map(([v, l, h]) => `<button type="button" class="sw${cur === v ? ' on' : ''}" data-act="lookSet" data-k="accent" data-v="${v}" title="${l}" aria-label="${l}" style="background:${h}"></button>`).join('')}<label class="sw custom${cur && !ACCENTS.some(x => x[0] === cur) ? ' on' : ''}" title="Pick any color" style="background:${cur && !ACCENTS.some(x => x[0] === cur) ? cur : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)'}"><input type="color" id="lookColor" value="${cur || '#0D6B61'}" data-input="lookColor" aria-label="Pick any color"></label></div></div>
       ${F('Text size', seg('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']]))}
       ${F('Spacing', seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
-      ${F('Font', seg('font', [['default', 'Modern'], ['system', 'System'], ['serif', 'Classic']]))}
+      ${F('Font', seg('font', [['default', 'Original'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
       ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
     </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
 }
