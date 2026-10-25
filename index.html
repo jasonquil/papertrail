@@ -1589,7 +1589,7 @@ function attention(){
     else if (n <= (c.autoRenew ? 30 : 60)) out.push({sev: c.autoRenew ? 'info' : (n <= 21 ? 'bad' : 'warn'), o:1, kind: c.autoRenew ? `Auto-renews in ${n} days` : `Contract ends in ${n} days`, title:`${cname(c.companyId)} · ${c.title||'Service agreement'}`,
       sub:`${fmtDate(c.end)} · ${money(c.value)}/yr`, acts:[{l:'Email', act:'draft', d:{col:'companies', id:c.companyId, purpose:'renewal'}}, {l:'Renew', act:'renew', d:{id:c.id}}].filter(Boolean)});
   }
-  for (const {e, s} of journeyDue()) out.push({sev: s.due < t ? 'warn' : 'info', o: 2, kind: isCallStep(eSteps(e)[s.step]) ? 'Journey call due' : `Journey email ${s.step + 1} due`, title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))}${s.due < t ? ' · was due ' + fmtDate(s.due) : ''}`, acts: canWrite ? [{l: isCallStep(eSteps(e)[s.step]) ? 'Call & log it' : 'Review & send', act: 'jSend', d: {id: e.id}, pri: 1}, {l: 'Skip', act: 'jSkip', d: {id: e.id}}] : []});
+  for (const {e, s} of journeyDue()) if (!autoWillSend(e, s)) out.push({sev: s.due < t ? 'warn' : 'info', o: 2, kind: isCallStep(eSteps(e)[s.step]) ? 'Journey call due' : `Journey email ${s.step + 1} due`, title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))}${s.due < t ? ' · was due ' + fmtDate(s.due) : ''}`, acts: canWrite ? [{l: isCallStep(eSteps(e)[s.step]) ? 'Call & log it' : 'Review & send', act: 'jSend', d: {id: e.id}, pri: 1}, {l: 'Skip', act: 'jSkip', d: {id: e.id}}] : []});
   for (const e of L('enrollments').filter(e => e.status === 'paused' && e.stopReason === 'replied' && (!ui.mine || e.ownerId === ME.id))) out.push({sev: 'info', o: 1, kind: 'Replied during a journey', title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))} is paused${e.replySubject ? ' · “' + esc(e.replySubject) + '”' : ''}`, acts: canWrite ? [{l: 'Resume', act: 'jResume', d: {id: e.id}}, {l: 'End', act: 'jStop', d: {id: e.id}}] : []});
   const sev = {bad:0, warn:1, info:2};
   return out.sort((a,b) => sev[a.sev]-sev[b.sev] || a.o-b.o);
@@ -1739,7 +1739,7 @@ function render(){
 }
 
 function navHtml(){
-  const badge = {journeys: booted ? journeyDue().length : 0, today: booted ? attention().length : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
+  const badge = {journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? attention().length : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
   const MT = ['today', 'reminders', 'pipeline', 'companies'];
   const curK = ui.view === 'company' ? 'companies' : ui.view === 'opp' ? 'pipeline' : ui.view;
   const curL = (VIEWS.find(v => v[0] === curK) || [0, 'Paper Trail'])[1];
@@ -4544,8 +4544,8 @@ V.journeys = () => {
   const segs = `<div class="segs" role="group" aria-label="Show">${[['active', `Active${counts.active ? ' ' + counts.active : ''}`], ['paused', `Paused${counts.paused ? ' ' + counts.paused : ''}`], ['finished', 'Finished'], ['all', 'All']].map(([k, l]) => `<button class="${show === k ? 'on' : ''}" data-act="jShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   const lib = journeys();
   return head('Journeys', `${counts.active} active · ${due.length} email${due.length === 1 ? '' : 's'} due`, searchBox('Search journeys') + segs + mineSeg() + (canWrite ? `<button class="btn" data-act="jLibrary">Manage journeys</button><button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>` : ''))
-  + `<div class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><span>Automatic sending at 8:45 AM will be connected later. Until then, emails that come due are listed here: review each one and send it.</span>${MCP && canWrite ? '<button class="btn sm" data-act="jCheck">Check for replies</button>' : ''}</div>`
-  + (due.length ? `<section class="panel"><div class="ph"><h3>Due now</h3><span class="chip warn">${due.length}</span></div><ul class="attl">${due.map(({e, s}) => { const st = eSteps(e)[s.step]; const call = isCallStep(st); return `<li class="att ${s.due < today() ? 'bad' : 'warn'}"><div class="att-main"><span class="att-kind">${esc(jName(e.journeyId))} · ${call ? 'call' : 'email'} · step ${s.step + 1} of ${(e.schedule || []).length} · ${s.due < today() ? 'was due ' + fmtDate(s.due) : 'due today'}</span><b>${esc(nameOf('contacts', e.contactId))} · ${esc(cname(e.companyId))}</b><span class="att-sub">${esc(st ? (call ? fillTemplate(st.note || 'Call reminder', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><div class="att-act">${canWrite ? `<button class="btn sm pri" data-act="jSend" data-id="${e.id}">${call ? 'Call &amp; log it' : 'Review & send'}</button><button class="btn sm" data-act="jSkip" data-id="${e.id}">Skip</button>` : ''}</div></li>`; }).join('')}</ul></section>` : '')
+  + `<div class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">${autoBanner()}${MCP && canWrite ? '<button class="btn sm" data-act="jCheck">Check for replies</button>' : ''}</div>`
+  + (due.length ? `<section class="panel"><div class="ph"><h3>Due now</h3><span class="chip warn">${due.length}</span></div><ul class="attl">${due.map(({e, s}) => { const st = eSteps(e)[s.step]; const call = isCallStep(st); const auto = !call && eMode(e) === 'auto'; const errNow = auto && e.lastSendError && e.lastSendError.step === s.step ? e.lastSendError.msg : ''; return `<li class="att ${errNow || s.due < today() ? 'bad' : 'warn'}"><div class="att-main"><span class="att-kind">${esc(jName(e.journeyId))} · ${call ? 'call' : 'email'} · step ${s.step + 1} of ${(e.schedule || []).length} · ${s.due < today() ? 'was due ' + fmtDate(s.due) : 'due today'}${auto ? ` · <b style="color:var(--accent)">${errNow ? 'held for you' : 'sends automatically at 8:45 AM'}</b>` : ''}</span><b>${esc(nameOf('contacts', e.contactId))} · ${esc(cname(e.companyId))}</b><span class="att-sub">${esc(st ? (call ? fillTemplate(st.note || 'Call reminder', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span>${errNow ? `<span class="att-sub" style="color:var(--bad)">${esc(errNow)}</span>` : ''}</div><div class="att-act">${canWrite ? `<button class="btn sm pri" data-act="jSend" data-id="${e.id}">${call ? 'Call &amp; log it' : auto ? 'Send it now' : 'Review & send'}</button>${auto ? `<button class="btn sm" data-act="jMode" data-id="${e.id}" data-m="approve">Ask me first</button>` : ''}<button class="btn sm" data-act="jSkip" data-id="${e.id}">Skip</button>` : ''}</div></li>`; }).join('')}</ul></section>` : '')
   + (!all.length ? `<section class="panel">${emptyState('No one is on a journey yet', 'Start a journey to follow up with a contact automatically. The Shredding Journey sends 4 follow-ups a week apart, and pauses as soon as they reply.', `<button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Contact</th><th>Journey</th><th>Progress</th><th>Next email</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(e => { const n = nextStep(e); const total = (e.schedule || []).length; return `<tr data-act="jOpen" data-id="${e.id}"><td><b>${esc(nameOf('contacts', e.contactId))}</b><span class="t2">${esc(cname(e.companyId))}</span></td><td>${esc(jName(e.journeyId))}</td><td class="num">${sentCount(e)} of ${total} sent</td><td>${e.status === 'active' && n ? dueChip(n.due) : '—'}</td><td>${jStatusChip(e)}${e.status === 'paused' && e.replySubject ? `<span class="t2">“${esc(e.replySubject)}”</span>` : ''}</td><td>${canWrite ? (e.status === 'paused' ? `<button class="btn sm" data-act="jResume" data-id="${e.id}">Resume</button>` : e.status === 'active' ? `<button class="btn sm ghost" data-act="jPause" data-id="${e.id}">Pause</button>` : '') : ''}</td></tr>`; }).join('') || `<tr><td colspan="6" class="sub">${ui.q ? 'No journeys match.' : 'None here.'}</td></tr>`}</tbody></table></div>`)
   + `<section class="panel"><div class="ph"><h3>Your journeys</h3>${canWrite ? `<button class="btn sm" data-act="jEdit">${ic('plus')}New journey</button>` : ''}</div><div class="jlib">${lib.map(j => `<button class="jcard" data-act="jEdit" data-id="${j.id}"><b>${esc(j.name)}</b><span>${jCountTxt(jSteps(j))} · ${jSpanTxt(jSpanDays(jSteps(j)))} · ${esc(jCat(j.category)[1])}</span><span>${j.onReply === 'stop' ? 'Ends when they reply' : 'Pauses when they reply'}</span></button>`).join('')}</div></section>`;
@@ -4557,7 +4557,7 @@ async function startEnrollment(o){
   if (L('enrollments').some(e => e.contactId === o.contactId && e.journeyId === o.journeyId && ['active', 'paused'].includes(e.status))) { toast(`${pname_(ct)} is already on ${j.name}.`, 'bad'); return false; }
   const steps = o.steps && o.steps.length ? o.steps : jSteps(j);
   const sched = buildSchedule({steps, skipWeekends: o.skipWeekends == null ? j.skipWeekends !== false : o.skipWeekends}, o.firstDate);
-  const ok = await put('enrollments', uid(), {companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || '', journeyId: o.journeyId, ownerId: ME.id || '', status: 'active', onReply: o.onReply || j.onReply || 'pause', startedAt: Date.now(), schedule: sched, ...(o.steps && o.steps.length ? {steps} : {})});
+  const ok = await put('enrollments', uid(), {companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || '', journeyId: o.journeyId, ownerId: ME.id || '', status: 'active', onReply: o.onReply || j.onReply || 'pause', startedAt: Date.now(), schedule: sched, ...(o.sendMode ? {sendMode: o.sendMode} : {}), ...(o.steps && o.steps.length ? {steps} : {})});
   if (ok) { logAct({type: 'note', text: `Started ${j.name} for ${pname_(ct)} (${jCountTxt(steps)}, first on ${fmtDate(sched[0].due)})`, companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || ''}); toast(`${pname_(ct)} is on ${j.name}`); }
   return ok;
 }
@@ -4591,7 +4591,10 @@ function journeyDetailModal(id){
   const ests = eSteps(e); const steps = (e.schedule || []).map(s => { const st = ests[s.step]; const chip = s.status === 'sent' ? `<span class="chip good">Sent ${s.sentAt ? fmtDate(ymd(new Date(s.sentAt))) : ''}</span>` : s.status === 'skipped' ? '<span class="chip">Skipped</span>' : e.status === 'active' ? dueChip(s.due) : `<span class="chip">${fmtDate(s.due)}</span>`;
     const done = s.status === 'sent' && isCallStep(st) ? '<span class="chip good">Done</span>' : chip;
     return `<li><div><b>${isCallStep(st) ? ic('phone') + 'Call' : 'Email'} · step ${s.step + 1}</b> <span class="sub">${esc(st ? (isCallStep(st) ? fillTemplate(st.note || '', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><span class="end">${done}</span></li>`; }).join('');
+  const md = eMode(e);
   openModal(`${jName(e.journeyId)}`, `<p><b>${esc(nameOf('contacts', e.contactId))}</b> · ${esc(cname(e.companyId))} ${jStatusChip(e)}</p>
+    ${['active', 'paused'].includes(e.status) ? `<p class="sub">Sending: <b>${md === 'auto' ? 'automatically at 8:45 AM' : 'asks you first'}</b>${e.sendMode ? ' (just for this person)' : ''}${canWrite ? ` · <button type="button" class="lnk" data-act="jMode" data-id="${id}" data-m="${md === 'auto' ? 'approve' : 'auto'}">${md === 'auto' ? 'Ask me first instead' : 'Send automatically instead'}</button>` : ''}</p>` : ''}
+    ${e.lastSendError && nextStep(e) && e.lastSendError.step === nextStep(e).step ? `<div class="mailbar warn"><span>${esc(e.lastSendError.msg)}</span></div>` : ''}
     ${e.status === 'paused' && e.stopReason === 'replied' ? `<div class="mailbar warn"><span>They replied${e.replyAt ? ' on ' + fmtDate(ymd(new Date(e.replyAt))) : ''}${e.replySubject ? `: “${esc(e.replySubject)}”` : ''}. Resume if it was just a quick acknowledgement, or end the journey.</span></div>` : ''}
     <ul class="jsteps">${steps}</ul>`, null, null, {foot: canWrite ? `<button type="button" class="btn ghost" data-act="jDelete" data-id="${id}" style="margin-right:auto">${ic('trash')}Remove</button>${e.status === 'active' ? `<button type="button" class="btn" data-act="jPause" data-id="${id}">Pause</button>${nextStep(e) ? `<button type="button" class="btn" data-act="jSkip" data-id="${id}">Skip next step</button><button type="button" class="btn pri" data-act="jSend" data-id="${id}">${isCallStep(ests[nextStep(e).step]) ? 'Do the call now' : 'Send next email now'}</button>` : ''}` : ''}${e.status === 'paused' ? `<button type="button" class="btn" data-act="jStop" data-id="${id}">End journey</button><button type="button" class="btn pri" data-act="jResume" data-id="${id}">Resume</button>` : ''}` : ''});
 }
@@ -4644,6 +4647,48 @@ async function checkReplies(force){
 const jDelay = s => { const n = parseInt(s && s.delay); return isNaN(n) ? 7 : Math.max(0, n); };
 const jSteps = j => ((j && j.steps) || []).map(s => ({...s, type: s.type === 'call' ? 'call' : 'email'}));
 const isCallStep = s => !!(s && s.type === 'call');
+// ---------- automatic sending (the "journey-send" function on Supabase sends these at 8:45 AM) ----------
+const SEND_MODES = [['approve', 'Ask me first'], ['auto', 'Send automatically at 8:45 AM']];
+const eMode = e => (e && e.sendMode) || (journeyOf(e && e.journeyId) || {}).sendMode || 'approve';
+const AUTO_OK = () => !!(SUPA && !DEMO);
+// an email the 8:45 run will take care of, so it isn't a to-do for anyone
+const autoWillSend = (e, s) => !!(AUTO_OK() && AUTOSEND && AUTOSEND.lastRunAt && s && !isCallStep(eSteps(e)[s.step]) && eMode(e) === 'auto' && !(e.lastSendError && e.lastSendError.step === s.step) && (s.due > today() || (s.due === today() && AUTOSEND.lastRunDate !== today())));
+let AUTOSEND = null, autoAt = 0, autoBusy = false;
+async function autoLoad(force){
+  if (!AUTO_OK() || (!force && Date.now() - autoAt < 60e3)) return; autoAt = Date.now();
+  try { const {data, error} = await SUPA.sb.from('records').select('data').eq('col', 'meta').eq('id', 'autosend'); if (error) return; AUTOSEND = data && data[0] ? data[0].data || {} : {}; schedule(); } catch {}
+}
+function autoBanner(){
+  if (!AUTO_OK()) return `<span>Emails that come due are listed here: review each one and send it. Automatic sending works once Paper Trail is connected to your team database.</span>`;
+  if (AUTOSEND == null) { setTimeout(() => autoLoad(), 0); return '<span>Checking automatic sending…</span>'; }
+  const a = AUTOSEND; const btn = canWrite ? `<button class="btn sm" data-act="autoRun"${autoBusy ? ' disabled' : ''}>${autoBusy ? 'Sending…' : 'Send due emails now'}</button>` : '';
+  if (!a.lastRunAt) return `<span><b>Automatic sending isn't switched on yet.</b> Journeys set to send automatically will wait here for you until it is. The setup steps are in the README.</span>${btn}`;
+  const when = new Date(a.lastRunAt); const day = ymd(when) === today() ? 'today' : fmtDate(ymd(when));
+  const skipped = (a.lastResults || []).filter(r => r.result === 'skipped').length;
+  return `<span><b>Automatic sending is on.</b> Journeys set to send automatically go out at 8:45 AM from the owner's Outlook. Last run ${day} at ${when.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'})}: ${a.lastSent || 0} sent${skipped ? `, ${skipped} held for you` : ''}.${a.lastError ? ` <span style="color:var(--bad)">Problem: ${esc(a.lastError)}</span>` : ''}</span>${btn}`;
+}
+async function autoRun(){
+  if (!AUTO_OK() || autoBusy) return;
+  autoBusy = true; schedule();
+  try {
+    const {data, error} = await SUPA.sb.functions.invoke('journey-send', {body: {}});
+    if (error) { let m = error.message || 'It did not run.'; try { const j = await error.context.json(); if (j && j.error) m = j.error; } catch {} throw new Error(/not found|404/i.test(m) ? "The journey-send function isn't set up on Supabase yet." : m); }
+    const held = (data.results || []).filter(r => r.result === 'skipped').length;
+    toast(`${data.sent || 0} email${data.sent === 1 ? '' : 's'} sent${held ? `, ${held} held for you` : ''}`);
+  } catch (e) { toast(String(e.message || e), 'bad'); }
+  finally { autoBusy = false; autoAt = 0; await autoLoad(true); schedule(); }
+}
+// the server can't see the built-in journeys in this file, so keep a copy of them in the database
+async function syncJourneyDefaults(){
+  if (!AUTO_OK() || !canWrite) return;
+  try {
+    const list = JSON.parse(JSON.stringify(DEFAULT_JOURNEYS)); const txt = JSON.stringify(list);
+    let h = 0; for (let i = 0; i < txt.length; i++) h = (h * 31 + txt.charCodeAt(i)) | 0;
+    const {data} = await SUPA.sb.from('records').select('data').eq('col', 'meta').eq('id', 'journeyDefaults');
+    if (data && data[0] && data[0].data && data[0].data.sig === h) return;
+    await SUPA.sb.from('records').upsert({col: 'meta', id: 'journeyDefaults', data: {sig: h, list, at: Date.now()}}, {onConflict: 'col,id'});
+  } catch {}
+}
 const eSteps = e => (e && Array.isArray(e.steps) && e.steps.length) ? jSteps({steps: e.steps}) : jSteps(journeyOf(e && e.journeyId));
 const jCountTxt = steps => { const c = steps.filter(isCallStep).length, m = steps.length - c; return [m ? `${m} email${m === 1 ? '' : 's'}` : '', c ? `${c} call${c === 1 ? '' : 's'}` : ''].filter(Boolean).join(' + ') || 'No steps'; };
 const jSpanDays = steps => steps.slice(1).reduce((n, s) => n + jDelay(s), 0);
@@ -4693,7 +4738,7 @@ function journeyStartModal(pre){
     const sug = jSuggest(pre);
     let ct = pre.ct || '';
     if (!ct && pre.co) { const cts = L('contacts').filter(c => c.companyId === pre.co); ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; }
-    ui.js = {key, open: true, co: pre.co || '', ct, deal: pre.deal || (sug && sug.dealId) || '', sug, cat: sug ? 'suggested' : 'all', jid: pre.journey || (sug && sug.id) || js[0].id, q: '', first: 'today', inDays: 3, date: addDays(today(), 7), onReply: null, skip: null, custom: null};
+    ui.js = {key, open: true, co: pre.co || '', ct, deal: pre.deal || (sug && sug.dealId) || '', sug, cat: sug ? 'suggested' : 'all', jid: pre.journey || (sug && sug.id) || js[0].id, q: '', first: 'today', inDays: 3, date: addDays(today(), 7), onReply: null, skip: null, sendMode: null, custom: null};
   }
   const s = ui.js;
   const n = c => js.filter(j => c(j)).length;
@@ -4777,6 +4822,7 @@ function jsxPaint(){
       ${s.first === 'in' ? `<label class="jsx-row"><span>Days from now</span><input type="number" min="1" max="90" value="${esc(s.inDays)}" data-input="jsxIn" style="width:80px"></label>` : ''}
       ${s.first === 'date' ? `<label class="jsx-row"><span>Start on</span><input type="date" value="${esc(s.date)}" data-input="jsxDate" style="width:auto"></label>` : ''}
       <label class="jsx-row"><span>When ${ct ? esc(first) : 'they'} ${ct ? 'replies' : 'reply'}</span><select data-change="jsxReply" style="width:auto">${[['pause', 'Pause it'], ['stop', 'End it']].map(([v, l]) => `<option value="${v}" ${(s.onReply || j.onReply || 'pause') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="jsx-row"><span>Sending</span><select data-change="jsxMode" style="width:auto">${[['approve', 'Ask me first'], ['auto', 'Send automatically']].map(([v, l]) => `<option value="${v}" ${(s.sendMode || j.sendMode || 'approve') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="jsx-row"><span>Move weekend steps to Monday</span><input type="checkbox" data-change="jsxSkip" ${skip ? 'checked' : ''}></label>
       ${canWrite ? `<button type="button" class="btn pri jsx-start" data-act="jsxGo">${ic('route')}${ct ? `Start for ${esc(first)}` : 'Start journey'}</button>
       <div class="jsx-links"><button type="button" class="lnk" data-act="jsxCustom">${ic('edit')}Edit the emails for ${ct ? esc(first) : 'this person'} only</button><button type="button" class="lnk" data-act="jEdit" data-id="${esc(j.id)}">Edit this journey</button></div>` : ''}
@@ -4789,7 +4835,7 @@ async function jsxStart(id){
   const ct = S.contacts[s.ct]; if (!ct || !ctMail(ct)) { toast('That contact has no email address. Add one first.', 'bad'); return; }
   if (!j || !jSteps(j).length) { toast('That journey has no steps yet.', 'bad'); return; }
   const custom = id && id !== s.jid ? null : s.custom;
-  const ok = await startEnrollment({companyId: s.co, contactId: s.ct, journeyId: jid, dealId: s.deal || '', firstDate: jsxFirst(), onReply: s.onReply || j.onReply, skipWeekends: s.skip == null ? j.skipWeekends !== false : s.skip, steps: custom});
+  const ok = await startEnrollment({companyId: s.co, contactId: s.ct, journeyId: jid, dealId: s.deal || '', firstDate: jsxFirst(), onReply: s.onReply || j.onReply, skipWeekends: s.skip == null ? j.skipWeekends !== false : s.skip, sendMode: s.sendMode && s.sendMode !== (j.sendMode || 'approve') ? s.sendMode : '', steps: custom});
   if (ok) { s.open = false; closeModal(); schedule(); }
 }
 
@@ -4822,7 +4868,7 @@ function journeyEditModal(id, opt){
   const base = id ? journeyOf(id) : null; if (id && !base) return;
   const j = base || {name: '', category: 'quote', service: 'shred', desc: '', onReply: 'pause', skipWeekends: true, steps: [{type: 'email', delay: 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}]};
   const pv = opt.contactId || (jePreviewContacts()[0] || {}).id || '';
-  ui.je = {id: opt.copy ? '' : (id || ''), personal: !!opt.personal, name: opt.copy ? j.name + ' (copy)' : j.name, category: j.category || 'quote', service: j.service || 'any', desc: j.desc || '', onReply: j.onReply || 'pause', skipWeekends: j.skipWeekends !== false, steps: JSON.parse(JSON.stringify(opt.steps || jSteps(j))), focus: 0, pv};
+  ui.je = {id: opt.copy ? '' : (id || ''), personal: !!opt.personal, name: opt.copy ? j.name + ' (copy)' : j.name, category: j.category || 'quote', service: j.service || 'any', desc: j.desc || '', onReply: j.onReply || 'pause', skipWeekends: j.skipWeekends !== false, sendMode: j.sendMode === 'auto' ? 'auto' : 'approve', steps: JSON.parse(JSON.stringify(opt.steps || jSteps(j))), focus: 0, pv};
   const E = ui.je; const ct = S.contacts[pv];
   const title = E.personal ? `${j.name} · just for ${ct ? (ct.firstName || pname_(ct)) : 'this contact'}` : opt.copy ? 'New journey' : id ? 'Edit journey' : 'New journey';
   const canTest = !!(MCP && conn.status === 'connected' && conn.email);
@@ -4877,7 +4923,8 @@ function jeSide(){
     <h5>Settings</h5>
     <label class="je-set"><span>When they reply</span>${sel('onReply', [['pause', 'Pause, and let me decide'], ['stop', 'End the journey']], E.onReply, 'data-change="jeSet" data-k="onReply"')}</label>
     <label class="je-set inline"><input type="checkbox" data-change="jeSkip" ${E.skipWeekends ? 'checked' : ''}><span>Move weekend steps to Monday</span></label>
-    <p class="sub small">Emails go out at 8:45 AM once automatic sending is connected.</p>
+    <label class="je-set"><span>Sending</span>${sel('sendMode', SEND_MODES, E.sendMode, 'data-change="jeSet" data-k="sendMode"')}</label>
+    <p class="sub small">${E.sendMode === 'auto' ? "Each email goes out at 8:45 AM on its day from the owner's Outlook. Paper Trail checks for a reply first, and holds any email that's missing a name or other field. Calls always wait for you." : 'Each email waits on your Journeys page until you review and send it.'}</p>
     ${x && x.used ? `<h5>How it's doing</h5><div class="je-stat"><div><b>${x.used}</b><span>started</span></div><div><b>${x.reply != null ? x.reply + '%' : '—'}</b><span>replied</span></div><div><b>${sent}</b><span>sent this step</span></div></div>` : ''}`}`;
 }
 function jeInsert(k){
@@ -4903,7 +4950,7 @@ async function jeSave(){
   const name = String(E.name || '').trim(); if (!name) { toast('Give the journey a name.', 'bad'); $('.je-name')?.focus(); return; }
   const jid = E.id || 'j_' + uid();
   if (journeys().some(j => j.id !== jid && norm(j.name) === norm(name))) { toast(`There's already a journey named “${name}”.`, 'bad'); return; }
-  const ok = await put('journeys', jid, {name, category: E.category, service: E.service, desc: String(E.desc || '').trim(), onReply: E.onReply, skipWeekends: !!E.skipWeekends, steps, ...(E.id ? {} : {ownerId: ME.id || ''})});
+  const ok = await put('journeys', jid, {name, category: E.category, service: E.service, desc: String(E.desc || '').trim(), onReply: E.onReply, skipWeekends: !!E.skipWeekends, sendMode: E.sendMode === 'auto' ? 'auto' : 'approve', steps, ...(E.id ? {} : {ownerId: ME.id || ''})});
   if (!ok) return;
   toast('Journey saved');
   if (ui.js && ui.js.open && MST.some(m => m.key === 'Start a journey')) { ui.js.jid = jid; history.back(); } else { closeModal(); schedule(); }
@@ -4979,7 +5026,7 @@ const A = {
   jEdit: d => journeyEditModal(d.id),
   jeCopy: d => journeyEditModal(d.id, {copy: true}),
   jsxCat: d => { ui.js.cat = d.v; ui.js.q = ''; const q = $('#jsxQ'); if (q) q.value = ''; jsxPaint(); },
-  jsxPick: d => { if (ui.js.jid !== d.id) { ui.js.jid = d.id; ui.js.custom = null; ui.js.exp = null; ui.js.onReply = null; ui.js.skip = null; } jsxPaint(); },
+  jsxPick: d => { if (ui.js.jid !== d.id) { ui.js.jid = d.id; ui.js.custom = null; ui.js.exp = null; ui.js.onReply = null; ui.js.skip = null; ui.js.sendMode = null; } jsxPaint(); },
   jsxGo: d => jsxStart(d.id),
   jsxFirstSet: d => { ui.js.first = d.v; jsxPaint(); },
   jsxCustom: () => { const j = journeyOf(ui.js.jid); if (!j) return; if (!ui.js.ct) { toast('Choose a contact first.', 'bad'); return; } journeyEditModal(j.id, {personal: true, steps: ui.js.custom || jSteps(j), contactId: ui.js.ct}); },
@@ -5001,6 +5048,8 @@ const A = {
   jDelete: d => confirmModal('Remove this journey?', 'This removes the journey and its schedule for this contact. Emails already sent stay on the account.', 'Remove', async () => { const ok = await del('enrollments', d.id); if (ok) toast('Removed'); return ok; }),
   jSkip: async d => { const e = S.enrollments[d.id]; const s = e && nextStep(e); if (s && await jSetStep(d.id, s.step, 'skipped')) { toast(`Skipped email ${s.step + 1}`); if (!$('#modal').hidden) journeyDetailModal(d.id); } },
   jSend: d => jSendNow(d.id),
+  jMode: async d => { const e = S.enrollments[d.id]; if (!e) return; const jm = (journeyOf(e.journeyId) || {}).sendMode || 'approve'; if (await patch('enrollments', d.id, {sendMode: d.m === jm ? '' : d.m, lastSendError: null})) { toast(d.m === 'auto' ? `${nameOf('contacts', e.contactId)}'s emails will send automatically` : `${nameOf('contacts', e.contactId)}'s emails will wait for you`); if (MST.length) closeModal(); schedule(); } },
+  autoRun: () => autoRun(),
   jAddStep: () => { const box = $('#jSteps'); box.insertAdjacentHTML('beforeend', jStepHtml({delay: 7, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}, box.children.length)); jRenumber(); box.lastElementChild.querySelector('input[name="step_subject[]"]').focus(); },
   jDelStep: (d, el) => { const box = $('#jSteps'); if (box.children.length < 2) { toast('A journey needs at least one email.', 'bad'); return; } el.closest('.jstep').remove(); jRenumber(); },
   acPick: d => acPick(+d.i),
@@ -5127,9 +5176,10 @@ const CHANGE = {
   jsxIn: el => { ui.js.inDays = el.value; clearTimeout(ui.jsxT); ui.jsxT = setTimeout(() => { jsxPaint(); const i = document.querySelector('[data-input="jsxIn"]'); if (i) { i.focus(); i.setSelectionRange?.(9, 9); } }, 500); },
   jsxDate: el => { ui.js.date = el.value; jsxPaint(); },
   jsxReply: el => { ui.js.onReply = el.value; },
+  jsxMode: el => { ui.js.sendMode = el.value; },
   jsxSkip: el => { ui.js.skip = el.checked; jsxPaint(); },
   jeName: el => { ui.je.name = el.value; },
-  jeSet: el => { ui.je[el.dataset.k] = el.value; },
+  jeSet: el => { ui.je[el.dataset.k] = el.value; if (el.dataset.k === 'sendMode') jeSide(); },
   jeSkip: el => { ui.je.skipWeekends = el.checked; },
   jeDelay: el => { const i = +el.dataset.i; ui.je.steps[i].delay = Math.max(0, parseInt(el.value) || 0); ui.je.focus = i; jePaint('strip'); },
   jeSubj: el => { const i = +el.dataset.i; ui.je.steps[i].subject = el.value; ui.je.focus = i; jePaint('strip'); },
@@ -6620,7 +6670,7 @@ async function boot(){
   if (!d && !window.claude) { STANDALONE = true; if (!GUEST) loadLocal(); }
   loadLookLocal();
   if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
-  booted = true; bootDone(); setTimeout(acctHeal, 4000); setTimeout(() => { if (DRIVE_BACKUP && SUPA && !DEMO && isAdmin()) drvLoad(); }, 5000);
+  booted = true; bootDone(); setTimeout(acctHeal, 4000); setTimeout(() => { syncJourneyDefaults(); autoLoad(); }, 3000); setTimeout(() => { if (DRIVE_BACKUP && SUPA && !DEMO && isAdmin()) drvLoad(); }, 5000);
   syncLookFromDb(); sigLoad();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
   try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
