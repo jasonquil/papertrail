@@ -1500,16 +1500,47 @@ function fishEgg(el){
   if (fishClicks.length >= 5) { fishClicks = []; const on = !FISH; setFish(on); closeModal(); toast(on ? "Gone fishin'! 🎣" : 'Back to the office.'); if (on) setTimeout(confetti, 150); }
 }
 
-// ---------- browser history: Back moves between screens inside Paper Trail ----------
-const navState = () => ({v: ui.view, co: ui.pageCo || null, opp: ui.pageOpp || null, t: ui.cpTab || null, d: ui.detail ? {col: ui.detail.col, id: ui.detail.id} : null});
+// ---------- browser history: Back (including the mouse's back button) moves exactly one screen ----------
+// Pages, the opportunity side panel and every window step (each Settings section, each screen opened from it) get their own history entry.
+const navState = () => ({v: ui.view, co: ui.pageCo || null, opp: ui.pageOpp || null, t: ui.cpTab || null, d: ui.detail ? {col: ui.detail.col, id: ui.detail.id} : null, s: ui.side || null});
 const navHash = st => '#' + (st.v === 'company' && st.co ? 'account' : st.v === 'opp' && st.opp ? 'opportunity' : st.v);
-function pushNav(){ try { const st = navState(); if (JSON.stringify(history.state) === JSON.stringify(st)) return; history.pushState(st, '', navHash(st)); } catch {} }
+const navOnly = st => st ? JSON.stringify({v: st.v, co: st.co || null, opp: st.opp || null, t: st.t || null, d: st.d || null, s: st.s || null}) : '';
+let navN = 0, navSeq = 0, ignorePop = 0, popping = false, CUR_ACT = null;
+const MST = [];   // open window steps, oldest first: {tok, key, tab, reopen}
+const histPush = extra => { try { const st = {...navState(), ...extra, n: ++navN}; history.pushState(st, '', navHash(st)); } catch {} };
+function pushNav(){ navSeq++; if (navOnly(history.state) === navOnly(navState()) && !(history.state && history.state.mtok)) return; histPush({}); }
+function modalStep(title){
+  if (popping) return;
+  const key = title === 'Settings' ? 'Settings|' + (ui.setTab || '') : title;
+  const top = MST[MST.length - 1];
+  if (top && top.key === key) return;   // the same screen redrawing itself
+  const tok = uid(); MST.push({tok, key, tab: ui.setTab, inSet: !!ui.inSettings, reopen: CUR_ACT});
+  histPush({mtok: tok});
+}
+function modalUnwind(){   // a window was closed with X / Cancel / Save: take its steps back out of history
+  if (popping || !MST.length) return;
+  const n = MST.length, seq = navSeq; MST.length = 0;
+  setTimeout(() => { if (navSeq === seq && !MST.length) { ignorePop++; try { history.go(-n); } catch { ignorePop--; } } }, 0);
+}
 window.addEventListener('popstate', e => {
-  const st = e.state; if (!st || !st.v) return;
-  if (!$('#modal').hidden) closeModal();
+  if (ignorePop) { ignorePop--; return; }
+  const st = e.state;
+  const i = st && st.mtok ? MST.findIndex(m => m.tok === st.mtok) : -1;
+  if (i > -1) {   // back to an earlier step of the open window
+    MST.length = i + 1; const m = MST[i];
+    popping = true;
+    try { if (m.tab) ui.setTab = m.tab; if (m.reopen) { ui.inSettings = m.inSet; m.reopen(); } else { closeModal(); MST.length = 0; } } catch {}
+    popping = false; return;
+  }
+  const hadModal = !$('#modal').hidden; MST.length = 0;
+  if (hadModal) { popping = true; closeModal(); popping = false; }
   if (QB && !$('#qbHost').hidden) { try { QB.close(); } catch {} }
-  ui.view = st.v; ui.pageCo = st.co; ui.pageOpp = st.opp; ui.cpTab = st.t || 'details'; ui.detail = st.d && S[st.d.col] && S[st.d.col][st.d.id] ? st.d : null; ui.q = ''; ui.oppEdit = null;
-  render(); $('#main').scrollTop = 0;
+  if (!st || !st.v) return;
+  if (typeof st.n === 'number') navN = Math.max(navN, st.n);
+  const before = navOnly(navState());
+  ui.view = st.v; ui.pageCo = st.co; ui.pageOpp = st.opp; ui.cpTab = st.t || 'details'; ui.detail = st.d && S[st.d.col] && S[st.d.col][st.d.id] ? st.d : null; ui.side = st.s && S.deals[st.s] ? st.s : null; ui.q = ''; ui.oppEdit = null;
+  if (!hadModal && navOnly(navState()) === before && st.n > 0) { history.back(); return; }   // an old step that changes nothing on screen: keep going so one press = one visible step
+  render(); if (navOnly(navState()) !== before) $('#main').scrollTop = 0;
 });
 
 // ---------- appearance: each person's own look, saved to their login ----------
@@ -2201,13 +2232,13 @@ const DETAIL = {
 function openModal(title, body, submitLabel, onSubmit, opts={}){
   const m = $('#modal'); if (m.hidden) ui.inSettings = false;   // a fresh window never belongs to Settings
   const back = ui.inSettings && title !== 'Settings';
-  m.hidden = false;
+  m.hidden = false; modalStep(title);
   m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh">${back ? `<div class="sh-t"><button type="button" class="icon-btn sh-back" data-act="setBack" aria-label="Back to Settings" title="Back to Settings">${ic('back')}</button><h3>${esc(title)}</h3></div>` : `<h3>${esc(title)}</h3>`}<button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
   const f = $('#mform');
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
   setTimeout(() => f.querySelector('.sb input:not([type=hidden]):not([type=checkbox]), .sb textarea, .sb select')?.focus(), 40);
 }
-function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; }
+function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
 const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
@@ -4391,7 +4422,7 @@ const A = {
   go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
   open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
-  closeDetail: () => { if (ui.side && !ui.detail && ui.view === 'pipeline') { ui.side = null; render(); return; } ui.detail = null; render(); pushNav(); },
+  closeDetail: () => { if (ui.side && !ui.detail && ui.view === 'pipeline') { ui.side = null; render(); pushNav(); return; } ui.detail = null; render(); pushNav(); },
   search: () => searchModal(),
   dupOpen: d => { closeModal(); if (d.col === 'companies') A.coPage({id: d.id}); else if (d.col === 'tasks') taskForm(d.id); else if (d.col === 'contracts') contractForm(d.id); else if (d.col === 'quotes') A.editQuote({id: d.id}); else A.open({col: d.col, id: d.id}); },
   oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.tagName === 'SELECT' && el.showPicker) try { el.showPicker(); } catch {} } },
@@ -4416,7 +4447,7 @@ const A = {
   demoOff: () => GUEST ? guestExit() : setDemo(false),
   resetDemo: () => confirmModal('Clear all data?', 'Every account, contact, opportunity and reminder saved in this browser will be removed. Export first from Settings if you want a copy.', 'Clear everything', async () => { for (const c of COLS) S[c] = {}; try { localStorage.removeItem(LS_KEY); } catch {} ui.view = 'today'; ui.detail = null; schedule(); toast('All data cleared'); }),
   oppPage: (d, el) => { ui.oppEdit = null; if (!S.deals[d.id]) return;
-    if (el && el.tagName === 'TR' && ui.view === 'pipeline' && sideOn()) { ui.side = ui.side === d.id ? null : d.id; render(); return; }   // open beside the list
+    if (el && el.tagName === 'TR' && ui.view === 'pipeline' && sideOn()) { ui.side = ui.side === d.id ? null : d.id; render(); pushNav(); return; }   // open beside the list
     ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; },
   coPage: d => { ui.pageCo = d.id; ui.cpTab = d.t || 'details'; ui.view = 'company'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; syncEmailsFor(d.id); },
   cpTab: d => { ui.cpTab = d.t; render(); pushNav(); },
@@ -4459,7 +4490,7 @@ const A = {
   gopen: d => { closeModal(); if (d.a === 'open') A.open(d); else A[d.a]({id: d.id}); },
   flowSkip: d => { closeModal(); dealForm(null, {co: d.co, coName: d.coname, flow: 1}); },
   closeModal: () => { if (draftCtl) draftCtl.abort(); if (ui.inSettings && $('#mform') && !$('#mform').classList.contains('setsheet')) { A.setBack(); return; } closeModal(); schedule(); },
-  setBack: () => { if (draftCtl) draftCtl.abort(); settingsModal(); if (DRIVE_BACKUP) drvLoad(); schedule(); },
+  setBack: () => { if (draftCtl) draftCtl.abort(); const k = MST.findLastIndex ? MST.findLastIndex(m => m.key.startsWith('Settings|')) : -1; if (k > -1 && k < MST.length - 1) { history.go(k - (MST.length - 1)); return; } settingsModal(); if (DRIVE_BACKUP) drvLoad(); schedule(); },
   copy: d => copyText(d.t),
   copyFb: () => copyText($('#fbText').value),
   newCompany: () => companyForm(), editCompany: d => companyForm(d.id),
@@ -4530,7 +4561,6 @@ const A = {
   emailCopy: () => { const t = emailPlain(); if (t) copyText(t); else toast('Nothing to copy yet.', 'bad'); },
   emailReply: () => {
     const e = {...EMV}; const addr = (String(e.inbound ? e.from : (e.to || [])[0] || '').match(/<([^>]+)>/) || [])[1] || (String(e.inbound ? e.from : (e.to || [])[0] || '').includes('@') ? String(e.inbound ? e.from : e.to[0]).trim() : '');
-    closeModal();
     if (e.contactId && S.contacts[e.contactId]) draftModal('contacts', e.contactId, null, null, addr); else draftModal('companies', e.coId, null, null, addr);
     const sj = $('#draftSubj'); if (sj) sj.value = /^re:/i.test(e.subject || '') ? e.subject : 'Re: ' + (e.subject || '');
   },
@@ -4621,7 +4651,8 @@ document.addEventListener('click', e => {
   const fn = A[t.dataset.act]; if (!fn) return;
   if (t.closest('form') && t.type !== 'submit') e.preventDefault();
   e.stopPropagation();
-  fn({...t.dataset}, t, e);
+  const ds = {...t.dataset}; const act = () => fn({...ds}, t, e); CUR_ACT = act;
+  let r; try { r = fn({...ds}, t, e); } finally { if (r && typeof r.then === 'function') r.finally(() => { if (CUR_ACT === act) CUR_ACT = null; }).catch(() => {}); else if (CUR_ACT === act) CUR_ACT = null; }
 });
 document.addEventListener('keydown', e => {
   if (ac.items.length && ac.el && e.target === ac.el) {
