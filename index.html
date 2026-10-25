@@ -126,6 +126,11 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
 .trk{color:var(--good);font-weight:600}.trk.none{color:var(--muted);font-weight:500}.trk b{font-weight:700}
 .sigbox{min-height:140px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#222;overflow:auto}.sigbox img{max-width:100%}.sigtools{display:flex;gap:6px;margin-bottom:8px}.sigprev{margin:6px 0 10px;padding:10px;border:1px dashed var(--line);border-radius:8px;background:#fff;color:#222;max-height:160px;overflow:auto;font-size:.9rem}.sigprev img{max-width:100%}
+.pm{position:fixed;z-index:9999;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:380px;font-size:.92rem;font-weight:500;text-align:left}
+.pm-srch{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);color:var(--muted)}.pm-srch svg{width:15px;height:15px;flex:none}.pm .pm-srch input{border:0!important;outline:0!important;box-shadow:none!important;font:inherit;flex:1;min-width:0;padding:2px 0!important;height:auto;color:var(--fg);background:transparent!important;width:auto}
+.pm-list{padding:6px;overflow:auto;flex:1}.pm-it{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;line-height:1.3}.pm-it span:not(.pm-ck){flex:1}.pm-it.on{font-weight:700}.pm-it.hl{background:var(--accent);color:var(--accent-fg,#fff)}.pm-it.dis{opacity:.45;cursor:default}
+.pm-ck{width:15px;height:15px;flex:none;color:var(--accent)}.pm-it.hl .pm-ck{color:inherit}.pm-it kbd{font:500 .68rem var(--mono,ui-monospace,monospace);border:1px solid currentColor;border-radius:4px;padding:0 5px;opacity:.75}
+.pm-grp{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}.pm-none{padding:10px;color:var(--muted)}.pm-foot{font-size:.72rem;color:var(--muted);padding:7px 12px;border-top:1px solid var(--line);background:var(--bg)}
 .fznote{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);font-size:.88rem}
 .stagesel.lost{background-color:var(--bad-soft);color:var(--bad)}.stagesel.updated{background-color:var(--good-soft);color:var(--good)}.stagesel.following{background-color:var(--pur-soft);color:var(--pur);--x:var(--warn,#8a6100)}.ft.updated{background:var(--good-soft);color:var(--good)}
 .stagesel:focus{box-shadow:0 0 0 3px var(--accent-soft);outline:none}
@@ -2839,6 +2844,19 @@ function spPeople(files){
   for (const n of closers.keys()) { const f = n.toLowerCase().split(' ')[0]; const id = known[n.toLowerCase()] || first[f] || ownerFirst[f] || map[n.toLowerCase()] || spSlug(n); closer[n.toLowerCase()] = id; if (id.startsWith('former-') && !former[id]) former[id] = n; }
   return {owner: n => map[spTidy(n).toLowerCase()] || ME.id, closer: n => closer[spCloser(n).toLowerCase()] || '', former, owners};
 }
+const SP_NAME_CLEAN = false;   // paused by Jason: turn on during final edits
+// Spiro sometimes makes contacts from email headers: "'Christine" + "Procter<christine@x.com>'", or "fchin@wm" + "com"
+function spName(first, last, email){
+  const clean = v => String(v || '').replace(/<[^>]*>?/g, ' ').replace(/^[\s'"]+|[\s'"]+$/g, '').replace(/\s+/g, ' ').trim();
+  let f = clean(first), l = clean(last);
+  if (/@/.test(f + ' ' + l)) {   // the "name" is really an email address
+    const local = String(email || (f + '@' + l)).split('@')[0].toLowerCase();
+    const parts = local.split(/[._-]+/).filter(w => /^[a-z]{2,}$/.test(w));
+    const cap = w => w[0].toUpperCase() + w.slice(1);
+    if (parts.length === 2) { f = cap(parts[0]); l = cap(parts[1]); } else { f = ''; l = ''; }   // no real name: Paper Trail shows the email instead
+  }
+  return [f, l];
+}
 function spBuild(files, ppl){
   const out = {companies: [], contacts: [], deals: []};
   const existing = {companies: {}, contacts: {}, deals: {}};
@@ -2858,7 +2876,8 @@ function spBuild(files, ppl){
     const id = idFor('contacts', 'spt', sid);
     let email = spTidy(r['Email']).toLowerCase(), email2 = spTidy(r['Email (Secondary)']).toLowerCase(); if (email2 === email) email2 = '';
     const ext = spTidy(r['Phone Ext']);
-    out.contacts.push([id, {spiroId: sid, firstName: spTidy(r['First Name']), lastName: spTidy(r['Last Name']), title: spTidy(r['Title']), email, email2, phone: phoneNorm(r['Phone']) + (ext ? ' x' + ext : ''), mobile: phoneNorm(r['Mobile']), notes: String(r['Description'] || '').trim(),
+    const [fn_, ln_] = SP_NAME_CLEAN ? spName(r['First Name'], r['Last Name'], email) : [spTidy(r['First Name']), spTidy(r['Last Name'])];
+    out.contacts.push([id, {spiroId: sid, firstName: fn_, lastName: ln_, title: spTidy(r['Title']), email, email2, phone: phoneNorm(r['Phone']) + (ext ? ' x' + ext : ''), mobile: phoneNorm(r['Mobile']), notes: String(r['Description'] || '').trim(),
       companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: S.contacts[id]?.createdAt || now,
       spiro: spExtra(r, [['Home Phone', 'Home phone', phoneNorm], ['Fax', 'Fax', phoneNorm], ['Services', 'Services'], ['Day of Service', 'Day of service'], ['Contract Start Date', 'Contract start date'], ['Last Activity Date (Read Only)', 'Last activity in Spiro']])}]); }
   for (const r of (files.deals || {rows: []}).rows) { const sid = spTidy(r['Opportunity Id']); if (!sid) continue;
@@ -2874,7 +2893,7 @@ function spBuild(files, ppl){
       notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
       spiro: spExtra(r, [['Closed Amount', 'Closed amount', v => num(v) ? money2(num(v)) : ''], ['Estimated Bin Count', 'Estimated bin count'], ['Repeat Client', 'Repeat client', spYN], ['Service Agreement on File', 'Service agreement on file'], ['Contract Anniversary Date', 'Contract anniversary', v => v && fmtDate(spDate(v) || v)], ['Contract END Date', 'Contract end date', v => v && fmtDate(spDate(v) || v)], ['Commission', 'Commission'], ['APER?', 'APER?'], ['Priority', 'Priority'], ['Website', 'Website'], ['Opportunity', 'Spiro opportunity name', v => v && v !== type ? v : ''], ['Closed By', 'Closed by in Spiro', v => /,/.test(v) || /^(house|other)$/i.test(v) ? v : '']])}]); }
   { let next = acctMax(); out.companies.slice().sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0)).forEach(([id, d]) => { if (!(S.companies[id] && +S.companies[id].acctNo)) d.acctNo = ++next; }); }
-  for (const c of Object.keys(out)) for (const pair of out[c]) { const d = pair[1]; Object.keys(d).forEach(k => { if (d[k] === '' || d[k] === undefined || d[k] === 0 && (k === 'value' || k === 'priceQuoted')) delete d[k]; }); }
+  for (const c of Object.keys(out)) for (const pair of out[c]) { const d = pair[1]; Object.keys(d).forEach(k => { if (SP_NAME_CLEAN && c === 'contacts' && (k === 'firstName' || k === 'lastName')) return; if (d[k] === '' || d[k] === undefined || d[k] === 0 && (k === 'value' || k === 'priceQuoted')) delete d[k]; }); }
   return out;
 }
 async function spLoadFiles(fileList){
@@ -3259,6 +3278,76 @@ function makeGraph(cfg){
   };
 }
 
+
+
+// ---------- Paper Trail menus (style C: searchable) in place of the browser's plain dropdown lists ----------
+// The real <select> stays in the page, so every existing change handler keeps working; we only draw the list.
+const PM = {sel: null, el: null, items: [], hi: 0, q: ''};
+const pmTouch = () => matchMedia('(pointer: coarse)').matches;   // phones and tablets keep their own native pickers
+function pmClose(refocus){ if (PM.el) PM.el.remove(); const s_ = PM.sel; PM.el = null; PM.sel = null; if (refocus && s_) try { s_.focus(); } catch {} }
+function pmOptions(sel){
+  const out = []; for (const node of sel.children) {
+    if (node.tagName === 'OPTGROUP') { out.push({group: node.label}); for (const o of node.children) out.push({v: o.value, t: o.textContent, dis: o.disabled}); }
+    else if (node.tagName === 'OPTION') out.push({v: node.value, t: node.textContent, dis: node.disabled, hidden: node.hidden});
+  }
+  return out.filter(o => !o.hidden);
+}
+function pmPaint(){
+  if (!PM.el) return;
+  const q = PM.q.trim().toLowerCase(), qn = nrm(PM.q);
+  const all = pmOptions(PM.sel); const total = all.filter(o => !o.group).length;
+  let items = q ? all.filter(o => !o.group && (o.t.toLowerCase().includes(q) || (qn && nrm(o.t).includes(qn)))) : all;
+  const shown = items.slice(0, 300); PM.items = shown.filter(o => !o.group);
+  if (PM.hi >= PM.items.length) PM.hi = Math.max(0, PM.items.length - 1);
+  const cur = PM.sel.value; let i = -1;
+  PM.el.querySelector('.pm-list').innerHTML = shown.map(o => { if (o.group) return `<div class="pm-grp">${esc(o.group)}</div>`; i++;
+    return `<div class="pm-it${i === PM.hi ? ' hl' : ''}${o.v === cur ? ' on' : ''}${o.dis ? ' dis' : ''}" data-i="${i}" role="option" aria-selected="${o.v === cur}">${o.v === cur ? '<svg class="pm-ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5 9-10"/></svg>' : '<span class="pm-ck"></span>'}<span>${esc(o.t)}</span>${i === PM.hi ? '<kbd>Enter</kbd>' : ''}</div>`; }).join('') || '<div class="pm-none">Nothing matches.</div>';
+  const f = PM.el.querySelector('.pm-foot'); if (f) f.textContent = `${q ? `${PM.items.length.toLocaleString()} of ` : ''}${total.toLocaleString()} choice${total === 1 ? '' : 's'}${items.length > 300 ? ' · type to narrow it down' : ''} · ↑↓ to move · Enter to pick`;
+  const h = PM.el.querySelector('.pm-it.hl'); if (h) h.scrollIntoView({block: 'nearest'});
+}
+function pmPlace(){
+  if (!PM.el || !PM.sel) return; const r = PM.sel.getBoundingClientRect(); const w = Math.max(r.width, 240);
+  const below = innerHeight - r.bottom, h = Math.min(PM.el.scrollHeight, 380);
+  PM.el.style.width = Math.min(w, innerWidth - 16) + 'px'; PM.el.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + 'px';
+  if (below < h + 12 && r.top > below) { PM.el.style.top = ''; PM.el.style.bottom = (innerHeight - r.top + 6) + 'px'; } else { PM.el.style.bottom = ''; PM.el.style.top = (r.bottom + 6) + 'px'; }
+}
+function pmOpen(sel){
+  pmClose(); PM.sel = sel; PM.q = ''; const opts = pmOptions(sel).filter(o => !o.group);
+  PM.hi = Math.max(0, opts.findIndex(o => o.v === sel.value));
+  const search = opts.length > 6;
+  const el = document.createElement('div'); el.className = 'pm'; el.setAttribute('role', 'listbox');
+  el.innerHTML = `${search ? `<div class="pm-srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input type="text" placeholder="Search" aria-label="Search the list" autocomplete="off" spellcheck="false"></div>` : ''}<div class="pm-list"></div>${search ? '<div class="pm-foot"></div>' : ''}`;
+  document.body.appendChild(el); PM.el = el; pmPaint(); pmPlace();
+  const inp_ = el.querySelector('input'); if (inp_) { inp_.focus(); inp_.addEventListener('input', () => { PM.q = inp_.value; PM.hi = 0; pmPaint(); pmPlace(); }); } else el.tabIndex = -1, el.focus();
+}
+function pmPick(i){
+  const o = PM.items[i]; if (!o || o.dis) return; const sel = PM.sel;
+  pmClose(true);
+  if (sel.value !== o.v) { sel.value = o.v; sel.dispatchEvent(new Event('input', {bubbles: true})); sel.dispatchEvent(new Event('change', {bubbles: true})); }
+}
+document.addEventListener('mousedown', e => {
+  if (PM.el && !PM.el.contains(e.target) && e.target !== PM.sel) pmClose();
+  const sel = e.target.closest && e.target.closest('select');
+  if (!sel || sel.multiple || sel.size > 1 || sel.disabled || pmTouch() || e.button !== 0) return;
+  e.preventDefault();
+  if (PM.sel === sel) { pmClose(true); return; }
+  sel.focus(); pmOpen(sel);
+}, true);
+document.addEventListener('click', e => { const it = PM.el && e.target.closest('.pm-it'); if (it) { e.preventDefault(); e.stopPropagation(); pmPick(+it.dataset.i); } }, true);
+document.addEventListener('mousemove', e => { const it = PM.el && e.target.closest && e.target.closest('.pm-it'); if (it && +it.dataset.i !== PM.hi) { PM.hi = +it.dataset.i; PM.el.querySelectorAll('.pm-it').forEach(x => { const on = +x.dataset.i === PM.hi; x.classList.toggle('hl', on); const k = x.querySelector('kbd'); if (on && !k) x.insertAdjacentHTML('beforeend', '<kbd>Enter</kbd>'); else if (!on && k) k.remove(); }); } });
+document.addEventListener('keydown', e => {
+  if (PM.el) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); pmClose(true); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); PM.hi = Math.max(0, Math.min(PM.items.length - 1, PM.hi + (e.key === 'ArrowDown' ? 1 : -1))); pmPaint(); return; }
+    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); pmPick(PM.hi); return; }
+    if (e.key === 'Tab') { pmClose(); return; }
+    return;
+  }
+  const sel = e.target && e.target.tagName === 'SELECT' ? e.target : null;
+  if (sel && !sel.multiple && !pmTouch() && (e.key === 'Enter' || e.key === ' ' || ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && e.altKey))) { e.preventDefault(); pmOpen(sel); }
+}, true);
+addEventListener('resize', () => pmClose());
+document.addEventListener('scroll', e => { if (PM.el && !PM.el.contains(e.target)) pmPlace(); }, true);
 
 // ---------- my email signature (per person, with logos) ----------
 let SIG = {html: '', on: true, track: true};   // per person: signature and whether my emails are tracked
