@@ -593,6 +593,106 @@ html:root[data-fish="tackle"]{
 .oppside{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
 .oppside .feed{margin:0;padding:0}
 tr.sel td{background:var(--accent-soft)!important}
+/* ---------- journeys: start window ---------- */
+.jsx-sheet.sheet{width:min(1180px,calc(100% - 24px));max-height:92vh;margin-top:3vh}
+.jsx-sheet .sb{padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.jsx{display:flex;flex-direction:column;min-height:0;flex:1}
+.jsx-for{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+.jsx-for select{width:auto;min-width:200px;max-width:320px}
+.jsx-grid{display:grid;grid-template-columns:220px minmax(0,1fr) 370px;min-height:0;flex:1;height:min(680px,calc(92vh - 130px))}
+.jsx-rail{background:var(--surface-2);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:1px;overflow:auto}
+.jsx-rail button{display:flex;align-items:center;gap:9px;padding:7px 10px;border:0;background:none;border-radius:8px;font:inherit;font-size:.9rem;font-weight:500;color:var(--fg);cursor:pointer;text-align:left}
+.jsx-rail button svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.jsx-rail button span{flex:1;min-width:0}
+.jsx-rail button em{font-style:normal;color:var(--muted);font-size:.78rem}
+.jsx-rail button:hover{background:var(--bg)}
+.jsx-rail button.on{background:var(--accent-soft);color:var(--accent);font-weight:700}.jsx-rail button.on svg,.jsx-rail button.on em{color:var(--accent)}
+.jdot{width:9px;height:9px;border-radius:3px;flex:none;margin:0 3px}
+.jsx-lbl{font-size:.66rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:10px 10px 3px}
+.jsx-sep{height:1px;background:var(--line);margin:8px 6px}
+.jsx-q{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 9px;margin:0 2px 8px}
+.jsx-q svg{width:15px;height:15px;color:var(--muted);flex:none}.jsx-q input{border:0!important;box-shadow:none!important;padding:7px 0!important;background:transparent!important;min-width:0}
+.jsx-main{padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.jsx-sugg{display:flex;align-items:center;gap:12px;background:linear-gradient(100deg,var(--accent),color-mix(in srgb,var(--accent) 78%,#2bb3a0));color:#fff;border-radius:13px;padding:12px 14px}
+.jsx-sugg b{font-size:.98rem}.jsx-sugg p{margin:2px 0 0;font-size:.82rem;opacity:.85}
+.jsx-sugg .btn{margin-left:auto;background:#fff;color:var(--accent);border-color:#fff;flex:none}
+.jsx-spark{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}.jsx-spark svg{width:19px;height:19px}
+.jsx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.jsx-card{display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 13px;font:inherit;color:var(--fg);cursor:pointer}
+.jsx-card:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.jsx-card.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.jsx-ct{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.jsx-ct b{font-size:.95rem;line-height:1.3}
+.jsx-desc{color:var(--muted);font-size:.82rem;line-height:1.4}
+.jsx-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:.76rem;color:var(--muted)}.jsx-meta b{color:var(--fg)}
+.jtrack{display:flex;align-items:center;margin-top:14px}
+.jn2{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}.jn2 svg{width:12px;height:12px}
+.jn2.call{background:var(--yel-soft);color:var(--yel)}
+.jl{flex:1;height:2px;background:var(--line);position:relative;min-width:14px}.jl span{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:.64rem;color:var(--muted);white-space:nowrap}
+.jsx-prev{border-left:1px solid var(--line);display:flex;flex-direction:column;background:var(--surface);overflow:auto}
+.jsx-ph{padding:14px 16px 8px}.jsx-ph h4{margin:0;font-size:1.02rem}.jsx-ph p{margin:2px 0 0}
+.jsx-cust{color:var(--pur)}
+.jsx-callt{display:flex!important;align-items:center;gap:6px;color:var(--yel)}.jsx-callt svg{width:14px;height:14px}
+.jsx-steps{list-style:none;margin:0;padding:0 16px;flex:1}
+.jsx-steps li{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--surface-2)}
+.jsx-d{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.jsx-d b{display:block;color:var(--fg);font-size:.8rem;letter-spacing:0;text-transform:none}
+.jsx-steps li>div>b{font-size:.86rem;display:block}
+.jsx-steps p{margin:2px 0 0;color:var(--muted);font-size:.8rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.jsx-go{border-top:1px solid var(--line);padding:12px 16px;display:flex;flex-direction:column;gap:9px;background:var(--bg);position:sticky;bottom:0}
+.jsx-seg{display:flex}.jsx-seg button{flex:1}
+.jsx-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.86rem}
+.jsx-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+.jsx-start{justify-content:center;padding:11px 16px;font-size:.98rem}
+.jsx-links{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.84rem}.jsx-links .lnk{display:inline-flex;gap:5px;align-items:center}.jsx-links svg{width:14px;height:14px}
+@media (max-width:900px){.jsx-go{position:static}.jsx-grid{grid-template-columns:1fr;height:auto}.jsx-sheet .sb{overflow:auto}.jsx-rail{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.jsx-rail button{white-space:nowrap}.jsx-lbl,.jsx-sep,.jsx-q{display:none}.jsx-prev{border-left:0;border-top:1px solid var(--line)}}
+/* ---------- journeys: editor ---------- */
+.je-sheet.sheet{width:min(1180px,calc(100% - 24px));max-height:94vh;margin-top:2vh}
+.je-sheet .sb{padding:0;gap:0;overflow:hidden}
+.je{display:flex;flex-direction:column;height:calc(94vh - 130px);min-height:0}
+.je-head{padding:14px 20px 10px;border-bottom:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.je-name{font:700 1.35rem var(--display)!important;border:0!important;padding:2px 0!important;background:transparent!important;box-shadow:none!important}
+.je-meta{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.je-meta label{display:flex;flex-direction:column;gap:3px;font-size:.72rem;font-weight:700;color:var(--muted)}.je-meta select{width:auto;min-width:160px}
+.je-meta .je-desc{flex:1;min-width:220px}
+.je-head,.je-strip{flex:none}
+.je-strip{position:relative;display:flex;align-items:flex-start;padding:16px 16px 10px;background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto}
+.je-axis{position:absolute;left:44px;right:44px;top:44px;height:3px;border-radius:3px;background:var(--surface-2)}
+.je-node{position:relative;z-index:1;flex:1;min-width:110px;display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;font:inherit;color:var(--fg);cursor:pointer;padding:0 4px}
+.je-day{font-size:.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.je-dot{width:34px;height:34px;border-radius:50%;background:var(--surface);border:3px solid var(--accent);color:var(--accent);display:grid;place-items:center}.je-dot svg{width:15px;height:15px}
+.je-node.call .je-dot{border-color:#C9A000;color:var(--yel)}
+.je-node.on .je-dot{background:var(--accent);color:#fff}.je-node.call.on .je-dot{background:#C9A000;color:#fff}
+.je-node.add .je-dot{border-style:dashed;border-color:var(--muted);color:var(--muted)}
+.je-lbl{font-size:.78rem;font-weight:600;text-align:center;max-width:150px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.je-node.add .je-lbl{color:var(--muted)}
+.je-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:0;flex:1}
+.je-doc{padding:16px 22px 26px;background:var(--bg);overflow:auto;min-height:0}
+.je-step{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.je-step.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.je-step.call{background:color-mix(in srgb,var(--yel-soft) 55%,var(--surface));border-color:color-mix(in srgb,#C9A000 45%,var(--line))}
+.je-sh{display:flex;align-items:center;gap:8px}.je-sh>svg{width:16px;height:16px;color:var(--muted)}
+.je-sh b{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.je-acts{margin-left:auto;display:flex;gap:2px}.je-acts .icon-btn{width:28px;height:28px}.je-acts svg{width:15px;height:15px}
+.je-tb{display:flex;gap:6px;flex-wrap:wrap}.je-tb select{width:auto;font-size:.82rem;padding:4px 26px 4px 9px}
+.je-subj{font-weight:700;font-size:1rem}
+.je-body{min-height:150px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--surface);line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;outline:none;font-size:.94rem}
+.je-body:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fld{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:0 6px;font-weight:600;font-size:.86em;line-height:1.5;border:0;font-family:inherit;white-space:nowrap;user-select:all}
+button.fld{cursor:pointer;padding:2px 8px}
+.je-note{font-weight:600}
+.je-wait{display:flex;align-items:center;gap:10px;margin-left:20px;padding:10px 0 10px 16px;border-left:2px dashed color-mix(in srgb,var(--muted) 45%,transparent);font-size:.84rem;color:var(--muted)}
+.je-wait.end{border-left-color:transparent;margin-left:0;padding-left:0}
+.je-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:2px 10px;font-weight:700;color:var(--fg)}
+.je-pill svg{width:14px;height:14px;color:var(--muted)}
+.je-pill input{width:52px!important;padding:2px 4px!important;text-align:center;font-weight:700;border-radius:6px}
+.je-addin{margin-left:auto;display:flex;gap:10px}.je-wait.end .je-addin{margin-left:0}.je-addin .btn svg{width:14px;height:14px}
+.je-side{border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface);overflow:auto;min-height:0}
+.je-side h5{margin:4px 0 0;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.je-prev{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--bg);font-size:.86rem}.je-prev p{margin:6px 0 0;color:var(--fg)}
+.je-flds{display:flex;flex-wrap:wrap;gap:6px}
+.je-set{display:flex;flex-direction:column;gap:4px;font-size:.84rem}.je-set.inline{flex-direction:row;align-items:center;gap:8px}.je-set input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent)}
+.je-stat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;border:1px solid var(--line);border-radius:11px;padding:8px;background:var(--bg)}.je-stat b{display:block;font-size:1.15rem}.je-stat span{font-size:.7rem;color:var(--muted)}
+.je-sheet .sf{flex-wrap:wrap}.je-sheet .sf .btn svg{width:15px;height:15px}
+@media (max-width:900px){.je{height:auto}.je-sheet .sb{overflow:auto}.je-grid{display:block}.je-doc,.je-side{max-height:none;overflow:visible}.je-doc{padding:12px}.je-meta label,.je-meta select{width:100%}.je-side{border-left:0;border-top:1px solid var(--line)}}
 .fishegg{position:absolute;right:12px;bottom:10px;width:14px;height:8px;border:0;padding:0;background:none;color:var(--muted);opacity:.35;cursor:default;line-height:0}
 .fishegg:hover{opacity:.6}.fishegg svg{width:14px;height:8px;display:block}
 .fishegg.wig{animation:fishWig .35s ease-in-out}
@@ -945,6 +1045,10 @@ const STALE_DAYS = 14;
 const VIEWS = [['today','Today','cal'],['reminders','Reminders','bell'],['journeys','Journeys','route'],['pipeline','Opportunities','cols'],['companies','Accounts','building'],['contacts','Contacts','users'],['quotes','Quotes','tag'],['contracts','Contracts','doc']];
 
 const ICON = {
+  phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  chevup:'<path d="M6 15l6-6 6 6"/>', chevdown:'<path d="M6 9l6 6 6-6"/>',
+  box:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="16" cy="12" r="1.5"/><path d="M7 12h5"/>',
   back:'<path d="M15 18l-6-6 6-6"/>',
   more:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
@@ -1472,7 +1576,7 @@ function attention(){
     else if (n <= (c.autoRenew ? 30 : 60)) out.push({sev: c.autoRenew ? 'info' : (n <= 21 ? 'bad' : 'warn'), o:1, kind: c.autoRenew ? `Auto-renews in ${n} days` : `Contract ends in ${n} days`, title:`${cname(c.companyId)} · ${c.title||'Service agreement'}`,
       sub:`${fmtDate(c.end)} · ${money(c.value)}/yr`, acts:[{l:'Email', act:'draft', d:{col:'companies', id:c.companyId, purpose:'renewal'}}, {l:'Renew', act:'renew', d:{id:c.id}}].filter(Boolean)});
   }
-  for (const {e, s} of journeyDue()) out.push({sev: s.due < t ? 'warn' : 'info', o: 2, kind: `Journey email ${s.step + 1} due`, title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))}${s.due < t ? ' · was due ' + fmtDate(s.due) : ''}`, acts: canWrite ? [{l: 'Review & send', act: 'jSend', d: {id: e.id}, pri: 1}, {l: 'Skip', act: 'jSkip', d: {id: e.id}}] : []});
+  for (const {e, s} of journeyDue()) out.push({sev: s.due < t ? 'warn' : 'info', o: 2, kind: isCallStep(eSteps(e)[s.step]) ? 'Journey call due' : `Journey email ${s.step + 1} due`, title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))}${s.due < t ? ' · was due ' + fmtDate(s.due) : ''}`, acts: canWrite ? [{l: isCallStep(eSteps(e)[s.step]) ? 'Call & log it' : 'Review & send', act: 'jSend', d: {id: e.id}, pri: 1}, {l: 'Skip', act: 'jSkip', d: {id: e.id}}] : []});
   for (const e of L('enrollments').filter(e => e.status === 'paused' && e.stopReason === 'replied' && (!ui.mine || e.ownerId === ME.id))) out.push({sev: 'info', o: 1, kind: 'Replied during a journey', title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))} is paused${e.replySubject ? ' · “' + esc(e.replySubject) + '”' : ''}`, acts: canWrite ? [{l: 'Resume', act: 'jResume', d: {id: e.id}}, {l: 'End', act: 'jStop', d: {id: e.id}}] : []});
   const sev = {bad:0, warn:1, info:2};
   return out.sort((a,b) => sev[a.sev]-sev[b.sev] || a.o-b.o);
@@ -2009,7 +2113,7 @@ function logBox(ctx){
 function activityModal(ctx){
   const now = new Date(); const local = `${ymd(now)}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   openModal('Add activity', `<div class="grid2">
-    ${F('Activity', sel('type', LOG_TYPES.map(t => [t, ACT[t]]), 'voicemail'))}
+    ${F('Activity', sel('type', LOG_TYPES.map(t => [t, ACT[t]]), ctx.type || 'voicemail'))}
     ${F('When', inp('when', local, 'datetime-local'))}
     ${F('Notes', ta('text', '', 3), 'wide')}
     ${cb('fu', false, 'Set a follow-up reminder')}
@@ -2238,7 +2342,7 @@ function openModal(title, body, submitLabel, onSubmit, opts={}){
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
   setTimeout(() => f.querySelector('.sb input:not([type=hidden]):not([type=checkbox]), .sb textarea, .sb select')?.focus(), 40);
 }
-function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; modalUnwind(); }
+function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
 const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
@@ -4225,6 +4329,169 @@ If anything changes, just reply to this email and we'll pick up where we left of
 Thanks,
 {my_first_name}`}
 ]}];
+// ---------- journey library: categories and the starter journeys every team gets ----------
+const JCATS = [['quote', 'Quote follow-up', '#C9A000'], ['inquiry', 'New inquiries', '#2F5D8A'], ['winback', 'Win back', '#5B3C99'], ['customers', 'Customers & renewals', '#22743A'], ['after', 'After the job', '#C2571A']];
+const JSVCS = [['shred', 'Shredding', 'doc'], ['med', 'Medical waste', 'spark'], ['drives', 'Hard drives & ITAD', 'box'], ['any', 'Any service', 'route']];
+const jEm = (delay, subject, body) => ({type: 'email', delay, subject, body: body + '\n\nThanks,\n{my_first_name}'});
+const jCall = (delay, note) => ({type: 'call', delay, note});
+Object.assign(DEFAULT_JOURNEYS[0], {category: 'quote', service: 'shred', desc: 'The original: four friendly follow-ups a week apart after a shredding quote.'});
+DEFAULT_JOURNEYS.push(
+  {id: 'j_purge', name: 'Purge Quote Follow-up', category: 'quote', service: 'shred', onReply: 'pause', skipWeekends: true, desc: 'For one-time cleanouts after you send a quote. Friendly, then helpful, then a clean close-out.', steps: [
+    jEm(0, 'Following up on your shredding quote', `{greeting} {first_name},
+
+I wanted to follow up on the shredding quote I sent over for {company}. Did it cover everything you needed?
+
+If the box count or timing has changed at all, just let me know and I'll adjust it.`),
+    jCall(3, 'Call {first_name}: ask if the box count still looks right and if they have a day in mind.'),
+    jEm(4, 'Any questions about your quote?', `{greeting} {first_name},
+
+Just checking in. A quick reminder of what's included: we shred everything on site in our truck, so nothing leaves your sight, and you get a Certificate of Destruction when we're done. All the paper gets recycled too.
+
+Happy to walk you through it if that would help.`),
+    jEm(7, 'Should I close out your quote?', `{greeting} {first_name},
+
+I haven't heard back, so I'll assume the timing isn't right and close out your quote for now.
+
+If anything changes, just reply here and we'll pick right back up. We'd be glad to help whenever you're ready.`)]},
+  {id: 'j_recur', name: 'Recurring Service Proposal', category: 'quote', service: 'shred', onReply: 'pause', skipWeekends: true, desc: 'For monthly or bi-weekly bin service. Leads with convenience and security, ends with a walk-through offer.', steps: [
+    jEm(0, 'Your scheduled shredding proposal', `{greeting} {first_name},
+
+Thanks again for considering us for {company}. I wanted to make sure the proposal made sense and answer any questions.
+
+With scheduled service, your team just drops paper in the locked bins and we take care of the rest on a set schedule, with a Certificate of Destruction every visit.`),
+    jEm(4, 'Quick question about your bins', `{greeting} {first_name},
+
+Do the number of bins and the schedule in the proposal still fit how much paper you go through? It's easy to adjust either one, and we can always start small and add more later.`),
+    jCall(5, 'Call {first_name}: offer a quick walk-through to place the bins and answer questions.'),
+    jEm(7, 'Want me to hold a spot on the route?', `{greeting} {first_name},
+
+I'm putting the route together for the next few weeks and wanted to see if I should hold a spot for {company}.
+
+If now isn't the right time, no problem at all. Just let me know and I'll check back later.`)]},
+  {id: 'j_med', name: 'Medical Waste Quote', category: 'quote', service: 'med', onReply: 'pause', skipWeekends: true, desc: 'For practices with a medical waste quote. Answers the pickup, container and paperwork questions they always ask.', steps: [
+    jEm(0, 'Following up on your medical waste quote', `{greeting} {first_name},
+
+I wanted to follow up on the medical waste quote for {company}. Did it cover the containers and pickup schedule you need?
+
+Happy to adjust anything so it fits how your office runs.`),
+    jEm(3, 'Common questions about medical waste pickup', `{greeting} {first_name},
+
+A few things offices usually ask: we bring the containers, pick up on a schedule that fits your volume, and handle the paperwork for every pickup so your records stay clean.
+
+If there's anything specific you're wondering about, just reply and I'll get you an answer.`),
+    jEm(7, 'Still interested in medical waste service?', `{greeting} {first_name},
+
+I haven't heard back, so I'll close out your quote for now. If you'd like to revisit it, just reply here and I'll get you set up.`)]},
+  {id: 'j_itad', name: 'Hard Drive & ITAD Quote', category: 'quote', service: 'drives', onReply: 'pause', skipWeekends: true, desc: 'For drives, media and electronics. Leads with chain of custody and proof of destruction.', steps: [
+    jEm(0, 'Following up on your hard drive destruction quote', `{greeting} {first_name},
+
+I wanted to follow up on the hard drive and media destruction quote for {company}. Did it cover everything you're looking to get rid of?
+
+We destroy drives on site, so they never leave your sight, and you get a Certificate of Destruction for your records.`),
+    jCall(4, 'Call {first_name}: confirm the drive and device count and whether they need serial numbers recorded.'),
+    jEm(3, 'Need serial numbers on the certificate?', `{greeting} {first_name},
+
+Some offices need every drive's serial number listed on the certificate for their records. If that's you, just let me know and we'll plan for it.`),
+    jEm(7, 'Should I close out your quote?', `{greeting} {first_name},
+
+I haven't heard back, so I'll close this out for now. Whenever you're ready to clear out those drives, just reply here.`)]},
+  {id: 'j_speed', name: 'Speed-to-Lead', category: 'inquiry', service: 'any', onReply: 'stop', skipWeekends: true, desc: 'A new web or chat inquiry. A same-day email and two quick calls to get them on the phone.', steps: [
+    jEm(0, 'Thanks for reaching out to All Points', `{greeting} {first_name},
+
+Thanks for reaching out to All Points Mobile Shredding. I'd love to get you a quick quote.
+
+What's the best number and time to reach you? Or if it's easier, just reply with roughly how much you have and where you're located.`),
+    jCall(0, 'Call {first_name} today: new inquiry, get the volume and a service date.'),
+    jCall(1, 'Call {first_name} again: second try, leave a voicemail if no answer.')]},
+  {id: 'j_sn', name: 'Shred Nations Lead', category: 'inquiry', service: 'shred', onReply: 'stop', skipWeekends: true, desc: 'Leads from Shred Nations. Explains who we are, since they may have talked to someone else first.', steps: [
+    jEm(0, 'Your shredding request', `{greeting} {first_name},
+
+We got your shredding request through Shred Nations. They connect you with a local company to take care of the job, and we're the local company for your area.
+
+Can you tell me roughly how many boxes or bins you have and when you'd like it done? I'll get you a price right away.`),
+    jCall(1, 'Call {first_name}: Shred Nations lead, explain who we are and get the volume.'),
+    jEm(3, 'Still need shredding?', `{greeting} {first_name},
+
+Just checking in on your shredding request. If you still need it done, reply with a good time and I'll get you on the schedule.`)]},
+  {id: 'j_vm', name: 'No Answer, Left Voicemail', category: 'inquiry', service: 'any', onReply: 'stop', skipWeekends: true, desc: 'You called and couldn\'t reach them. Two short emails so they can answer on their own time.', steps: [
+    jEm(0, 'Sorry I missed you', `{greeting} {first_name},
+
+I just tried giving you a call and left a voicemail. No need to call back if email is easier: just reply with what you need shredded and when, and I'll take it from there.`),
+    jEm(3, 'Following up', `{greeting} {first_name},
+
+Following up on my voicemail. Whenever you have a minute, just reply here and I'll get you a quote.`)]},
+  {id: 'j_follow', name: 'Closed — Still Following Up', category: 'winback', service: 'any', onReply: 'pause', skipWeekends: true, desc: 'For "not right now." One light touch a month for three months, then it hands back to you.', steps: [
+    jEm(0, 'Checking in', `{greeting} {first_name},
+
+I know the timing wasn't right before, so I just wanted to check in. If shredding is back on your list, I'm happy to get you an updated quote.`),
+    jEm(30, 'Any shredding piling up?', `{greeting} {first_name},
+
+Just a quick note in case paperwork has been piling up at {company}. We can usually get out within the week.`),
+    jEm(30, 'Still here when you need us', `{greeting} {first_name},
+
+I'll stop checking in for now, but we're always here when you need us. Just reply to this email anytime.`)]},
+  {id: 'j_price', name: 'Lost on Price', category: 'winback', service: 'any', onReply: 'pause', skipWeekends: true, desc: 'They went with someone cheaper. Checks in on how it\'s going, then offers to take another look.', steps: [
+    jEm(14, 'How did everything go?', `{greeting} {first_name},
+
+I hope everything went smoothly with your shredding. If anything didn't go the way you hoped, I'd be glad to help next time.`),
+    jEm(30, 'Happy to take another look at pricing', `{greeting} {first_name},
+
+If you have more shredding coming up, I'd be happy to take another look at pricing for {company}. Especially for regular service, we can often find something that works.`)]},
+  {id: 'j_season', name: 'Spring Cleaning / Tax Season Purge', category: 'winback', service: 'shred', onReply: 'stop', skipWeekends: true, desc: 'For past purge customers, every February to April when old records come off the books.', steps: [
+    jEm(0, 'Time to clear out old records?', `{greeting} {first_name},
+
+With tax season here, a lot of offices are clearing out old files. If {company} has boxes ready to go, we'd be glad to come shred them on site again.
+
+Just reply with roughly how many boxes and a good week.`),
+    jEm(10, 'Getting the spring schedule together', `{greeting} {first_name},
+
+I'm putting together our spring schedule and wanted to see if I should save a spot for you. Just let me know.`)]},
+  {id: 'j_renew', name: 'Contract Renewal', category: 'customers', service: 'any', onReply: 'stop', skipWeekends: true, desc: 'Start about 60 days before a contract ends. Locks in the next term.', steps: [
+    jEm(0, 'Your service agreement renews soon', `{greeting} {first_name},
+
+Your service agreement with us is coming up for renewal on {contract_end}. I wanted to reach out early to see if anything should change, like the schedule or number of bins.
+
+Thank you for trusting us with {company}'s shredding.`),
+    jCall(14, 'Call {first_name}: renewal check-in, ask about changes and confirm the next term.'),
+    jEm(14, 'Renewing your service', `{greeting} {first_name},
+
+Just following up on your renewal. If everything looks good, reply and let me know and I'll send over the paperwork.`)]},
+  {id: 'j_upgrade', name: 'One-time → Recurring', category: 'customers', service: 'shred', onReply: 'stop', skipWeekends: true, desc: 'After a purge. Offers a bin and a schedule so the piles don\'t come back.', steps: [
+    jEm(7, 'Keeping the paperwork from piling up again', `{greeting} {first_name},
+
+Thanks again for having us out. A lot of offices find it easier to keep a locked bin on site so the piles don't come back. We swap it out on a schedule and you get a certificate each time.
+
+Want me to put together a quick price?`),
+    jEm(7, 'Quick price for a shredding bin?', `{greeting} {first_name},
+
+Just following up. Even once a month or every other month usually covers a small office. Happy to send numbers if it would help.`),
+    jEm(10, 'Here whenever you need us', `{greeting} {first_name},
+
+I won't keep filling your inbox. Whenever you need another shred or want to set up a bin, just reply here.`)]},
+  {id: 'j_cross', name: 'Add Medical Waste / Hard Drives', category: 'customers', service: 'any', onReply: 'stop', skipWeekends: true, desc: 'For shredding customers who could use another service from us.', steps: [
+    jEm(0, 'Did you know we also handle this?', `{greeting} {first_name},
+
+Since we already take care of {company}'s shredding, I wanted to mention we also destroy old hard drives and media on site, and handle medical waste pickup for offices that need it.
+
+If either would help, just reply and I'll put together a quote.`),
+    jEm(14, 'Old computers or drives lying around?', `{greeting} {first_name},
+
+Quick follow-up: if you have old computers, drives or phones sitting in a closet, we can destroy them on site with a certificate, same as your paper.`)]},
+  {id: 'j_review', name: 'Thank You + Google Review', category: 'after', service: 'any', onReply: 'stop', skipWeekends: true, desc: 'Right after a job. A thank-you, then a short ask for a Google review.', steps: [
+    jEm(1, 'Thank you from All Points', `{greeting} {first_name},
+
+Thank you for choosing All Points. I hope everything went smoothly. If you need anything at all, just reply here.`),
+    jEm(4, 'Would you leave us a quick review?', `{greeting} {first_name},
+
+If you were happy with the service, would you mind leaving us a quick Google review? It really helps a small local business like ours.
+
+Thanks so much.`)]},
+  {id: 'j_referral', name: 'Referral Ask', category: 'after', service: 'any', onReply: 'stop', skipWeekends: true, desc: 'A month after a happy job. Asks if they know anyone who could use us.', steps: [
+    jEm(30, 'Know anyone who needs shredding?', `{greeting} {first_name},
+
+Hope all is well at {company}. If you know another office or anyone who needs shredding, we'd really appreciate the introduction. We'll take great care of them.`)]}
+);
+
 function journeys(){
   const saved = S.journeys || {};
   const list = DEFAULT_JOURNEYS.map(j => saved[j.id] ? {...j, ...saved[j.id], id: j.id} : j);
@@ -4236,7 +4503,7 @@ const jName = id => journeyOf(id)?.name || 'Journey';
 const shiftWeekend = d => { const day = parseYmd(d).getDay(); return day === 6 ? addDays(d, 2) : day === 0 ? addDays(d, 1) : d; };
 function buildSchedule(j, first){
   let d = first;
-  return (j.steps || []).map((st, i) => { if (i > 0) d = addDays(d, Math.max(1, parseInt(st.delay) || 7)); if (j.skipWeekends) d = shiftWeekend(d); return {step: i, due: d, status: 'pending'}; });
+  return (j.steps || []).map((st, i) => { if (i > 0) d = addDays(d, jDelay(st)); if (j.skipWeekends) d = shiftWeekend(d); return {step: i, due: d, status: 'pending'}; });
 }
 const pendingSteps = e => (e.schedule || []).filter(s => s.status === 'pending');
 const nextStep = e => pendingSteps(e)[0] || null;
@@ -4265,41 +4532,20 @@ V.journeys = () => {
   const lib = journeys();
   return head('Journeys', `${counts.active} active · ${due.length} email${due.length === 1 ? '' : 's'} due`, searchBox('Search journeys') + segs + mineSeg() + (canWrite ? `<button class="btn" data-act="jLibrary">Manage journeys</button><button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>` : ''))
   + `<div class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><span>Automatic sending at 8:45 AM will be connected later. Until then, emails that come due are listed here: review each one and send it.</span>${MCP && canWrite ? '<button class="btn sm" data-act="jCheck">Check for replies</button>' : ''}</div>`
-  + (due.length ? `<section class="panel"><div class="ph"><h3>Emails due</h3><span class="chip warn">${due.length}</span></div><ul class="attl">${due.map(({e, s}) => { const j = journeyOf(e.journeyId); const st = j && j.steps[s.step]; return `<li class="att ${s.due < today() ? 'bad' : 'warn'}"><div class="att-main"><span class="att-kind">${esc(jName(e.journeyId))} · email ${s.step + 1} of ${(e.schedule || []).length} · ${s.due < today() ? 'was due ' + fmtDate(s.due) : 'due today'}</span><b>${esc(nameOf('contacts', e.contactId))} · ${esc(cname(e.companyId))}</b><span class="att-sub">${esc(st ? st.subject : '')}</span></div><div class="att-act">${canWrite ? `<button class="btn sm pri" data-act="jSend" data-id="${e.id}">Review & send</button><button class="btn sm" data-act="jSkip" data-id="${e.id}">Skip</button>` : ''}</div></li>`; }).join('')}</ul></section>` : '')
+  + (due.length ? `<section class="panel"><div class="ph"><h3>Due now</h3><span class="chip warn">${due.length}</span></div><ul class="attl">${due.map(({e, s}) => { const st = eSteps(e)[s.step]; const call = isCallStep(st); return `<li class="att ${s.due < today() ? 'bad' : 'warn'}"><div class="att-main"><span class="att-kind">${esc(jName(e.journeyId))} · ${call ? 'call' : 'email'} · step ${s.step + 1} of ${(e.schedule || []).length} · ${s.due < today() ? 'was due ' + fmtDate(s.due) : 'due today'}</span><b>${esc(nameOf('contacts', e.contactId))} · ${esc(cname(e.companyId))}</b><span class="att-sub">${esc(st ? (call ? fillTemplate(st.note || 'Call reminder', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><div class="att-act">${canWrite ? `<button class="btn sm pri" data-act="jSend" data-id="${e.id}">${call ? 'Call &amp; log it' : 'Review & send'}</button><button class="btn sm" data-act="jSkip" data-id="${e.id}">Skip</button>` : ''}</div></li>`; }).join('')}</ul></section>` : '')
   + (!all.length ? `<section class="panel">${emptyState('No one is on a journey yet', 'Start a journey to follow up with a contact automatically. The Shredding Journey sends 4 follow-ups a week apart, and pauses as soon as they reply.', `<button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Contact</th><th>Journey</th><th>Progress</th><th>Next email</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(e => { const n = nextStep(e); const total = (e.schedule || []).length; return `<tr data-act="jOpen" data-id="${e.id}"><td><b>${esc(nameOf('contacts', e.contactId))}</b><span class="t2">${esc(cname(e.companyId))}</span></td><td>${esc(jName(e.journeyId))}</td><td class="num">${sentCount(e)} of ${total} sent</td><td>${e.status === 'active' && n ? dueChip(n.due) : '—'}</td><td>${jStatusChip(e)}${e.status === 'paused' && e.replySubject ? `<span class="t2">“${esc(e.replySubject)}”</span>` : ''}</td><td>${canWrite ? (e.status === 'paused' ? `<button class="btn sm" data-act="jResume" data-id="${e.id}">Resume</button>` : e.status === 'active' ? `<button class="btn sm ghost" data-act="jPause" data-id="${e.id}">Pause</button>` : '') : ''}</td></tr>`; }).join('') || `<tr><td colspan="6" class="sub">${ui.q ? 'No journeys match.' : 'None here.'}</td></tr>`}</tbody></table></div>`)
-  + `<section class="panel"><div class="ph"><h3>Your journeys</h3>${canWrite ? `<button class="btn sm" data-act="jEdit">${ic('plus')}New journey</button>` : ''}</div><div class="jlib">${lib.map(j => `<button class="jcard" data-act="jEdit" data-id="${j.id}"><b>${esc(j.name)}</b><span>${j.steps.length} email${j.steps.length === 1 ? '' : 's'} · ${j.steps.slice(1).every(s => (parseInt(s.delay) || 7) === 7) ? 'a week apart' : 'custom spacing'}</span><span>${j.onReply === 'stop' ? 'Ends when they reply' : 'Pauses when they reply'}</span></button>`).join('')}</div></section>`;
+  + `<section class="panel"><div class="ph"><h3>Your journeys</h3>${canWrite ? `<button class="btn sm" data-act="jEdit">${ic('plus')}New journey</button>` : ''}</div><div class="jlib">${lib.map(j => `<button class="jcard" data-act="jEdit" data-id="${j.id}"><b>${esc(j.name)}</b><span>${jCountTxt(jSteps(j))} · ${jSpanTxt(jSpanDays(jSteps(j)))} · ${esc(jCat(j.category)[1])}</span><span>${j.onReply === 'stop' ? 'Ends when they reply' : 'Pauses when they reply'}</span></button>`).join('')}</div></section>`;
 };
 
-function journeyStartModal(pre){
-  pre = pre || {};
-  const js = journeys(); if (!js.length) { toast('Create a journey first.', 'bad'); return; }
-  const jid = pre.journey || js[0].id;
-  openModal('Start a journey', `<div class="grid2">
-    ${F('Company', sel('companyId', coOpts('— Choose a company —'), pre.co, 'id="jsCo" data-change="jsCo" required'))}
-    ${F('Contact', sel('contactId', jsContactOpts(pre.co), pre.ct || '', 'id="jsCt" required'))}
-    ${F('Journey', sel('journeyId', js.map(j => [j.id, j.name]), jid, 'id="jsJ" data-change="jsPrev"'))}
-    ${F('First email', sel('first', [['today', 'Today'], ['in', 'After a few days'], ['date', 'On a date I pick']], pre.first || 'today', 'id="jsFirst" data-change="jsPrev"'))}
-    <label class="f" id="jsInBox" hidden><span>Days from now</span>${inp('inDays', '7', 'number', 'id="jsIn" min="1" max="90" data-change="jsPrev"')}</label>
-    <label class="f" id="jsDateBox" hidden><span>Send the first email on</span>${inp('firstDate', addDays(today(), 7), 'date', 'id="jsDate" data-change="jsPrev"')}</label>
-    </div>
-    <div class="f"><span>Schedule</span><ul class="jprev" id="jsPrevList"></ul></div>
-    <p class="sub">The journey pauses if this contact emails you. Emails go out from your Outlook.</p>`, 'Start journey', async f => {
-      if (!f.companyId || !f.contactId) { toast('Choose a company and a contact.', 'bad'); return false; }
-      const ct = S.contacts[f.contactId];
-      if (!ct || !ctMail(ct)) { toast('That contact has no email address. Add one first.', 'bad'); return false; }
-      const j = journeyOf(f.journeyId); if (!j || !(j.steps || []).length) { toast('That journey has no emails yet.', 'bad'); return false; }
-      return startEnrollment({companyId: f.companyId, contactId: f.contactId, journeyId: f.journeyId, dealId: pre.deal || '', firstDate: jsFirstDate(f)});
-    });
-  jsPreview();
-}
 async function startEnrollment(o){
   const ct = S.contacts[o.contactId]; const j = journeyOf(o.journeyId);
   if (!ct || !j || !(j.steps || []).length) { toast('That journey could not be started.', 'bad'); return false; }
   if (L('enrollments').some(e => e.contactId === o.contactId && e.journeyId === o.journeyId && ['active', 'paused'].includes(e.status))) { toast(`${pname_(ct)} is already on ${j.name}.`, 'bad'); return false; }
-  const sched = buildSchedule(j, o.firstDate);
-  const ok = await put('enrollments', uid(), {companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || '', journeyId: o.journeyId, ownerId: ME.id || '', status: 'active', onReply: j.onReply || 'pause', startedAt: Date.now(), schedule: sched});
-  if (ok) { logAct({type: 'note', text: `Started ${j.name} for ${pname_(ct)} (${sched.length} emails, first on ${fmtDate(sched[0].due)})`, companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || ''}); toast(`${pname_(ct)} is on ${j.name}`); }
+  const steps = o.steps && o.steps.length ? o.steps : jSteps(j);
+  const sched = buildSchedule({steps, skipWeekends: o.skipWeekends == null ? j.skipWeekends !== false : o.skipWeekends}, o.firstDate);
+  const ok = await put('enrollments', uid(), {companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || '', journeyId: o.journeyId, ownerId: ME.id || '', status: 'active', onReply: o.onReply || j.onReply || 'pause', startedAt: Date.now(), schedule: sched, ...(o.steps && o.steps.length ? {steps} : {})});
+  if (ok) { logAct({type: 'note', text: `Started ${j.name} for ${pname_(ct)} (${jCountTxt(steps)}, first on ${fmtDate(sched[0].due)})`, companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || ''}); toast(`${pname_(ct)} is on ${j.name}`); }
   return ok;
 }
 async function emailJourneyAfterSend(){
@@ -4329,11 +4575,12 @@ function jsPreview(){
 function journeyDetailModal(id){
   const e = S.enrollments[id]; if (!e) return;
   const j = journeyOf(e.journeyId);
-  const steps = (e.schedule || []).map(s => { const st = j && j.steps[s.step]; const chip = s.status === 'sent' ? `<span class="chip good">Sent ${s.sentAt ? fmtDate(ymd(new Date(s.sentAt))) : ''}</span>` : s.status === 'skipped' ? '<span class="chip">Skipped</span>' : e.status === 'active' ? dueChip(s.due) : `<span class="chip">${fmtDate(s.due)}</span>`;
-    return `<li><div><b>Email ${s.step + 1}</b> <span class="sub">${esc(st ? st.subject : '')}</span></div><span class="end">${chip}</span></li>`; }).join('');
+  const ests = eSteps(e); const steps = (e.schedule || []).map(s => { const st = ests[s.step]; const chip = s.status === 'sent' ? `<span class="chip good">Sent ${s.sentAt ? fmtDate(ymd(new Date(s.sentAt))) : ''}</span>` : s.status === 'skipped' ? '<span class="chip">Skipped</span>' : e.status === 'active' ? dueChip(s.due) : `<span class="chip">${fmtDate(s.due)}</span>`;
+    const done = s.status === 'sent' && isCallStep(st) ? '<span class="chip good">Done</span>' : chip;
+    return `<li><div><b>${isCallStep(st) ? ic('phone') + 'Call' : 'Email'} · step ${s.step + 1}</b> <span class="sub">${esc(st ? (isCallStep(st) ? fillTemplate(st.note || '', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><span class="end">${done}</span></li>`; }).join('');
   openModal(`${jName(e.journeyId)}`, `<p><b>${esc(nameOf('contacts', e.contactId))}</b> · ${esc(cname(e.companyId))} ${jStatusChip(e)}</p>
     ${e.status === 'paused' && e.stopReason === 'replied' ? `<div class="mailbar warn"><span>They replied${e.replyAt ? ' on ' + fmtDate(ymd(new Date(e.replyAt))) : ''}${e.replySubject ? `: “${esc(e.replySubject)}”` : ''}. Resume if it was just a quick acknowledgement, or end the journey.</span></div>` : ''}
-    <ul class="jsteps">${steps}</ul>`, null, null, {foot: canWrite ? `<button type="button" class="btn ghost" data-act="jDelete" data-id="${id}" style="margin-right:auto">${ic('trash')}Remove</button>${e.status === 'active' ? `<button type="button" class="btn" data-act="jPause" data-id="${id}">Pause</button>${nextStep(e) ? `<button type="button" class="btn" data-act="jSkip" data-id="${id}">Skip next email</button><button type="button" class="btn pri" data-act="jSend" data-id="${id}">Send next email now</button>` : ''}` : ''}${e.status === 'paused' ? `<button type="button" class="btn" data-act="jStop" data-id="${id}">End journey</button><button type="button" class="btn pri" data-act="jResume" data-id="${id}">Resume</button>` : ''}` : ''});
+    <ul class="jsteps">${steps}</ul>`, null, null, {foot: canWrite ? `<button type="button" class="btn ghost" data-act="jDelete" data-id="${id}" style="margin-right:auto">${ic('trash')}Remove</button>${e.status === 'active' ? `<button type="button" class="btn" data-act="jPause" data-id="${id}">Pause</button>${nextStep(e) ? `<button type="button" class="btn" data-act="jSkip" data-id="${id}">Skip next step</button><button type="button" class="btn pri" data-act="jSend" data-id="${id}">${isCallStep(ests[nextStep(e).step]) ? 'Do the call now' : 'Send next email now'}</button>` : ''}` : ''}${e.status === 'paused' ? `<button type="button" class="btn" data-act="jStop" data-id="${id}">End journey</button><button type="button" class="btn pri" data-act="jResume" data-id="${id}">Resume</button>` : ''}` : ''});
 }
 
 async function jSetStep(eid, idx, status){
@@ -4345,13 +4592,14 @@ async function jSetStep(eid, idx, status){
 async function jResume(eid){
   const e = S.enrollments[eid]; if (!e) return;
   const j = journeyOf(e.journeyId); let prev = null;
-  const schedule = (e.schedule || []).map(s => { if (s.status !== 'pending') return s; let due = prev ? addDays(prev, Math.max(1, parseInt(j?.steps[s.step]?.delay) || 7)) : (s.due < today() ? today() : s.due); if (j?.skipWeekends) due = shiftWeekend(due); prev = due; return {...s, due}; });
+  const schedule = (e.schedule || []).map(s => { if (s.status !== 'pending') return s; let due = prev ? addDays(prev, jDelay(eSteps(e)[s.step])) : (s.due < today() ? today() : s.due); if (j?.skipWeekends) due = shiftWeekend(due); prev = due; return {...s, due}; });
   if (await patch('enrollments', eid, {status: 'active', schedule, stopReason: '', resumedAt: Date.now()})) toast('Journey resumed');
 }
 function jSendNow(eid){
   const e = S.enrollments[eid]; const s = e && nextStep(e); const j = e && journeyOf(e.journeyId);
   if (!s || !j) return;
-  const st = j.steps[s.step];
+  const st = eSteps(e)[s.step]; if (!st) return;
+  if (isCallStep(st)) { jSetStep(eid, s.step, 'sent').then(() => { activityModal({co: e.companyId, ct: e.contactId, deal: e.dealId, type: 'call'}); toast('Call step done. Log how it went.'); }); return; }
   draftModal('contacts', e.contactId, null, {subject: st.subject, body: st.body, html: !!st.html, journey: {eid, idx: s.step}, companyId: e.companyId, dealId: e.dealId});
 }
 
@@ -4379,27 +4627,269 @@ async function checkReplies(force){
   }
 }
 
-function journeyEditModal(id){
-  const j = id ? journeyOf(id) : {name: '', onReply: 'pause', skipWeekends: true, steps: [{delay: 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}]};
-  if (!j) return;
-  openModal(id ? 'Edit journey' : 'New journey', `<div class="grid2">
-    ${F('Journey name', inp('name', j.name, 'text', 'required placeholder="e.g. Medical Waste Journey"'))}
-    ${F('When the contact replies', sel('onReply', [['pause', 'Pause, and let me decide'], ['stop', 'End the journey']], j.onReply || 'pause'))}
-    ${cb('skipWeekends', j.skipWeekends !== false, 'Move weekend dates to Monday')}
-    <p class="sub" style="align-self:center">Emails will go out at 8:45 AM once automatic sending is connected.</p></div>
-    <div id="jSteps" class="jedit">${(j.steps || []).map((s, i) => jStepHtml(s, i)).join('')}</div>
-    <div><button type="button" class="btn sm" data-act="jAddStep">${ic('plus')}Add an email</button></div>
-    <p class="sub">Fill-in fields work the same as in email templates, such as {first_name} and {company}.</p>`, 'Save journey', async f => {
-      const subs = f['step_subject[]'] || [], bodies = f['step_body[]'] || [], delays = f['step_delay[]'] || [];
-      const steps = subs.map((s, i) => ({delay: i === 0 ? 0 : Math.max(1, parseInt(delays[i]) || 7), subject: s, body: bodies[i] || ''})).filter(s => s.subject || s.body.trim());
-      if (!steps.length) { toast('Add at least one email.', 'bad'); return false; }
-      const jid = id || 'j_' + uid();
-      if (journeys().some(j => j.id !== id && norm(j.name) === norm(f.name))) { dupWarn(`There's already a journey named “${esc(f.name)}”.`); return false; }
-      const ok = await put('journeys', jid, {name: f.name, onReply: f.onReply, skipWeekends: !!f.skipWeekends, steps});
-      if (ok) toast('Journey saved');
-      return ok;
-    }, {wide: true, foot: id ? `<button type="button" class="btn ghost" data-act="jEditDel" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete journey</button>` : ''});
+// ---------- journey helpers: steps can be emails or call reminders ----------
+const jDelay = s => { const n = parseInt(s && s.delay); return isNaN(n) ? 7 : Math.max(0, n); };
+const jSteps = j => ((j && j.steps) || []).map(s => ({...s, type: s.type === 'call' ? 'call' : 'email'}));
+const isCallStep = s => !!(s && s.type === 'call');
+const eSteps = e => (e && Array.isArray(e.steps) && e.steps.length) ? jSteps({steps: e.steps}) : jSteps(journeyOf(e && e.journeyId));
+const jCountTxt = steps => { const c = steps.filter(isCallStep).length, m = steps.length - c; return [m ? `${m} email${m === 1 ? '' : 's'}` : '', c ? `${c} call${c === 1 ? '' : 's'}` : ''].filter(Boolean).join(' + ') || 'No steps'; };
+const jSpanDays = steps => steps.slice(1).reduce((n, s) => n + jDelay(s), 0);
+const jSpanTxt = d => d < 1 ? 'same day' : d < 14 ? `${d} day${d === 1 ? '' : 's'}` : d < 60 ? `${Math.round(d / 7)} weeks` : `${Math.round(d / 30)} months`;
+const jCat = k => JCATS.find(c => c[0] === k) || ['other', 'Other', '#56706B'];
+const jSvc = k => JSVCS.find(c => c[0] === k) || JSVCS[JSVCS.length - 1];
+const jStepWord = s => isCallStep(s) ? 'Call' : 'Email';
+function jStats(id){
+  const en = L('enrollments').filter(e => e.journeyId === id);
+  const started = en.filter(e => (e.schedule || []).some(s => s.status === 'sent'));
+  const rep = en.filter(e => e.stopReason === 'replied').length;
+  return {used: en.length, reply: started.length >= 3 ? Math.round(rep / started.length * 100) : null};
 }
+function jTrack(steps){
+  return `<span class="jtrack" aria-hidden="true">${steps.map((s, i) => `${i ? `<span class="jl"><span>+${jDelay(s)}d</span></span>` : ''}<span class="jn2 ${isCallStep(s) ? 'call' : ''}">${ic(isCallStep(s) ? 'phone' : 'mail')}</span>`).join('')}</span>`;
+}
+
+// ---------- the best journey for this opportunity ----------
+function jSuggest(pre){
+  const all = journeys(); if (!all.length) return null;
+  const deal = (pre.deal && S.deals[pre.deal]) || (pre.co ? L('deals').filter(d => d.companyId === pre.co).sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.createdAt || 0) - (a.createdAt || 0)))[0] : null);
+  if (!deal) return null;
+  const k = stage(deal).k; const txt = norm([deal.serviceType, deal.name, deal.service, deal.interval].join(' '));
+  const kind = /medical/.test(txt) ? 'med' : /hard drive|media|product/.test(txt) ? 'drives' : 'shred';
+  const recurring = /recurr|week|month|schedul|bi-/.test(txt) && !/one.?time|purge/.test(norm(deal.interval || ''));
+  let id = null;
+  if (k === 'lead') id = /shred ?nation/.test(norm(deal.source || '')) ? 'j_sn' : 'j_speed';
+  else if (k === 'quoted' || k === 'contract') id = kind === 'med' ? 'j_med' : kind === 'drives' ? 'j_itad' : recurring ? 'j_recur' : 'j_purge';
+  else if (k === 'following') id = 'j_follow';
+  else if (k === 'lost') id = /price|cheap|cost|expens/.test(norm(deal.lostReason || '')) ? 'j_price' : 'j_follow';
+  else if (k === 'won' || k === 'updated') id = recurring ? 'j_review' : 'j_upgrade';
+  let j = all.find(x => x.id === id);
+  if (!j && id) { const cat = (DEFAULT_JOURNEYS.find(x => x.id === id) || {}).category; j = all.find(x => x.category === cat); }
+  if (!j) return null;
+  const days = daysSince(lastTouch(deal));
+  const lastMail = L('activities').filter(a => a.type === 'email' && a.companyId === deal.companyId).sort((a, b) => (b.at || 0) - (a.at || 0))[0];
+  const why = [`${stage(deal).l}${days != null && days > 0 ? ` · ${days} day${days === 1 ? '' : 's'} since the last touch` : ''}`, [deal.serviceType && deal.serviceType !== 'Chat - Unknown' ? deal.serviceType : deal.name, deal.value ? money(deal.value) : ''].filter(Boolean).join(', '), lastMail ? `Last email ${fmtDate(ymd(new Date(lastMail.at)))}` : 'No emails yet'].filter(Boolean);
+  return {id: j.id, why, dealId: deal.id};
+}
+
+// ---------- Start a journey: the big library window ----------
+function journeyStartModal(pre){
+  pre = pre || {};
+  const js = journeys(); if (!js.length) { toast('Create a journey first.', 'bad'); return; }
+  const key = [pre.co || '', pre.ct || '', pre.deal || ''].join('|');
+  if (!(ui.js && ui.js.key === key && ui.js.open)) {
+    const sug = jSuggest(pre);
+    let ct = pre.ct || '';
+    if (!ct && pre.co) { const cts = L('contacts').filter(c => c.companyId === pre.co); ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; }
+    ui.js = {key, open: true, co: pre.co || '', ct, deal: pre.deal || (sug && sug.dealId) || '', sug, cat: sug ? 'suggested' : 'all', jid: pre.journey || (sug && sug.id) || js[0].id, q: '', first: 'today', inDays: 3, date: addDays(today(), 7), onReply: null, skip: null, custom: null};
+  }
+  const s = ui.js;
+  const n = c => js.filter(j => c(j)).length;
+  const railBtn = (v, label, count, extra = '') => `<button type="button" class="${s.cat === v ? 'on' : ''}" data-act="jsxCat" data-v="${v}">${extra}<span>${label}</span>${count != null ? `<em>${count}</em>` : ''}</button>`;
+  openModal('Start a journey', `<div class="jsx">
+    <div class="jsx-for"><span class="sub">for</span>
+      ${sel('co', coOpts('— Choose a company —'), s.co, 'id="jsxCo" data-change="jsxCo" aria-label="Company"')}
+      ${sel('ct', jsContactOpts(s.co), s.ct, 'id="jsxCt" data-change="jsxCt" aria-label="Contact"')}
+    </div>
+    <div class="jsx-grid">
+      <nav class="jsx-rail" aria-label="Journey categories">
+        <label class="jsx-q">${ic('search')}<input type="search" id="jsxQ" placeholder="Search journeys" data-input="jsxQ" value="${esc(s.q)}" autocomplete="off"></label>
+        ${s.sug ? railBtn('suggested', 'Suggested', null, ic('spark')) : ''}
+        ${railBtn('all', 'All journeys', js.length, ic('route'))}
+        <span class="jsx-lbl">By goal</span>
+        ${JCATS.map(([k, l, col]) => railBtn('c:' + k, l, n(j => j.category === k), `<i class="jdot" style="background:${col}"></i>`)).join('')}
+        <span class="jsx-lbl">By service</span>
+        ${JSVCS.filter(x => x[0] !== 'any').map(([k, l, i]) => railBtn('s:' + k, l, n(j => j.service === k || j.service === 'any'), ic(i))).join('')}
+        <span class="jsx-sep"></span>
+        ${railBtn('mine', 'My journeys', n(j => !DEFAULT_JOURNEYS.some(d => d.id === j.id)), ic('users'))}
+        ${canWrite ? `<button type="button" data-act="jEdit">${ic('plus')}<span>New journey</span></button>` : ''}
+      </nav>
+      <div class="jsx-main" id="jsxMain"></div>
+      <aside class="jsx-prev" id="jsxPrev"></aside>
+    </div></div>`, null, null, {wide: true});
+  $('#mform').classList.add('jsx-sheet');
+  jsxPaint();
+}
+function jsxList(){
+  const s = ui.js, js = journeys(), q = norm(s.q || '');
+  let list = js;
+  if (q) list = js.filter(j => norm([j.name, j.desc, jCat(j.category)[1], jSvc(j.service)[1]].join(' ')).includes(q));
+  else if (s.cat === 'suggested' && s.sug) { const top = js.find(j => j.id === s.sug.id); list = [top, ...js.filter(j => j !== top && top && j.category === top.category)].filter(Boolean); }
+  else if (s.cat.startsWith('c:')) list = js.filter(j => j.category === s.cat.slice(2));
+  else if (s.cat.startsWith('s:')) list = js.filter(j => j.service === s.cat.slice(2) || j.service === 'any');
+  else if (s.cat === 'mine') list = js.filter(j => !DEFAULT_JOURNEYS.some(d => d.id === j.id));
+  return list;
+}
+function jsxCard(j){
+  const st = jSteps(j); const x = jStats(j.id); const [, cl, col] = jCat(j.category);
+  return `<button type="button" class="jsx-card${ui.js.jid === j.id ? ' on' : ''}" data-act="jsxPick" data-id="${esc(j.id)}" aria-pressed="${ui.js.jid === j.id}">
+    <span class="jsx-ct"><b>${esc(j.name)}</b><span class="chip" style="background:color-mix(in srgb, ${col} 16%, transparent);color:color-mix(in srgb, ${col} 80%, var(--fg))">${esc(cl)}</span></span>
+    ${j.desc ? `<span class="jsx-desc">${esc(j.desc)}</span>` : ''}
+    ${jTrack(st)}
+    <span class="jsx-meta"><span><b>${jCountTxt(st)}</b> · ${jSpanTxt(jSpanDays(st))}</span>${x.reply != null ? `<span><b>${x.reply}%</b> reply</span>` : ''}<span>${x.used ? `Used <b>${x.used}×</b>` : 'New'}</span></span></button>`;
+}
+function jsxFirst(){ const s = ui.js; return s.first === 'in' ? addDays(today(), Math.max(1, parseInt(s.inDays) || 3)) : s.first === 'date' && isDate(s.date) ? (s.date < today() ? today() : s.date) : today(); }
+function jsxPaint(){
+  const s = ui.js; const main = $('#jsxMain'), prev = $('#jsxPrev'); if (!main || !prev) return;
+  document.querySelectorAll('.jsx-rail [data-act="jsxCat"]').forEach(b => b.classList.toggle('on', !s.q && b.dataset.v === s.cat));
+  const list = jsxList();
+  const sj = s.sug && journeyOf(s.sug.id);
+  main.innerHTML = `${sj && !s.q && (s.cat === 'suggested' || s.cat === 'all') ? `<div class="jsx-sugg"><span class="jsx-spark">${ic('spark')}</span><div><b>Best fit: ${esc(sj.name)}</b><p>${s.sug.why.map(esc).join(' · ')}</p></div>${canWrite ? `<button type="button" class="btn" data-act="jsxGo" data-id="${esc(sj.id)}">Start now</button>` : ''}</div>` : ''}
+    ${list.length ? `<div class="jsx-cards">${list.map(jsxCard).join('')}</div>` : `<p class="empty-s">No journeys match${s.q ? ` “${esc(s.q)}”` : ''}.</p>`}`;
+  const j = journeyOf(s.jid);
+  if (!j) { prev.innerHTML = '<p class="sub" style="padding:18px">Pick a journey to see its emails.</p>'; return; }
+  const steps = s.custom || jSteps(j);
+  const ct = S.contacts[s.ct]; const first = ct ? (ct.firstName || pname_(ct)) : 'them';
+  const skip = s.skip == null ? j.skipWeekends !== false : s.skip;
+  const sched = buildSchedule({steps, skipWeekends: skip}, jsxFirst());
+  const data = mergeData({companyId: s.co, contactId: s.ct, dealId: s.deal});
+  const fill = t => fillTemplate(t, data);
+  const day = d => parseYmd(d).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
+  prev.innerHTML = `<div class="jsx-ph"><h4>${esc(j.name)}</h4><p class="sub">${ct ? `What ${esc(first)} gets` : 'Choose a contact to preview'}${s.custom ? ` · <b class="jsx-cust">customized for ${esc(first)}</b> <button type="button" class="lnk" data-act="jsxUncustom">Undo</button>` : ''}</p></div>
+    <ol class="jsx-steps">${sched.map(x => { const st = steps[x.step]; const call = isCallStep(st); const body = fill(call ? st.note || '' : st.body || '').replace(/^.*?,\s*\n+/, ''); return `<li><span class="jsx-d">${x.due === today() ? 'Today' : 'Day ' + Math.round((parseYmd(x.due) - parseYmd(sched[0].due)) / 864e5)}<b>${day(x.due)}</b></span><div>${call ? `<b class="jsx-callt">${ic('phone')}${esc(fill(st.note || 'Call reminder').split(':')[0])}</b><p>${esc(fill(st.note || '').replace(/^[^:]*:\s*/, ''))}</p>` : `<b>${esc(fill(st.subject || '(no subject)'))}</b><p>${esc(body)}</p>`}</div></li>`; }).join('')}</ol>
+    <div class="jsx-go">
+      <div class="segs jsx-seg" role="group" aria-label="First step">${[['today', 'Today'], ['in', 'In a few days'], ['date', 'Pick a date']].map(([k, l]) => `<button type="button" class="${s.first === k ? 'on' : ''}" data-act="jsxFirstSet" data-v="${k}">${l}</button>`).join('')}</div>
+      ${s.first === 'in' ? `<label class="jsx-row"><span>Days from now</span><input type="number" min="1" max="90" value="${esc(s.inDays)}" data-input="jsxIn" style="width:80px"></label>` : ''}
+      ${s.first === 'date' ? `<label class="jsx-row"><span>Start on</span><input type="date" value="${esc(s.date)}" data-input="jsxDate" style="width:auto"></label>` : ''}
+      <label class="jsx-row"><span>When ${ct ? esc(first) : 'they'} ${ct ? 'replies' : 'reply'}</span><select data-change="jsxReply" style="width:auto">${[['pause', 'Pause it'], ['stop', 'End it']].map(([v, l]) => `<option value="${v}" ${(s.onReply || j.onReply || 'pause') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="jsx-row"><span>Move weekend steps to Monday</span><input type="checkbox" data-change="jsxSkip" ${skip ? 'checked' : ''}></label>
+      ${canWrite ? `<button type="button" class="btn pri jsx-start" data-act="jsxGo">${ic('route')}${ct ? `Start for ${esc(first)}` : 'Start journey'}</button>
+      <div class="jsx-links"><button type="button" class="lnk" data-act="jsxCustom">${ic('edit')}Edit the emails for ${ct ? esc(first) : 'this person'} only</button><button type="button" class="lnk" data-act="jEdit" data-id="${esc(j.id)}">Edit this journey</button></div>` : ''}
+    </div>`;
+}
+async function jsxStart(id){
+  const s = ui.js; if (!s) return;
+  const jid = id || s.jid; const j = journeyOf(jid);
+  if (!s.co || !s.ct) { toast('Choose a company and a contact first.', 'bad'); $('#jsxCo')?.focus(); return; }
+  const ct = S.contacts[s.ct]; if (!ct || !ctMail(ct)) { toast('That contact has no email address. Add one first.', 'bad'); return; }
+  if (!j || !jSteps(j).length) { toast('That journey has no steps yet.', 'bad'); return; }
+  const custom = id && id !== s.jid ? null : s.custom;
+  const ok = await startEnrollment({companyId: s.co, contactId: s.ct, journeyId: jid, dealId: s.deal || '', firstDate: jsxFirst(), onReply: s.onReply || j.onReply, skipWeekends: s.skip == null ? j.skipWeekends !== false : s.skip, steps: custom});
+  if (ok) { s.open = false; closeModal(); schedule(); }
+}
+
+// ---------- journey editor: one page, with the timeline across the top ----------
+const JFIELDS = {greeting: 'Greeting', first_name: 'First name', last_name: 'Last name', contact_name: 'Full name', company: 'Company', my_name: 'My name', my_first_name: 'My first name', quote_number: 'Quote #', quote_total: 'Quote total', price_quoted: 'Price quoted', service: 'Service', interval: 'Interval', service_date: 'Service date', contract_end: 'Contract end'};
+const jeChip = k => `<span class="fld" contenteditable="false" data-f="${k}">${esc(JFIELDS[k] || k)}</span>`;
+const jeBodyHtml = t => { const h = esc(t || '').replace(/\{(\w+)\}/g, (m, raw) => { const k = FIELD_ALIAS[raw.toLowerCase()] || raw.toLowerCase(); return JFIELDS[k] ? jeChip(k) : m; }).replace(/\n/g, '<br>'); return /\n$/.test(t || '') ? h + '<br>' : h; };
+function jeSer(el){
+  let out = '';
+  const walk = n => { for (const c of n.childNodes) {
+    if (c.nodeType === 3) out += c.nodeValue.replace(/ /g, ' ');
+    else if (c.nodeName === 'BR') out += '\n';
+    else if (c.dataset && c.dataset.f) out += '{' + c.dataset.f + '}';
+    else { const blk = /^(DIV|P)$/.test(c.nodeName); if (blk && out && !out.endsWith('\n')) out += '\n'; walk(c); if (blk && !out.endsWith('\n')) out += '\n'; }
+  } };
+  walk(el); return out.replace(/\n$/, '');
+}
+let jeRange = null;
+document.addEventListener('selectionchange', () => { const sl = document.getSelection(); if (sl && sl.rangeCount && sl.anchorNode && sl.anchorNode.parentElement && sl.anchorNode.parentElement.closest && (sl.anchorNode.nodeType === 1 ? sl.anchorNode : sl.anchorNode.parentElement).closest('.je-body')) jeRange = sl.getRangeAt(0).cloneRange(); });
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('je-body')) { e.preventDefault(); document.execCommand('insertLineBreak'); } }, true);
+document.addEventListener('paste', e => { const b = e.target.closest && e.target.closest('.je-body'); if (!b) return; e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain')); }, true);
+function jePreviewContacts(){
+  const id = ui.je && ui.je.id;
+  const used = id ? L('enrollments').filter(e => e.journeyId === id).map(e => e.contactId) : [];
+  const all = L('contacts').filter(c => ctMail(c));
+  return [...used.map(i => all.find(c => c.id === i)).filter(Boolean), ...all].filter((c, i, a) => a.indexOf(c) === i).slice(0, 60);
+}
+function journeyEditModal(id, opt){
+  opt = opt || {};
+  const base = id ? journeyOf(id) : null; if (id && !base) return;
+  const j = base || {name: '', category: 'quote', service: 'shred', desc: '', onReply: 'pause', skipWeekends: true, steps: [{type: 'email', delay: 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}]};
+  const pv = opt.contactId || (jePreviewContacts()[0] || {}).id || '';
+  ui.je = {id: opt.copy ? '' : (id || ''), personal: !!opt.personal, name: opt.copy ? j.name + ' (copy)' : j.name, category: j.category || 'quote', service: j.service || 'any', desc: j.desc || '', onReply: j.onReply || 'pause', skipWeekends: j.skipWeekends !== false, steps: JSON.parse(JSON.stringify(opt.steps || jSteps(j))), focus: 0, pv};
+  const E = ui.je; const ct = S.contacts[pv];
+  const title = E.personal ? `${j.name} · just for ${ct ? (ct.firstName || pname_(ct)) : 'this contact'}` : opt.copy ? 'New journey' : id ? 'Edit journey' : 'New journey';
+  const canTest = !!(MCP && conn.status === 'connected' && conn.email);
+  const foot = E.personal
+    ? `<span class="sub" style="margin-right:auto">Changes here only affect this one person.</span><button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button type="button" class="btn pri" data-act="jeSave">Use these emails</button>`
+    : `${E.id ? `<button type="button" class="btn ghost" data-act="jEditDel" data-id="${esc(E.id)}">${ic('trash')}Delete</button><button type="button" class="btn ghost" data-act="jeCopy" data-id="${esc(E.id)}">${ic('copy')}Duplicate</button>` : ''}${canTest ? `<button type="button" class="btn ghost" data-act="jeTest">${ic('mail')}Send me a test</button>` : ''}<span style="margin-left:auto"></span><button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button type="button" class="btn pri" data-act="jeSave">Save journey</button>`;
+  openModal(title, `<div class="je">
+    ${E.personal ? '' : `<div class="je-head">
+      <input class="je-name" data-input="jeName" value="${esc(E.name)}" placeholder="Name this journey, e.g. Medical Waste Quote" aria-label="Journey name">
+      <div class="je-meta">
+        <label><span>Category</span>${sel('category', JCATS.map(c => [c[0], c[1]]), E.category, 'data-change="jeSet" data-k="category"')}</label>
+        <label><span>Service</span>${sel('service', JSVCS.map(c => [c[0], c[1]]), E.service, 'data-change="jeSet" data-k="service"')}</label>
+        <label class="je-desc"><span>When to use it</span><input data-input="jeSet" data-k="desc" value="${esc(E.desc)}" placeholder="e.g. After you send a purge quote"></label>
+      </div></div>`}
+    <div class="je-strip" id="jeStrip"></div>
+    <div class="je-grid"><div class="je-doc" id="jeSteps"></div><aside class="je-side" id="jeSide"></aside></div>
+  </div>`, null, null, {wide: true, foot});
+  $('#mform').classList.add('je-sheet');
+  jePaint();
+}
+function jeDays(){ let d = 0; return ui.je.steps.map((s, i) => (d += i ? jDelay(s) : 0)); }
+function jePaint(which){
+  const E = ui.je; if (!E || !$('#jeSteps')) return;
+  const days = jeDays();
+  $('#jeStrip').innerHTML = `<div class="je-axis"></div>${E.steps.map((s, i) => `<button type="button" class="je-node${isCallStep(s) ? ' call' : ''}${E.focus === i ? ' on' : ''}" data-act="jeFocus" data-i="${i}"><span class="je-day">Day ${days[i]}</span><span class="je-dot">${ic(isCallStep(s) ? 'phone' : 'mail')}</span><span class="je-lbl">${esc(isCallStep(s) ? 'Call reminder' : (s.subject || 'Untitled email'))}</span></button>`).join('')}<button type="button" class="je-node add" data-act="jeAdd" data-t="email" data-at="${E.steps.length}"><span class="je-day">&nbsp;</span><span class="je-dot">${ic('plus')}</span><span class="je-lbl">Add a step</span></button>`;
+  if (which !== 'strip') {
+    let n = 0;
+    $('#jeSteps').innerHTML = E.steps.map((s, i) => {
+      const call = isCallStep(s); if (!call) n++;
+      const acts = `<span class="je-acts"><button type="button" class="icon-btn" data-act="jeMove" data-i="${i}" data-d="-1" aria-label="Move up" ${i ? '' : 'disabled'}>${ic('chevup')}</button><button type="button" class="icon-btn" data-act="jeMove" data-i="${i}" data-d="1" aria-label="Move down" ${i < E.steps.length - 1 ? '' : 'disabled'}>${ic('chevdown')}</button><button type="button" class="icon-btn" data-act="jeDup" data-i="${i}" aria-label="Duplicate">${ic('copy')}</button><button type="button" class="icon-btn" data-act="jeDel" data-i="${i}" aria-label="Remove">${ic('trash')}</button></span>`;
+      const wait = i ? `<div class="je-wait"><span class="je-pill">${ic('clock')}Wait <input type="number" min="0" max="365" value="${jDelay(s)}" data-input="jeDelay" data-i="${i}" aria-label="Days to wait"> day${jDelay(s) === 1 ? '' : 's'}</span><span class="je-addin"><button type="button" class="lnk" data-act="jeAdd" data-t="email" data-at="${i}">+ Email</button><button type="button" class="lnk" data-act="jeAdd" data-t="call" data-at="${i}">+ Call</button></span></div>` : '';
+      return wait + (call
+        ? `<div class="je-step call${E.focus === i ? ' on' : ''}" data-i="${i}" id="jeS${i}"><div class="je-sh">${ic('phone')}<b>Call reminder · Day ${days[i]}</b>${acts}</div><input class="je-note" data-input="jeNote" data-i="${i}" value="${esc(s.note || '')}" placeholder="e.g. Call {first_name}: ask if the box count still looks right"><p class="sub">Shows up on your Journeys page and Today when it's due, so you can call and log it. Fields like {first_name} and {company} work here.</p></div>`
+        : `<div class="je-step${E.focus === i ? ' on' : ''}" data-i="${i}" id="jeS${i}"><div class="je-sh">${ic('mail')}<b>Email ${n} · Day ${days[i]}</b>${acts}</div>
+          <div class="je-tb"><select data-change="jeIns" data-i="${i}" aria-label="Insert a field"><option value="">+ Insert field</option>${Object.entries(JFIELDS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select><select data-change="jeTpl" data-i="${i}" aria-label="Fill from a template"><option value="">Fill from a template</option>${templates().filter(t => !t.html).map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
+          <input class="je-subj" data-input="jeSubj" data-i="${i}" value="${esc(s.subject || '')}" placeholder="Subject">
+          <div class="je-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-input="jeBody" data-i="${i}" spellcheck="true">${jeBodyHtml(s.body)}</div></div>`);
+    }).join('') + `<div class="je-wait end"><span class="je-addin"><button type="button" class="btn sm" data-act="jeAdd" data-t="email" data-at="${E.steps.length}">${ic('plus')}Add an email</button><button type="button" class="btn sm" data-act="jeAdd" data-t="call" data-at="${E.steps.length}">${ic('phone')}Add a call reminder</button></span></div>`;
+  }
+  jeSide();
+}
+function jeSide(){
+  const E = ui.je; const box = $('#jeSide'); if (!box) return;
+  const s = E.steps[E.focus] || E.steps[0]; const ct = S.contacts[E.pv];
+  const data = ct ? mergeData({companyId: ct.companyId, contactId: E.pv}) : {};
+  const fill = t => ct ? fillTemplate(t, data) : t;
+  const sent = E.id ? L('enrollments').filter(e => e.journeyId === E.id).reduce((n, e) => n + (e.schedule || []).filter(x => x.step === E.focus && x.status === 'sent').length, 0) : 0;
+  const x = E.id ? jStats(E.id) : null;
+  box.innerHTML = `<h5>Preview as</h5>${sel('pv', [['', '— Pick a contact —'], ...jePreviewContacts().map(c => [c.id, `${pname_(c)} · ${cname(c.companyId)}`])], E.pv, 'data-change="jePv" aria-label="Preview as"')}
+    <div class="je-prev">${s ? (isCallStep(s) ? `<b><span class="chip warn">Call</span></b><p>${esc(fill(s.note || 'Call reminder'))}</p>` : `<b>${esc(fill(s.subject || '(no subject)'))}</b><p>${esc(fill(s.body || '')).replace(/\n/g, '<br>')}</p>`) : ''}</div>
+    ${E.personal ? '' : `<h5>Insert a field</h5><div class="je-flds">${['first_name', 'company', 'greeting', 'service', 'price_quoted', 'quote_number', 'my_first_name', 'contract_end'].map(k => `<button type="button" class="fld" data-act="jeInsF" data-f="${k}">${JFIELDS[k]}</button>`).join('')}</div>
+    <h5>Settings</h5>
+    <label class="je-set"><span>When they reply</span>${sel('onReply', [['pause', 'Pause, and let me decide'], ['stop', 'End the journey']], E.onReply, 'data-change="jeSet" data-k="onReply"')}</label>
+    <label class="je-set inline"><input type="checkbox" data-change="jeSkip" ${E.skipWeekends ? 'checked' : ''}><span>Move weekend steps to Monday</span></label>
+    <p class="sub small">Emails go out at 8:45 AM once automatic sending is connected.</p>
+    ${x && x.used ? `<h5>How it's doing</h5><div class="je-stat"><div><b>${x.used}</b><span>started</span></div><div><b>${x.reply != null ? x.reply + '%' : '—'}</b><span>replied</span></div><div><b>${sent}</b><span>sent this step</span></div></div>` : ''}`}`;
+}
+function jeInsert(k){
+  const E = ui.je; let body = jeRange && jeRange.startContainer && (jeRange.startContainer.nodeType === 1 ? jeRange.startContainer : jeRange.startContainer.parentElement).closest('.je-body');
+  if (!body) body = document.querySelector(`.je-body[data-i="${E.focus}"]`) || document.querySelector('.je-body');
+  if (!body) { toast('Click into an email first.', 'bad'); return; }
+  body.focus();
+  const sl = document.getSelection(); let r = jeRange && body.contains(jeRange.startContainer) ? jeRange : null;
+  if (!r) { r = document.createRange(); r.selectNodeContents(body); r.collapse(false); }
+  sl.removeAllRanges(); sl.addRange(r);
+  const tmp = document.createElement('span'); tmp.innerHTML = jeChip(k); const chip = tmp.firstChild;
+  r.deleteContents(); r.insertNode(chip); const sp = document.createTextNode(' '); chip.after(sp);
+  const r2 = document.createRange(); r2.setStartAfter(sp); r2.collapse(true); sl.removeAllRanges(); sl.addRange(r2); jeRange = r2.cloneRange();
+  const i = +body.dataset.i; E.steps[i].body = jeSer(body); E.focus = i; jeSide();
+}
+async function jeSave(){
+  const E = ui.je; if (!E) return;
+  document.querySelectorAll('.je-body').forEach(b => { const i = +b.dataset.i; if (E.steps[i]) E.steps[i].body = jeSer(b); });
+  const steps = E.steps.map((s, i) => isCallStep(s) ? {type: 'call', delay: i ? jDelay(s) : 0, note: String(s.note || '').trim() || 'Call {first_name}'} : {type: 'email', delay: i ? jDelay(s) : 0, subject: String(s.subject || '').trim(), body: String(s.body || '')}).filter(s => s.type === 'call' || s.subject || s.body.trim());
+  if (!steps.length) { toast('Add at least one step.', 'bad'); return; }
+  if (steps.some(s => s.type === 'email' && !s.subject)) { toast('Every email needs a subject.', 'bad'); return; }
+  if (E.personal) { if (ui.js) ui.js.custom = steps; history.back(); toast('Emails updated for this person'); return; }
+  const name = String(E.name || '').trim(); if (!name) { toast('Give the journey a name.', 'bad'); $('.je-name')?.focus(); return; }
+  const jid = E.id || 'j_' + uid();
+  if (journeys().some(j => j.id !== jid && norm(j.name) === norm(name))) { toast(`There's already a journey named “${name}”.`, 'bad'); return; }
+  const ok = await put('journeys', jid, {name, category: E.category, service: E.service, desc: String(E.desc || '').trim(), onReply: E.onReply, skipWeekends: !!E.skipWeekends, steps, ...(E.id ? {} : {ownerId: ME.id || ''})});
+  if (!ok) return;
+  toast('Journey saved');
+  if (ui.js && ui.js.open && MST.some(m => m.key === 'Start a journey')) { ui.js.jid = jid; history.back(); } else { closeModal(); schedule(); }
+}
+async function jeTest(){
+  const E = ui.je; const s = E.steps[E.focus]; if (!s || isCallStep(s)) { toast('Pick an email to test.', 'bad'); return; }
+  document.querySelectorAll('.je-body').forEach(b => { const i = +b.dataset.i; if (E.steps[i]) E.steps[i].body = jeSer(b); });
+  const ct = S.contacts[E.pv]; const data = ct ? mergeData({companyId: ct.companyId, contactId: E.pv}) : mergeData({});
+  try { await MCP.callTool(MS, 'outlook_send_mail', {to: [conn.email], subject: '[Test] ' + fillTemplate(s.subject || '', data), body: fillTemplate(s.body || '', data), bodyType: 'text'}, {cache: false}); toast(`Test sent to ${conn.email}`); }
+  catch (e) { toast(mailErr(e) || "Couldn't send the test.", 'bad'); }
+}
+
 function jStepHtml(s, i){
   return `<div class="jstep"><div class="jstep-h"><b>Email <span class="jn">${i + 1}</span></b>
     <label class="jdelay"${i === 0 ? ' hidden' : ''}>${inp('step_delay[]', i === 0 ? 0 : (s.delay || 7), 'number', 'min="1" max="90" aria-label="Days after the previous email"')}<span>days after the previous email</span></label>
@@ -4413,7 +4903,7 @@ function jRenumber(){ document.querySelectorAll('#jSteps .jstep').forEach((el, i
 function journeyLibraryModal(){
   const list = journeys();
   openModal('Journeys', `<p class="sub">Each journey is a series of follow-up emails. Your team shares the same journeys.</p>
-    <ul class="hits">${list.map(j => `<li><span><b>${esc(j.name)}</b> <span class="sub">${j.steps.length} emails</span></span>${canWrite ? `<button type="button" class="btn sm" data-act="jEdit" data-id="${j.id}">Edit</button>` : ''}</li>`).join('')}</ul>
+    <ul class="hits">${list.map(j => `<li><span><b>${esc(j.name)}</b> <span class="sub">${jCountTxt(jSteps(j))} · ${esc(jCat(j.category)[1])}</span></span>${canWrite ? `<button type="button" class="btn sm" data-act="jEdit" data-id="${j.id}">Edit</button>` : ''}</li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="jEdit">${ic('plus')}New journey</button></div>` : ''}`, null);
 }
 
@@ -4461,6 +4951,21 @@ const A = {
   jStart: d => journeyStartModal({co: d.co, ct: d.ct, deal: d.deal}),
   jLibrary: () => journeyLibraryModal(),
   jEdit: d => journeyEditModal(d.id),
+  jeCopy: d => journeyEditModal(d.id, {copy: true}),
+  jsxCat: d => { ui.js.cat = d.v; ui.js.q = ''; const q = $('#jsxQ'); if (q) q.value = ''; jsxPaint(); },
+  jsxPick: d => { if (ui.js.jid !== d.id) { ui.js.jid = d.id; ui.js.custom = null; ui.js.onReply = null; ui.js.skip = null; } jsxPaint(); },
+  jsxGo: d => jsxStart(d.id),
+  jsxFirstSet: d => { ui.js.first = d.v; jsxPaint(); },
+  jsxCustom: () => { const j = journeyOf(ui.js.jid); if (!j) return; if (!ui.js.ct) { toast('Choose a contact first.', 'bad'); return; } journeyEditModal(j.id, {personal: true, steps: ui.js.custom || jSteps(j), contactId: ui.js.ct}); },
+  jsxUncustom: () => { ui.js.custom = null; jsxPaint(); },
+  jeFocus: d => { ui.je.focus = +d.i; jePaint('strip'); document.querySelectorAll('.je-step').forEach(x => x.classList.toggle('on', +x.dataset.i === ui.je.focus)); $('#jeS' + d.i)?.scrollIntoView({block: 'center', behavior: 'smooth'}); },
+  jeAdd: d => { const at = Math.max(0, Math.min(+d.at, ui.je.steps.length)); ui.je.steps.splice(at, 0, d.t === 'call' ? {type: 'call', delay: at ? 3 : 0, note: 'Call {first_name}: '} : {type: 'email', delay: at ? 7 : 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}); ui.je.focus = at; jePaint(); const el = $('#jeS' + at); if (el) { el.scrollIntoView({block: 'center'}); el.querySelector('.je-subj, .je-note')?.focus(); } },
+  jeMove: d => { const i = +d.i, k = i + (+d.d); const st = ui.je.steps; if (k < 0 || k >= st.length) return; [st[i], st[k]] = [st[k], st[i]]; if (k === 0 || i === 0) { st[0].delay = 0; } ui.je.focus = k; jePaint(); },
+  jeDup: d => { const i = +d.i; const c = JSON.parse(JSON.stringify(ui.je.steps[i])); c.delay = 7; ui.je.steps.splice(i + 1, 0, c); ui.je.focus = i + 1; jePaint(); },
+  jeDel: d => { if (ui.je.steps.length < 2) { toast('A journey needs at least one step.', 'bad'); return; } ui.je.steps.splice(+d.i, 1); if (ui.je.steps[0]) ui.je.steps[0].delay = 0; ui.je.focus = Math.max(0, Math.min(ui.je.focus, ui.je.steps.length - 1)); jePaint(); },
+  jeInsF: d => jeInsert(d.f),
+  jeSave: () => jeSave(),
+  jeTest: () => jeTest(),
   jEditDel: d => confirmModal('Delete journey?', `${esc(jName(d.id))} will be removed. People already on it keep their schedule.`, 'Delete', async () => { const ok = DEFAULT_JOURNEYS.some(j => j.id === d.id) ? await put('journeys', d.id, {deleted: true}) : await del('journeys', d.id); if (ok) toast('Journey deleted'); return ok; }),
   jOpen: d => journeyDetailModal(d.id),
   jPause: async d => { if (await patch('enrollments', d.id, {status: 'paused', stopReason: 'manual', pausedAt: Date.now()})) { toast('Journey paused'); if (!$('#modal').hidden) journeyDetailModal(d.id); } },
@@ -4489,7 +4994,7 @@ const A = {
   },
   gopen: d => { closeModal(); if (d.a === 'open') A.open(d); else A[d.a]({id: d.id}); },
   flowSkip: d => { closeModal(); dealForm(null, {co: d.co, coName: d.coname, flow: 1}); },
-  closeModal: () => { if (draftCtl) draftCtl.abort(); if (ui.inSettings && $('#mform') && !$('#mform').classList.contains('setsheet')) { A.setBack(); return; } closeModal(); schedule(); },
+  closeModal: () => { if (draftCtl) draftCtl.abort(); const cur = MST.length ? MST[MST.length - 1].key.split('|')[0] : ''; let k = -1; for (let i = MST.length - 2; i >= 0; i--) if (MST[i].key.split('|')[0] !== cur) { k = i; break; } if (k > -1) { history.go(k - (MST.length - 1)); return; } if (ui.inSettings && $('#mform') && !$('#mform').classList.contains('setsheet')) { A.setBack(); return; } closeModal(); schedule(); },
   setBack: () => { if (draftCtl) draftCtl.abort(); const k = MST.findLastIndex ? MST.findLastIndex(m => m.key.startsWith('Settings|')) : -1; if (k > -1 && k < MST.length - 1) { history.go(k - (MST.length - 1)); return; } settingsModal(); if (DRIVE_BACKUP) drvLoad(); schedule(); },
   copy: d => copyText(d.t),
   copyFb: () => copyText($('#fbText').value),
@@ -4586,6 +5091,23 @@ const A = {
 };
 const CHANGE = {
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
+  jsxCo: el => { const s = ui.js; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
+  jsxCt: el => { ui.js.ct = el.value; jsxPaint(); },
+  jsxQ: el => { ui.js.q = el.value; jsxPaint(); },
+  jsxIn: el => { ui.js.inDays = el.value; clearTimeout(ui.jsxT); ui.jsxT = setTimeout(() => { jsxPaint(); const i = document.querySelector('[data-input="jsxIn"]'); if (i) { i.focus(); i.setSelectionRange?.(9, 9); } }, 500); },
+  jsxDate: el => { ui.js.date = el.value; jsxPaint(); },
+  jsxReply: el => { ui.js.onReply = el.value; },
+  jsxSkip: el => { ui.js.skip = el.checked; jsxPaint(); },
+  jeName: el => { ui.je.name = el.value; },
+  jeSet: el => { ui.je[el.dataset.k] = el.value; },
+  jeSkip: el => { ui.je.skipWeekends = el.checked; },
+  jeDelay: el => { const i = +el.dataset.i; ui.je.steps[i].delay = Math.max(0, parseInt(el.value) || 0); ui.je.focus = i; jePaint('strip'); },
+  jeSubj: el => { const i = +el.dataset.i; ui.je.steps[i].subject = el.value; ui.je.focus = i; jePaint('strip'); },
+  jeBody: el => { const i = +el.dataset.i; ui.je.steps[i].body = jeSer(el); if (ui.je.focus !== i) { ui.je.focus = i; jePaint('strip'); } else jeSide(); },
+  jeNote: el => { const i = +el.dataset.i; ui.je.steps[i].note = el.value; ui.je.focus = i; jeSide(); },
+  jeIns: el => { const k = el.value; el.value = ''; if (!k) return; const b = document.querySelector(`.je-body[data-i="${el.dataset.i}"]`); if (b && !(jeRange && b.contains(jeRange.startContainer))) { const r = document.createRange(); r.selectNodeContents(b); r.collapse(false); jeRange = r; } jeInsert(k); },
+  jeTpl: el => { const t = templates().find(x => x.id === el.value); el.value = ''; if (!t) return; const i = +el.dataset.i; ui.je.steps[i].subject = t.subject; ui.je.steps[i].body = t.body; ui.je.focus = i; jePaint(); },
+  jePv: el => { ui.je.pv = el.value; jeSide(); },
   jsCo: el => { const ct = $('#jsCt'); if (ct) ct.innerHTML = jsContactOpts(el.value).map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); },
   jsPrev: () => jsPreview(),
   rKind: el => { const o = $('#rOther'); if (o) { o.hidden = el.value !== '__other'; if (!o.hidden) $('#rTitle').focus(); } },
