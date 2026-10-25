@@ -575,6 +575,18 @@ html:root[data-fish="tackle"]{
 .setpane .setrow b{font-weight:600}.setpane .setrow p.sub{margin:1px 0 0;font-size:.86rem}
 .chip.ok{background:var(--good-soft);color:var(--good)}
 @media (max-width:640px){.setwrap{grid-template-columns:1fr;min-height:0}.setnav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);border-radius:0}.setnav button{white-space:nowrap}.setsep{display:none}.setpane .setrow{grid-template-columns:minmax(0,1fr)}.setpane .setrow .btn,.setpane .setrow .sa-b{justify-self:start}}
+.emv-sheet.sheet{width:min(760px,calc(100% - 32px))}
+.emv-sheet .sb{gap:10px}
+.emv-sub{margin:-6px 0 0}
+.emv-meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;font-size:.88rem;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.emv-meta span{color:var(--muted)}.emv-meta b{font-weight:600;overflow-wrap:anywhere}
+.emv-load{display:flex;gap:8px;align-items:center}.emv-load svg{width:16px;height:16px}
+.emv-frame{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:120px;display:block;padding:0}
+.emv-text{white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-wrap:anywhere}
+.emv-files{display:flex;gap:8px;flex-wrap:wrap}
+.emv-file{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-weight:600;padding:5px 10px}.emv-file svg{width:14px;height:14px}.emv-file span{color:var(--muted);font-weight:500}
+.emv-sheet .sf{flex-wrap:wrap}.emv-sheet .sf a.btn{color:var(--fg);text-decoration:none}
+.fi-b[data-act="emailOpen"]:hover .fi-t,.fi-b[data-act="emailOpen"]:hover .subj{color:var(--accent);text-decoration:underline}
 .fishegg{position:absolute;right:12px;bottom:10px;width:14px;height:8px;border:0;padding:0;background:none;color:var(--muted);opacity:.35;cursor:default;line-height:0}
 .fishegg:hover{opacity:.6}.fishegg svg{width:14px;height:8px;display:block}
 .fishegg.wig{animation:fishWig .35s ease-in-out}
@@ -1661,7 +1673,8 @@ function taskRow(k){
 function feedItem(a, withCo){
   const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
   const first = nl > -1 ? txt.slice(0, nl) : txt, rest = nl > -1 ? txt.slice(nl + 1).trim() : '';
-  return `<li class="fi"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}${fileChips(a.files)}<small>${esc(pname(a.by))} · ${rel(a.at)}${a.type === 'email' ? trackBadge(a) : ''}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div></li>`;
+  const em = a.type === 'email' && a.id;
+  return `<li class="fi"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${em ? ` class="fi-b" data-act="emailOpen" data-aid="${esc(a.id)}" title="Click to read the whole email"` : rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}${fileChips(a.files)}<small>${esc(pname(a.by))} · ${rel(a.at)}${a.type === 'email' ? trackBadge(a) : ''}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div></li>`;
 }
 function coActivityGroups(){
   const since = Date.now() - 30 * 864e5; const g = {};
@@ -2079,7 +2092,7 @@ async function loadEmails(id, refresh){
 function emailItem(m, coId){
   const who_ = m.inbound ? `From ${m.sender}` : `To ${m.recipients.slice(0, 3).join(', ')}${m.recipients.length > 3 ? ' +' + (m.recipients.length - 3) : ''}`;
   const when = m.at ? `${fmtDate(ymd(new Date(m.at)))}, ${new Date(m.at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}` : '';
-  return `<li class="fi"><span class="ft ${m.inbound?'in':'out'}">${m.inbound?'Received':'Sent'}</span><div><p class="subj">${esc(m.subject)}${m.att ? ' <span class="chip">Attachment</span>' : ''}</p>${m.summary ? `<p class="snip">${esc(m.summary)}</p>` : ''}<small>${esc(who_)} · ${when}${m.web ? ` · <a class="lnk" href="${esc(m.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}${canWrite ? ` · <button class="lnk" data-act="logEmail" data-co="${coId}" data-mid="${esc(m.id)}">Save to timeline</button>` : ''}</small></div></li>`;
+  return `<li class="fi"><span class="ft ${m.inbound?'in':'out'}">${m.inbound?'Received':'Sent'}</span><div class="fi-b" data-act="emailOpen" data-co="${esc(coId)}" data-mid="${esc(m.id)}" title="Click to read the whole email"><p class="subj">${esc(m.subject)}${m.att ? ' <span class="chip">Attachment</span>' : ''}</p>${m.summary ? `<p class="snip">${esc(m.summary)}</p>` : ''}<small>${esc(who_)} · ${when}${m.web ? ` · <a class="lnk" href="${esc(m.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}${canWrite ? ` · <button class="lnk" data-act="logEmail" data-co="${coId}" data-mid="${esc(m.id)}">Save to timeline</button>` : ''}</small></div></li>`;
 }
 const ACT_FILTERS = [['all','All'],['email','Emails'],['log','Calls, meetings & notes'],['done','Completed reminders'],['job','Closed jobs'],['doc','Files, quotes & contracts']];
 function coActivity(id){
@@ -3292,7 +3305,9 @@ function makeGraph(cfg){
       const r = await api(`/me/messages?$search=${encodeURIComponent('"' + term.replace(/"/g, '') + '"')}&$top=${Math.min(+i.limit || 15, 50)}&${SEL}`);
       return {payload: {value: (r.value || []).map(shape)}};
     },
-    async read_resource(i){ const m = await api(`/me/messages/${encodeURIComponent(i.uri)}?$select=body,bodyPreview`); return {payload: m}; },
+    async read_resource(i){ const m = await api(`/me/messages/${encodeURIComponent(i.uri)}?$select=body,bodyPreview,subject,from,toRecipients,ccRecipients,sentDateTime,receivedDateTime,webLink,hasAttachments`); return {payload: m}; },
+    async list_attachments(i){ const r = await api(`/me/messages/${encodeURIComponent(i.uri)}/attachments?$select=id,name,size,contentType,isInline`); return {payload: {value: r.value || []}}; },
+    async get_attachment(i){ const r = await api(`/me/messages/${encodeURIComponent(i.uri)}/attachments/${encodeURIComponent(i.id)}`); return {payload: r}; },
     async outlook_send_mail(i){
       const attachments = (i.attachments || []).map(a => ({'@odata.type': '#microsoft.graph.fileAttachment', name: a.name, contentType: a.contentType, contentBytes: a.contentBytes, ...(a.isInline ? {isInline: true, contentId: a.contentId} : {})}));
       await api('/me/sendMail', {method: 'POST', body: JSON.stringify({message: {subject: i.subject || '', body: {contentType: /html/i.test(i.bodyType || '') ? 'HTML' : 'Text', content: i.body || ''}, toRecipients: recips(i.to), ccRecipients: recips(i.cc), bccRecipients: recips(i.bcc), ...(attachments.length ? {attachments} : {})}, saveToSentItems: true})});
@@ -3835,6 +3850,81 @@ async function copyRich(el){
 const PURPOSE_TPL = {quote:'t_quote_fu', renewal:'t_renewal', checkin:'t_checkin', followup:'t_quote_fu'};
 let draftCtl = null;
 const toOpts = c => { const out = []; if (String(c.email || '').trim()) out.push([c.id + '|' + c.email.trim().toLowerCase(), `${pname_(c)} <${c.email.trim()}>`]); if (String(c.email2 || '').trim()) out.push([c.id + '|' + c.email2.trim().toLowerCase(), `${pname_(c)} <${c.email2.trim()}>`]); return out.length ? out : [[c.id + '|', pname_(c) + ' (no email)']]; };
+// ---------- read a whole email (pop-up window) ----------
+const EMV = {};   // the email open in the reader
+function emailBase(d){
+  if (d.aid) {
+    const a = S.activities[d.aid]; if (!a) return null;
+    const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
+    const first = nl > -1 ? txt.slice(0, nl) : txt; const rest = nl > -1 ? txt.slice(nl + 1).trim() : '';
+    const inbound = /^Received:/i.test(first); const subject = first.replace(/^(Sent|Received):\s*/i, '') || '(no subject)';
+    const ct = a.contactId && S.contacts[a.contactId];
+    return {aid: d.aid, subject, inbound, at: a.at, by: a.by, text: rest, mid: a.emailId || '', coId: a.companyId || '', contactId: a.contactId || '',
+      from: inbound ? (ct ? pname_(ct) + (ctMail(ct) ? ` <${ctMail(ct)}>` : '') : '') : pname(a.by), to: inbound ? [pname(a.by)] : (ct ? [pname_(ct) + (ctMail(ct) ? ` <${ctMail(ct)}>` : '')] : []), cc: [], track: a};
+  }
+  const m = ((EM[d.co] || {}).items || []).find(x => x.id === d.mid); if (!m) return null;
+  return {subject: m.subject, inbound: m.inbound, at: m.at, text: m.summary || '', mid: m.uri || m.id, coId: d.co, web: m.web, from: m.sender, to: m.recipients, cc: [], att: m.att};
+}
+async function emailOpen(d){
+  const b = emailBase(d); if (!b) return;
+  Object.keys(EMV).forEach(k => delete EMV[k]); Object.assign(EMV, b, {loading: !!(b.mid && MCP), html: '', files: []});
+  emailPaint();
+  if (!EMV.loading) return;
+  const want = b.mid;
+  try {
+    const r = await MCP.callTool(MS, 'read_resource', {uri: b.mid}, {cache: {staleTime: 300000, gcTime: 3600000}});
+    let p = r && r.payload; if (!p || typeof p !== 'object') { for (const x of (r && r.content) || []) if (x.type === 'text') { const o = splitJson(x.text)[0]; if (o) { p = o; break; } } }
+    if (EMV.mid !== want) return;
+    if (p) {
+      const nm = x => x && x.emailAddress ? (x.emailAddress.name && x.emailAddress.name !== x.emailAddress.address ? `${x.emailAddress.name} <${x.emailAddress.address}>` : x.emailAddress.address) : '';
+      if (p.from) EMV.from = nm(p.from);
+      if (Array.isArray(p.toRecipients)) EMV.to = p.toRecipients.map(nm).filter(Boolean);
+      if (Array.isArray(p.ccRecipients)) EMV.cc = p.ccRecipients.map(nm).filter(Boolean);
+      if (p.subject) EMV.subject = p.subject;
+      const t = Date.parse(p.sentDateTime || p.receivedDateTime || ''); if (t) EMV.at = t;
+      if (p.webLink && /^https:\/\//i.test(p.webLink)) EMV.web = p.webLink;
+      if (p.body && typeof p.body.content === 'string' && p.body.content.trim()) {
+        if (/html/i.test(p.body.contentType || '')) EMV.html = p.body.content; else EMV.text = p.body.content;
+      } else if (p.bodyPreview && p.bodyPreview.length > (EMV.text || '').length) EMV.text = p.bodyPreview;
+      if (p.hasAttachments && MCP.graph) { try { const a = await MCP.callTool(MS, 'list_attachments', {uri: want}); if (EMV.mid === want) EMV.files = ((a && a.payload && a.payload.value) || []).filter(f => !f.isInline); } catch {} }
+    }
+  } catch (e) { if (EMV.mid === want) EMV.err = mailErr(e); }
+  if (EMV.mid !== want) return;
+  EMV.loading = false; if ($('#emv')) emailPaint();
+}
+function emailFrameDoc(html){
+  const dd = new DOMParser().parseFromString(html, 'text/html');
+  dd.querySelectorAll('script,iframe,object,embed,form,meta[http-equiv],link[rel="import"]').forEach(n => n.remove());
+  dd.querySelectorAll('*').forEach(n => { for (const at of [...n.attributes]) if (/^on/i.test(at.name) || (/^(href|src)$/i.test(at.name) && /^\s*javascript:/i.test(at.value))) n.removeAttribute(at.name); if (n.tagName === 'A') { n.setAttribute('target', '_blank'); n.setAttribute('rel', 'noopener'); } });
+  const css = `<style>html{margin:0;padding:0;background:#fff}body{margin:0;padding:14px 16px;background:#fff;color:#12201E;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}a{color:#0D6B61}</style>`;
+  return '<!doctype html><html><head><meta charset="utf-8"><base target="_blank">' + css + '</head><body>' + dd.body.innerHTML + '</body></html>';
+}
+function emailPaint(){
+  const e = EMV; const when = e.at ? new Date(e.at).toLocaleString('en-US', {weekday: 'short', month: 'short', day: 'numeric', year: new Date(e.at).getFullYear() === new Date().getFullYear() ? undefined : 'numeric', hour: 'numeric', minute: '2-digit'}) : '';
+  const meta = [['From', e.from ? [e.from] : []], ['To', e.to || []], ['Cc', e.cc || []], ['Date', when ? [when] : []]].filter(x => x[1].length).map(([k, v]) => `<span>${k}</span><b>${esc(v.join(', '))}</b>`).join('');
+  const kb = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  const body = e.html ? `<iframe class="emv-frame" id="emvFrame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Email message"></iframe>`
+    : e.text ? `<div class="emv-text">${esc(e.text)}</div>` : e.loading ? '' : `<p class="sub">No message text saved for this email.</p>`;
+  const sub = `${e.inbound ? 'Received' : 'Sent'}${e.track ? trackBadge(e.track) : ''}`;
+  const foot = `${e.coId && canWrite ? `<button type="button" class="btn pri" data-act="emailReply">${ic('mail')}Reply</button>` : ''}${e.web ? `<a class="btn" href="${esc(e.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}<button type="button" class="btn" data-act="emailCopy">${ic('copy')}Copy text</button><button type="button" class="btn ghost" data-act="closeModal" style="margin-left:auto">Close</button>`;
+  openModal(e.subject || 'Email', `<div id="emv"><p class="sub emv-sub">${sub}</p><div class="emv-meta">${meta}</div>
+    ${e.loading ? `<p class="sub emv-load">${ic('mail')}Loading the full email from Outlook…</p>` : ''}${e.err ? `<p class="banner" style="margin:0 0 10px">Couldn't load the full email. ${esc(e.err)} Showing what Paper Trail saved.</p>` : ''}
+    ${body}
+    ${(e.files || []).length ? `<div class="emv-files">${e.files.map(f => `<button type="button" class="chip emv-file" data-act="emailFile" data-id="${esc(f.id)}">${ic('doc')}${esc(f.name)} <span>${kb(f.size || 0)}</span></button>`).join('')}</div>` : e.att && !e.html ? `<p class="sub">This email has attachments. Open it in Outlook to see them.</p>` : ''}
+  </div>`, null, null, {wide: true, foot});
+  $('#mform').classList.add('emv-sheet');
+  const fr = $('#emvFrame');
+  if (fr) {
+    const fit = () => { try { const h = fr.contentDocument.documentElement.scrollHeight; fr.style.height = Math.max(120, h + 4) + 'px'; } catch {} };
+    fr.onload = () => { fit(); try { fr.contentDocument.querySelectorAll('img').forEach(i => i.addEventListener('load', fit)); } catch {} setTimeout(fit, 400); };
+    fr.srcdoc = emailFrameDoc(e.html);
+  }
+}
+function emailPlain(){
+  const fr = $('#emvFrame'); if (fr) { try { return fr.contentDocument.body.innerText.trim(); } catch {} }
+  return String(EMV.text || '').trim();
+}
+
 function draftModal(col, id, purpose, jopt, toAddr){
   const r = S[col][id]; if (!r) return;
   let companyId = col === 'companies' ? id : r.companyId, contact = null;
@@ -4412,6 +4502,21 @@ const A = {
   coachTask: async d => { const c = ui.ai[d.k]?.coach; const dealId = d.k.slice(2); const deal = S.deals[dealId]; if (!c || !c.task) return; if (await put('tasks', uid(), {title: c.task.title, due: addDays(today(), Math.max(0, Math.min(60, parseInt(c.task.dueInDays) || 2))), assigneeId: ME.id, companyId: deal?.companyId, dealId})) toast('Reminder set'); },
   aiClear: d => { delete ui.ai[d.k]; render(); },
   draft: d => draftModal(d.col, d.id, d.purpose, null, d.to),
+  emailOpen: d => emailOpen(d),
+  emailCopy: () => { const t = emailPlain(); if (t) copyText(t); else toast('Nothing to copy yet.', 'bad'); },
+  emailReply: () => {
+    const e = {...EMV}; const addr = (String(e.inbound ? e.from : (e.to || [])[0] || '').match(/<([^>]+)>/) || [])[1] || (String(e.inbound ? e.from : (e.to || [])[0] || '').includes('@') ? String(e.inbound ? e.from : e.to[0]).trim() : '');
+    closeModal();
+    if (e.contactId && S.contacts[e.contactId]) draftModal('contacts', e.contactId, null, null, addr); else draftModal('companies', e.coId, null, null, addr);
+    const sj = $('#draftSubj'); if (sj) sj.value = /^re:/i.test(e.subject || '') ? e.subject : 'Re: ' + (e.subject || '');
+  },
+  emailFile: async d => {
+    if (!MCP || !MCP.graph || !EMV.mid) return;
+    try { toast('Downloading…'); const r = await MCP.callTool(MS, 'get_attachment', {uri: EMV.mid, id: d.id}); const f = r && r.payload; if (!f || !f.contentBytes) throw 0;
+      const bin = atob(f.contentBytes); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([u8], {type: f.contentType || 'application/octet-stream'})); const a = document.createElement('a'); a.href = url; a.download = f.name || 'attachment'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch { toast("Couldn't download that file. Try opening the email in Outlook.", 'bad'); }
+  },
   draftGo: () => draftGo(),
   copyDraft: () => { if (ui.draftHtml) { const el = $('#draftHtml'); if (el && elText(el).trim()) copyRich(el); return; } const v = $('#draftOut')?.value; if (v) copyText(v); else toast('Choose a template or write a message first.', 'bad'); },
   sendMail: () => sendMail(),
@@ -4488,6 +4593,7 @@ document.addEventListener('click', e => {
   if (e.target.closest('select') && e.target.closest('tr[data-act]')) return;
   const t = e.target.closest('[data-act]'); if (!t) return;
   if (t.tagName === 'A') return;
+  const an = e.target.closest('a[href]'); if (an && an !== t && t.contains(an)) return;   // a real link inside a clickable row just follows the link
   const fn = A[t.dataset.act]; if (!fn) return;
   if (t.closest('form') && t.type !== 'submit') e.preventDefault();
   e.stopPropagation();
