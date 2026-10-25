@@ -71,7 +71,7 @@ p{margin:0}
 .meline span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 main{overflow:auto;min-width:0}
-.wrap{max-width:1240px;margin:0 auto;padding:26px 28px 72px;display:flex;flex-direction:column;gap:20px}
+.wrap{max-width:1800px;margin:0 auto;padding:26px 28px 72px;display:flex;flex-direction:column;gap:20px}
 .vh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .vh>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:0}
 .vh-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -588,6 +588,11 @@ html:root[data-fish="tackle"]{
 .emv-sheet .sf{flex-wrap:wrap}.emv-sheet .sf a.btn{color:var(--fg);text-decoration:none}
 .fi-b[data-act="emailOpen"]:hover .fi-t,.fi-b[data-act="emailOpen"]:hover .subj{color:var(--accent);text-decoration:underline}
 .sh-t{display:flex;align-items:center;gap:6px;min-width:0}.sh-back{margin-left:-8px}
+.oppsplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,500px);gap:18px;align-items:start}
+.oppsplit-l{min-width:0;display:flex;flex-direction:column;gap:14px}
+.oppside{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.oppside .feed{margin:0;padding:0}
+tr.sel td{background:var(--accent-soft)!important}
 .fishegg{position:absolute;right:12px;bottom:10px;width:14px;height:8px;border:0;padding:0;background:none;color:var(--muted);opacity:.35;cursor:default;line-height:0}
 .fishegg:hover{opacity:.6}.fishegg svg{width:14px;height:8px;display:block}
 .fishegg.wig{animation:fishWig .35s ease-in-out}
@@ -1716,6 +1721,7 @@ V.reminders = () => {
 
 V.pipeline = () => {
   const show = ui.oppShow || 'open';
+  const side = sideOn() && ui.side && S.deals[ui.side] ? ui.side : null;
   if (ui.stick && ui.stick.ctx !== oppCtx()) ui.stick = null;   // rows you just changed stay put until you switch lists or pages
   const stuck = id => !!(ui.stick && ui.stick.ids.has(id));
   const all = L('deals').filter(mine).filter(d => fltPass('deals', d));
@@ -1733,9 +1739,20 @@ V.pipeline = () => {
   : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
       const lt = X.lastAct[d.id];
-      return `<tr data-act="oppPage" data-id="${d.id}"><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
-    }).join('') || `<tr><td colspan="${show==='open'?5:7}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`);
+      return `<tr data-act="oppPage" data-id="${d.id}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
+    }).join('') || `<tr><td colspan="${show==='open'?5:7}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`).replace(/(<div class="tbl"><table>[\s\S]*$)/, m => side ? `<div class="oppsplit"><div class="oppsplit-l">${m}</div>${oppSide(side)}</div>` : m);
 };
+// wide screens: clicking an opportunity opens it beside the list instead of leaving the page
+const sideOn = () => { try { return matchMedia('(min-width: 1280px)').matches; } catch { return false; } };
+function oppSide(id){
+  const d = S.deals[id];
+  const acts = L('activities').filter(a => !isSysAct(a) && (a.dealId === id || (d.companyId && a.companyId === d.companyId))).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 6);
+  const ct = d.contactId && S.contacts[d.contactId];
+  return `<aside class="oppside" aria-label="Opportunity details">${DETAIL.deals(id)}
+    ${ct ? `<div class="sec"><div class="sech"><h3>Contact</h3></div><p style="margin:0">${link('contacts', d.contactId)}${ct.phone ? ` · <a class="lnk" href="tel:${esc(ct.phone)}">${esc(ct.phone)}</a>` : ''}${ctMail(ct) ? `<br><span class="sub">${esc(ctMail(ct))}</span>` : ''}</p></div>` : ''}
+    <div class="sec"><div class="sech"><h3>Recent activity</h3>${canWrite ? `<button class="btn sm" data-act="addActivity" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('plus')}Log activity</button>` : ''}</div>${acts.length ? `<ul class="feed">${acts.map(a => feedItem(a, 'nodeal')).join('')}</ul>` : '<p class="sub">No activity yet.</p>'}</div>
+  </aside>`;
+}
 function dealCard(d){
   const n = daysSince(lastTouch(d));
   const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -4371,10 +4388,10 @@ function journeyLibraryModal(){
 
 // ---------- actions ----------
 const A = {
-  go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; render(); pushNav(); $('#main').scrollTop = 0; },
+  go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
   open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
-  closeDetail: () => { ui.detail = null; render(); pushNav(); },
+  closeDetail: () => { if (ui.side && !ui.detail && ui.view === 'pipeline') { ui.side = null; render(); return; } ui.detail = null; render(); pushNav(); },
   search: () => searchModal(),
   dupOpen: d => { closeModal(); if (d.col === 'companies') A.coPage({id: d.id}); else if (d.col === 'tasks') taskForm(d.id); else if (d.col === 'contracts') contractForm(d.id); else if (d.col === 'quotes') A.editQuote({id: d.id}); else A.open({col: d.col, id: d.id}); },
   oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.tagName === 'SELECT' && el.showPicker) try { el.showPicker(); } catch {} } },
@@ -4398,7 +4415,9 @@ const A = {
   dfSaveRem: () => { const f = $('#mform'), t = $('#dfThen'); if (!f || !t) return; t.value = 'reminder'; if (f.reportValidity && !f.reportValidity()) { t.value = ''; return; } f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', {cancelable: true})); setTimeout(() => { if (t.isConnected) t.value = ''; }, 0); },
   demoOff: () => GUEST ? guestExit() : setDemo(false),
   resetDemo: () => confirmModal('Clear all data?', 'Every account, contact, opportunity and reminder saved in this browser will be removed. Export first from Settings if you want a copy.', 'Clear everything', async () => { for (const c of COLS) S[c] = {}; try { localStorage.removeItem(LS_KEY); } catch {} ui.view = 'today'; ui.detail = null; schedule(); toast('All data cleared'); }),
-  oppPage: d => { ui.oppEdit = null; if (!S.deals[d.id]) return; ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; },
+  oppPage: (d, el) => { ui.oppEdit = null; if (!S.deals[d.id]) return;
+    if (el && el.tagName === 'TR' && ui.view === 'pipeline' && sideOn()) { ui.side = ui.side === d.id ? null : d.id; render(); return; }   // open beside the list
+    ui.pageOpp = d.id; ui.view = 'opp'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; },
   coPage: d => { ui.pageCo = d.id; ui.cpTab = d.t || 'details'; ui.view = 'company'; ui.detail = null; ui.q = ''; render(); pushNav(); $('#main').scrollTop = 0; syncEmailsFor(d.id); },
   cpTab: d => { ui.cpTab = d.t; render(); pushNav(); },
   addActivity: d => activityModal({co: d.co, ct: d.ct, deal: d.deal}),
@@ -4616,7 +4635,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); e.target.blur(); return; }
   }
   if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('edf')) { e.preventDefault(); e.target.click(); return; }
-  if (e.key === 'Escape') { if (!$('#modal').hidden) A.closeModal(); else if (ui.detail) A.closeDetail(); return; }
+  if (e.key === 'Escape') { if (!$('#modal').hidden) A.closeModal(); else if (ui.detail || (ui.side && ui.view === 'pipeline')) A.closeDetail(); return; }
   const typing = e.target.matches && e.target.matches('input, textarea, select, [contenteditable]');
   if (((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) && $('#modal').hidden && booted) { e.preventDefault(); searchModal(); return; }
   if (e.target.id === 'gq' && (e.key === 'Enter' || e.key === 'ArrowDown')) { const first = $('#gres .sr'); if (first) { e.preventDefault(); e.key === 'Enter' ? first.click() : first.focus(); } return; }
