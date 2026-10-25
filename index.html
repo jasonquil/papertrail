@@ -587,6 +587,7 @@ html:root[data-fish="tackle"]{
 .emv-file{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-weight:600;padding:5px 10px}.emv-file svg{width:14px;height:14px}.emv-file span{color:var(--muted);font-weight:500}
 .emv-sheet .sf{flex-wrap:wrap}.emv-sheet .sf a.btn{color:var(--fg);text-decoration:none}
 .fi-b[data-act="emailOpen"]:hover .fi-t,.fi-b[data-act="emailOpen"]:hover .subj{color:var(--accent);text-decoration:underline}
+.sh-t{display:flex;align-items:center;gap:6px;min-width:0}.sh-back{margin-left:-8px}
 .fishegg{position:absolute;right:12px;bottom:10px;width:14px;height:8px;border:0;padding:0;background:none;color:var(--muted);opacity:.35;cursor:default;line-height:0}
 .fishegg:hover{opacity:.6}.fishegg svg{width:14px;height:8px;display:block}
 .fishegg.wig{animation:fishWig .35s ease-in-out}
@@ -939,6 +940,7 @@ const STALE_DAYS = 14;
 const VIEWS = [['today','Today','cal'],['reminders','Reminders','bell'],['journeys','Journeys','route'],['pipeline','Opportunities','cols'],['companies','Accounts','building'],['contacts','Contacts','users'],['quotes','Quotes','tag'],['contracts','Contracts','doc']];
 
 const ICON = {
+  back:'<path d="M15 18l-6-6 6-6"/>',
   more:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>', check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
   search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
@@ -2180,13 +2182,15 @@ const DETAIL = {
 
 // ---------- modals ----------
 function openModal(title, body, submitLabel, onSubmit, opts={}){
-  const m = $('#modal'); m.hidden = false;
-  m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh"><h3>${esc(title)}</h3><button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
+  const m = $('#modal'); if (m.hidden) ui.inSettings = false;   // a fresh window never belongs to Settings
+  const back = ui.inSettings && title !== 'Settings';
+  m.hidden = false;
+  m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh">${back ? `<div class="sh-t"><button type="button" class="icon-btn sh-back" data-act="setBack" aria-label="Back to Settings" title="Back to Settings">${ic('back')}</button><h3>${esc(title)}</h3></div>` : `<h3>${esc(title)}</h3>`}<button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
   const f = $('#mform');
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
   setTimeout(() => f.querySelector('.sb input:not([type=hidden]):not([type=checkbox]), .sb textarea, .sb select')?.focus(), 40);
 }
-function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; }
+function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
 const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
@@ -3212,7 +3216,7 @@ function settingsModal(){
   openModal('Settings', `<div class="setwrap"><nav class="setnav" role="tablist">${secs.map(([k, t, i]) => `${k === 'trash' ? '<span class="setsep"></span>' : ''}<button type="button" role="tab" aria-selected="${k === ui.setTab}" class="${k === ui.setTab ? 'on' : ''}${k === 'trash' ? ' red' : ''}" data-act="setTab" data-v="${k}">${ic(i)}<span>${t}</span></button>`).join('')}</nav>
     <div class="setpane sets"><h4>${cur[1]}</h4><p class="sub">${cur[3]}</p>${cur[4].join('')}
     <button type="button" class="fishegg" data-act="fishEgg" aria-label="Fish">${'<svg viewBox="0 0 64 32" aria-hidden="true"><path d="M4 16C14 2 40 2 50 16 40 30 14 30 4 16z" fill="currentColor"/><path d="M48 16L62 5l-4 11 4 11z" fill="currentColor"/></svg>'}</button></div></div>`, null, null, {wide: true});
-  $('#mform').classList.add('setsheet');
+  $('#mform').classList.add('setsheet'); ui.inSettings = true;
   try { $('.setnav .on')?.scrollIntoView({block: 'nearest', inline: 'nearest'}); } catch {}
 }
 
@@ -4435,7 +4439,8 @@ const A = {
   },
   gopen: d => { closeModal(); if (d.a === 'open') A.open(d); else A[d.a]({id: d.id}); },
   flowSkip: d => { closeModal(); dealForm(null, {co: d.co, coName: d.coname, flow: 1}); },
-  closeModal: () => { if (draftCtl) draftCtl.abort(); closeModal(); schedule(); },
+  closeModal: () => { if (draftCtl) draftCtl.abort(); if (ui.inSettings && $('#mform') && !$('#mform').classList.contains('setsheet')) { A.setBack(); return; } closeModal(); schedule(); },
+  setBack: () => { if (draftCtl) draftCtl.abort(); settingsModal(); if (DRIVE_BACKUP) drvLoad(); schedule(); },
   copy: d => copyText(d.t),
   copyFb: () => copyText($('#fbText').value),
   newCompany: () => companyForm(), editCompany: d => companyForm(d.id),
