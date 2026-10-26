@@ -128,7 +128,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .tagfilter{width:auto;max-width:200px}.fltbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-6px 0 12px}.fchip2{display:inline-flex;align-items:center;gap:4px;font-size:.82rem;font-weight:600;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}.fchip2 button{border:0;background:none;color:inherit;cursor:pointer;font-size:1rem;line-height:1;padding:0 4px}.btn.on{border-color:var(--accent);color:var(--accent)}.fcount{font-style:normal;background:var(--accent);color:var(--surface);border-radius:999px;padding:0 6px;font-size:.72rem}.fltgrid{gap:10px 12px}.savedsel{width:auto;max-width:220px}.savedname{font-size:.84rem;color:var(--fg);margin-right:2px}.tagedit .tagin{width:170px;flex:none}td .tags{display:flex;margin:3px 0 1px}
 .acctno{color:var(--muted);font-size:.85em;font-variant-numeric:tabular-nums;margin-left:4px}
 .trk{color:var(--good);font-weight:600}.trk.none{color:var(--muted);font-weight:500}.trk b{font-weight:700}
-.sigbox{min-height:140px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#222;overflow:auto}.sigbox img{max-width:100%}.sigtools{display:flex;gap:6px;margin-bottom:8px}.sigprev{margin:6px 0 10px;padding:10px;border:1px dashed var(--line);border-radius:8px;background:#fff;color:#222;max-height:160px;overflow:auto;font-size:.9rem}.sigprev img{max-width:100%}
+.sigbox{min-height:140px;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#222;overflow:auto}.sigbox img{max-width:100%;height:auto}.sigtools{display:flex;gap:6px;margin-bottom:8px}.sigprev{margin:6px 0 10px;padding:10px;border:1px dashed var(--line);border-radius:8px;background:#fff;color:#222;max-height:160px;overflow:auto;font-size:.9rem}.sigprev img{max-width:100%}
 .pm{position:fixed;z-index:9999;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:380px;font-size:.92rem;font-weight:500;text-align:left}
 .pm-srch{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);color:var(--muted)}.pm-srch svg{width:15px;height:15px;flex:none}.pm .pm-srch input{border:0!important;outline:0!important;box-shadow:none!important;font:inherit;flex:1;min-width:0;padding:2px 0!important;height:auto;color:var(--fg);background:transparent!important;width:auto}
 .pm-list{padding:6px;overflow:auto;flex:1}.pm-it{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;line-height:1.3}.pm-it span:not(.pm-ck){flex:1}.pm-it.on{font-weight:700}.pm-it.hl{background:var(--accent-soft);color:var(--accent);font-weight:600}.pm-it.dis{opacity:.45;cursor:default}
@@ -498,6 +498,14 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .rte:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .tpl-ed{min-height:300px}
 #tplEdSrc{border-top-left-radius:0;border-top-right-radius:0;font:13px/1.45 var(--mono)}
+.imgpop{position:fixed;z-index:60;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:8px;width:300px}
+.imgpop .ip-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.imgpop .ip-row b{font-size:.86rem;flex:1}
+.imgpop .ip-n{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.imgpop input[type=range]{width:100%;accent-color:var(--accent);padding:0;border:0;box-shadow:none}
+.imgpop button{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:4px 9px;font:600 .8rem var(--body);color:var(--fg);cursor:pointer}
+.imgpop button:hover{border-color:var(--accent);color:var(--accent)}.imgpop .ip-del{margin-left:auto;color:var(--bad)}
+[contenteditable="true"] img{cursor:pointer}
+.img-on{outline:2px solid var(--accent);outline-offset:2px}
 /* ===== Selectable looks (Settings → Appearance → Look) ===== */
 
 .stagebar{display:none;gap:2px;height:28px;border-radius:8px;overflow:hidden}
@@ -2565,7 +2573,7 @@ function openModal(title, body, submitLabel, onSubmit, opts={}){
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
   setTimeout(() => f.querySelector('.sb input:not([type=hidden]):not([type=checkbox]), .sb textarea, .sb select')?.focus(), 40);
 }
-function closeModal(){ const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
+function closeModal(){ imgPopClose(); const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
 const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
@@ -3812,6 +3820,7 @@ function sigClean(html){
   root.querySelectorAll('script,style,meta,link,title,xml,o\\:p').forEach(n => n.remove());
   for (const el of root.querySelectorAll('*')) { for (const at of [...el.attributes]) if (/^on/i.test(at.name) || (at.name === 'href' && /^\s*javascript:/i.test(at.value))) el.removeAttribute(at.name); }
   for (const img of root.querySelectorAll('img')) { const src = img.getAttribute('src') || ''; if (!/^(data:image\/|https:\/\/)/i.test(src)) { img.remove(); dropped++; } }
+  root.querySelectorAll('.img-on').forEach(n => { n.classList.remove('img-on'); if (!n.getAttribute('class')) n.removeAttribute('class'); });
   return {html: root.innerHTML.trim(), dropped};
 }
 const fileToDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
@@ -3826,6 +3835,45 @@ async function sigInsertFiles(files){
   const box = $('#sigBox'); if (!box) return;
   for (const f of files) { if (!/^image\//.test(f.type)) continue; const src = await shrinkImage(f); box.focus(); document.execCommand('insertHTML', false, `<img src="${src}" alt="${esc(f.name.replace(/\.[^.]+$/, ''))}" style="max-width:300px">`); }
 }
+// ---------- resize pictures in the signature, templates and emails: click a picture to get size controls ----------
+const IMGP = {img: null};
+function imgPopClose(){ const el = $('#imgPop'); if (el) el.remove(); if (IMGP.img) IMGP.img.classList.remove('img-on'); IMGP.img = null; }
+function imgCurW(im){ return Math.round(im.getBoundingClientRect().width) || parseInt(im.getAttribute('width')) || im.naturalWidth || 100; }
+function imgSetW(im, w){
+  w = Math.max(24, Math.min(800, Math.round(w)));
+  const nw = im.naturalWidth || imgCurW(im), nh = im.naturalHeight || Math.round(imgCurW(im) * (im.height || 1) / (im.width || 1));
+  im.style.width = w + 'px'; im.style.height = 'auto'; im.style.maxWidth = '100%';
+  im.setAttribute('width', w); if (nw && nh) im.setAttribute('height', Math.round(nh * w / nw));
+  const ed = im.closest('[contenteditable="true"]'); if (ed) ed.dispatchEvent(new Event('input', {bubbles: true}));
+  imgPopPlace();
+}
+function imgPopPlace(){
+  const el = $('#imgPop'), im = IMGP.img; if (!el || !im) return;
+  const r = im.getBoundingClientRect(); const pw = el.offsetWidth, ph = el.offsetHeight;
+  let top = r.bottom + 8; if (top + ph > innerHeight - 8) top = Math.max(8, r.top - ph - 8);
+  el.style.top = top + 'px'; el.style.left = Math.max(8, Math.min(innerWidth - pw - 8, r.left)) + 'px';
+  const v = el.querySelector('input[type=range]'), n = el.querySelector('.ip-n'); const w = imgCurW(im); if (v && document.activeElement !== v) v.value = w; if (n) n.textContent = w + ' px';
+}
+function imgPopOpen(im){
+  imgPopClose(); IMGP.img = im; im.classList.add('img-on');
+  const nat = im.naturalWidth || imgCurW(im);
+  const pop = document.createElement('div'); pop.id = 'imgPop'; pop.className = 'imgpop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Picture size');
+  pop.innerHTML = `<div class="ip-row"><b>Picture size</b><span class="ip-n"></span></div>
+    <input type="range" min="24" max="${Math.max(400, Math.min(800, nat))}" step="1" aria-label="Width in pixels">
+    <div class="ip-row">${[['Small', 90], ['Medium', 160], ['Large', 260], ['Original', nat]].map(([l, w]) => `<button type="button" data-w="${w}">${l}</button>`).join('')}<button type="button" class="ip-del" data-del="1" title="Remove picture">Remove</button></div>`;
+  document.body.appendChild(pop);
+  pop.addEventListener('mousedown', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
+  pop.addEventListener('input', e => { if (e.target.type === 'range' && IMGP.img) imgSetW(IMGP.img, +e.target.value); });
+  pop.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || !IMGP.img) return; if (b.dataset.del) { const ed = IMGP.img.closest('[contenteditable="true"]'); IMGP.img.remove(); imgPopClose(); if (ed) ed.dispatchEvent(new Event('input', {bubbles: true})); return; } imgSetW(IMGP.img, +b.dataset.w); });
+  imgPopPlace();
+}
+document.addEventListener('click', e => {
+  const im = e.target.closest && e.target.closest('[contenteditable="true"] img');
+  if (im) { e.preventDefault(); imgPopOpen(im); getSelection().removeAllRanges(); return; }
+  if (!(e.target.closest && e.target.closest('#imgPop'))) imgPopClose();
+}, true);
+document.addEventListener('keydown', e => { if (!IMGP.img) return; if (e.key === 'Escape') { imgPopClose(); e.stopPropagation(); } else if ((e.key === 'Delete' || e.key === 'Backspace') && getSelection().isCollapsed && !(e.target.closest && e.target.closest('#imgPop'))) { e.preventDefault(); const ed = IMGP.img.closest('[contenteditable="true"]'); IMGP.img.remove(); imgPopClose(); if (ed) ed.dispatchEvent(new Event('input', {bubbles: true})); } }, true);
+window.addEventListener('scroll', () => imgPopPlace(), true); window.addEventListener('resize', () => imgPopPlace());
 function sigCheckImages(){
   const box = $('#sigBox'), note = $('#sigNote'); if (!box) return;
   const imgs = [...box.querySelectorAll('img')]; let bad = 0, done = 0;
