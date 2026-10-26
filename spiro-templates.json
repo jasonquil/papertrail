@@ -7,7 +7,7 @@
 "html": true,
 "order": 100,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_002",
@@ -17,7 +17,7 @@
 "html": true,
 "order": 101,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_003",
@@ -27,7 +27,7 @@
 "html": true,
 "order": 102,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_004",
@@ -37,7 +37,7 @@
 "html": true,
 "order": 103,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_005",
@@ -47,17 +47,17 @@
 "html": true,
 "order": 104,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_006",
 "name": "50+ Template Proposal",
 "subject": "All Points Mobile Shredding Proposal",
-"body": "<p>Hello {first_name},</p><p>It was a pleasure speaking with you! I’m following up with a written proposal for our services.</p><p><strong>On-Site Shredding Pricing*:</strong></p><ul><li><strong>$xxx</strong> includes up to x bins (holds ~200 lbs)</li><li><strong>$xx</strong> for each additional bin.</li><li>Staples, binder clips, paper clips, and hanging folders do not need to be removed.</li><li><strong>We CANNOT shred:</strong> 3-ring binders ,Plastic sleeve protectors , X-rays must be separated.</li><li>A Certificate of Destruction will be provided upon completion.</li></ul><p><strong>Why Choose Us?</strong></p><ul><li>28+ years in business – locally owned &amp; family-operated.</li><li>NAID AAA-Certified – ensuring top-tier security &amp; compliance.</li><li>Employees undergo background checks &amp; security training.</li><li>We carry liability insurance (up to $1M) for customer protection.</li><li>Over 500 5-star Google reviews!</li></ul><p><strong>Additional Services:</strong></p><ul><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Medical Waste - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li><li>Document Storage and Scanning , we have a solution for you</li><li>If you have any questions, feel free to ask. If you're ready to proceed, let me know, and I’ll schedule your service right away!</li></ul><p><strong>Notes*:</strong></p><ul><li>Materials must be on the ground level or accessible via an elevator. A $20 per bin fee applies for jobs requiring elevator access due to additional time. A $75 stop fee will be incurred and the job will not be completed.</li><li>Pricing does not include breakdown or removal of boxes.</li><li>A reduced rate has been applied based on volume; minimum stop charge applies regardless of volume.</li></ul><p>Please let me know if you have any questions.</p>",
+"body": "<p>Hello {first_name},</p><p>It was a pleasure speaking with you! I’m following up with a written proposal for our services.</p><p><strong>On-Site Shredding Pricing*:</strong></p><ul><li><strong>$xxx</strong> includes up to x bins (holds ~200 lbs)</li><li><strong>$xx</strong> for each additional bin.</li><li>Staples, binder clips, paper clips, and hanging folders do not need to be removed.</li><li><strong>We CANNOT shred:</strong> 3-ring binders ,Plastic sleeve protectors , X-rays must be separated.</li><li>A Certificate of Destruction will be provided upon completion.</li></ul><p><strong>Why Choose Us?</strong></p><ul><li>30+ years in business – locally owned &amp; family-operated.</li><li>NAID AAA-Certified – ensuring top-tier security &amp; compliance.</li><li>Employees undergo background checks &amp; security training.</li><li>We carry liability insurance (up to $1M) for customer protection.</li><li>Over 500 5-star Google reviews!</li></ul><p><strong>Additional Services:</strong></p><ul><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Medical Waste - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li><li>Document Storage and Scanning , we have a solution for you</li><li>If you have any questions, feel free to ask. If you're ready to proceed, let me know, and I’ll schedule your service right away!</li></ul><p><strong>Notes*:</strong></p><ul><li>Materials must be on the ground level or accessible via an elevator. A $20 per bin fee applies for jobs requiring elevator access due to additional time. A $75 stop fee will be incurred and the job will not be completed.</li><li>Pricing does not include breakdown or removal of boxes.</li><li>A reduced rate has been applied based on volume; minimum stop charge applies regardless of volume.</li></ul><p>Please let me know if you have any questions.</p>",
 "html": true,
 "order": 105,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_007",
@@ -67,27 +67,28 @@
 "html": true,
 "order": 106,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_008",
 "name": "All Points Medical Waste - About Us",
 "subject": "All Points Medical Waste",
-"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction. I'm following up with this e-mail to provide you with information about us.</p><p><strong>Medical Waste Services Offered:</strong></p><p>We provide comprehensive, expert solutions for Biomedical Waste Disposal Services, Sharps Waste Disposal Services, and Pharmaceutical Waste Disposal Services while delivering superior, and reliable customer service.</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPPA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p><strong>Additional Services:</strong></p><ul><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Document Shredding  - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li><li>Storage &amp; Scanning – we have a solution for you!</li><li>You will always speak with a live representative. It makes a world of difference in getting things sorted out quickly and efficiently</li></ul><p>If you have any questions, please don’t hesitate to ask.</p>",
+"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction. I'm following up with this e-mail to provide you with information about us.</p><p><strong>Medical Waste Services Offered:</strong></p><p>We provide comprehensive, expert solutions for Biomedical Waste Disposal Services, Sharps Waste Disposal Services, and Pharmaceutical Waste Disposal Services while delivering superior, and reliable customer service.</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPAA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p><strong>Additional Services:</strong></p><ul><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Document Shredding  - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li><li>Storage &amp; Scanning – we have a solution for you!</li><li>You will always speak with a live representative. It makes a world of difference in getting things sorted out quickly and efficiently</li></ul><p>If you have any questions, please don’t hesitate to ask.</p>",
 "html": true,
 "order": 107,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_009",
-"name": "A New Purge Confirmation - Jason",
+"name": "A New Purge Confirmation",
 "subject": "Shred Confirmation - All Points Mobile Shredding - PLEASE READ",
 "body": "<p>Dear {first_name},</p><p>Thank you for choosing All Points Mobile Shredding &amp; Medical Waste.</p><p>For on-site shredding*, pricing is as follows:</p><ul><li><strong>$185</strong> for the first bin (holds ~200 lbs or ~7 copy paper boxes; 15x12x10).</li><li><strong>$95</strong> for each additional bin.</li></ul><p><strong>Key Details:</strong></p><ul><li>All shredding is done on-site, and a Certificate of Destruction will be provided.</li><li>Staples, binder clips, paper clips, and hanging folders do not need to be removed.</li><li><strong>We CANNOT shred:</strong> Batteries, 3-ring binders, Plastic sleeve protectors, X-rays must be separated from paper.</li><li><strong>Accessibility Requirement:</strong> All materials must be on the ground level or accessible by elevator. A $20 per bin fee applies for jobs requiring elevator access due to additional time.</li></ul><p><strong>Your Appointment:</strong></p><p>Your shredding purge is scheduled for DATE. You will receive an automated call the afternoon prior confirming your appointment and an email with an approximate 3-hour time window. If you have more paper than the estimated, we may need to reschedule. To cancel your appointment, please call 772-283-4152 at least 24 hours in advance to avoid a $75 cancellation fee.</p><p><strong>Payment:</strong></p><ul><li>Due at time of service (Check or Credit Card).</li><li>A 3.5% fee applies to credit card payments.</li><li>Make check payable to All Points Mobile Shredding. ***Please be advised that some checks are processed as an e-check/ACH payment and may show on your end through your bank as either an electronic check or an ACH payment.  Please do NOT reject this transaction!***</li><li>If no payment is provided, the card on file will be charged within 24 hours.</li><li>If you are being invoiced, you will receive the invoice on the next business day following the date of your service.</li></ul><p><strong>Additional Services</strong></p><ul><li>Document Shredding - Monthly , Bi- Monthly &amp; Quarterly Recurring Service</li><li>Document Storage and Scanning - we have a solution for you</li><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Medical Waste - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li></ul><p>*This service does not include the breakdown or removal of boxes<br>We appreciate your business!</p>",
 "html": true,
 "order": 108,
 "src": "spiro",
-"spv": 3
+"spv": 4,
+"was": "A New Purge Confirmation - Jason"
 },
 {
 "id": "sp_010",
@@ -97,7 +98,7 @@
 "html": true,
 "order": 109,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_011",
@@ -107,17 +108,17 @@
 "html": true,
 "order": 110,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_012",
 "name": "Compliance Training",
 "subject": "Compliance",
-"body": "<p>Thank you for contacting All Points Mobile Shredding and Medical Waste. It was a pleasure speaking to you. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction.</p><p>Summary of compliance training.</p><p>Compliance Training - $25 per month.  Includes 10 credits annually.  One credit = 1 course.  Additional credits can be purchased.</p><p>Our online compliance training includes: HIPPA , Blood Borne Pathogens, Hazcom,Sharps Safety and DOT Trainings.  When you add compliance training you will have access to your manifests as well as the course certificates in one convienent location.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>See attached guide (beneath signature line) for a brief overview explaining who needs to which courses and how often.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p>If you have any questions, please don’t hesitate to ask.</p><p>We appreciate your business!</p>",
+"body": "<p>Thank you for contacting All Points Mobile Shredding and Medical Waste. It was a pleasure speaking to you. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction.</p><p>Summary of compliance training.</p><p>Compliance Training - $25 per month.  Includes 10 credits annually.  One credit = 1 course.  Additional credits can be purchased.</p><p>Our online compliance training includes: HIPAA , Blood Borne Pathogens, Hazcom,Sharps Safety and DOT Trainings.  When you add compliance training you will have access to your manifests as well as the course certificates in one convenient location.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>See attached guide (beneath signature line) for a brief overview explaining who needs to which courses and how often.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p>If you have any questions, please don’t hesitate to ask.</p><p>We appreciate your business!</p>",
 "html": true,
 "order": 111,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_013",
@@ -127,7 +128,7 @@
 "html": true,
 "order": 112,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_014",
@@ -137,7 +138,7 @@
 "html": true,
 "order": 113,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_015",
@@ -147,17 +148,17 @@
 "html": true,
 "order": 114,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_016",
 "name": "Email 1 Recurring Proposal",
 "subject": "Re: Follow Up",
-"body": "<p>Hi {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste! We specialize in shredding, medical waste and electronic destruction.</p><p><strong>Monthly On-Site Document Shredding:</strong></p><p>Executive Console (100-lb capacity) $55/pick up</p><p>65 Gallon Container (200-lb capacity) $65/pick up</p><p><strong>Medical Waste Service:</strong></p><p>15 Gallon Container - $55/pick up</p><p>28 Gallon Container - $75/pick up</p><p>95 Gallon Container - 105/pick up</p><p>Sharps containers can be purchased.</p><p>Roll of Red Bags $25 (25 15-Gallon bags) Only needed if you want extra on hand.</p><p>Most of our medical waste clients also purchase Compliance Training to ensure HIPPA, DOT, and Hazcom (OSHA) compliance.</p><p>We also offer destruction for your end-of-life electronics! We can destroy laptops, computers, hard-drives and more!</p><p>Credits can be used for: Bloodborne Pathogens (satisfies the annual OSHA Bloodborne Pathogens requirement on exposure, control, principals, and practices.) HIPPA (satisfies the HHS privacy requirement) Hazcom (Hazcom training satisfies OSHA's Hazard Communication Standard) DOT trainings (DOT trainining is mandatory for the person signing the Manifest)</p><p>If you are ready to get started I can send over a service agreement.</p>",
+"body": "<p>Hi {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste! We specialize in shredding, medical waste and electronic destruction.</p><p><strong>Monthly On-Site Document Shredding:</strong></p><p>Executive Console (100-lb capacity) $55/pick up</p><p>65 Gallon Container (200-lb capacity) $65/pick up</p><p><strong>Medical Waste Service:</strong></p><p>15 Gallon Container - $55/pick up</p><p>28 Gallon Container - $75/pick up</p><p>95 Gallon Container - 105/pick up</p><p>Sharps containers can be purchased.</p><p>Roll of Red Bags $25 (25 15-Gallon bags) Only needed if you want extra on hand.</p><p>Most of our medical waste clients also purchase Compliance Training to ensure HIPAA, DOT, and Hazcom (OSHA) compliance.</p><p>We also offer destruction for your end-of-life electronics! We can destroy laptops, computers, hard-drives and more!</p><p>Credits can be used for: Bloodborne Pathogens (satisfies the annual OSHA Bloodborne Pathogens requirement on exposure, control, principals, and practices.) HIPAA (satisfies the HHS privacy requirement) Hazcom (Hazcom training satisfies OSHA's Hazard Communication Standard) DOT trainings (DOT trainining is mandatory for the person signing the Manifest)</p><p>If you are ready to get started I can send over a service agreement.</p>",
 "html": true,
 "order": 115,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_017",
@@ -167,7 +168,7 @@
 "html": true,
 "order": 116,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_018",
@@ -177,7 +178,7 @@
 "html": true,
 "order": 117,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_019",
@@ -187,7 +188,7 @@
 "html": true,
 "order": 118,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_020",
@@ -197,7 +198,7 @@
 "html": true,
 "order": 119,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_021",
@@ -207,7 +208,7 @@
 "html": true,
 "order": 120,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_022",
@@ -217,7 +218,7 @@
 "html": true,
 "order": 121,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_023",
@@ -227,7 +228,7 @@
 "html": true,
 "order": 122,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_024",
@@ -237,7 +238,7 @@
 "html": true,
 "order": 123,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_025",
@@ -247,7 +248,7 @@
 "html": true,
 "order": 124,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_026",
@@ -257,7 +258,7 @@
 "html": true,
 "order": 125,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_027",
@@ -267,7 +268,7 @@
 "html": true,
 "order": 126,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_028",
@@ -277,7 +278,7 @@
 "html": true,
 "order": 127,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_029",
@@ -287,7 +288,7 @@
 "html": true,
 "order": 128,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_030",
@@ -297,7 +298,7 @@
 "html": true,
 "order": 129,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_031",
@@ -307,7 +308,7 @@
 "html": true,
 "order": 130,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_032",
@@ -317,7 +318,7 @@
 "html": true,
 "order": 131,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_033",
@@ -327,7 +328,7 @@
 "html": true,
 "order": 132,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_034",
@@ -337,7 +338,7 @@
 "html": true,
 "order": 133,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_035",
@@ -347,7 +348,7 @@
 "html": true,
 "order": 134,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_036",
@@ -357,7 +358,7 @@
 "html": true,
 "order": 135,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_037",
@@ -367,7 +368,7 @@
 "html": true,
 "order": 136,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_038",
@@ -377,7 +378,7 @@
 "html": true,
 "order": 137,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_039",
@@ -387,7 +388,7 @@
 "html": true,
 "order": 138,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_040",
@@ -397,7 +398,7 @@
 "html": true,
 "order": 139,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_041",
@@ -407,7 +408,7 @@
 "html": true,
 "order": 140,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_042",
@@ -417,7 +418,7 @@
 "html": true,
 "order": 141,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_043",
@@ -427,7 +428,7 @@
 "html": true,
 "order": 142,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_044",
@@ -437,7 +438,7 @@
 "html": true,
 "order": 143,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_045",
@@ -447,7 +448,7 @@
 "html": true,
 "order": 144,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_046",
@@ -457,27 +458,27 @@
 "html": true,
 "order": 145,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_047",
 "name": "Medical Waste Proposal",
 "subject": "Medical Waste Proposal",
-"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste. It was a pleasure speaking to you. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction. I'm following up with this e-mail to provide you with a written proposal.</p><p>Medical Waste Service: Pickup Every 28 Days</p><p>15 Gallon Container - $55 per pick up ($66.00 after all fees)</p><p>28 Gallon Container - $75 per pick up ($90.00 after all fees)</p><p>95 Gallon Container -  $105 per pick up ($126.00 after all fees)</p><p>8% Environmental Fee.  The fee directly supports ongoing compliance, safety improvements, and environmentally responsible medical waste operations.</p><p>7% - 12% Fuel Fee. Fuel fee will be based on the national fuel fee index.</p><p>Sharps containers are available for purchase. Currently our 5 quart and 2 gallon sharps can be purchased for $14 each.</p><p>ALL Points Protection Suite (APPS) 30 Day Free Trial : The All Points Protection Suite (APPS) powered by uRisq is included in all agreements.  uRISQ is a privacy and security program designed to help organizations reduce the risk of data loss. It features six modules designed to address the most likely areas a business will experience data loss. uRISQ helps you identify your vulnerabilities, educate your employees, enhance data protection practices, and simplify risk management.</p><p>Link to APPS Information: https://allpointsprotects.com/protection-suite/</p><p>Identify vulnerabilities before they become a problem: uRISQ’s Threat Scanning continuously assesses your organization’s public-facing website and firewall for potential security vulnerabilities, helping you identify areas of risk that may otherwise go unnoticed.<br>Reduce risk caused by employee error: uRISQ provides ongoing cybersecurity and privacy training for your employees, helping them recognize threats and make safer decisions when handling sensitive information.</p><p>Compliance Training (optional) $15 per month. Includes 10 credits for one year. Each credit is for one class for one employee.  You will receive an additional 10 credits each year.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPPA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p><strong>Additional Services:</strong></p><ul><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Document Shredding  - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li><li>Storage &amp; Scanning – we have a solution for you!</li></ul><p>You will always speak with a live representative. It makes a world of difference in getting things sorted out quickly and efficiently</p><p>If you have any questions, please don’t hesitate to ask.  If everything looks good, let me know and I’ll set up your service right away.</p>",
+"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste. It was a pleasure speaking to you. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction. I'm following up with this e-mail to provide you with a written proposal.</p><p>Medical Waste Service: Pickup Every 28 Days</p><p>15 Gallon Container - $55 per pick up ($66.00 after all fees)</p><p>28 Gallon Container - $75 per pick up ($90.00 after all fees)</p><p>95 Gallon Container -  $105 per pick up ($126.00 after all fees)</p><p>8% Environmental Fee.  The fee directly supports ongoing compliance, safety improvements, and environmentally responsible medical waste operations.</p><p>7% - 12% Fuel Fee. Fuel fee will be based on the national fuel fee index.</p><p>Sharps containers are available for purchase. Currently our 5 quart and 2 gallon sharps can be purchased for $14 each.</p><p>ALL Points Protection Suite (APPS) 30 Day Free Trial : The All Points Protection Suite (APPS) powered by uRisq is included in all agreements.  uRISQ is a privacy and security program designed to help organizations reduce the risk of data loss. It features six modules designed to address the most likely areas a business will experience data loss. uRISQ helps you identify your vulnerabilities, educate your employees, enhance data protection practices, and simplify risk management.</p><p>Link to APPS Information: https://allpointsprotects.com/protection-suite/</p><p>Identify vulnerabilities before they become a problem: uRISQ’s Threat Scanning continuously assesses your organization’s public-facing website and firewall for potential security vulnerabilities, helping you identify areas of risk that may otherwise go unnoticed.<br>Reduce risk caused by employee error: uRISQ provides ongoing cybersecurity and privacy training for your employees, helping them recognize threats and make safer decisions when handling sensitive information.</p><p>Compliance Training (optional) $15 per month. Includes 10 credits for one year. Each credit is for one class for one employee.  You will receive an additional 10 credits each year.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPAA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p><strong>Additional Services:</strong></p><ul><li>Electronic &amp; product destruction – laptops, computers, hard drives, and more!</li><li>Document Shredding  - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.</li><li>Storage &amp; Scanning – we have a solution for you!</li></ul><p>You will always speak with a live representative. It makes a world of difference in getting things sorted out quickly and efficiently</p><p>If you have any questions, please don’t hesitate to ask.  If everything looks good, let me know and I’ll set up your service right away.</p>",
 "html": true,
 "order": 146,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_048",
 "name": "Medical Waste Propuesta de Servicios",
 "subject": "Medical Waste Spanish Proposal",
-"body": "<p>Hola</p><p>Gracias por contactar a All Points Mobile Shredding and Medical Waste. Nos especializamos en la trituración móvil , la eliminación de desechos médicos, la destrucción de discos duros y productos. Ha sido un placer conversar con usted hoy . Le envío este correo electrónico para enviarle una propuesta por escrito.</p><p>Servicio de Residuos Médicos: Recogida cada 28 días :</p><p>Contenedor de 15 galones: $55 por recogida</p><p>Contenedor de 28 galones: $75 por recogida</p><p>Contenedor de 95 galones: $105 por recogida</p><p>Tarifa única de entrega para nuevos negocios: $50.</p><p>Contenedores para agujas disponibles para la compra :</p><p>Contenedor de 5 cuartos     $13 cada uno</p><p>Contenedor de 2 galones    $13 cada uno</p><p>Contenedor de 8 galones    $15 cada uno</p><p>Contenedor de 18 galones   $20 cada uno</p><p>Prueba gratuita de 30 dais de ALl Points Protection Suite (APPS) : All Points Protection Suite (APPS) con tecnologia de uRisq esta incluido en todos los contratos.</p><p>uRISQ es un programa de privacidad y seguridad diseñado para ayudar a las organizaciones a reducir el riesgo de pérdida de datos. Incluye seis módulos diseñados para abordar las áreas con mayor probabilidad de pérdida de datos en una empresa. uRISQ le ayuda a identificar sus vulnerabilidades, capacitar a sus empleados, mejorar las prácticas de protección de datos y simplificar la gestión de riesgos.</p><p>https://allpointsprotects.com/protection-suite/</p><p>Entrenamiento requerido : ( es opcional hacerlo con nosotros) : $15 al mes. Incluye 10 créditos por un año. Cada crédito es para una clase por empleado. Recibirá 10 créditos adicionales cada año.</p><p>Enlace para información sobre el entrenamiento : https://allpointsmedicalwaste.com/compliance-training/</p><p>Recogeremos sus residuos médicos en un plazo de 30 días para garantizar su cumplimiento con el departamento de salud. Subiremos sus manifiestos a un portal en línea para facilitar el mantenimiento de sus registros. Puede usar sus contenedores para objetos punzantes hasta que estén llenos y luego colocarlos en el contenedor de residuos médicos para su recogida. También ofrecemos entrenamiento, que incluye: HIPPA, Patógenos Transmitidos por la Sangre, Comunicación de Riesgos y DOT.</p><p>All Points Medical Waste se enorgullece de sus mas de 500 reseñas de 5 estrellas en Google. Somos una empresa local , familiar y propiedad de mujeres.  Ofrecemos precios competitivos y nos esforzamos por deleitar a nuestros clientes . Nos comprometemos a brindar un transporte,almacenamiento y eliminación adecuados de sus residuos medicos regulados.</p><p><strong>Servicios adicionales:</strong></p><ul><li>Destrucción de productos electrónicos: laptops, computadoras, discos duros y más.</li><li><strong>Trituración de Documentos:</strong> Muchos de nuestros clientes valoran la comodidad de contar con un proveedor de confianza que se encargue de la trituración y el tratamiento de residuos médicos.</li><li><strong>Almacenamiento y escaneo:</strong> ¡tenemos la solución perfecta para usted!</li></ul><p>Siempre hablará con un representante en vivo. Marca una gran diferencia a la hora de resolver los problemas de forma rápida y eficiente.</p><p>Si tiene alguna pregunta, no dude en preguntar. Si todo le parece correcto, avíseme y organizaré su servicio de immediato.</p>",
+"body": "<p>Hola</p><p>Gracias por contactar a All Points Mobile Shredding and Medical Waste. Nos especializamos en la trituración móvil , la eliminación de desechos médicos, la destrucción de discos duros y productos. Ha sido un placer conversar con usted hoy . Le envío este correo electrónico para enviarle una propuesta por escrito.</p><p>Servicio de Residuos Médicos: Recogida cada 28 días :</p><p>Contenedor de 15 galones: $55 por recogida</p><p>Contenedor de 28 galones: $75 por recogida</p><p>Contenedor de 95 galones: $105 por recogida</p><p>Tarifa única de entrega para nuevos negocios: $50.</p><p>Contenedores para agujas disponibles para la compra :</p><p>Contenedor de 5 cuartos     $13 cada uno</p><p>Contenedor de 2 galones    $13 cada uno</p><p>Contenedor de 8 galones    $15 cada uno</p><p>Contenedor de 18 galones   $20 cada uno</p><p>Prueba gratuita de 30 dais de ALl Points Protection Suite (APPS) : All Points Protection Suite (APPS) con tecnologia de uRisq esta incluido en todos los contratos.</p><p>uRISQ es un programa de privacidad y seguridad diseñado para ayudar a las organizaciones a reducir el riesgo de pérdida de datos. Incluye seis módulos diseñados para abordar las áreas con mayor probabilidad de pérdida de datos en una empresa. uRISQ le ayuda a identificar sus vulnerabilidades, capacitar a sus empleados, mejorar las prácticas de protección de datos y simplificar la gestión de riesgos.</p><p>https://allpointsprotects.com/protection-suite/</p><p>Entrenamiento requerido : ( es opcional hacerlo con nosotros) : $15 al mes. Incluye 10 créditos por un año. Cada crédito es para una clase por empleado. Recibirá 10 créditos adicionales cada año.</p><p>Enlace para información sobre el entrenamiento : https://allpointsmedicalwaste.com/compliance-training/</p><p>Recogeremos sus residuos médicos en un plazo de 30 días para garantizar su cumplimiento con el departamento de salud. Subiremos sus manifiestos a un portal en línea para facilitar el mantenimiento de sus registros. Puede usar sus contenedores para objetos punzantes hasta que estén llenos y luego colocarlos en el contenedor de residuos médicos para su recogida. También ofrecemos entrenamiento, que incluye: HIPAA, Patógenos Transmitidos por la Sangre, Comunicación de Riesgos y DOT.</p><p>All Points Medical Waste se enorgullece de sus mas de 500 reseñas de 5 estrellas en Google. Somos una empresa local , familiar y propiedad de mujeres.  Ofrecemos precios competitivos y nos esforzamos por deleitar a nuestros clientes . Nos comprometemos a brindar un transporte,almacenamiento y eliminación adecuados de sus residuos medicos regulados.</p><p><strong>Servicios adicionales:</strong></p><ul><li>Destrucción de productos electrónicos: laptops, computadoras, discos duros y más.</li><li><strong>Trituración de Documentos:</strong> Muchos de nuestros clientes valoran la comodidad de contar con un proveedor de confianza que se encargue de la trituración y el tratamiento de residuos médicos.</li><li><strong>Almacenamiento y escaneo:</strong> ¡tenemos la solución perfecta para usted!</li></ul><p>Siempre hablará con un representante en vivo. Marca una gran diferencia a la hora de resolver los problemas de forma rápida y eficiente.</p><p>Si tiene alguna pregunta, no dude en preguntar. Si todo le parece correcto, avíseme y organizaré su servicio de immediato.</p>",
 "html": true,
 "order": 147,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_049",
@@ -487,7 +488,7 @@
 "html": true,
 "order": 148,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_050",
@@ -497,7 +498,7 @@
 "html": true,
 "order": 149,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_051",
@@ -507,7 +508,7 @@
 "html": true,
 "order": 150,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_052",
@@ -517,7 +518,7 @@
 "html": true,
 "order": 151,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_053",
@@ -527,7 +528,7 @@
 "html": true,
 "order": 152,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_054",
@@ -537,7 +538,7 @@
 "html": true,
 "order": 153,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_055",
@@ -547,7 +548,7 @@
 "html": true,
 "order": 154,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_056",
@@ -557,7 +558,7 @@
 "html": true,
 "order": 155,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_057",
@@ -567,7 +568,7 @@
 "html": true,
 "order": 156,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_058",
@@ -577,7 +578,7 @@
 "html": true,
 "order": 157,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_059",
@@ -587,7 +588,7 @@
 "html": true,
 "order": 158,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_060",
@@ -597,7 +598,7 @@
 "html": true,
 "order": 159,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_061",
@@ -607,7 +608,7 @@
 "html": true,
 "order": 160,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_062",
@@ -617,7 +618,7 @@
 "html": true,
 "order": 161,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_063",
@@ -627,17 +628,17 @@
 "html": true,
 "order": 162,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_064",
 "name": "On Demand Sharps Pick Up - business",
 "subject": "On Demand Sharps Pick Up Service",
-"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste. It was a pleasure speaking to you. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction. I'm following up with this e-mail to provide you with a written proposal.</p><p><strong>Medical Waste Service:</strong></p><p>Monthly Service</p><p>15 Gallon Container - $55 per pick up</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPPA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p><strong>On Demand Sharps Pick Up Services:</strong></p><p>$200 for as needed service. Includes up to three 5qt sharps containers and 15gal med waste container.</p><p>Sharps containers are available for purchase.</p><p>Compliance Training (optional) $25 per month. Includes 10 credits for one year. Each credit is for one class for one employee.  You will receive an additional 10 credits each year.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p>If you have any questions, please don’t hesitate to ask.  If everything looks good, let me know and I’ll set up your service right away.</p>",
+"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste. It was a pleasure speaking to you. We specialize in on-site mobile shredding, medical waste removal, hard drive and product destruction. I'm following up with this e-mail to provide you with a written proposal.</p><p><strong>Medical Waste Service:</strong></p><p>Monthly Service</p><p>15 Gallon Container - $55 per pick up</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPAA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p><strong>On Demand Sharps Pick Up Services:</strong></p><p>$200 for as needed service. Includes up to three 5qt sharps containers and 15gal med waste container.</p><p>Sharps containers are available for purchase.</p><p>Compliance Training (optional) $25 per month. Includes 10 credits for one year. Each credit is for one class for one employee.  You will receive an additional 10 credits each year.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p>If you have any questions, please don’t hesitate to ask.  If everything looks good, let me know and I’ll set up your service right away.</p>",
 "html": true,
 "order": 163,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_065",
@@ -647,7 +648,7 @@
 "html": true,
 "order": 164,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_066",
@@ -657,17 +658,17 @@
 "html": true,
 "order": 165,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_067",
 "name": "Product Disposal Proposal",
 "subject": "Product Destruction Proposal",
-"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste.  It was a pleasure speaking with you.  We specialize in mobile shredding, medical waste removal, electronic and product destruction.  I'm following up with this email to provide you with a written proposal.</p><p>For destruction of</p><p>Upon completion you will be sent a Certificate of Destruction stating all material has been destroyed.</p><p>I'd like to share a bit more about our company.  We have been in business for 28 years, we are family owned and most importantly, we are proud to be a locally-owned NAID AAA-certified shredding provider; meaning we offer the BEST in secure data destruction.  We work hard to meet the standards outlined by by NAID which involves passing regular and unannounced 3rd party audits, investing in the best shredding machines, providing up-to-date security training, thorough screening and background checks of all employees, and the purchase of liability insurance for our customers (up to $1 Million).  Using a NAID AAA-certified provider shows your company has taken the necessary steps required by federal and provincial privacy and information disposal laws to protect your customers, employees, and suppliers.</p><p><strong>Additional Services :</strong></p><p>Electronic &amp; product destruction –laptops, computers, hard drives, and more!<br>Medical Waste - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.<br>Document Storage and Scanning , we have a solution for you</p><p>Please see our over 500 5 Star Google Reviews!</p><p>If you have any questions, please don't hesitate to ask.  If everything looks good, let me know and I'll set up your service right away.</p>",
+"body": "<p>Hello {first_name},</p><p>Thank you for contacting All Points Mobile Shredding and Medical Waste.  It was a pleasure speaking with you.  We specialize in mobile shredding, medical waste removal, electronic and product destruction.  I'm following up with this email to provide you with a written proposal.</p><p>For destruction of</p><p>Upon completion you will be sent a Certificate of Destruction stating all material has been destroyed.</p><p>I'd like to share a bit more about our company.  We have been in business for over 30 years, we are family owned and most importantly, we are proud to be a locally-owned NAID AAA-certified shredding provider; meaning we offer the BEST in secure data destruction.  We work hard to meet the standards outlined by by NAID which involves passing regular and unannounced 3rd party audits, investing in the best shredding machines, providing up-to-date security training, thorough screening and background checks of all employees, and the purchase of liability insurance for our customers (up to $1 Million).  Using a NAID AAA-certified provider shows your company has taken the necessary steps required by federal and provincial privacy and information disposal laws to protect your customers, employees, and suppliers.</p><p><strong>Additional Services :</strong></p><p>Electronic &amp; product destruction –laptops, computers, hard drives, and more!<br>Medical Waste - Many of our clients appreciate the convenience of having both shredding and medical waste services handled by one trusted provider.<br>Document Storage and Scanning , we have a solution for you</p><p>Please see our over 500 5 Star Google Reviews!</p><p>If you have any questions, please don't hesitate to ask.  If everything looks good, let me know and I'll set up your service right away.</p>",
 "html": true,
 "order": 166,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_068",
@@ -677,7 +678,7 @@
 "html": true,
 "order": 167,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_069",
@@ -687,7 +688,7 @@
 "html": true,
 "order": 168,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_070",
@@ -697,7 +698,7 @@
 "html": true,
 "order": 169,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_071",
@@ -707,7 +708,7 @@
 "html": true,
 "order": 170,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_072",
@@ -717,7 +718,7 @@
 "html": true,
 "order": 171,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_073",
@@ -727,7 +728,7 @@
 "html": true,
 "order": 172,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_074",
@@ -737,7 +738,7 @@
 "html": true,
 "order": 173,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_075",
@@ -747,7 +748,7 @@
 "html": true,
 "order": 174,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_076",
@@ -757,7 +758,7 @@
 "html": true,
 "order": 175,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_077",
@@ -767,17 +768,17 @@
 "html": true,
 "order": 176,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_078",
 "name": "Sharps Service",
 "subject": "Sharps Service",
-"body": "<p>Hello {first_name},</p><p>I received your request regarding sharps service.</p><p>I understand you have a need for sharps service, which is biomedical waste.  The Department of Health requires monthly pickup of biomedical waste to remain compliant.</p><p>All sharps containers must be prepared for transport in a bin.</p><p>We will provide you with a 15-gallon biomedical waste box for you to place the sharps containers into when they reach the fill line and pickup the box every 28 days.</p><p>This bin will also provide you with a place for overage or any additional medical waste generated.</p><p>Medical Waste Service: Pickup Every 28 Days</p><p>15 Gallon Container - $55 per pick up</p><p>8% Environmental Fee.  The fee directly supports ongoing compliance, safety improvements, and environmentally responsible medical waste operations.</p><p>6.5% Fuel Fee.  This fee directly supports transportation costs and helps maintain on-time dependable pickups.</p><p>Sharps containers are available for purchase. Currently our 5 quart and 2 gallon sharps can be purchased for $14 each.</p><p>Compliance Training (optional) $15 per month. Includes 10 credits for one year. Each credit is for one class for one employee.  You will receive an additional 10 credits each year.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPPA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p>If you have any questions, please don’t hesitate to ask.  If everything looks good, let me know and I’ll set up your service right away.</p>",
+"body": "<p>Hello {first_name},</p><p>I received your request regarding sharps service.</p><p>I understand you have a need for sharps service, which is biomedical waste.  The Department of Health requires monthly pickup of biomedical waste to remain compliant.</p><p>All sharps containers must be prepared for transport in a bin.</p><p>We will provide you with a 15-gallon biomedical waste box for you to place the sharps containers into when they reach the fill line and pickup the box every 28 days.</p><p>This bin will also provide you with a place for overage or any additional medical waste generated.</p><p>Medical Waste Service: Pickup Every 28 Days</p><p>15 Gallon Container - $55 per pick up</p><p>8% Environmental Fee.  The fee directly supports ongoing compliance, safety improvements, and environmentally responsible medical waste operations.</p><p>6.5% Fuel Fee.  This fee directly supports transportation costs and helps maintain on-time dependable pickups.</p><p>Sharps containers are available for purchase. Currently our 5 quart and 2 gallon sharps can be purchased for $14 each.</p><p>Compliance Training (optional) $15 per month. Includes 10 credits for one year. Each credit is for one class for one employee.  You will receive an additional 10 credits each year.</p><p>Link for Compliance Information: https://allpointsmedicalwaste.com/compliance-training/</p><p>We will pick up your medical waste within 30 days to keep you compliant with the health department. We will upload your manifests to a convenient online portal to make it easy to keep your records. You can use your sharps containers until they are full and then place them into the medical waste container for pick up. We also offer online compliance training which includes: HIPAA, Blood Borne Pathogens, Hazcom, and DOT Trainings.</p><p>All Points Medical Waste is proud of our 5-Star Google Reviews. We are local and family and woman-owned. We have competitive pricing and we strive to delight our clients. We are committed to providing proper transport, storage, and disposal of your regulated medical waste.</p><p>If you have any questions, please don’t hesitate to ask.  If everything looks good, let me know and I’ll set up your service right away.</p>",
 "html": true,
 "order": 177,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_079",
@@ -787,7 +788,7 @@
 "html": true,
 "order": 178,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_080",
@@ -797,7 +798,7 @@
 "html": true,
 "order": 179,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_081",
@@ -807,7 +808,7 @@
 "html": true,
 "order": 180,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_082",
@@ -817,7 +818,7 @@
 "html": true,
 "order": 181,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_083",
@@ -827,7 +828,7 @@
 "html": true,
 "order": 182,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_084",
@@ -837,7 +838,7 @@
 "html": true,
 "order": 183,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_085",
@@ -847,7 +848,7 @@
 "html": true,
 "order": 184,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_086",
@@ -857,7 +858,7 @@
 "html": true,
 "order": 185,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_087",
@@ -867,7 +868,7 @@
 "html": true,
 "order": 186,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_088",
@@ -877,7 +878,7 @@
 "html": true,
 "order": 187,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_089",
@@ -887,7 +888,7 @@
 "html": true,
 "order": 188,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_090",
@@ -897,7 +898,7 @@
 "html": true,
 "order": 189,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_091",
@@ -907,7 +908,7 @@
 "html": true,
 "order": 190,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_092",
@@ -917,7 +918,7 @@
 "html": true,
 "order": 191,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_093",
@@ -927,7 +928,7 @@
 "html": true,
 "order": 192,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_094",
@@ -937,7 +938,7 @@
 "html": true,
 "order": 193,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_095",
@@ -947,7 +948,7 @@
 "html": true,
 "order": 194,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_096",
@@ -957,7 +958,7 @@
 "html": true,
 "order": 195,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_097",
@@ -967,7 +968,7 @@
 "html": true,
 "order": 196,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_098",
@@ -977,7 +978,7 @@
 "html": true,
 "order": 197,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_099",
@@ -987,7 +988,7 @@
 "html": true,
 "order": 198,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_100",
@@ -997,7 +998,7 @@
 "html": true,
 "order": 199,
 "src": "spiro",
-"spv": 3
+"spv": 4
 },
 {
 "id": "sp_101",
@@ -1007,6 +1008,6 @@
 "html": true,
 "order": 200,
 "src": "spiro",
-"spv": 3
+"spv": 4
 }
 ]

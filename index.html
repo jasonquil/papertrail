@@ -238,8 +238,8 @@ td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 tbody tr{cursor:pointer}
 tbody tr:hover td{background:var(--surface-2)}
-tbody tr[data-act] td:first-child b{transition:color .12s}
-tbody tr[data-act]:hover td:first-child b{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+tbody tr[data-act] td:first-child b,tbody tr[data-act] td.num:first-child+td>b:first-child{transition:color .12s}
+tbody tr[data-act]:hover td:first-child b,tbody tr[data-act]:hover td.num:first-child+td>b:first-child{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .lnk{transition:color .12s}
 .lnk:hover{color:var(--fg)}
 td.r,th.r{text-align:right}
@@ -598,6 +598,12 @@ html[data-look="crosscut"] .stagesel{border-radius:8px;box-shadow:inset 4px 0 0 
 html[data-look="crosscut"] .segs{border-radius:12px}html[data-look="crosscut"] .segs button{border-radius:10px}html[data-look="crosscut"] .segs button.on{background:#15172E;color:#fff}
 html[data-look="crosscut"] .oppside{border:0;border-radius:22px;background:#E9EDFF}
 html[data-look="crosscut"] .sheet{border-radius:22px}
+html[data-look="crosscut"] .meter{display:inline-flex;gap:3px;align-items:flex-end;height:26px;vertical-align:middle;margin-left:10px}
+html[data-look="crosscut"] .meter i{width:8px;border-radius:5px;background:#E2E4EF}
+html[data-look="crosscut"] .meter i:nth-child(1){height:11px}html[data-look="crosscut"] .meter i:nth-child(2){height:16px}html[data-look="crosscut"] .meter i:nth-child(3){height:21px}html[data-look="crosscut"] .meter i:nth-child(4){height:26px}
+html[data-look="crosscut"] .meter.m1 i:nth-child(-n+1),html[data-look="crosscut"] .meter.m2 i:nth-child(-n+2),html[data-look="crosscut"] .meter.m3 i:nth-child(-n+3),html[data-look="crosscut"] .meter.m4 i{background:var(--c)}
+html[data-look="crosscut"] .meter.m0 i{background:var(--bad-soft)}
+html[data-look="crosscut"] .dcard .meter{margin-left:0;height:20px}html[data-look="crosscut"] .dcard .meter i{width:7px}html[data-look="crosscut"] .dcard .meter i:nth-child(4){height:20px}html[data-look="crosscut"] .dcard .meter i:nth-child(3){height:16px}html[data-look="crosscut"] .dcard .meter i:nth-child(2){height:12px}html[data-look="crosscut"] .dcard .meter i:nth-child(1){height:8px}
 @media (max-width:820px){html[data-look="crosscut"] .wrap{padding-top:70px!important}html[data-look="crosscut"] .wrap::before{height:48px}}
 
 :root[data-look="dispatch"][data-theme]{--bg:#ECEEEC;--surface:#FFFFFF;--surface-2:#E2E5E3;--fg:#1B2127;--muted:#66717B;--line:#D7DCDA;--accent:#F2661C;--accent-fg:#FFFFFF;--accent-soft:#FDE6D8;--bad:#D9480F;--bad-soft:#FDE6D8;--yel:#8F6A00;--yel-soft:#FDF2CF;--info:#2A68CF;--info-soft:#DEE8F8;--good:#1F8A55;--good-soft:#DBF1E4}
@@ -632,6 +638,19 @@ html[data-look="dispatch"] .oppside{border-radius:6px;border:0;padding:0;overflo
 html[data-look="dispatch"] .oppside .dh{background:#1F252B;color:#fff;padding:18px 18px 16px;margin:0;border-bottom:5px solid transparent;border-image:repeating-linear-gradient(90deg,#F5C232 0 26px,transparent 26px 40px) 5}
 html[data-look="dispatch"] .oppside .dh .eyebrow{color:#AFC0CC}html[data-look="dispatch"] .oppside .dh a,html[data-look="dispatch"] .oppside .dh .lnk{color:#F5C232}html[data-look="dispatch"] .oppside .dh .icon-btn{color:#AFC0CC}
 html[data-look="dispatch"] .oppside>*:not(.dh){margin-left:18px;margin-right:18px}
+html[data-look="dispatch"] .routestat{display:flex;gap:10px;margin:0 0 16px}
+html[data-look="dispatch"] .routestat div{flex:1;background:#1F252B;color:#fff;border-radius:6px;padding:12px 16px;display:flex;align-items:baseline;gap:10px}
+html[data-look="dispatch"] .routestat b{font:700 2rem/1 var(--display)}html[data-look="dispatch"] .routestat span{color:#AFC0CC;font-weight:600}
+html[data-look="dispatch"] .routestat .late b{color:#F2661C}html[data-look="dispatch"] .routestat .due b{color:#F5C232}
+html[data-look="dispatch"] .tasks.route{counter-reset:stop;position:relative;padding-left:4px}
+html[data-look="dispatch"] .tasks.route::before{content:"";position:absolute;left:19px;top:22px;bottom:22px;width:4px;background:var(--line);border-radius:2px}
+html[data-look="dispatch"] .tasks.route .task{counter-increment:stop;position:relative;padding:8px 10px 8px 50px;background:transparent;border-bottom:0;margin:0}
+html[data-look="dispatch"] .tasks.route .task::before{content:counter(stop);position:absolute;left:3px;top:6px;width:30px;height:30px;border-radius:50%;background:var(--surface);border:3px solid #2A68CF;display:grid;place-items:center;font:700 .95rem var(--display);color:var(--fg);box-sizing:border-box;z-index:1}
+html[data-look="dispatch"] .tasks.route .task.past::before{background:#F2661C;border-color:#F2661C;color:#fff}
+html[data-look="dispatch"] .tasks.route .task.today::before{border-color:#F5C232}
+html[data-look="dispatch"] .tasks.route .task.none::before{border-color:var(--muted)}
+html[data-look="dispatch"] .tasks.route .task-b>span{font-weight:600}
+@media (max-width:820px){html[data-look="dispatch"] .routestat div{flex-direction:column;gap:2px;padding:10px 12px}html[data-look="dispatch"] .routestat b{font-size:1.6rem}}
 @media (max-width:820px){html[data-look="dispatch"] .nav{background:#1F252B}html[data-look="dispatch"] .mbar{background:#1F252B;color:#fff}html[data-look="dispatch"] .mbar .icon-btn{color:#AFC0CC}html[data-look="dispatch"] .mbar .mark{background:#F2661C;color:#fff}}
 
 :root[data-look="porch"][data-theme]{--bg:#F4F2FB;--surface:#FFFFFF;--surface-2:#EFECFA;--fg:#261E3D;--muted:#6F6787;--line:#E7E3F3;--accent:#5A47D6;--accent-fg:#FFFFFF;--accent-soft:#ECE9FC;--bad:#C8553A;--bad-soft:#FFEDE3;--yel:#8A6A12;--yel-soft:#FFF6DC;--info:#2F5FB3;--info-soft:#E8F1FF;--good:#21835A;--good-soft:#E3F7EE}
@@ -892,6 +911,9 @@ tr.sel td{background:var(--accent-soft)!important}
 .je-subj{font-weight:700;font-size:1rem}
 .je-body{min-height:150px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--surface);line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;outline:none;font-size:.94rem}
 .je-body:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.je-body p{margin:0 0 10px}.je-body ul,.je-body ol{margin:0 0 10px;padding-left:22px;white-space:normal}.je-body li{margin:0 0 2px}.je-body img{max-width:100%;height:auto}
+.rte-bar+.je-body{border-top-left-radius:0;border-top-right-radius:0}
+.je-prev .je-pb{margin-top:6px;color:var(--fg)}.je-prev .je-pb p{margin:0 0 8px}.je-prev .je-pb ul,.je-prev .je-pb ol{margin:0 0 8px;padding-left:20px}.je-prev .je-pb img{max-width:100%;height:auto}
 .fld{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:0 6px;font-weight:600;font-size:.86em;line-height:1.5;border:0;font-family:inherit;white-space:nowrap;user-select:all}
 button.fld{cursor:pointer;padding:2px 8px}
 .je-note{font-weight:600}
@@ -2010,18 +2032,20 @@ V.today = () => {
   const nothing = !Object.values(S.companies).length && !Object.values(S.deals).length;
 
   const nudge = backupNudge();
+  const route = LOOK.look === 'dispatch';
+  const rstat = route ? (() => { const g = k => tasks.filter(x => remGrp(x) === k).length; return `<div class="routestat"><div class="late"><b>${g('past')}</b><span>late</span></div><div class="due"><b>${g('today')}</b><span>due today</span></div><div><b>${deals.length}</b><span>open deals</span></div></div>`; })() : '';
   const fresh = FISH ? L('deals').filter(d => (d.createdAt || 0) >= Date.now() - 7 * 864e5).length : 0;
   return nudge + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), mineSeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your Spiro data over from Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
-  + `<div class="cols2">
+  + rstat + `<div class="cols2">
     <section class="panel"><div class="ph"><h3>Needs attention</h3><span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span></div>
       ${items.length ? `<ul class="attl">${items.slice(0,25).map(i => `<li class="att ${i.sev}"><div class="att-main"><span class="att-kind">${esc(i.kind)}</span><b>${esc(i.title)}</b><span class="att-sub">${i.sub}</span></div><div class="att-act">${i.acts.map(a => `<button class="btn sm ${a.pri?'pri':''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join('')}</div></li>`).join('')}</ul>`
       : `<p class="empty-s">Nothing needs you right now. Past-due reminders, opportunities past their close date, quotes waiting on an answer and contracts coming up for renewal will show up here.</p>`}
     </section>
     <div class="stack">
-      <section class="panel"><div class="ph"><h3>Reminders</h3><button class="lnk" data-act="go" data-v="reminders">${tasks.length} open · see all</button></div>
+      <section class="panel"><div class="ph"><h3>${route ? "Today's route" : 'Reminders'}</h3><button class="lnk" data-act="go" data-v="reminders">${tasks.length} open · see all</button></div>
         ${canWrite ? `<div><button class="btn sm pri" data-act="newTask">${ic('bell')}Set a reminder</button></div>` : ''}
-        ${tasks.length ? `<ul class="tasks">${tasks.slice(0,14).map(taskRow).join('')}</ul>` : `<p class="empty-s">No open reminders.</p>`}
+        ${tasks.length ? `<ul class="tasks${route ? ' route' : ''}">${tasks.slice(0,14).map(taskRow).join('')}</ul>` : `<p class="empty-s">No open reminders.</p>`}
       </section>
       <section class="panel"><div class="ph"><h3>Recent activity</h3><span class="sub">last 30 days, by company</span></div>${groups.length ? `<ul class="cogs">${groups.map(coGroupHtml).join('')}</ul>` : `<p class="empty-s">Calls, emails, meetings and notes on your accounts show up here, grouped by company.</p>`}</section>
     </div>
@@ -2102,11 +2126,11 @@ V.pipeline = () => {
   }
   return head('Opportunities', fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
   + sbar + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
+  : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
       const lt = X.lastAct[d.id];
-      return `<tr data-act="oppPage" data-id="${d.id}" data-st="${stage(d).k}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
-    }).join('') || `<tr><td colspan="${show==='open'?5:7}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`).replace(/(<div class="tbl"><table>[\s\S]*$)/, m => side ? `<div class="oppsplit"><div class="oppsplit-l">${m}</div>${oppSide(side)}</div>` : m);
+      return `<tr data-act="oppPage" data-id="${d.id}" data-st="${stage(d).k}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td class="num sub">${acctOf(d.companyId) || '—'}</td><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}${stageMeter(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
+    }).join('') || `<tr><td colspan="${show==='open'?6:8}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`).replace(/(<div class="tbl"><table>[\s\S]*$)/, m => side ? `<div class="oppsplit"><div class="oppsplit-l">${m}</div>${oppSide(side)}</div>` : m);
 };
 // wide screens: clicking an opportunity opens it beside the list instead of leaving the page
 const sideOn = () => { try { return matchMedia('(min-width: 1280px)').matches; } catch { return false; } };
@@ -2119,13 +2143,15 @@ function oppSide(id){
     <div class="sec"><div class="sech"><h3>Recent activity</h3>${canWrite ? `<button class="btn sm" data-act="addActivity" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('plus')}Log activity</button>` : ''}</div>${acts.length ? `<ul class="feed">${acts.map(a => feedItem(a, 'nodeal')).join('')}</ul>` : '<p class="sub">No activity yet.</p>'}</div>
   </aside>`;
 }
+const METER = {lead: [1, 'var(--info)'], quoted: [2, '#F5A524'], contract: [3, 'var(--pur)'], following: [3, 'var(--pur)'], won: [4, 'var(--good)'], updated: [4, 'var(--good)'], lost: [0, 'var(--bad)']};
+const stageMeter = d => { if (LOOK.look !== 'crosscut') return ''; const st = stage(d); const [n, c] = METER[st.k] || [0, '']; return `<span class="meter m${n}" style="--c:${c}" title="${esc(st.l)}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`; };
 function dealCard(d, sel){
   const n = daysSince(lastTouch(d));
   const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
   return `<article class="dcard${sel ? ' sel' : ''}" draggable="${canWrite}" data-drag="${d.id}" data-act="oppPage" data-id="${d.id}" tabindex="0">
     <b>${esc(cname(d.companyId) || 'No account')}</b><span class="co">${esc([d.name, d.interval].filter(Boolean).join(', '))}</span>
     <div class="row"><span class="val">${money(d.value)}</span>${isOpen(d) ? (late ? `<span class="chip bad">Due ${fmtDate(d.closeDate)}</span>` : isDate(d.closeDate) ? `<span class="chip">${fmtDate(d.closeDate)}</span>` : '') : ''}</div>
-    <div class="row"><span>${av(d.ownerId)}</span>${isOpen(d) && n >= STALE_DAYS ? `<span class="chip warn">${n}d quiet</span>` : ''}</div>
+    <div class="row"><span>${av(d.ownerId)}${stageMeter(d)}</span>${isOpen(d) && n >= STALE_DAYS ? `<span class="chip warn">${n}d quiet</span>` : ''}</div>
   </article>`;
 }
 
@@ -4444,8 +4470,17 @@ function rteFocus(id){ const ed = document.getElementById(id); if (!ed) return n
 function rteExec(id, cmd, val){
   const ed = rteFocus(id); if (!ed) return;
   if (cmd === 'link') { const sl = document.getSelection(); const had = sl && !sl.isCollapsed; let u = window.prompt('Link address (for example allpointsprotects.com):', 'https://'); if (!u || u === 'https://') return; u = u.trim(); if (!/^(https?:|mailto:)/i.test(u)) u = (/@/.test(u) && !/\//.test(u) ? 'mailto:' : 'https://') + u; rteFocus(id); if (had) document.execCommand('createLink', false, u); else document.execCommand('insertHTML', false, `<a href="${esc(u)}">${esc(u.replace(/^mailto:/, ''))}</a>`); }
+  else if (/List$/.test(cmd)) { const at = rteCaret(ed); document.execCommand(cmd, false, val); if (at) rteCaret(ed, at); }   // Chrome drops the cursor at the start of the line after making a list
   else { document.execCommand('styleWithCSS', false, cmd === 'foreColor' || cmd === 'hiliteColor' || cmd === 'fontSize'); document.execCommand(cmd, false, val); }
   ed.dispatchEvent(new Event('input', {bubbles: true}));
+}
+// save / put back the selection as character positions, which survive the editor rearranging its tags
+function rteCaret(ed, at){
+  const sl = document.getSelection();
+  if (!at) { if (!sl.rangeCount || !ed.contains(sl.anchorNode)) return null; const r = sl.getRangeAt(0); const pos = (n, o) => { const x = document.createRange(); x.selectNodeContents(ed); x.setEnd(n, o); return x.toString().length; }; return [pos(r.startContainer, r.startOffset), pos(r.endContainer, r.endOffset)]; }
+  const find = n => { const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT); let left = n, t, last = null; while ((t = w.nextNode())) { if (t.parentElement && t.parentElement.closest('[contenteditable="false"]')) { left -= t.length; if (left < 0) { const c = t.parentElement.closest('[contenteditable="false"]'); const x = document.createRange(); x.setStartAfter(c); return [x.startContainer, x.startOffset]; } continue; } if (left <= t.length) return [t, left]; left -= t.length; last = t; } return last ? [last, last.length] : null; };
+  const a = find(at[0]), b = find(at[1]); if (!a || !b) return;
+  const r = document.createRange(); r.setStart(a[0], a[1]); r.setEnd(b[0], b[1]); sl.removeAllRanges(); sl.addRange(r);
 }
 function setDraftBody(html){ const ed = $('#draftHtml'); if (!ed) return; ed.innerHTML = html; ui.draftHtml = true; ed.hidden = false; const o = $('#draftOut'); if (o) o.hidden = true; const bar = document.querySelector('.rte-bar[data-for="draftHtml"]'); if (bar) bar.hidden = false; }
 function applyTemplate(tid){
@@ -4602,14 +4637,14 @@ async function draftGo(){
 }
 function tplManageModal(){
   const list = templates();
-  const sp = list.filter(t => t.src === 'spiro').length, spOld = list.filter(t => t.src === 'spiro' && (t.spv || 1) < SPIRO_TPL_VER).length;
+  const sp = list.filter(t => t.src === 'spiro').length, spOld = list.filter(t => t.src === 'spiro' && !t.edited && (t.spv || 1) < SPIRO_TPL_VER).length;
   openModal('Email templates', `<p class="sub">Templates are shared with your team. Words in curly braces, like {first_name}, fill in from the account when you use the template.</p>
-    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Updated versions of your Spiro templates are ready.</b> Formatted like Spiro (bold headings, bullets, tight spacing), with no sign-off since your signature is added when you send. This replaces the ${spOld} earlier versions.` : `<b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update Spiro templates' : 'Add Spiro templates'}</button></div>` : ''}
+    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Updated versions of your Spiro templates are ready.</b> Formatted like Spiro, with no sign-off since your signature is added when you send, plus wording fixes (HIPAA spelling, “30+ years” throughout). This replaces the ${spOld} earlier versions. Templates you've edited yourself are left alone.` : `<b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update Spiro templates' : 'Add Spiro templates'}</button></div>` : ''}
     ${list.length > 10 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}
     <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
 }
-const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 3;
+const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 4;
 async function spiroImport(){
   const b = $('#spiroBtn'); if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   let list;
@@ -4620,7 +4655,7 @@ async function spiroImport(){
     const ex = have.find(x => x.id === t.id) || have.find(x => norm(x.name) === norm(t.name));
     const rec = {name: t.name, subject: t.subject, body: t.body, html: t.html !== false, order: t.order, src: 'spiro', spv: t.spv || 1};
     if (ex) {
-      if (ex.src === 'spiro' && (ex.spv || 1) < (t.spv || 1)) { if (await put('templates', ex.id, {...rec, name: ex.name})) updated++; }
+      if (ex.src === 'spiro' && !ex.edited && (ex.spv || 1) < (t.spv || 1)) { if (await put('templates', ex.id, {...rec, name: t.was && ex.name === t.was ? t.name : ex.name})) updated++; }
       else skipped++;
     } else if (await put('templates', t.id, rec)) added++;
     if (b && (added + updated) % 10 === 0) b.textContent = `Working… ${added + updated}`;
@@ -4640,7 +4675,8 @@ function tplEditModal(id){
       if (templates().some(t => t.id !== id && norm(t.name) === norm(f.name))) { dupWarn(`There's already a template named “${esc(f.name)}”.`); return false; }
       const ed = $('#tplEd'), src = $('#tplEdSrc'); const body = cleanHtml(src && !src.hidden ? src.value : ed.innerHTML);
       if (!elText(ed).trim() && !(src && !src.hidden && src.value.trim())) { toast('Write the message first.', 'bad'); return false; }
-      const ok = await put('templates', tid, {name: f.name, subject: f.subject, body, html: true});
+      const keep = t.src === 'spiro' ? {src: 'spiro', spv: t.spv || 1, order: t.order, edited: true} : {};   // still counted as a Spiro template, but updates leave it alone
+      const ok = await put('templates', tid, {name: f.name, subject: f.subject, body, html: true, ...keep});
       if (ok) { toast('Template saved'); setTimeout(tplManageModal, 0); }
       return ok;
     }, {wide: true, foot: id ? `<button type="button" class="btn ghost" data-act="tplDel" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
@@ -5141,10 +5177,10 @@ function jsxPaint(){
   const fill = t => fillTemplate(t, data);
   const day = d => parseYmd(d).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
   prev.innerHTML = `<div class="jsx-ph"><h4>${esc(j.name)}</h4><p class="sub">${ct ? `What ${esc(first)} gets` : 'Choose a contact to preview'}${s.custom ? ` · <b class="jsx-cust">customized for ${esc(first)}</b> <button type="button" class="lnk" data-act="jsxUncustom">Undo</button>` : ''}</p></div>
-    <ol class="jsx-steps">${sched.map(x => { const st = steps[x.step]; const call = isCallStep(st); const body = fill(call ? st.note || '' : st.body || '').replace(/^.*?,\s*\n+/, ''); const open = s.exp === x.step; const dl = `<span class="jsx-d">${x.due === today() ? 'Today' : 'Day ' + Math.round((parseYmd(x.due) - parseYmd(sched[0].due)) / 864e5)}<b>${day(x.due)}</b></span>`;
+    <ol class="jsx-steps">${sched.map(x => { const st = steps[x.step]; const call = isCallStep(st); const body = (call ? fill(st.note || '') : st.html ? htmlPlain(fillTemplate(st.body || '', data, true)) : fill(st.body || '')).replace(/^.*?,\s*\n+/, ''); const open = s.exp === x.step; const dl = `<span class="jsx-d">${x.due === today() ? 'Today' : 'Day ' + Math.round((parseYmd(x.due) - parseYmd(sched[0].due)) / 864e5)}<b>${day(x.due)}</b></span>`;
       if (open) return `<li class="jsx-open">${dl}<div class="jsx-ed"><button type="button" class="jsx-tog" data-act="jsxExp" data-i="${x.step}" aria-expanded="true">${call ? `<b class="jsx-callt">${ic('phone')}Call step</b>` : `<b>Email ${x.step + 1}</b>`}<span>Done</span></button>
         ${call ? `<label class="f"><span>Call note</span><textarea rows="4" data-input="jsxNote" data-i="${x.step}">${esc(fill(st.note || ''))}</textarea></label>`
-        : `<label class="f"><span>Subject</span><input type="text" value="${esc(fill(st.subject || ''))}" data-input="jsxSubj" data-i="${x.step}"></label><label class="f"><span>Message</span><textarea rows="10" data-input="jsxBody" data-i="${x.step}">${esc(fill(st.body || ''))}</textarea></label>`}
+        : `<label class="f"><span>Subject</span><input type="text" value="${esc(fill(st.subject || ''))}" data-input="jsxSubj" data-i="${x.step}"></label>${st.html ? `<div class="f"><span>Message</span>${rteBar('jsxB' + x.step)}<div class="je-body rte" id="jsxB${x.step}" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-input="jsxBodyH" data-i="${x.step}" spellcheck="true">${cleanHtml(fillTemplate(st.body || '', data, true))}</div></div>` : `<label class="f"><span>Message</span><textarea rows="10" data-input="jsxBody" data-i="${x.step}">${esc(fill(st.body || ''))}</textarea></label>`}`}
         <p class="sub">Changes apply to ${ct ? esc(first) : 'this person'} only. The journey itself stays the same.</p></div></li>`;
       return `<li><button type="button" class="jsx-row-btn" data-act="jsxExp" data-i="${x.step}" aria-expanded="false" title="Click to open and edit">${dl}<div>${call ? `<b class="jsx-callt">${ic('phone')}${esc(fill(st.note || 'Call reminder').split(':')[0])}</b><p>${esc(fill(st.note || '').replace(/^[^:]*:\s*/, ''))}</p>` : `<b>${esc(fill(st.subject || '(no subject)'))}</b><p>${esc(body)}</p>`}</div><span class="jsx-chev">${ic('edit')}</span></button></li>`; }).join('')}</ol>
     <div class="jsx-go">
@@ -5172,7 +5208,26 @@ async function jsxStart(id){
 // ---------- journey editor: one page, with the timeline across the top ----------
 const JFIELDS = {greeting: 'Greeting', first_name: 'First name', last_name: 'Last name', contact_name: 'Full name', company: 'Company', my_name: 'My name', my_first_name: 'My first name', quote_number: 'Quote #', quote_total: 'Quote total', price_quoted: 'Price quoted', service: 'Service', interval: 'Interval', service_date: 'Service date', contract_end: 'Contract end'};
 const jeChip = k => `<span class="fld" contenteditable="false" data-f="${k}">${esc(JFIELDS[k] || k)}</span>`;
-const jeBodyHtml = t => { const h = esc(t || '').replace(/\{(\w+)\}/g, (m, raw) => { const k = FIELD_ALIAS[raw.toLowerCase()] || raw.toLowerCase(); return JFIELDS[k] ? jeChip(k) : m; }).replace(/\n/g, '<br>'); return /\n$/.test(t || '') ? h + '<br>' : h; };
+const jeBodyText = t => { const h = esc(t || '').replace(/\{(\w+)\}/g, (m, raw) => { const k = FIELD_ALIAS[raw.toLowerCase()] || raw.toLowerCase(); return JFIELDS[k] ? jeChip(k) : m; }).replace(/\n/g, '<br>'); return /\n$/.test(t || '') ? h + '<br>' : h; };
+// formatted steps: {field} tokens in the HTML show as chips while editing, and go back to {field} when saved
+function jeChipify(html){
+  const doc = new DOMParser().parseFromString('<div>' + cleanHtml(html) + '</div>', 'text/html'); const root = doc.body.firstElementChild;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT); const texts = []; while (walker.nextNode()) texts.push(walker.currentNode);
+  for (const t of texts) { if (!/\{\w+\}/.test(t.nodeValue)) continue;
+    const span = doc.createElement('span'); span.innerHTML = esc(t.nodeValue).replace(/\{(\w+)\}/g, (m, raw) => { const k = FIELD_ALIAS[raw.toLowerCase()] || raw.toLowerCase(); return JFIELDS[k] ? jeChip(k) : m; });
+    t.replaceWith(...span.childNodes); }
+  return root.innerHTML;
+}
+const jeBodyHtml = s => s.html ? jeChipify(s.body || '') : jeBodyText(s.body);
+function jeSerHtml(el){
+  const c = el.cloneNode(true);
+  c.querySelectorAll('[data-f]').forEach(f => f.replaceWith('{' + f.dataset.f + '}'));
+  c.querySelectorAll('.img-on').forEach(x => x.classList.remove('img-on'));
+  while (c.lastChild && (c.lastChild.nodeName === 'BR' || (c.lastChild.nodeType === 3 && !c.lastChild.nodeValue.trim()))) c.lastChild.remove();
+  return cleanHtml(c.innerHTML);
+}
+const jeStore = (st, el) => { if (st) { st.body = jeSerHtml(el); st.html = true; } };
+const htmlPlain = h => { const d = new DOMParser().parseFromString('<div>' + String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h\d)>/gi, '$&\n') + '</div>', 'text/html'); return (d.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim(); };
 function jeSer(el){
   let out = '';
   const walk = n => { for (const c of n.childNodes) {
@@ -5185,7 +5240,7 @@ function jeSer(el){
 }
 let jeRange = null;
 document.addEventListener('selectionchange', () => { const sl = document.getSelection(); if (sl && sl.rangeCount && sl.anchorNode && sl.anchorNode.parentElement && sl.anchorNode.parentElement.closest && (sl.anchorNode.nodeType === 1 ? sl.anchorNode : sl.anchorNode.parentElement).closest('.je-body')) jeRange = sl.getRangeAt(0).cloneRange(); });
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('je-body')) { e.preventDefault(); document.execCommand('insertLineBreak'); } }, true);
+// Enter in a journey email works like the regular email composer (new line, or a new bullet in a list)
 document.addEventListener('paste', e => { const b = e.target.closest && e.target.closest('.je-body'); if (!b) return; e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain')); }, true);
 function jePreviewContacts(){
   const id = ui.je && ui.je.id;
@@ -5233,9 +5288,9 @@ function jePaint(which){
       return wait + (call
         ? `<div class="je-step call${E.focus === i ? ' on' : ''}" data-i="${i}" id="jeS${i}"><div class="je-sh">${ic('phone')}<b>Call reminder · Day ${days[i]}</b>${acts}</div><input class="je-note" data-input="jeNote" data-i="${i}" value="${esc(s.note || '')}" placeholder="e.g. Call {first_name}: ask if the box count still looks right"><p class="sub">Shows up on your Journeys page and Today when it's due, so you can call and log it. Fields like {first_name} and {company} work here.</p></div>`
         : `<div class="je-step${E.focus === i ? ' on' : ''}" data-i="${i}" id="jeS${i}"><div class="je-sh">${ic('mail')}<b>Email ${n} · Day ${days[i]}</b>${acts}</div>
-          <div class="je-tb"><select data-change="jeIns" data-i="${i}" aria-label="Insert a field"><option value="">+ Insert field</option>${Object.entries(JFIELDS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select><select data-change="jeTpl" data-i="${i}" aria-label="Fill from a template"><option value="">Fill from a template</option>${templates().filter(t => !t.html).map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
+          <div class="je-tb"><select data-change="jeIns" data-i="${i}" aria-label="Insert a field"><option value="">+ Insert field</option>${Object.entries(JFIELDS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select><select data-change="jeTpl" data-i="${i}" aria-label="Fill from a template"><option value="">Fill from a template</option>${templates().map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}</select></div>
           <input class="je-subj" data-input="jeSubj" data-i="${i}" value="${esc(s.subject || '')}" placeholder="Subject">
-          <div class="je-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-input="jeBody" data-i="${i}" spellcheck="true">${jeBodyHtml(s.body)}</div></div>`);
+          ${rteBar('jeB' + i)}<div class="je-body rte" id="jeB${i}" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-input="jeBody" data-i="${i}" spellcheck="true">${jeBodyHtml(s)}</div></div>`);
     }).join('') + `<div class="je-wait end"><span class="je-addin"><button type="button" class="btn sm" data-act="jeAdd" data-t="email" data-at="${E.steps.length}">${ic('plus')}Add an email</button><button type="button" class="btn sm" data-act="jeAdd" data-t="call" data-at="${E.steps.length}">${ic('phone')}Add a call reminder</button></span></div>`;
   }
   jeSide();
@@ -5248,7 +5303,7 @@ function jeSide(){
   const sent = E.id ? L('enrollments').filter(e => e.journeyId === E.id).reduce((n, e) => n + (e.schedule || []).filter(x => x.step === E.focus && x.status === 'sent').length, 0) : 0;
   const x = E.id ? jStats(E.id) : null;
   box.innerHTML = `<h5>Preview as</h5>${sel('pv', [['', '— Pick a contact —'], ...jePreviewContacts().map(c => [c.id, `${pname_(c)} · ${cname(c.companyId)}`])], E.pv, 'data-change="jePv" aria-label="Preview as"')}
-    <div class="je-prev">${s ? (isCallStep(s) ? `<b><span class="chip warn">Call</span></b><p>${esc(fill(s.note || 'Call reminder'))}</p>` : `<b>${esc(fill(s.subject || '(no subject)'))}</b><p>${esc(fill(s.body || '')).replace(/\n/g, '<br>')}</p>`) : ''}</div>
+    <div class="je-prev">${s ? (isCallStep(s) ? `<b><span class="chip warn">Call</span></b><p>${esc(fill(s.note || 'Call reminder'))}</p>` : `<b>${esc(fill(s.subject || '(no subject)'))}</b>${s.html ? `<div class="je-pb">${cleanHtml(ct ? fillTemplate(s.body || '', data, true) : s.body || '')}</div>` : `<p>${esc(fill(s.body || '')).replace(/\n/g, '<br>')}</p>`}`) : ''}</div>
     ${E.personal ? '' : `<h5>Insert a field</h5><div class="je-flds">${['first_name', 'company', 'greeting', 'service', 'price_quoted', 'quote_number', 'my_first_name', 'contract_end'].map(k => `<button type="button" class="fld" data-act="jeInsF" data-f="${k}">${JFIELDS[k]}</button>`).join('')}</div>
     <h5>Settings</h5>
     <label class="je-set"><span>When they reply</span>${sel('onReply', [['pause', 'Pause, and let me decide'], ['stop', 'End the journey']], E.onReply, 'data-change="jeSet" data-k="onReply"')}</label>
@@ -5259,7 +5314,7 @@ function jeSide(){
 }
 function jeInsert(k){
   const E = ui.je; let body = jeRange && jeRange.startContainer && (jeRange.startContainer.nodeType === 1 ? jeRange.startContainer : jeRange.startContainer.parentElement).closest('.je-body');
-  if (!body) body = document.querySelector(`.je-body[data-i="${E.focus}"]`) || document.querySelector('.je-body');
+  if (!body) body = document.querySelector(`#jeB${E.focus}`) || document.querySelector('#jeSteps .je-body');
   if (!body) { toast('Click into an email first.', 'bad'); return; }
   body.focus();
   const sl = document.getSelection(); let r = jeRange && body.contains(jeRange.startContainer) ? jeRange : null;
@@ -5268,12 +5323,12 @@ function jeInsert(k){
   const tmp = document.createElement('span'); tmp.innerHTML = jeChip(k); const chip = tmp.firstChild;
   r.deleteContents(); r.insertNode(chip); const sp = document.createTextNode(' '); chip.after(sp);
   const r2 = document.createRange(); r2.setStartAfter(sp); r2.collapse(true); sl.removeAllRanges(); sl.addRange(r2); jeRange = r2.cloneRange();
-  const i = +body.dataset.i; E.steps[i].body = jeSer(body); E.focus = i; jeSide();
+  const i = +body.dataset.i; jeStore(E.steps[i], body); E.focus = i; jeSide();
 }
 async function jeSave(){
   const E = ui.je; if (!E) return;
-  document.querySelectorAll('.je-body').forEach(b => { const i = +b.dataset.i; if (E.steps[i]) E.steps[i].body = jeSer(b); });
-  const steps = E.steps.map((s, i) => isCallStep(s) ? {type: 'call', delay: i ? jDelay(s) : 0, note: String(s.note || '').trim() || 'Call {first_name}'} : {type: 'email', delay: i ? jDelay(s) : 0, subject: String(s.subject || '').trim(), body: String(s.body || '')}).filter(s => s.type === 'call' || s.subject || s.body.trim());
+  document.querySelectorAll('#jeSteps .je-body').forEach(b => jeStore(E.steps[+b.dataset.i], b));
+  const steps = E.steps.map((s, i) => isCallStep(s) ? {type: 'call', delay: i ? jDelay(s) : 0, note: String(s.note || '').trim() || 'Call {first_name}'} : {type: 'email', delay: i ? jDelay(s) : 0, subject: String(s.subject || '').trim(), body: String(s.body || ''), ...(s.html ? {html: true} : {})}).filter(s => s.type === 'call' || s.subject || (s.html ? htmlPlain(s.body) : s.body).trim());
   if (!steps.length) { toast('Add at least one step.', 'bad'); return; }
   if (steps.some(s => s.type === 'email' && !s.subject)) { toast('Every email needs a subject.', 'bad'); return; }
   if (E.personal) { if (ui.js) ui.js.custom = steps; history.back(); toast('Emails updated for this person'); return; }
@@ -5287,9 +5342,9 @@ async function jeSave(){
 }
 async function jeTest(){
   const E = ui.je; const s = E.steps[E.focus]; if (!s || isCallStep(s)) { toast('Pick an email to test.', 'bad'); return; }
-  document.querySelectorAll('.je-body').forEach(b => { const i = +b.dataset.i; if (E.steps[i]) E.steps[i].body = jeSer(b); });
+  document.querySelectorAll('#jeSteps .je-body').forEach(b => jeStore(E.steps[+b.dataset.i], b));
   const ct = S.contacts[E.pv]; const data = ct ? mergeData({companyId: ct.companyId, contactId: E.pv}) : mergeData({});
-  try { await MCP.callTool(MS, 'outlook_send_mail', {to: [conn.email], subject: '[Test] ' + fillTemplate(s.subject || '', data), body: fillTemplate(s.body || '', data), bodyType: 'text'}, {cache: false}); toast(`Test sent to ${conn.email}`); }
+  try { await MCP.callTool(MS, 'outlook_send_mail', {to: [conn.email], subject: '[Test] ' + fillTemplate(s.subject || '', data), ...(s.html ? {body: cleanHtml(fillTemplate(s.body || '', data, true)), bodyType: 'html'} : {body: fillTemplate(s.body || '', data), bodyType: 'text'})}, {cache: false}); toast(`Test sent to ${conn.email}`); }
   catch (e) { toast(mailErr(e) || "Couldn't send the test.", 'bad'); }
 }
 
@@ -5509,6 +5564,7 @@ const CHANGE = {
   jsxCt: el => { if (ui.js.custom && ui.js.ct !== el.value) { ui.js.custom = null; ui.js.exp = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } ui.js.ct = el.value; jsxPaint(); },
   jsxSubj: el => jsxCustomize(+el.dataset.i, 'subject', el.value),
   jsxBody: el => { jsxGrow(el); jsxCustomize(+el.dataset.i, 'body', el.value); },
+  jsxBodyH: el => jsxCustomize(+el.dataset.i, 'body', jeSerHtml(el)),
   jsxNote: el => { jsxGrow(el); jsxCustomize(+el.dataset.i, 'note', el.value); },
   jsxQ: el => { ui.js.q = el.value; jsxPaint(); },
   jsxIn: el => { ui.js.inDays = el.value; clearTimeout(ui.jsxT); ui.jsxT = setTimeout(() => { jsxPaint(); const i = document.querySelector('[data-input="jsxIn"]'); if (i) { i.focus(); i.setSelectionRange?.(9, 9); } }, 500); },
@@ -5521,10 +5577,10 @@ const CHANGE = {
   jeSkip: el => { ui.je.skipWeekends = el.checked; },
   jeDelay: el => { const i = +el.dataset.i; ui.je.steps[i].delay = Math.max(0, parseInt(el.value) || 0); ui.je.focus = i; jePaint('strip'); },
   jeSubj: el => { const i = +el.dataset.i; ui.je.steps[i].subject = el.value; ui.je.focus = i; jePaint('strip'); },
-  jeBody: el => { const i = +el.dataset.i; ui.je.steps[i].body = jeSer(el); if (ui.je.focus !== i) { ui.je.focus = i; jePaint('strip'); } else jeSide(); },
+  jeBody: el => { const i = +el.dataset.i; jeStore(ui.je.steps[i], el); if (ui.je.focus !== i) { ui.je.focus = i; jePaint('strip'); } else jeSide(); },
   jeNote: el => { const i = +el.dataset.i; ui.je.steps[i].note = el.value; ui.je.focus = i; jeSide(); },
-  jeIns: el => { const k = el.value; el.value = ''; if (!k) return; const b = document.querySelector(`.je-body[data-i="${el.dataset.i}"]`); if (b && !(jeRange && b.contains(jeRange.startContainer))) { const r = document.createRange(); r.selectNodeContents(b); r.collapse(false); jeRange = r; } jeInsert(k); },
-  jeTpl: el => { const t = templates().find(x => x.id === el.value); el.value = ''; if (!t) return; const i = +el.dataset.i; ui.je.steps[i].subject = t.subject; ui.je.steps[i].body = t.body; ui.je.focus = i; jePaint(); },
+  jeIns: el => { const k = el.value; el.value = ''; if (!k) return; const b = document.querySelector(`#jeB${el.dataset.i}`); if (b && !(jeRange && b.contains(jeRange.startContainer))) { const r = document.createRange(); r.selectNodeContents(b); r.collapse(false); jeRange = r; } jeInsert(k); },
+  jeTpl: el => { const t = templates().find(x => x.id === el.value); el.value = ''; if (!t) return; const i = +el.dataset.i; ui.je.steps[i].subject = t.subject; ui.je.steps[i].body = t.body; ui.je.steps[i].html = !!t.html; ui.je.focus = i; jePaint(); },
   jePv: el => { ui.je.pv = el.value; jeSide(); },
   jsCo: el => { const ct = $('#jsCt'); if (ct) ct.innerHTML = jsContactOpts(el.value).map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); },
   jsPrev: () => jsPreview(),
