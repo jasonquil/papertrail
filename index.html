@@ -6812,7 +6812,14 @@ function makeSupaDb(sb, uidKey){
     if (ev.eventType !== 'DELETE') bump(row.col, row.updated_at);
     fire(row.col);
   });
-  ch.subscribe();
+  // If the live feed drops (laptop sleep, Wi-Fi blip, a long load), changes stop arriving. Supabase reconnects it on its own;
+  // when it comes back, catch up on whatever was missed while it was down.
+  let chUp = false, caughtOnce = false;
+  function onStatus(st){
+    if (st === 'SUBSCRIBED') { if (!chUp && caughtOnce) catchUpAll(); chUp = true; caughtOnce = true; }
+    else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') chUp = false;
+  }
+  ch.subscribe(onStatus);
   // each page starts after the last id of the one before ("keyset" paging), so page 30 is as quick as page 1;
   // skipping rows by count got slow enough with 80,000 records to hit Supabase's time limit
   const retry = async (fn, tries = 4) => { for (let n = 1; ; n++) { const r = await fn(); if (!r.error || n >= tries) return r; await new Promise(ok => setTimeout(ok, 800 * n * n)); } };
@@ -6826,6 +6833,30 @@ function makeSupaDb(sb, uidKey){
       last = data[data.length - 1].id;
     }
   }
+  // fetch what changed on the server since this copy was last current (and drop anything deleted), then redraw
+  async function catchUp(c){
+    const x0 = (subs[c] || []).find(x => x.ready); if (!x0 || !maxTs[c]) return;
+    const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', maxTs[c]).order('id'));
+    for (const r of changed) { for (const x of subs[c] || []) x.map[r.id] = r.data || {}; bump(c, r.updated_at); }
+    if (changed.length) useAdd('catch', jsonSize(changed) + 200);
+    const {count, error} = await retry(() => sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c));
+    if (!error && count !== Object.keys(x0.map).length) {
+      const ids = new Set((await pages(() => sb.from('records').select('id').eq('col', c).order('id'))).map(r => r.id));
+      for (const x of subs[c] || []) for (const id of Object.keys(x.map)) if (!ids.has(id)) delete x.map[id];
+    }
+    fire(c);
+  }
+  let catching = null;
+  function catchUpAll(){
+    if (catching) return catching;
+    catching = Promise.all(Object.keys(subs).map(c => catchUp(c).catch(e => console.warn('Paper Trail: catching up ' + c + ' failed', e)))).finally(() => { catching = null; });
+    return catching;
+  }
+  // coming back to the tab or back online: catch up, and reconnect the live feed if it dropped
+  let lastCatch = 0;
+  const wake = () => { if (Date.now() - lastCatch < 20000) return; lastCatch = Date.now(); catchUpAll(); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wake(); });
+  addEventListener('online', wake);
   async function loadAll(c){
     const cached = await IDB.get(ckey(c));
     if (cached && cached.map && cached.max) {
@@ -6855,9 +6886,11 @@ function makeSupaDb(sb, uidKey){
   const fail = e => { const err = new Error((e && e.message) || 'Database error'); err.code = e && e.code === '42501' ? 'permission-denied' : (e && e.code) || 'unknown'; return err; };
   function docRef(c, id){
     return {
-      async set(data){ const {error} = await sb.from('records').upsert({col: c, id, data}, {onConflict: 'col,id'}); if (error) throw fail(error); },
-      async update(patch){ const {error} = await sb.rpc('merge_record', {p_col: c, p_id: id, p_patch: patch}); if (error) throw fail(error); },
-      async delete(){ const {error} = await sb.from('records').delete().eq('col', c).eq('id', id); if (error) throw fail(error); },
+      // Each save shows on screen as soon as Supabase confirms it, instead of waiting for the live feed to echo it back.
+      // (If the live feed had dropped, the screen used to keep showing the old value even though the save went through.)
+      async set(data){ const {error} = await sb.from('records').upsert({col: c, id, data}, {onConflict: 'col,id'}); if (error) throw fail(error); for (const x of subs[c] || []) x.map[id] = data; fire(c); },
+      async update(patch){ const {error} = await sb.rpc('merge_record', {p_col: c, p_id: id, p_patch: patch}); if (error) throw fail(error); for (const x of subs[c] || []) if (x.map[id]) x.map[id] = {...x.map[id], ...patch}; fire(c); },
+      async delete(){ const {error} = await sb.from('records').delete().eq('col', c).eq('id', id); if (error) throw fail(error); for (const x of subs[c] || []) delete x.map[id]; fire(c); },
       onSnapshot(cb, onErr){
         const x = {map: {}, ready: false, snap: () => null};
         x.cb = () => cb({exists: id in x.map, data: () => x.map[id]});
