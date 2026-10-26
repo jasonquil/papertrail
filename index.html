@@ -4162,10 +4162,7 @@ Thanks for reaching out to All Points. We'd be happy to help with your shredding
 
 To put together accurate pricing, could you tell me roughly how much material you have (number of boxes or bins) and whether you're looking for a one-time purge or regular service?
 
-Once I have that, I'll get a quote over to you.
-
-Thanks,
-{my_first_name}`},
+Once I have that, I'll get a quote over to you.`},
   {id:'t_quote', name:'Sending a quote', subject:'Your All Points quote {quote_number}',
    body:`{greeting} {first_name},
 
@@ -4173,19 +4170,13 @@ Thanks again for considering All Points. I've attached quote {quote_number} for 
 
 Every service includes a Certificate of Destruction, and all shredded paper is recycled.
 
-Take a look and let me know if you have any questions. If everything looks good, just reply to this email and we'll get you on the schedule.
-
-Thanks,
-{my_first_name}`},
+Take a look and let me know if you have any questions. If everything looks good, just reply to this email and we'll get you on the schedule.`},
   {id:'t_quote_fu', name:'Following up on a quote', subject:'Following up on your quote',
    body:`{greeting} {first_name},
 
 I wanted to follow up on the quote I sent over for {company}. Do you have any questions I can answer?
 
-If you're ready to move forward, just let me know a few days and times that work, and we'll get you on the schedule.
-
-Thanks,
-{my_first_name}`},
+If you're ready to move forward, just let me know a few days and times that work, and we'll get you on the schedule.`},
   {id:'t_scheduled', name:'Service scheduled', subject:'Your shredding service on {service_date}',
    body:`{greeting} {first_name},
 
@@ -4193,37 +4184,25 @@ You're all set for service on {service_date}. Our driver will call ahead before 
 
 Having your boxes or bins ready in one spot helps our crew get started right away and finish efficiently.
 
-Let me know if anything changes.
-
-Thanks,
-{my_first_name}`},
+Let me know if anything changes.`},
   {id:'t_thanks', name:'Thank you for your business', subject:'Thank you from All Points',
    body:`{greeting} {first_name},
 
 Thank you for choosing All Points. We appreciate the opportunity to work with {company}.
 
-Your Certificate of Destruction will be sent once service is complete. If you ever need an extra pickup or have questions, just reply here.
-
-Thanks,
-{my_first_name}`},
+Your Certificate of Destruction will be sent once service is complete. If you ever need an extra pickup or have questions, just reply here.`},
   {id:'t_renewal', name:'Contract renewal', subject:'Your All Points service agreement',
    body:`{greeting} {first_name},
 
 Your service agreement with All Points is coming up for renewal on {contract_end}. We've enjoyed working with {company} and would love to keep things going.
 
-Let me know if you'd like any changes to your service before then, or if you have any questions.
-
-Thanks,
-{my_first_name}`},
+Let me know if you'd like any changes to your service before then, or if you have any questions.`},
   {id:'t_checkin', name:'Checking in', subject:'Checking in from All Points',
    body:`{greeting} {first_name},
 
 I wanted to check in and see how everything is going with your service. Is there anything we can do better, or any extra shredding you need taken care of?
 
-Let me know anytime.
-
-Thanks,
-{my_first_name}`}
+Let me know anytime.`}
 ];
 const MERGE_FIELDS = [['greeting','Good morning / afternoon'],['first_name','Contact first name'],['last_name','Contact last name'],['contact_name','Contact full name'],['company','Company name'],['my_name','Your name'],['my_first_name','Your first name'],['quote_number','Latest quote number'],['quote_total','Latest quote total'],['price_quoted','Opportunity price quoted'],['service','Service'],['interval','Service interval'],['service_date','Service date'],['contract_end','Contract end date']];
 function templates(){
@@ -4577,12 +4556,12 @@ function tplManageModal(){
   const list = templates();
   const sp = list.filter(t => t.src === 'spiro').length, spOld = list.filter(t => t.src === 'spiro' && (t.spv || 1) < SPIRO_TPL_VER).length;
   openModal('Email templates', `<p class="sub">Templates are shared with your team. Words in curly braces, like {first_name}, fill in from the account when you use the template.</p>
-    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Formatted versions of your Spiro templates are ready.</b> Bold headings, bullet lists and tighter spacing, like they looked in Spiro. This replaces the ${spOld} plain versions added earlier.` : `<b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update Spiro templates' : 'Add Spiro templates'}</button></div>` : ''}
+    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Updated versions of your Spiro templates are ready.</b> Formatted like Spiro (bold headings, bullets, tight spacing), with no sign-off since your signature is added when you send. This replaces the ${spOld} earlier versions.` : `<b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update Spiro templates' : 'Add Spiro templates'}</button></div>` : ''}
     ${list.length > 10 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}
     <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
 }
-const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 2;
+const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 3;
 async function spiroImport(){
   const b = $('#spiroBtn'); if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   let list;
@@ -4602,7 +4581,7 @@ async function spiroImport(){
   tplManageModal();
 }
 function tplEditModal(id){
-  const t = id ? templates().find(x => x.id === id) : {name:'', subject:'', body:'{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'};
+  const t = id ? templates().find(x => x.id === id) : {name:'', subject:'', body:'{greeting} {first_name},\n\n'};
   if (!t) return;
   const startHtml = t.html ? cleanHtml(t.body) : textToHtml(t.body);
   openModal(id ? 'Edit template' : 'New template', `${F('Template name', inp('name', t.name, 'text', 'required'))}
@@ -4630,37 +4609,25 @@ const DEFAULT_JOURNEYS = [{id: 'j_shred', name: 'Shredding Journey', onReply: 'p
 
 I wanted to follow up on the shredding quote I sent over for {company}. Have you had a chance to look it over?
 
-I'm happy to answer any questions or adjust anything so it fits what you need.
-
-Thanks,
-{my_first_name}`},
+I'm happy to answer any questions or adjust anything so it fits what you need.`},
   {delay: 7, subject: 'Any questions about your quote?', body: `{greeting} {first_name},
 
 Just checking in on your quote. A quick reminder of what's included: every service comes with a Certificate of Destruction, we're NAID AAA certified, and all shredded paper is recycled.
 
-If it would help to talk it through, reply here or give me a call and I'll walk you through it.
-
-Thanks,
-{my_first_name}`},
+If it would help to talk it through, reply here or give me a call and I'll walk you through it.`},
   {delay: 7, subject: 'Getting you on the schedule', body: `{greeting} {first_name},
 
-If you're ready to move forward, I'd be happy to get {company} on the schedule. Just send over a few days and times that work, and we'll take it from there.
-
-Thanks,
-{my_first_name}`},
+If you're ready to move forward, I'd be happy to get {company} on the schedule. Just send over a few days and times that work, and we'll take it from there.`},
   {delay: 7, subject: 'Should I close out your quote?', body: `{greeting} {first_name},
 
 I haven't heard back, so I'll assume the timing isn't right and close out your quote for now.
 
-If anything changes, just reply to this email and we'll pick up where we left off. We'd be glad to help whenever you're ready.
-
-Thanks,
-{my_first_name}`}
+If anything changes, just reply to this email and we'll pick up where we left off. We'd be glad to help whenever you're ready.`}
 ]}];
 // ---------- journey library: categories and the starter journeys every team gets ----------
 const JCATS = [['quote', 'Quote follow-up', '#C9A000'], ['inquiry', 'New inquiries', '#2F5D8A'], ['winback', 'Win back', '#5B3C99'], ['customers', 'Customers & renewals', '#22743A'], ['after', 'After the job', '#C2571A']];
 const JSVCS = [['shred', 'Shredding', 'doc'], ['med', 'Medical waste', 'spark'], ['drives', 'Hard drives & ITAD', 'box'], ['any', 'Any service', 'route']];
-const jEm = (delay, subject, body) => ({type: 'email', delay, subject, body: body + '\n\nThanks,\n{my_first_name}'});
+const jEm = (delay, subject, body) => ({type: 'email', delay, subject, body});   // no sign-off: each person's signature is added when it sends
 const jCall = (delay, note) => ({type: 'call', delay, note});
 Object.assign(DEFAULT_JOURNEYS[0], {category: 'quote', service: 'shred', desc: 'The original: four friendly follow-ups a week apart after a shredding quote.'});
 DEFAULT_JOURNEYS.push(
@@ -5181,7 +5148,7 @@ function jePreviewContacts(){
 function journeyEditModal(id, opt){
   opt = opt || {};
   const base = id ? journeyOf(id) : null; if (id && !base) return;
-  const j = base || {name: '', category: 'quote', service: 'shred', desc: '', onReply: 'pause', skipWeekends: true, steps: [{type: 'email', delay: 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}]};
+  const j = base || {name: '', category: 'quote', service: 'shred', desc: '', onReply: 'pause', skipWeekends: true, steps: [{type: 'email', delay: 0, subject: '', body: '{greeting} {first_name},\n\n'}]};
   const pv = opt.contactId || (jePreviewContacts()[0] || {}).id || '';
   ui.je = {id: opt.copy ? '' : (id || ''), personal: !!opt.personal, name: opt.copy ? j.name + ' (copy)' : j.name, category: j.category || 'quote', service: j.service || 'any', desc: j.desc || '', onReply: j.onReply || 'pause', skipWeekends: j.skipWeekends !== false, sendMode: j.sendMode === 'auto' ? 'auto' : 'approve', steps: JSON.parse(JSON.stringify(opt.steps || jSteps(j))), focus: 0, pv};
   const E = ui.je; const ct = S.contacts[pv];
@@ -5349,7 +5316,7 @@ const A = {
   jsxUncustom: () => { ui.js.custom = null; ui.js.exp = null; jsxPaint(); },
   jsxExp: d => { const i = +d.i; ui.js.exp = ui.js.exp === i ? null : i; jsxPaint(); if (ui.js.exp === i) { const f = document.querySelector(`#jsxPrev [data-i="${i}"]:is(input,textarea)`); if (f) { f.focus(); f.setSelectionRange?.(f.value.length, f.value.length); } document.querySelectorAll('#jsxPrev .jsx-ed textarea').forEach(jsxGrow); } },
   jeFocus: d => { ui.je.focus = +d.i; jePaint('strip'); document.querySelectorAll('.je-step').forEach(x => x.classList.toggle('on', +x.dataset.i === ui.je.focus)); $('#jeS' + d.i)?.scrollIntoView({block: 'center', behavior: 'smooth'}); },
-  jeAdd: d => { const at = Math.max(0, Math.min(+d.at, ui.je.steps.length)); ui.je.steps.splice(at, 0, d.t === 'call' ? {type: 'call', delay: at ? 3 : 0, note: 'Call {first_name}: '} : {type: 'email', delay: at ? 7 : 0, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}); ui.je.focus = at; jePaint(); const el = $('#jeS' + at); if (el) { el.scrollIntoView({block: 'center'}); el.querySelector('.je-subj, .je-note')?.focus(); } },
+  jeAdd: d => { const at = Math.max(0, Math.min(+d.at, ui.je.steps.length)); ui.je.steps.splice(at, 0, d.t === 'call' ? {type: 'call', delay: at ? 3 : 0, note: 'Call {first_name}: '} : {type: 'email', delay: at ? 7 : 0, subject: '', body: '{greeting} {first_name},\n\n'}); ui.je.focus = at; jePaint(); const el = $('#jeS' + at); if (el) { el.scrollIntoView({block: 'center'}); el.querySelector('.je-subj, .je-note')?.focus(); } },
   jeMove: d => { const i = +d.i, k = i + (+d.d); const st = ui.je.steps; if (k < 0 || k >= st.length) return; [st[i], st[k]] = [st[k], st[i]]; if (k === 0 || i === 0) { st[0].delay = 0; } ui.je.focus = k; jePaint(); },
   jeDup: d => { const i = +d.i; const c = JSON.parse(JSON.stringify(ui.je.steps[i])); c.delay = 7; ui.je.steps.splice(i + 1, 0, c); ui.je.focus = i + 1; jePaint(); },
   jeDel: d => { if (ui.je.steps.length < 2) { toast('A journey needs at least one step.', 'bad'); return; } ui.je.steps.splice(+d.i, 1); if (ui.je.steps[0]) ui.je.steps[0].delay = 0; ui.je.focus = Math.max(0, Math.min(ui.je.focus, ui.je.steps.length - 1)); jePaint(); },
@@ -5366,7 +5333,7 @@ const A = {
   jSend: d => jSendNow(d.id),
   jMode: async d => { const e = S.enrollments[d.id]; if (!e) return; const jm = (journeyOf(e.journeyId) || {}).sendMode || 'approve'; if (await patch('enrollments', d.id, {sendMode: d.m === jm ? '' : d.m, lastSendError: null})) { toast(d.m === 'auto' ? `${nameOf('contacts', e.contactId)}'s emails will send automatically` : `${nameOf('contacts', e.contactId)}'s emails will wait for you`); if (MST.length) closeModal(); schedule(); } },
   autoRun: () => autoRun(),
-  jAddStep: () => { const box = $('#jSteps'); box.insertAdjacentHTML('beforeend', jStepHtml({delay: 7, subject: '', body: '{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'}, box.children.length)); jRenumber(); box.lastElementChild.querySelector('input[name="step_subject[]"]').focus(); },
+  jAddStep: () => { const box = $('#jSteps'); box.insertAdjacentHTML('beforeend', jStepHtml({delay: 7, subject: '', body: '{greeting} {first_name},\n\n'}, box.children.length)); jRenumber(); box.lastElementChild.querySelector('input[name="step_subject[]"]').focus(); },
   jDelStep: (d, el) => { const box = $('#jSteps'); if (box.children.length < 2) { toast('A journey needs at least one email.', 'bad'); return; } el.closest('.jstep').remove(); jRenumber(); },
   acPick: d => acPick(+d.i),
   connections: () => connModal(),
