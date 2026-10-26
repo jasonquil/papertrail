@@ -367,7 +367,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .mailprev{background:#fff;color:#222;border:1px solid var(--line);border-radius:8px;padding:14px 16px;max-height:360px;overflow:auto;font:14px/1.45 Calibri,Aptos,Arial,sans-serif;overflow-wrap:anywhere}
 .mailprev p{margin:0 0 10px}
 .mailprev ul,.mailprev ol{margin:0 0 10px;padding-left:22px}.mailprev li{margin:0 0 2px}
-.sig-bad{outline:2px dashed var(--bad);outline-offset:2px}
+.sig-bad{outline:2px dashed var(--bad)!important;outline-offset:2px}
 .mailprev img{max-width:100%;height:auto;min-width:24px;min-height:16px;background:#eee;vertical-align:middle}
 .mailprev:focus{outline:2px solid var(--accent);outline-offset:1px}
 .acwrap{position:relative}
@@ -511,7 +511,7 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .imgpop button{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:4px 9px;font:600 .8rem var(--body);color:var(--fg);cursor:pointer}
 .imgpop button:hover{border-color:var(--accent);color:var(--accent)}.imgpop .ip-del{margin-left:auto;color:var(--bad)}
 [contenteditable="true"] img{cursor:pointer}
-.img-on{outline:2px solid var(--accent);outline-offset:2px}
+.img-on{outline:2px solid var(--accent)!important;outline-offset:2px}
 /* ===== Selectable looks (Settings → Appearance → Look) ===== */
 
 .stagebar{display:none;gap:2px;height:28px;border-radius:8px;overflow:hidden}
@@ -3924,7 +3924,11 @@ function sigClean(html){
   root.querySelectorAll('script,style,meta,link,title,xml,o\\:p').forEach(n => n.remove());
   for (const el of root.querySelectorAll('*')) { for (const at of [...el.attributes]) if (/^on/i.test(at.name) || (at.name === 'href' && /^\s*javascript:/i.test(at.value))) el.removeAttribute(at.name); }
   for (const img of root.querySelectorAll('img')) { const src = img.getAttribute('src') || ''; if (!/^(data:image\/|https:\/\/)/i.test(src)) { img.remove(); dropped++; } }
-  root.querySelectorAll('.img-on').forEach(n => { n.classList.remove('img-on'); if (!n.getAttribute('class')) n.removeAttribute('class'); });
+  root.querySelectorAll('.img-on,.sig-bad').forEach(n => { n.classList.remove('img-on', 'sig-bad'); if (!n.getAttribute('class')) n.removeAttribute('class'); });   // editor-only markers never go out
+  for (const img of root.querySelectorAll('img')) {   // no frames: some mail programs outline linked pictures unless told not to
+    const st = (img.getAttribute('style') || '').replace(/(^|;)\s*(outline|border)(-[a-z-]+)?\s*:[^;]*/gi, '').replace(/^;+|;+$/g, '').trim();
+    img.setAttribute('style', (st ? st + ';' : '') + 'border:0;outline:none'); img.setAttribute('border', '0'); if (!(img.getAttribute('class') || '').trim()) img.removeAttribute('class');
+  }
   return {html: root.innerHTML.trim(), dropped};
 }
 const fileToDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
@@ -3987,7 +3991,7 @@ function sigCheckImages(){
 function sigModal(){
   openModal('My email signature', `<p class="sub" style="margin-bottom:8px">Added to the bottom of emails you send from Paper Trail. Paste your signature from Outlook, then add your logos with <b>Add image</b> (Outlook keeps signature pictures hidden, so they don't come along when you copy). You can also paste or drag an image straight in.</p>
     <div class="sigtools"><label class="btn sm">${ic('up')}Add image<input type="file" id="sigImg" accept="image/*" multiple hidden data-change="sigImg"></label><button type="button" class="btn sm ghost" data-act="sigClear">Clear</button></div>
-    <div id="sigBox" class="mailprev sigbox" contenteditable="true">${SIG.html || ''}</div>
+    <div id="sigBox" class="mailprev sigbox" contenteditable="true">${SIG.html ? sigClean(SIG.html).html : ''}</div>
     <p class="sub" id="sigNote"></p>
     <label class="chk" style="margin-top:6px"><input type="checkbox" name="on" ${SIG.on ? 'checked' : ''}> Add it to my emails automatically</label>`, 'Save signature', async f => {
       let {html, dropped} = sigClean($('#sigBox').innerHTML);
@@ -4028,6 +4032,7 @@ async function hostSigImages(html){
 }
 let sigMigrating = false;
 async function sigAutoHost(){   // signatures saved before hosting existed: move their pictures over once, quietly
+  if (!sigMigrating && SIG.html && !DEMO) { const c = sigClean(SIG.html).html; if (c !== SIG.html && !/src="data:image\//i.test(SIG.html)) { sigMigrating = true; sigSave({html: c}).finally(() => { sigMigrating = false; }); return; } }
   if (sigMigrating || !SIG.html || !/src="data:image\//i.test(SIG.html) || !SUPA || DEMO) return;
   sigMigrating = true;
   try { const r = await hostSigImages(SIG.html); if (r.hosted) await sigSave({html: r.html}); } catch {} finally { sigMigrating = false; }
@@ -4514,7 +4519,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
     <div class="f"><span>Message</span>${rteBar('draftHtml')}<textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden aria-label="Claude's draft"></textarea><div id="draftHtml" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Choose a template, or type your message."></div></div>
     <p class="sub" id="dHint"></p>
     ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
-    ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${SIG.html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
+    ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${sigClean(SIG.html).html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
     ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk"><input type="checkbox" id="dJ" data-change="dJ"> Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up"><span class="sub">days</span></span></div>` : ''}
     <div class="mailbar" id="dNote" hidden></div>`, null, null,
     {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('up')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
@@ -4657,7 +4662,7 @@ async function sendMail(){
     if (GRAPH) {
       const files = ui.draftFiles || []; const tot = files.reduce((t, x) => t + x.size, 0);
       if (tot > ATT_MAX) throw Object.assign(new Error(`Attachments are ${fsize(tot)}; the limit is about 3 MB for now.`), {code: 'tool_error'});
-      if (SIG.html && $('#dSig') && $('#dSig').checked) html += `<br><div class="pt-signature">${SIG.html}</div>`;
+      if (SIG.html && $('#dSig') && $('#dSig').checked) html += `<br><div class="pt-signature">${sigClean(SIG.html).html}</div>`;
     }
     if (TRACK_ON()) { try { track = await addTracking(html); if (track.token) html = track.html; } catch { track = null; } }
     if (GRAPH) {
