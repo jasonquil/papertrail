@@ -1971,15 +1971,21 @@ function applyLook(){
     r.style.setProperty('--accent-fg', lum(acc) > .4 ? '#111111' : '#ffffff');
   } else ['--accent', '--accent-soft', '--accent-fg'].forEach(v => r.style.removeProperty(v));
 }
-function loadLookLocal(){ try { const v = JSON.parse(localStorage.getItem(lookKey()) || 'null'); if (v) LOOK = {...LOOK_DEFAULT, ...v}; } catch {} applyLook(); }
+// lookTs = when this device last changed the look. A saved copy coming back from the server only wins if it's newer:
+// before, the echo of an earlier click could land after the next click and quietly switch the look back.
+let lookTs = 0;
+function loadLookLocal(){ try { const v = JSON.parse(localStorage.getItem(lookKey()) || 'null'); if (v) LOOK = {...LOOK_DEFAULT, ...v}; lookTs = +localStorage.getItem(lookKey() + '-ts') || 0; } catch {} applyLook(); }
 let lookT = 0;
 function saveLook(){
-  applyLook(); try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); } catch {}
-  clearTimeout(lookT); lookT = setTimeout(async () => { if (!live || !db || !ME.id) return; try { await db.doc('prefs/' + ME.id).set({look: LOOK, updatedAt: Date.now()}); } catch {} }, 600);
+  lookTs = Date.now(); const ts = lookTs;
+  applyLook(); try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); localStorage.setItem(lookKey() + '-ts', String(ts)); } catch {}
+  clearTimeout(lookT); lookT = setTimeout(async () => { if (!live || !db || !ME.id) return; try { await db.doc('prefs/' + ME.id).set({look: LOOK, updatedAt: lookTs}); } catch {} }, 600);
 }
 function syncLookFromDb(){
   if (!live || !db || !ME.id) return;
-  try { db.doc('prefs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v && v.look && JSON.stringify(v.look) !== JSON.stringify(LOOK)) { LOOK = {...LOOK_DEFAULT, ...v.look}; try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); } catch {} applyLook(); schedule(); } }, () => {}); } catch {}
+  try { db.doc('prefs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data();
+    if (!v || !v.look || (v.updatedAt || 0) <= lookTs || JSON.stringify(v.look) === JSON.stringify(LOOK)) return;   // older than what's on screen: ignore
+    LOOK = {...LOOK_DEFAULT, ...v.look}; lookTs = v.updatedAt || 0; try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); localStorage.setItem(lookKey() + '-ts', String(lookTs)); } catch {} applyLook(); schedule(); }, () => {}); } catch {}
 }
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (LOOK.mode === 'system') applyLook(); }); } catch {}
 function lookModal(){
@@ -3998,14 +4004,15 @@ document.addEventListener('scroll', e => { if (PM.el && !PM.el.contains(e.target
 // ---------- my email signature (per person, with logos) ----------
 let SIG = {html: '', on: true, track: true};   // per person: signature and whether my emails are tracked
 const sigKey = () => 'pt-sig-' + (ME.id || 'me');
+let sigTs = 0;   // same rule as the look: an older saved copy coming back can't undo a newer change
 function sigLoad(){
   try { const v = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (v) SIG = {...SIG, ...v}; } catch {}
   if (!live || !db || !ME.id) return;
-  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v) { SIG = {html: v.html || '', on: v.on !== false, track: v.track !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} setTimeout(sigAutoHost, 1500); } }, () => {}); } catch {}
+  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v && (v.updatedAt || 0) >= sigTs) { sigTs = v.updatedAt || 0; SIG = {html: v.html || '', on: v.on !== false, track: v.track !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} setTimeout(sigAutoHost, 1500); } }, () => {}); } catch {}
 }
 async function sigSave(next){
-  SIG = {...SIG, ...next}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {}
-  if (live && db && ME.id && !DEMO) { try { await db.doc('sigs/' + ME.id).set({html: SIG.html, on: SIG.on, track: SIG.track !== false, updatedAt: Date.now()}); } catch (e) { writeErr(e); return false; } }
+  SIG = {...SIG, ...next}; sigTs = Date.now(); try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {}
+  if (live && db && ME.id && !DEMO) { try { await db.doc('sigs/' + ME.id).set({html: SIG.html, on: SIG.on, track: SIG.track !== false, updatedAt: sigTs}); } catch (e) { writeErr(e); return false; } }
   return true;
 }
 // keep text, links and real images; drop Outlook's hidden-attachment images (cid:, file:) that can't travel
