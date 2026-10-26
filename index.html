@@ -1686,7 +1686,7 @@ function buildDemo(){
   });
   return out;
 }
-function setDemo(on){
+function setDemo(on, keepPage){
   if (on === DEMO) return;
   if (on) {
     demoSaved = {S: {}, team: team, P: {...P}};
@@ -1696,7 +1696,7 @@ function setDemo(on){
     for (const [id, n] of Object.entries(DEMO_PEOPLE)) P[id] = {name: n};
     for (const [id, dd] of acctFix()) S.companies[id] = dd;
     team = {ids: [...new Set([...(team.ids || []), ...Object.keys(DEMO_PEOPLE)])]};
-    DEMO = true; ui.detail = null; ui.view = startView();
+    DEMO = true; if (!keepPage) { ui.detail = null; ui.view = startView(); }
     toast('Demo mode on: showing sample data');
   } else {
     DEMO = false;
@@ -1868,7 +1868,23 @@ function fishEgg(el){
 // ---------- browser history: Back (including the mouse's back button) moves exactly one screen ----------
 // Pages, the opportunity side panel and every window step (each Settings section, each screen opened from it) get their own history entry.
 const navState = () => ({v: ui.view, co: ui.pageCo || null, opp: ui.pageOpp || null, t: ui.cpTab || null, d: ui.detail ? {col: ui.detail.col, id: ui.detail.id} : null, s: ui.side || null});
-const navHash = st => '#' + (st.v === 'company' && st.co ? 'account' : st.v === 'opp' && st.opp ? 'opportunity' : st.v);
+// the address names the exact page, so a refresh (or a saved link) reopens it: #account/<id>/<tab>, #opportunity/<id>, #contacts?open=contacts:<id>, #pipeline?side=<id>
+const enc = encodeURIComponent;
+const navHash = st => { let h = '#' + (st.v === 'company' && st.co ? 'account/' + enc(st.co) + (st.t && st.t !== 'details' ? '/' + enc(st.t) : '') : st.v === 'opp' && st.opp ? 'opportunity/' + enc(st.opp) : st.v);
+  const q = []; if (st.d && st.d.col && st.d.id) q.push('open=' + enc(st.d.col + ':' + st.d.id)); if (st.s) q.push('side=' + enc(st.s)); return q.length ? h + '?' + q.join('&') : h; };
+function hashNav(h){
+  h = String(h || '').replace(/^#/, ''); if (!h) return null;
+  const [path, qs] = h.split('?'); const parts = path.split('/').map(x => { try { return decodeURIComponent(x); } catch { return x; } });
+  const st = {v: parts[0], co: null, opp: null, t: null, d: null, s: null};
+  if (parts[0] === 'account' && parts[1]) { st.v = 'company'; st.co = parts[1]; st.t = parts[2] || null; }
+  else if (parts[0] === 'opportunity' && parts[1]) { st.v = 'opp'; st.opp = parts[1]; }
+  else if (!VIEWS.some(v => v[0] === parts[0])) return null;
+  for (const kv of (qs || '').split('&')) { const [k, v] = kv.split('='); const val = (() => { try { return decodeURIComponent(v || ''); } catch { return ''; } })();
+    if (k === 'open' && val.includes(':')) { const i = val.indexOf(':'); st.d = {col: val.slice(0, i), id: val.slice(i + 1)}; } else if (k === 'side' && val) st.s = val; }
+  return st;
+}
+const dataReady = () => booted && (!live || COLS.every(c => loaded[c]));
+let navWant = null;   // a drawer or side panel from the address, opened once the records have loaded
 const navOnly = st => st ? JSON.stringify({v: st.v, co: st.co || null, opp: st.opp || null, t: st.t || null, d: st.d || null, s: st.s || null}) : '';
 let navN = 0, navSeq = 0, ignorePop = 0, popping = false, CUR_ACT = null;
 const MST = [];   // open window steps, oldest first: {tok, key, tab, reopen}
@@ -1998,6 +2014,7 @@ function morphKids(a, b){
 }
 function render(){
   if (!(ui.qOnly && X)) X = idx(); ui.qOnly = false;
+  if (navWant && dataReady()) { const w = navWant; navWant = null; if (w.d && S[w.d.col] && S[w.d.col][w.d.id]) ui.detail = w.d; if (w.s && S.deals[w.s]) ui.side = w.s; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
   if (ui.detail && !S[ui.detail.col][ui.detail.id] && (booted && (!live || COLS.every(c => loaded[c])))) ui.detail = null;
   preserve(() => {
     const nh = navHtml(); if (nh !== lastNav) { morph($('#nav'), nh); lastNav = nh; }   // the sidebar is patched in place, so it never flickers
@@ -2304,6 +2321,7 @@ async function oppSaveField(el){
 }
 V.opp = () => {
   const id = ui.pageOpp; const d = S.deals[id];
+  if (!d && !dataReady()) return `<p class="empty-s">Loading…</p>`;
   if (!d) return `<p class="empty-s">This opportunity no longer exists. <button class="lnk" data-act="go" data-v="pipeline">Back to Opportunities</button></p>`;
   const W = canWrite;
   const quotes = L('quotes').filter(q => q.dealId === id).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -2337,6 +2355,7 @@ V.opp = () => {
 const cpField = (label, val, wide) => `<div class="cpf${wide ? ' wide' : ''}"><span>${label}</span><div>${val || '<span class="sub">—</span>'}</div></div>`;
 V.company = () => {
   const id = ui.pageCo; const c = S.companies[id];
+  if (!c && !dataReady()) return `<p class="empty-s">Loading…</p>`;
   if (!c) return `<p class="empty-s">This account no longer exists. <button class="lnk" data-act="go" data-v="companies">Back to Accounts</button></p>`;
   const g = gr(id); const tab = ui.cpTab || 'details';
   const counts = {activity: g.acts.filter(a => a.type !== 'stage').length, reminders: g.tasks.filter(k => !k.done).length, contacts: g.contacts.length, opps: g.deals.length, quotes: g.quotes.length, contracts: g.contracts.length, journeys: L('enrollments').filter(e => e.companyId === id).length};
@@ -7191,7 +7210,8 @@ function contractView(id){
 // ---------- boot ----------
 async function boot(){
   if (/[?&](code|error)=/.test(location.search) && (window.name === 'pt-ms-login' || window.name === 'pt-ms-silent')) { document.body.innerHTML = '<p style="font:16px system-ui;padding:24px">Signing you in…</p>'; return; }
-  const h = (location.hash || '').slice(1); if (VIEWS.some(v => v[0] === h)) ui.view = h;
+  const h = (location.hash || '').slice(1); const hs = hashNav(h);
+  if (hs) { ui.view = hs.v; ui.pageCo = hs.co; ui.pageOpp = hs.opp; ui.cpTab = hs.t || 'details'; if (hs.d || hs.s) navWant = {d: hs.d, s: hs.s}; }
   try { history.replaceState(navState(), '', navHash(navState())); } catch {}
   render();
   const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
@@ -7216,7 +7236,7 @@ async function boot(){
   booted = true; bootDone(); setTimeout(acctHeal, 4000); setTimeout(() => { syncJourneyDefaults(); autoLoad(); }, 3000); setTimeout(() => { if (DRIVE_BACKUP && SUPA && !DEMO && isAdmin()) drvLoad(); }, 5000);
   syncLookFromDb(); sigLoad();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
-  try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true); } catch {}
+  try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true, true); } catch {}   // a refresh in demo stays on the same page
   setTimeout(() => checkReplies(), 5000);
   setTimeout(() => syncRecent(), 7000);
   setInterval(() => { if (document.visibilityState !== 'hidden') { syncRecent(); checkReplies(); } }, 15 * 60e3);
