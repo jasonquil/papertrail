@@ -1295,6 +1295,8 @@ const MS = 'Microsoft 365';
 const GENERIC_MAIL = /^(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|aol|icloud|me|mac|comcast|bellsouth|att|sbcglobal|verizon|protonmail|proton|gmx|mail|zoho|cox|charter|earthlink|allpointsprotects)\./;
 const INDUSTRIES = ['Medical / dental','Legal','Financial / accounting','Real estate','Insurance','Government','Education','Property management','Residential','Other'];
 const SERVICES = ['Purge','Recurring'];
+// what a new opportunity of each type usually is; the form fills these in when the type is picked (add more types here)
+const OPP_DEFAULTS = {'Shredding Purge': {service: 'Purge', serviceType: 'Shredding', interval: 'As Needed'}};
 const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 const SOURCES = ['Chat GPT','Print Ad','Local and Organic','AdWords','Bing','Shred Nations','Click2Sell','Previous Client','Existing Client','Truck','Pink Truck','Newsletter','Facebook','Postcard','Next Door','In-House Post Card','Sell Sheet','Other','Outbound Lead','A3','A4','YouTube','TJ Baral'];
 const QSTAT = [['draft','Draft'],['sent','Sent'],['accepted','Accepted'],['declined','Declined']];
@@ -3130,15 +3132,15 @@ function dealForm(id, pre={}){
   const coOptions = [...withOpt(coOpts('— Choose an account —'), d.companyId, pre.coName), ...(id ? [] : [['__new', '+ New account…']])];
   openModal(id ? 'Edit opportunity' : pre.flow ? `Add an opportunity for ${pre.coName || cname(pre.co)}` : 'New opportunity', `${pre.flow ? stepTag(3, 'Opportunity') : ''}<div class="grid3c">
     ${F('Company', sel('companyId', coOptions, d.companyId, 'id="dfCo" data-change="dfCo" required'))}
-    ${F('Opportunity', sel('type', o(OPP_TYPES, d.type || (OPP_TYPES.includes(d.name) ? d.name : '')), d.type || (OPP_TYPES.includes(d.name) ? d.name : ''), 'required'))}
+    ${F('Opportunity', sel('type', o(OPP_TYPES, d.type || (OPP_TYPES.includes(d.name) ? d.name : '')), d.type || (OPP_TYPES.includes(d.name) ? d.name : ''), id ? 'required' : 'required data-change="dfType"'))}
     <label class="f full" id="dfNewCo" hidden><span>New account name</span>${inp('newCompany', '', 'text', 'placeholder="Name of the new account"')}</label>
     ${F('Sales stage', sel('stage', STAGES.map(s => [s.k, s.l]), stage(d).k, 'data-change="dfStage"'))}
     ${F('Annual projected amount', `<span class="money"><i>$</i>${inp('value', d.value ? d.value : '', 'text', 'inputmode="decimal"')}</span>`)}
     ${F('Price quoted', `<span class="money"><i>$</i>${inp('priceQuoted', d.priceQuoted ? d.priceQuoted : '', 'text', 'inputmode="decimal"')}</span>`)}
     <label class="f full"><span>Description</span>${ta('notes', d.notes, 3)}</label>
-    ${F('Service', sel('service', o(SERVICES, d.service), d.service))}
-    ${F('Service type', sel('serviceType', o(SVC_TYPES, d.serviceType), d.serviceType))}
-    ${F('Service interval', sel('interval', o(INTERVALS, d.interval), d.interval))}
+    ${F('Service', sel('service', o(SERVICES, d.service), d.service, 'data-change="dfSvcPick"'))}
+    ${F('Service type', sel('serviceType', o(SVC_TYPES, d.serviceType), d.serviceType, 'data-change="dfSvcPick"'))}
+    ${F('Service interval', sel('interval', o(INTERVALS, d.interval), d.interval, 'data-change="dfSvcPick"'))}
     ${F('Service date', inp('serviceDate', d.serviceDate, 'date'))}
     <label class="f" id="dfClosed"${hid(!isOpen(d))}><span>Closed date</span>${inp('closedAt', d.closedAt || '', 'date', 'id="dfClosedAt"')}</label>
     <label class="f" id="dfClosedBy"${hid(!isOpen(d))}><span>Closed by</span>${ownerSel('closedBy', d.closedBy || ME.id)}</label>
@@ -5830,6 +5832,13 @@ const CHANGE = {
   tplFmt: () => updTplPrev(),
   draftTo: el => { if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
   dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = CLOSED.includes(el.value); const closed = CLOSED.includes(el.value); const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
+  // New opportunity: picking the opportunity type fills in its usual service fields. A field the person set themselves is never overwritten;
+  // switching to another type clears only what was filled in automatically.
+  dfType: el => { const fill = OPP_DEFAULTS[el.value] || {}; const form = el.closest('form') || document;
+    for (const k of ['service', 'serviceType', 'interval']) { const s_ = form.querySelector(`select[name="${k}"]`); if (!s_) continue;
+      const auto = s_.dataset.auto === '1';
+      if (!s_.value || auto) { const v = fill[k] || ''; s_.value = [...s_.options].some(op => op.value === v) ? v : ''; s_.dataset.auto = s_.value ? '1' : ''; } } },
+  dfSvcPick: el => { el.dataset.auto = ''; },
   dfSource: el => { const w = $('#dfSrcOther'); if (w) w.hidden = el.value !== 'Other'; },
   dfFcc: el => { const w = $('#dfNoClose'); if (w) w.hidden = el.value !== 'No'; },
   dfCo: el => { const nc = $('#dfNewCo'); if (nc) { nc.hidden = el.value !== '__new'; if (!nc.hidden) nc.querySelector('input').focus(); } const ct = $('#dfCt'); if (!ct) return; const cur = ct.value; const opts = el.value === '__new' ? [['', '— None —']] : ctOpts(el.value); ct.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); if (opts.some(o => o[0] === cur)) ct.value = cur; },
