@@ -6646,13 +6646,18 @@ function makeSupaDb(sb, uidKey){
     fire(row.col);
   });
   ch.subscribe();
+  // each page starts after the last id of the one before ("keyset" paging), so page 30 is as quick as page 1;
+  // skipping rows by count got slow enough with 80,000 records to hit Supabase's time limit
+  const retry = async (fn, tries = 4) => { for (let n = 1; ; n++) { const r = await fn(); if (!r.error || n >= tries) return r; await new Promise(ok => setTimeout(ok, 800 * n * n)); } };
   async function pages(build){
-    const out = [];
-    for (let from = 0, more = true; more; from += 4 * SB_PAGE) {   // four pages at a time
-      const got = await Promise.all([0, 1, 2, 3].map(i => build().range(from + i * SB_PAGE, from + (i + 1) * SB_PAGE - 1)));
-      for (const {data, error} of got) { if (error) throw error; out.push(...(data || [])); if (!data || data.length < SB_PAGE) { more = false; break; } }
+    const out = []; let last = null;
+    for (;;) {
+      const {data, error} = await retry(() => { let q = build(); if (last != null) q = q.gt('id', last); return q.limit(SB_PAGE); });
+      if (error) throw error;
+      out.push(...(data || []));
+      if (!data || data.length < SB_PAGE) return out;
+      last = data[data.length - 1].id;
     }
-    return out;
   }
   async function loadAll(c){
     const cached = await IDB.get(ckey(c));
@@ -6661,14 +6666,14 @@ function makeSupaDb(sb, uidKey){
       const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', cached.max).order('id'));
       for (const r of changed) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
       useAdd('catch', jsonSize(changed) + 200);
-      const {count, error} = await sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c);
+      const {count, error} = await retry(() => sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c));
       if (error) throw error;
       if (count !== Object.keys(map).length) {   // out of step: drop what the server no longer has, fetch anything missing
         const ids = new Set((await pages(() => sb.from('records').select('id').eq('col', c).order('id'))).map(r => r.id));
         for (const id of Object.keys(map)) if (!ids.has(id)) delete map[id];
         const missing = [...ids].filter(id => !(id in map));
         for (let k = 0; k < missing.length; k += 200) {
-          const {data, error: e2} = await sb.from('records').select('id,data,updated_at').eq('col', c).in('id', missing.slice(k, k + 200));
+          const {data, error: e2} = await retry(() => sb.from('records').select('id,data,updated_at').eq('col', c).in('id', missing.slice(k, k + 200)));
           if (e2) throw e2; for (const r of data || []) { map[r.id] = r.data || {}; bump(c, r.updated_at); } useAdd('catch', jsonSize(data));
         }
       }
@@ -6690,7 +6695,8 @@ function makeSupaDb(sb, uidKey){
         const x = {map: {}, ready: false, snap: () => null};
         x.cb = () => cb({exists: id in x.map, data: () => x.map[id]});
         (subs[c] = subs[c] || []).push(x);
-        loadAll(c).then(m => { x.map = m; x.ready = true; x.cb(); }).catch(e => onErr && onErr(fail(e)));
+        const go = n => loadAll(c).then(m => { x.map = m; x.ready = true; x.cb(); }).catch(e => { if (n < 3) setTimeout(() => go(n + 1), 3000 * n); else if (onErr) onErr(fail(e)); });
+        go(1);
         return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
       }
     };
@@ -6703,7 +6709,8 @@ function makeSupaDb(sb, uidKey){
           const x = {map: {}, ready: false, cb};
           x.snap = () => ({docs: Object.entries(x.map).map(([id, d]) => ({id, data: () => d}))});
           (subs[c] = subs[c] || []).push(x);
-          loadAll(c).then(m => { x.map = m; x.ready = true; cb(x.snap()); persist(c); }).catch(e => onErr && onErr(fail(e)));
+          const go = n => loadAll(c).then(m => { x.map = m; x.ready = true; cb(x.snap()); persist(c); }).catch(e => { console.warn('Paper Trail: loading ' + c + ' failed (try ' + n + ')', e); if (n < 3) setTimeout(() => go(n + 1), 3000 * n); else if (onErr) onErr(fail(e)); });
+          go(1);
           return () => { subs[c] = (subs[c] || []).filter(y => y !== x); };
         },
         async deleteMany(ids, onProgress){   // removes the given ids, 300 per request, 4 requests at a time
@@ -7137,7 +7144,7 @@ async function boot(){
     db = d; live = true;
     for (const c of COLS) {
       db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); REAL[c] = o; if (!DEMO) S[c] = o; loaded[c] = true; if (c === 'companies') { hayReset(); acctHeal(); } schedule(); },
-        err => { loaded[c] = true; if (err && err.code === 'revoked') { canWrite = false; toast('Your access to this CRM changed. Reload to continue.', 'bad'); } else toast("Lost the live connection to your records. Reload the page.", 'bad'); schedule(); });
+        err => { loaded[c] = true; if (err && err.code === 'revoked') { canWrite = false; toast('Your access to this CRM changed. Reload to continue.', 'bad'); } else toast(`Couldn't load your ${({companies: 'accounts', deals: 'opportunities'})[c] || c} after three tries${err && err.message ? ` (${String(err.message).slice(0, 90)})` : ''}. Reload the page.`, 'bad'); schedule(); });
     }
     if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
   }
