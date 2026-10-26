@@ -169,6 +169,12 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .att-act{display:flex;gap:6px;flex-wrap:wrap}
 
 .tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rtsl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rts{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);flex-wrap:wrap}
+.rts-b{flex:1;min-width:180px;display:flex;flex-direction:column}.rts-b b{font-weight:600}.rts-co{color:var(--muted);font-size:.86rem}.rts-b small{color:var(--muted);font-size:.82rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rts-a{display:flex;gap:6px}
+.nc-list{list-style:none;margin:10px 0;padding:0;border:1px solid var(--line);border-radius:10px;max-height:300px;overflow:auto}.nc-list li{display:flex;gap:10px;flex-wrap:wrap;padding:7px 12px;border-bottom:1px solid var(--line);font-size:.9rem}.nc-list li:last-child{border-bottom:0}
+.nc-was{color:var(--muted);text-decoration:line-through;overflow-wrap:anywhere}.nc-to{font-weight:600;overflow-wrap:anywhere}.nc-to i{font-weight:500;color:var(--muted)}
 .task{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
 .task:last-child{border-bottom:0}
 .rems{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -1350,7 +1356,7 @@ const sum = (a,f) => a.reduce((t,x) => t + (+f(x) || 0), 0);
 const L = col => Object.entries(S[col]).map(([id,v]) => ({id, ...v}));
 const byName = (a,b) => (a.name||'').localeCompare(b.name||'');
 const cname = id => S.companies[id]?.name || '';
-const pname_ = c => [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || c.email2 || 'Unnamed contact';
+const pname_ = c => [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || c.email2 || c.phone || c.mobile || 'Unnamed contact';
 // contacts can have a work email (email) and a personal email (email2); work is preferred for sending
 const ctAddrs = c => c ? [...new Set([c.email, c.email2].map(e => String(e || '').trim().toLowerCase()).filter(e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))] : [];
 const ctMail = c => c ? String(c.email || c.email2 || '').trim() : '';
@@ -1798,12 +1804,7 @@ function attention(){
     out.push({sev:'bad', o:0, kind:'Past-due reminder', title:k.title, sub:`Due ${fmtDate(k.due)} · ${esc(pname(k.assigneeId))}${k.companyId?' · '+esc(cname(k.companyId)):''}`,
       acts:[{l:'Done', act:'taskDone', d:{id:k.id}, pri:1}, {l:'Edit', act:'editTask', d:{id:k.id}}]});
   }
-  for (const d of L('deals').filter(d => isOpen(d) && mine(d))) {
-    const open = {l:'Open', act:'open', d:{col:'deals', id:d.id}};
-    const draft = {l:'Email', act:'draft', d:{col:'deals', id:d.id}};
-    if (isDate(d.closeDate) && d.closeDate < t) out.push({sev:'warn', o:1, kind:'Past close date', title:d.name, sub:`Expected ${fmtDate(d.closeDate)} · ${money(d.value)} · ${esc(cname(d.companyId)||'No account')}`, acts:[open]});
-
-  }
+  // open opportunities aren't flagged by close date: Spiro's close dates were automatic (Jason, Oct 26)
   for (const q of L('quotes').filter(q => q.status === 'sent' && q.sentAt && mine(q))) {
     const n = daysSince(q.sentAt);
     if (n >= 5) out.push({sev:'warn', o:3, kind:`Quote waiting ${n} days`, title:`${q.number} · ${cname(q.companyId)}`, sub:`${money2(qTotal(q))} · sent ${rel(q.sentAt)}`,
@@ -1815,7 +1816,7 @@ function attention(){
     else if (n <= (c.autoRenew ? 30 : 60)) out.push({sev: c.autoRenew ? 'info' : (n <= 21 ? 'bad' : 'warn'), o:1, kind: c.autoRenew ? `Auto-renews in ${n} days` : `Contract ends in ${n} days`, title:`${cname(c.companyId)} · ${c.title||'Service agreement'}`,
       sub:`${fmtDate(c.end)} · ${money(c.value)}/yr`, acts:[{l:'Email', act:'draft', d:{col:'companies', id:c.companyId, purpose:'renewal'}}, {l:'Renew', act:'renew', d:{id:c.id}}].filter(Boolean)});
   }
-  for (const {e, s} of journeyDue()) if (!autoWillSend(e, s)) out.push({sev: s.due < t ? 'warn' : 'info', o: 2, kind: isCallStep(eSteps(e)[s.step]) ? 'Journey call due' : `Journey email ${s.step + 1} due`, title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))}${s.due < t ? ' · was due ' + fmtDate(s.due) : ''}`, acts: canWrite ? [{l: isCallStep(eSteps(e)[s.step]) ? 'Call & log it' : 'Review & send', act: 'jSend', d: {id: e.id}, pri: 1}, {l: 'Skip', act: 'jSkip', d: {id: e.id}}] : []});
+  for (const {e, s} of journeyDue()) if (!autoWillSend(e, s) && isCallStep(eSteps(e)[s.step])) out.push({sev: s.due < t ? 'warn' : 'info', o: 2, kind: isCallStep(eSteps(e)[s.step]) ? 'Journey call due' : `Journey email ${s.step + 1} due`, title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))}${s.due < t ? ' · was due ' + fmtDate(s.due) : ''}`, acts: canWrite ? [{l: isCallStep(eSteps(e)[s.step]) ? 'Call & log it' : 'Review & send', act: 'jSend', d: {id: e.id}, pri: 1}, {l: 'Skip', act: 'jSkip', d: {id: e.id}}] : []});
   for (const e of L('enrollments').filter(e => e.status === 'paused' && e.stopReason === 'replied' && (!ui.mine || e.ownerId === ME.id))) out.push({sev: 'info', o: 1, kind: 'Replied during a journey', title: `${nameOf('contacts', e.contactId)} · ${cname(e.companyId)}`, sub: `${esc(jName(e.journeyId))} is paused${e.replySubject ? ' · “' + esc(e.replySubject) + '”' : ''}`, acts: canWrite ? [{l: 'Resume', act: 'jResume', d: {id: e.id}}, {l: 'End', act: 'jStop', d: {id: e.id}}] : []});
   const sev = {bad:0, warn:1, info:2};
   return out.sort((a,b) => sev[a.sev]-sev[b.sev] || a.o-b.o);
@@ -2038,10 +2039,11 @@ V.today = () => {
   return nudge + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), mineSeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your Spiro data over from Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + rstat + `<div class="cols2">
+    <div class="stack">${readyPanel()}
     <section class="panel"><div class="ph"><h3>Needs attention</h3><span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span></div>
       ${items.length ? `<ul class="attl">${items.slice(0,25).map(i => `<li class="att ${i.sev}"><div class="att-main"><span class="att-kind">${esc(i.kind)}</span><b>${esc(i.title)}</b><span class="att-sub">${i.sub}</span></div><div class="att-act">${i.acts.map(a => `<button class="btn sm ${a.pri?'pri':''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join('')}</div></li>`).join('')}</ul>`
-      : `<p class="empty-s">Nothing needs you right now. Past-due reminders, opportunities past their close date, quotes waiting on an answer and contracts coming up for renewal will show up here.</p>`}
-    </section>
+      : `<p class="empty-s">Nothing needs you right now. Past-due reminders, quotes waiting on an answer, journey calls and contracts coming up for renewal will show up here.</p>`}
+    </section></div>
     <div class="stack">
       <section class="panel"><div class="ph"><h3>${route ? "Today's route" : 'Reminders'}</h3><button class="lnk" data-act="go" data-v="reminders">${tasks.length} open · see all</button></div>
         ${canWrite ? `<div><button class="btn sm pri" data-act="newTask">${ic('bell')}Set a reminder</button></div>` : ''}
@@ -2052,6 +2054,19 @@ V.today = () => {
   </div>`;
 };
 
+// journey emails waiting for someone to review and send (auto-send ones aren't listed)
+function readyPanel(){
+  const t = today();
+  const due = journeyDue().filter(({e, s}) => !autoWillSend(e, s) && !isCallStep(eSteps(e)[s.step])).sort((a, b) => (a.s.due || '').localeCompare(b.s.due || ''));
+  if (!due.length && !L('enrollments').some(e => e.status === 'active')) return '';
+  const row = ({e, s}) => { const st = eSteps(e)[s.step] || {}; const late = s.due < t;
+    return `<li class="rts"><div class="rts-b"><b>${esc(nameOf('contacts', e.contactId))}</b><span class="rts-co">${esc(cname(e.companyId) || '')}</span><small>${esc(jName(e.journeyId))} · Email ${s.step + 1}: ${esc(st.subject || '(no subject)')}</small></div>
+      <span class="chip ${late ? 'warn' : 'good'}">${late ? 'Due ' + fmtDate(s.due) : 'Today'}</span>
+      ${canWrite ? `<span class="rts-a"><button class="btn sm pri" data-act="jSend" data-id="${e.id}">${ic('mail')}Review & send</button><button class="btn sm ghost" data-act="jSkip" data-id="${e.id}">Skip</button></span>` : ''}</li>`; };
+  return `<section class="panel rtsp"><div class="ph"><h3>Ready to send</h3><button class="lnk" data-act="go" data-v="journeys">${due.length ? `${due.length} email${due.length === 1 ? '' : 's'} · ` : ''}Journeys</button></div>
+    ${due.length ? `<ul class="rtsl">${due.slice(0, 8).map(row).join('')}</ul>${due.length > 8 ? `<p class="sub" style="margin:8px 0 0"><button class="lnk" data-act="go" data-v="journeys">See all ${due.length}</button></p>` : ''}`
+    : `<p class="empty-s">No journey emails are waiting. When one is due, it shows up here ready to review and send.</p>`}</section>`;
+}
 function taskRow(k){
   const rel_ = [k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : ''].filter(Boolean).join(' · ');
   return `<li class="task ${remGrp(k)}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="Mark done" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
@@ -2332,7 +2347,7 @@ V.companies = () => {
 };
 
 V.contacts = () => {
-  const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))));
+  const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => (!(a.firstName || a.lastName)) - (!(b.firstName || b.lastName)) || pname_(a).localeCompare(pname_(b))));
   const total = Object.keys(S.contacts).length;
   ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
   return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
@@ -2865,6 +2880,46 @@ function viewManageModal(t){
       <div class="uact"><button type="button" class="btn sm" data-act="viewUse" data-t="${t}" data-id="${v.id}">Show</button>${mine_ ? `<button type="button" class="btn sm ghost" data-act="viewRename" data-id="${v.id}">Rename</button><button type="button" class="btn sm ghost" data-act="viewShare" data-id="${v.id}">${v.shared ? 'Stop sharing' : 'Share'}</button>` : ''}${mine_ || isAdmin() ? `<button type="button" class="btn sm ghost" data-act="viewDel" data-id="${v.id}" data-t="${t}">Delete</button>` : ''}</div></li>`; }).join('')}</ul>` : '<p class="empty-s">No saved filters yet. Set some filters, then choose “Save these filters…”.</p>', null);
 }
 
+// ---------- clean up names (admin): fixes records already in Paper Trail ----------
+function nameCleanPlan(ph){
+  const ct = [], co = [];
+  for (const c of L('contacts')) { const fx = nameFix(c, {placeholders: ph}); if (fx) ct.push([c, fx]); }
+  for (const a of L('companies')) { const n = acctNameFix(a.name); if (n) co.push([a, {name: n}]); }
+  const dl = L('deals').filter(d => d.spiroId && isOpen(d) && d.closeDate).map(d => [d, {closeDate: ''}]);   // Spiro's automatic "close date" (about 30 days after created)
+  return {ct, co, dl};
+}
+function nameCleanModal(){
+  if (!isAdmin()) return;
+  const ph = !!prefGet('namePh', false); const P0 = nameCleanPlan(false), P1 = nameCleanPlan(true); const plan = ph ? P1 : P0;
+  const extra = P1.ct.length - P0.ct.length;
+  const show = (c, fx) => { const after = {...c, ...fx}; return `<li><span class="nc-was">${esc(pname_(c))}</span><span class="nc-to">→ ${(after.firstName || after.lastName) ? esc(pname_(after)) : `<i>${esc(pname_(after))}</i>`}</span></li>`; };
+  const sample = plan.ct.filter(([c]) => !ph || !NAME_PH.test(c.lastName || '') || /[^A-Za-z\s]/.test(c.firstName || '')).slice(0, 10);
+  const any = plan.ct.length || plan.co.length || plan.dl.length;
+  openModal('Clean up Spiro data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.dl.length ? `the automatic close date on <b>${plan.dl.length.toLocaleString()} open opportunit${plan.dl.length === 1 ? 'y' : 'ies'}</b>` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
+    ${sample.length ? `<ul class="nc-list">${sample.map(([c, fx]) => show(c, fx)).join('')}${plan.co.slice(0, 3).map(([a, fx]) => `<li><span class="nc-was">${esc(a.name)}</span><span class="nc-to">→ ${esc(fx.name)}</span></li>`).join('')}</ul>` : ''}
+    ${plan.dl.length ? `<p class="sub">Spiro filled in a close date about 30 days after each deal was created, so on open opportunities it didn't mean anything. Closed deals keep theirs.</p>` : ''}
+    <p class="sub">Names that were really an email address are rebuilt from the email when it has a first and last name in it (clara.taylor@… becomes Clara Taylor); otherwise the email shows in place of a name. Missed-call contacts show their phone number.</p>
+    <label class="chk" style="margin:10px 0 0"><input type="checkbox" data-change="ncPh" ${ph ? 'checked' : ''}> Also remove placeholder last names like “Unknown” and “N/A” (${extra.toLocaleString()} more contacts, so “Heather Unknown” becomes “Heather”)</label>
+    <p class="sub">This choice is remembered for future Spiro imports. <button type="button" class="lnk" data-act="backup">Download a backup first</button> if you'd like a copy of the names as they are now.</p>`,
+    any ? 'Clean up' : null, async (fd, f) => {
+      const P_ = nameCleanPlan(!!prefGet('namePh', false));
+      const btn = f.querySelector('[type=submit]'); const say = t => { if (btn) btn.textContent = t; };
+      const jobs = [['contacts', P_.ct], ['companies', P_.co], ['deals', P_.dl]]; const total = P_.ct.length + P_.co.length + P_.dl.length; let done = 0;
+      for (const [c, list] of jobs) {
+        const rows = list.map(([r, fx]) => { const doc = clean({...S[c][r.id], ...fx, updatedAt: Date.now()}); if ('firstName' in fx && !fx.firstName) delete doc.firstName; if ('lastName' in fx && !fx.lastName) delete doc.lastName; if ('closeDate' in fx) delete doc.closeDate; return [r.id, doc]; });
+        for (let k = 0; k < rows.length; k += 500) {
+          const chunk = rows.slice(k, k + 500);
+          for (const [id, doc] of chunk) S[c][id] = doc;
+          if (live) { try { const coll = db.collection(c); if (coll.setMany) await coll.setMany(chunk); else for (let j = 0; j < chunk.length; j += 10) await Promise.all(chunk.slice(j, j + 10).map(([id, doc]) => coll.doc(id).set(doc))); }
+            catch (e) { writeErr(e); toast(`Stopped after ${done.toLocaleString()} of ${total.toLocaleString()}. Check your connection and run it again; it picks up where it left off.`, 'bad'); schedule(); return false; } }
+          done += chunk.length; say(`Fixing… ${Math.round(done / total * 100)}%`); await new Promise(r => setTimeout(r, 0));
+        }
+      }
+      if (!live) saveLocal();
+      hayReset(); schedule(); toast(`Cleaned up ${total.toLocaleString()} record${total === 1 ? '' : 's'}`); return true;
+    });
+}
+
 // ---------- delete all data (admin): a clean slate for testing ----------
 const WIPE_COLS = ['companies', 'contacts', 'deals', 'quotes', 'activities', 'tasks', 'contracts', 'enrollments', 'trash'];
 function wipeModal(){
@@ -3295,18 +3350,39 @@ function spPeople(files){
   for (const n of closers.keys()) { const f = n.toLowerCase().split(' ')[0]; const id = known[n.toLowerCase()] || first[f] || ownerFirst[f] || map[n.toLowerCase()] || spSlug(n); closer[n.toLowerCase()] = id; if (id.startsWith('former-') && !former[id]) former[id] = n; }
   return {owner: n => map[spTidy(n).toLowerCase()] || ME.id, closer: n => closer[spCloser(n).toLowerCase()] || '', former, owners};
 }
-const SP_NAME_CLEAN = false;   // paused by Jason: turn on during final edits
+const SP_NAME_CLEAN = true;   // turned on Oct 26 (final edits)
 // Spiro sometimes makes contacts from email headers: "'Christine" + "Procter<christine@x.com>'", or "fchin@wm" + "com"
-function spName(first, last, email){
-  const clean = v => String(v || '').replace(/<[^>]*>?/g, ' ').replace(/^[\s'"]+|[\s'"]+$/g, '').replace(/\s+/g, ' ').trim();
-  let f = clean(first), l = clean(last);
-  if (/@/.test(f + ' ' + l)) {   // the "name" is really an email address
-    const local = String(email || (f + '@' + l)).split('@')[0].toLowerCase();
-    const parts = local.split(/[._-]+/).filter(w => /^[a-z]{2,}$/.test(w));
-    const cap = w => w[0].toUpperCase() + w.slice(1);
-    if (parts.length === 2) { f = cap(parts[0]); l = cap(parts[1]); } else { f = ''; l = ''; }   // no real name: Paper Trail shows the email instead
+// ---------- name cleanup: Spiro saved some names from email headers, missed calls and copy-paste ----------
+const NAME_PH = /^(unknown\s*\d*|n\/?a|na|none)$/i;            // placeholder names ("Heather Unknown", "Sandy N/A")
+const PHONEISH = /^\+?[\d\s().\-]{7,}$/;
+function nameFix(c, opt = {}){
+  const strip = v => String(v || '').replace(/<[^>]*>?/g, ' ').replace(/[​﻿`]/g, '').replace(/\s+/g, ' ').trim();
+  const lead = v => v.replace(/^[\s#.\/\\:;,*_\-–—]+/, ''), tail = v => v.replace(/[\s\/\\:;,*_\-–—]+$/, '');
+  let f = strip(c.firstName), l = strip(c.lastName);
+  if (/^['"]/.test(f) && /['"]$/.test(l || f)) { f = f.replace(/^['"]+/, ''); if (l) l = l.replace(/['"]+$/, ''); else f = f.replace(/['"]+$/, ''); }   // 'Brandon W Maxwell' wrapped in quotes (O'Brien and Miche' stay as they are)
+  const swap = /,$/.test(f) && l && !/[,@]/.test(l) && !/\d/.test(f + l);   // "Braman," + "Maggie" is Last, First
+  f = tail(lead(f)); l = tail(lead(l)); if (swap) [f, l] = [l, f];
+  const out = {};
+  const cap = w => w ? w[0].toUpperCase() + w.slice(1) : w; const capAll = v => /[A-Z]/.test(v) ? v : v.split(' ').map(cap).join(' ');
+  if (!/@/.test(f) && /@/.test(l) && f) { l = l.split('@')[0].replace(/[._]+/g, ' ').trim(); f = capAll(f); l = capAll(l); }   // "Gary" + "Vieira@bsfllp.com" -> Gary Vieira
+  else if (/@/.test(f + ' ' + l)) {   // the "name" is really an email address: rebuild it from the email, or leave it blank so the email shows
+    const local = String(c.email || (f + '@' + l)).split('@')[0].toLowerCase();
+    const parts = local.split(/[._]+/).filter(w => /^[a-z]+$/.test(w));
+    if (parts.length >= 2 && parts.length <= 3 && parts[parts.length - 1].length >= 2) { f = cap(parts[0]); l = parts.slice(1).map(cap).join(' '); } else { f = ''; l = ''; }
   }
-  return [f, l];
+  if (PHONEISH.test((f + ' ' + l).replace(/\s*contact$/i, '').trim())) { f = ''; l = ''; }   // "+1 772 233 6275 Contact" from missed calls: the phone shows instead
+  const noPhone = !c.mobile && /^\+?1?$/.test(String(c.phone || '').trim());   // empty, or Spiro's bare "+1"
+  for (const k of ['l', 'f']) { const v = k === 'l' ? l : f; if (PHONEISH.test(v)) { if (noPhone && !out.phone) out.phone = phoneNorm(v); if (k === 'l') l = ''; else f = ''; } }   // a phone number typed into a name box
+  if (!f && NAME_PH.test(l)) l = '';   // nothing left but "Unknown"
+  if (opt.placeholders) { if (NAME_PH.test(l)) l = ''; if (NAME_PH.test(f)) f = ''; }
+  if (!f && l) { f = l; l = ''; }
+  if (f !== (c.firstName || '')) out.firstName = f;
+  if (l !== (c.lastName || '')) out.lastName = l;
+  return Object.keys(out).length ? out : null;
+}
+function acctNameFix(name){
+  const v = String(name || '').replace(/[\u200b\ufeff`]/g, '').replace(/^[\s'"#.\/\\:;,*_\-–—]+/, '').replace(/[\s'"\/\\:;,*_\-–—]+$/, '').replace(/\s+/g, ' ');
+  return v && v !== name ? v : null;
 }
 function spBuild(files, ppl){
   const out = {companies: [], contacts: [], deals: []};
@@ -3318,7 +3394,7 @@ function spBuild(files, ppl){
   const now = Date.now(); const seenCo = new Set();
   const coRec = r => { const sid = spTidy(r['Company Id']); const id = idFor('companies', 'spc', sid); seenCo.add(id);
     const notes = [spTidy(r['Description']) && String(r['Description']).trim(), spTidy(r['Profile Notes']) && String(r['Profile Notes']).trim()].filter(Boolean).join('\n\n');
-    return [id, {spiroId: sid, name: spTidy(r['Name']) || 'Unnamed account', phone: phoneNorm(r['Phone']), website: spTidy(r['Website']), address: spTidy(r['Address']), city: spTidy(r['City']), state: spTidy(r['State']), zip: spTidy(r['Zipcode']), notes, ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: coFirst[sid] || S.companies[id]?.createdAt || now, source: 'Spiro',
+    return [id, {spiroId: sid, name: (acctNameFix(spTidy(r['Name'])) ?? spTidy(r['Name'])) || 'Unnamed account', phone: phoneNorm(r['Phone']), website: spTidy(r['Website']), address: spTidy(r['Address']), city: spTidy(r['City']), state: spTidy(r['State']), zip: spTidy(r['Zipcode']), notes, ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: coFirst[sid] || S.companies[id]?.createdAt || now, source: 'Spiro',
       spiro: spExtra(r, [['Phone 2', 'Phone 2'], ['Phone 3', 'Phone 3'], ['Service Agreement on File?', 'Service agreement on file'], ['Credit Card Given', 'Credit card given'], ['Health Care Facility', 'Health care facility'], ['Number of Locations', 'Number of locations'], ['Anniversary Increase %', 'Anniversary increase %'], ['Current Vendor Contract Expiration Date', 'Current vendor contract expires'], ['Acquisition Number', 'Acquisition number'], ['Customer Status', 'Customer status'], ['Tier', 'Tier'], ['Products Medical Status', 'Medical status'], ['Products Medical Notes', 'Medical notes'], ['Products Shredding Status', 'Shredding status'], ['Products Shredding Note', 'Shredding note']])}]; };
   for (const r of (files.companies || {rows: []}).rows) if (spTidy(r['Company Id'])) out.companies.push(coRec(r));
   // accounts referenced by contacts or opportunities but missing from the accounts file
@@ -3327,8 +3403,9 @@ function spBuild(files, ppl){
     const id = idFor('contacts', 'spt', sid);
     let email = spTidy(r['Email']).toLowerCase(), email2 = spTidy(r['Email (Secondary)']).toLowerCase(); if (email2 === email) email2 = '';
     const ext = spTidy(r['Phone Ext']);
-    const [fn_, ln_] = SP_NAME_CLEAN ? spName(r['First Name'], r['Last Name'], email) : [spTidy(r['First Name']), spTidy(r['Last Name'])];
-    out.contacts.push([id, {spiroId: sid, firstName: fn_, lastName: ln_, title: spTidy(r['Title']), email, email2, phone: phoneNorm(r['Phone']) + (ext ? ' x' + ext : ''), mobile: phoneNorm(r['Mobile']), notes: String(r['Description'] || '').trim(),
+    const nfx = SP_NAME_CLEAN ? nameFix({firstName: r['First Name'], lastName: r['Last Name'], email, phone: r['Phone'], mobile: r['Mobile']}, {placeholders: !!prefGet('namePh', false)}) : null;
+    const [fn_, ln_] = [nfx && 'firstName' in nfx ? nfx.firstName : spTidy(r['First Name']), nfx && 'lastName' in nfx ? nfx.lastName : spTidy(r['Last Name'])];
+    out.contacts.push([id, {spiroId: sid, firstName: fn_, lastName: ln_, title: spTidy(r['Title']), email, email2, phone: (nfx && nfx.phone) || (phoneNorm(r['Phone']) + (ext ? ' x' + ext : '')), mobile: phoneNorm(r['Mobile']), notes: String(r['Description'] || '').trim(),
       companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: S.contacts[id]?.createdAt || now,
       spiro: spExtra(r, [['Home Phone', 'Home phone', phoneNorm], ['Fax', 'Fax', phoneNorm], ['Services', 'Services'], ['Day of Service', 'Day of service'], ['Contract Start Date', 'Contract start date'], ['Last Activity Date (Read Only)', 'Last activity in Spiro']])}]); }
   for (const r of (files.deals || {rows: []}).rows) { const sid = spTidy(r['Opportunity Id']); if (!sid) continue;
@@ -3339,7 +3416,7 @@ function spBuild(files, ppl){
     const fcc = spYN(r['First Call Close']);
     out.deals.push([id, {spiroId: sid, name: type, type, companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), stage: st,
       value: num(r['Annual Projected Amount']), priceQuoted: num(r['Price Quoted']), service: spTidy(r['Service'], SERVICES), serviceType: spTidy(r['Service Type'], SVC_TYPES), interval: spTidy(r['Service Interval'], INTERVALS), serviceDate: spDate(r['Service Date']),
-      closeDate: close, closedAt: closed ? (close || spDate(r['Created'])) : '', closedBy: closed ? ppl.closer(r['Closed By']) : '',
+      closeDate: closed ? close : '', closedAt: closed ? (close || spDate(r['Created'])) : '', closedBy: closed ? ppl.closer(r['Closed By']) : '',
       source: spTidy(r['Lead Source'], SOURCES), sourceOther: spTidy(r['Lead Source Other']), initialCall: spTidy(r['Initial Call'], INITIAL_CALL), firstCallClose: fcc, noCloseReason: spTidy(r['Did not Close on First Call'], NO_CLOSE), lostReason: st === 'lost' ? spTidy(r['Reason for Loss'], LOSS_REASONS) : '',
       notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
       spiro: spExtra(r, [['Closed Amount', 'Closed amount', v => num(v) ? money2(num(v)) : ''], ['Estimated Bin Count', 'Estimated bin count'], ['Repeat Client', 'Repeat client', spYN], ['Service Agreement on File', 'Service agreement on file'], ['Contract Anniversary Date', 'Contract anniversary', v => v && fmtDate(spDate(v) || v)], ['Contract END Date', 'Contract end date', v => v && fmtDate(spDate(v) || v)], ['Commission', 'Commission'], ['APER?', 'APER?'], ['Priority', 'Priority'], ['Website', 'Website'], ['Opportunity', 'Spiro opportunity name', v => v && v !== type ? v : ''], ['Closed By', 'Closed by in Spiro', v => /,/.test(v) || /^(house|other)$/i.test(v) ? v : '']])}]); }
@@ -3610,6 +3687,7 @@ function settingsModal(){
       canWrite && adm ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from Spiro or any CSV.', btn('import', 'Import CSV')) : '',
       row('down', 'Export', 'Download every account and contact as a CSV for Excel.', btn('export', 'Export CSV')),
       canWrite ? row('users', 'Find duplicates', 'Spot look-alike accounts and contacts and merge them.', btn('dupFind', 'Find')) : '',
+      canWrite && adm ? row('edit', 'Clean up Spiro data', 'Fix names Spiro saved oddly (stray quotes and symbols, email addresses or phone numbers as names) and clear its automatic close dates.', btn('nameClean', 'Review')) : '',
       adm ? row('doc', 'Backup', `Download a full backup, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : '',
       DRIVE_BACKUP && SUPA && !DEMO && adm ? drvRow() : '']],
     ['admin', 'Admin', 'chart', 'Only Admins see this section.', adm ? [
@@ -5388,6 +5466,7 @@ const A = {
   trash: () => trashModal(),
   trashRestore: d => trashRestore(d.id),
   backup: () => backupDownload(),
+  nameClean: () => nameCleanModal(),
   restore: () => restoreModal(),
   mMore: () => { const MT = ['today', 'reminders', 'pipeline', 'companies']; openModal('More', `<div class="mmore">${VIEWS.filter(v => !MT.includes(v[0])).map(([k, l, i]) => `<button type="button" class="${ui.view === k ? 'on' : ''}" data-act="mGo" data-v="${k}">${ic(i)}<span>${l}</span></button>`).join('')}<button type="button" data-act="mGo" data-v="__settings">${ic('gear')}<span>Settings</span></button></div>`, null); },
   mGo: d => { closeModal(); if (d.v === '__settings') settingsModal(); else A.go({v: d.v}); },
@@ -5557,6 +5636,7 @@ const A = {
 const CHANGE = {
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
   jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
+  ncPh: el => { prefSet('namePh', el.checked); nameCleanModal(); },
   rteSize: el => { const v = el.value; el.value = ''; if (v) rteExec(el.dataset.t, 'fontSize', v); },
   rteColor: el => rteExec(el.dataset.t, el.dataset.k, el.value),
   rteField: el => { const k = el.value; el.value = ''; if (!k) return; rteFocus(el.dataset.t); document.execCommand('insertText', false, '{' + k + '}'); },
