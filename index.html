@@ -379,6 +379,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .jsend .chk{color:var(--fg);font-weight:600}
 .jsend #dJBox{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .jsend #dJBox[hidden]{display:none}
+.jsend #dJBox .lnk{display:inline-flex;align-items:center;gap:4px}.jsend #dJBox .lnk .ic{width:14px;height:14px}
+.dj-steps{flex-basis:100%;margin-top:8px;display:flex;flex-direction:column;gap:6px}.dj-steps[hidden]{display:none}
+.dj-st{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 12px}.dj-st summary{cursor:pointer;padding:9px 0;list-style:none;display:flex;gap:8px;align-items:baseline}.dj-st summary::-webkit-details-marker{display:none}
+.dj-st[open]{padding-bottom:12px}.dj-st[open] summary{border-bottom:1px solid var(--line);margin-bottom:8px}
+.jst-li{padding:0!important;border:0!important;background:none!important}.jst-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.jst-btn:hover{border-color:var(--accent);background:var(--accent-soft)}.jst-ed{display:inline-flex;margin-left:8px;color:var(--muted)}.jst-ed .ic{width:15px;height:15px}.jst-btn:hover .jst-ed{color:var(--accent)}
 .jsend select{width:auto}
 .jsend input[type=number]{width:64px}
 .cp{display:flex;flex-direction:column;gap:16px}
@@ -734,9 +740,9 @@ html[data-look="night"] .stagesel{background-image:none;padding-right:10px}
   [data-fish="tackle"] .mbar .mtitle{font-weight:400;color:var(--red)}
   [data-fish="tackle"] .mtabs button.on{background:var(--accent);color:var(--accent-fg)}
 }
-@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}.sheet{animation:pop .16s ease-out}}
-@keyframes slide{from{transform:translateX(24px);opacity:.6}}
-@keyframes pop{from{transform:translateY(8px);opacity:.6}}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}.sheet{animation:pop .16s ease-out}.drawer.still,.sheet.still{animation:none}}
+@keyframes slide{from{transform:translateX(24px)}}
+@keyframes pop{from{transform:translateY(8px)}}
 
 /* ===== Hidden theme: Tackle Box (vintage bait shop). Unlocked by clicking the fish in Settings 5 times ===== */
 html:root[data-fish="tackle"]{
@@ -2020,7 +2026,9 @@ function render(){
     const nh = navHtml(); if (nh !== lastNav) { morph($('#nav'), nh); lastNav = nh; }   // the sidebar is patched in place, so it never flickers
     $('#main').innerHTML = `<div class="wrap">${viewHtml()}</div>`;
     const dr = $('#drawer');
-    if (ui.detail && S[ui.detail.col][ui.detail.id]) { dr.hidden = false; dr.innerHTML = `<div class="scrim" data-act="closeDetail"></div><aside class="drawer" role="dialog" aria-label="Record detail"><div id="drawerBody">${DETAIL[ui.detail.col](ui.detail.id)}</div></aside>`; }
+    if (ui.detail && S[ui.detail.col][ui.detail.id]) { const body = DETAIL[ui.detail.col](ui.detail.id); const db0 = !dr.hidden && $('#drawerBody');
+      if (db0) db0.innerHTML = body;   // already open: just refresh what's inside, so it doesn't slide in again
+      else { dr.hidden = false; dr.innerHTML = `<div class="scrim" data-act="closeDetail"></div><aside class="drawer" role="dialog" aria-label="Record detail"><div id="drawerBody">${body}</div></aside>`; } }
     else { dr.hidden = true; dr.innerHTML = ''; }
   });
   ensureProfiles();
@@ -2665,11 +2673,11 @@ const DETAIL = {
 
 // ---------- modals ----------
 function openModal(title, body, submitLabel, onSubmit, opts={}){
-  const m = $('#modal'); if (m.hidden) ui.inSettings = false;   // a fresh window never belongs to Settings
+  const m = $('#modal'); const wasOpen = !m.hidden; if (m.hidden) ui.inSettings = false;   // a fresh window never belongs to Settings
   const back = ui.inSettings && title !== 'Settings';
   m.hidden = false; modalStep(title);
   m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh">${back ? `<div class="sh-t"><button type="button" class="icon-btn sh-back" data-act="setBack" aria-label="Back to Settings" title="Back to Settings">${ic('back')}</button><h3>${esc(title)}</h3></div>` : `<h3>${esc(title)}</h3>`}<button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
-  const f = $('#mform');
+  const f = $('#mform'); if (wasOpen) f.classList.add('still');   // switching screens inside an open window: no entrance animation
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
   setTimeout(() => f.querySelector('.sb input:not([type=hidden]):not([type=checkbox]), .sb textarea, .sb select')?.focus(), 40);
 }
@@ -4595,7 +4603,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
     <p class="sub" id="dHint"></p>
     ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
     ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${sigClean(SIG.html).html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
-    ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk"><input type="checkbox" id="dJ" data-change="dJ"> Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up"><span class="sub">days</span></span></div>` : ''}
+    ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk"><input type="checkbox" id="dJ" data-change="dJ"> Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : ''}
     <div class="mailbar" id="dNote" hidden></div>`, null, null,
     {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('up')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
   if (pick) applyTemplate(pick);
@@ -5087,8 +5095,29 @@ async function startEnrollment(o){
 }
 async function emailJourneyAfterSend(){
   const cb = $('#dJ'); if (!cb || !cb.checked || !ui.draft) return;
-  const days = Math.max(1, parseInt($('#dJDays').value) || 7);
-  await startEnrollment({companyId: ui.draft.companyId, contactId: ui.draft.contactId, journeyId: $('#dJSel').value, dealId: ui.draft.dealId, firstDate: addDays(today(), days)});
+  const days = Math.max(1, parseInt($('#dJDays').value) || 7); const jid = $('#dJSel').value;
+  const cust = ui.draft.jCustom && ui.draft.jCustom.jid === jid ? ui.draft.jCustom.steps : null;   // emails edited for this person in the composer
+  await startEnrollment({companyId: ui.draft.companyId, contactId: ui.draft.contactId, journeyId: jid, dealId: ui.draft.dealId, firstDate: addDays(today(), days), steps: cust});
+}
+// the composer's journey emails, filled in for this contact and editable before sending
+function dJPaint(){
+  const box = $('#dJSteps'); if (!box || !ui.draft) return; const j = journeyOf($('#dJSel').value); if (!j) { box.innerHTML = ''; return; }
+  const c = ui.draft.jCustom && ui.draft.jCustom.jid === j.id ? ui.draft.jCustom : null; const steps = c ? c.steps : jSteps(j);
+  const data = mergeData(ui.draft); const days = Math.max(1, parseInt($('#dJDays')?.value) || 7); let d = days;
+  box.innerHTML = `<p class="sub" style="margin:0 0 6px">${c ? `<b>Edited for this contact.</b> <button type="button" class="lnk" data-act="dJReset">Undo my edits</button>` : 'Click an email to change it for this contact only. The journey itself stays the same.'}</p>` + steps.map((st, i) => { if (i) d += jDelay(st);
+    const call = isCallStep(st); const head = `<b>${call ? 'Call' : 'Email ' + (i + 1)}</b> <span class="sub">Day ${d} · ${esc(call ? fillTemplate(st.note || '', data) : fillTemplate(st.subject || '', data))}</span>`;
+    const filled = c ? (st.html ? cleanHtml(st.body || '') : textToHtml(st.body || '')) : st.html ? cleanHtml(fillTemplate(st.body || '', data, true)) : textToHtml(fillTemplate(st.body || '', data));
+    return `<details class="dj-st"${ui.dJOpen === i ? ' open' : ''} data-i="${i}"><summary>${head}</summary>${call ? `<div class="f"><span>Call note</span><textarea rows="3" data-input="dJNote" data-i="${i}">${esc(c ? st.note || '' : fillTemplate(st.note || '', data))}</textarea></div>`
+      : `<div class="f"><span>Subject</span><input type="text" value="${esc(c ? st.subject || '' : fillTemplate(st.subject || '', data))}" data-input="dJSubj" data-i="${i}"></div><div class="f"><span>Message</span>${rteBar('dJB' + i)}<div id="dJB${i}" class="je-body rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-input="dJBody" data-i="${i}">${filled}</div></div>`}</details>`; }).join('');
+}
+function dJCust(i, k, v){
+  const jid = $('#dJSel').value; const j = journeyOf(jid); if (!j || !ui.draft) return;
+  if (!ui.draft.jCustom || ui.draft.jCustom.jid !== jid) {   // first edit: copy the journey, filled in for this contact
+    const data = mergeData(ui.draft);
+    ui.draft.jCustom = {jid, steps: jSteps(j).map(st => isCallStep(st) ? {...st, note: fillTemplate(st.note || '', data)} : {...st, subject: fillTemplate(st.subject || '', data), body: st.html ? cleanHtml(fillTemplate(st.body || '', data, true)) : textToHtml(fillTemplate(st.body || '', data)), html: true})};
+    const p = $('#dJSteps > p.sub'); if (p) p.innerHTML = `<b>Edited for this contact.</b> <button type="button" class="lnk" data-act="dJReset">Undo my edits</button>`;
+  }
+  const st = ui.draft.jCustom.steps[i]; if (!st) return; st[k] = v; if (k === 'body') st.html = true;
 }
 const sendLabel = () => ($('#dJ') && $('#dJ').checked) ? 'Send, then Journey' : 'Send';
 function jsContactOpts(coId){
@@ -5114,7 +5143,9 @@ function journeyDetailModal(id){
   const j = journeyOf(e.journeyId);
   const ests = eSteps(e); const steps = (e.schedule || []).map(s => { const st = ests[s.step]; const chip = s.status === 'sent' ? `<span class="chip good">Sent ${s.sentAt ? fmtDate(ymd(new Date(s.sentAt))) : ''}</span>` : s.status === 'skipped' ? '<span class="chip">Skipped</span>' : e.status === 'active' ? dueChip(s.due) : `<span class="chip">${fmtDate(s.due)}</span>`;
     const done = s.status === 'sent' && isCallStep(st) ? '<span class="chip good">Done</span>' : chip;
-    return `<li><div><b>${isCallStep(st) ? ic('phone') + 'Call' : 'Email'} · step ${s.step + 1}</b> <span class="sub">${esc(st ? (isCallStep(st) ? fillTemplate(st.note || '', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><span class="end">${done}</span></li>`; }).join('');
+    const editable = canWrite && s.status === 'pending' && ['active', 'paused'].includes(e.status);
+    const inner = `<div><b>${isCallStep(st) ? ic('phone') + 'Call' : 'Email'} · step ${s.step + 1}</b> <span class="sub">${esc(st ? (isCallStep(st) ? fillTemplate(st.note || '', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><span class="end">${done}${editable ? `<span class="jst-ed">${ic('edit')}</span>` : ''}</span>`;
+    return editable ? `<li class="jst-li"><button type="button" class="jst-btn" data-act="jStepEdit" data-id="${id}" data-i="${s.step}" title="Edit this ${isCallStep(st) ? 'call reminder' : 'email'} for ${esc(nameOf('contacts', e.contactId))}">${inner}</button></li>` : `<li>${inner}</li>`; }).join('');
   const md = eMode(e);
   openModal(`${jName(e.journeyId)}`, `<p><b>${esc(nameOf('contacts', e.contactId))}</b> · ${esc(cname(e.companyId))} ${jStatusChip(e)}</p>
     ${['active', 'paused'].includes(e.status) ? `<p class="sub">Sending: <b>${md === 'auto' ? 'automatically at 8:45 AM' : 'asks you first'}</b>${e.sendMode ? ' (just for this person)' : ''}${canWrite ? ` · <button type="button" class="lnk" data-act="jMode" data-id="${id}" data-m="${md === 'auto' ? 'approve' : 'auto'}">${md === 'auto' ? 'Ask me first instead' : 'Send automatically instead'}</button>` : ''}</p>` : ''}
@@ -5123,6 +5154,24 @@ function journeyDetailModal(id){
     <ul class="jsteps">${steps}</ul>`, null, null, {foot: canWrite ? `<button type="button" class="btn ghost" data-act="jDelete" data-id="${id}" style="margin-right:auto">${ic('trash')}Remove</button>${e.status === 'active' ? `<button type="button" class="btn" data-act="jPause" data-id="${id}">Pause</button>${nextStep(e) ? `<button type="button" class="btn" data-act="jSkip" data-id="${id}">Skip next step</button><button type="button" class="btn pri" data-act="jSend" data-id="${id}">${isCallStep(ests[nextStep(e).step]) ? 'Do the call now' : 'Send next email now'}</button>` : ''}` : ''}${e.status === 'paused' ? `<button type="button" class="btn" data-act="jStop" data-id="${id}">End journey</button><button type="button" class="btn pri" data-act="jResume" data-id="${id}">Resume</button>` : ''}` : ''});
 }
 
+// edit one upcoming step of an active journey, for this person only (the journey itself stays the same)
+function jStepEditModal(eid, idx){
+  const e = S.enrollments[eid]; if (!e) return; const st = eSteps(e)[idx]; if (!st) return;
+  const who = nameOf('contacts', e.contactId); const call = isCallStep(st);
+  const data = mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId});
+  const startHtml = st.html ? cleanHtml(fillTemplate(st.body || '', data, true)) : textToHtml(fillTemplate(st.body || '', data));
+  openModal(`${call ? 'Call' : 'Email'} · step ${idx + 1}`, `<p class="sub" style="margin:0 0 10px">Just for <b>${esc(who)}</b>. The ${esc(jName(e.journeyId))} journey itself stays the same.</p>
+    ${call ? F('Call note', `<textarea name="note" rows="4">${esc(fillTemplate(st.note || '', data))}</textarea>`)
+    : `${F('Subject', inp('subject', fillTemplate(st.subject || '', data), 'text', 'required'))}
+      <div class="f"><span>Message</span>${rteBar('jStepB')}<div id="jStepB" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message">${startHtml}</div></div>`}`, 'Save', async f => {
+      const steps = JSON.parse(JSON.stringify(eSteps(e)));
+      if (call) steps[idx] = {...steps[idx], note: String(f.note || '').trim() || steps[idx].note};
+      else { const ed = $('#jStepB'); if (!elText(ed).trim()) { toast('Write the message first.', 'bad'); return false; } if (!String(f.subject || '').trim()) { toast('The email needs a subject.', 'bad'); return false; }
+        steps[idx] = {...steps[idx], subject: String(f.subject).trim(), body: jeSerHtml(ed), html: true}; }
+      if (!await patch('enrollments', eid, {steps})) return false;
+      toast(`Saved for ${who}`); A.closeModal(); return false;   // back to the journey's list of steps
+    }, {wide: !call});
+}
 async function jSetStep(eid, idx, status){
   const e = S.enrollments[eid]; if (!e) return false;
   const schedule = (e.schedule || []).map(s => s.step === idx ? {...s, status, [status === 'sent' ? 'sentAt' : 'skippedAt']: Date.now()} : s);
@@ -5587,6 +5636,9 @@ const A = {
   jeTest: () => jeTest(),
   jEditDel: d => confirmModal('Delete journey?', `${esc(jName(d.id))} will be removed. People already on it keep their schedule.`, 'Delete', async () => { const ok = DEFAULT_JOURNEYS.some(j => j.id === d.id) ? await put('journeys', d.id, {deleted: true}) : await del('journeys', d.id); if (ok) toast('Journey deleted'); return ok; }),
   jOpen: d => journeyDetailModal(d.id),
+  jStepEdit: d => jStepEditModal(d.id, +d.i),
+  dJEdit: () => { const b = $('#dJSteps'); if (!b) return; b.hidden = !b.hidden; if (!b.hidden) dJPaint(); },
+  dJReset: () => { if (ui.draft) ui.draft.jCustom = null; dJPaint(); },
   jPause: async d => { if (await patch('enrollments', d.id, {status: 'paused', stopReason: 'manual', pausedAt: Date.now()})) { toast('Journey paused'); if (!$('#modal').hidden) journeyDetailModal(d.id); } },
   jResume: async d => { await jResume(d.id); if (!$('#modal').hidden) journeyDetailModal(d.id); },
   jStop: d => confirmModal('End this journey?', `No more emails will be scheduled for ${esc(nameOf('contacts', S.enrollments[d.id]?.contactId))}.`, 'End journey', async () => { const ok = await patch('enrollments', d.id, {status: 'stopped', stoppedAt: Date.now(), stopReason: S.enrollments[d.id]?.stopReason || 'manual'}); if (ok) toast('Journey ended'); return ok; }),
@@ -5747,6 +5799,11 @@ const CHANGE = {
   jsPrev: () => jsPreview(),
   rKind: el => { const o = $('#rOther'); if (o) { o.hidden = el.value !== '__other'; if (!o.hidden) $('#rTitle').focus(); } },
   rCo: el => { const k = $('#rKind'); if (k && k.value !== '__other' && el.value && !$('#mform').dataset.edit) k.value = nextReminderType(el.value); },
+  dJSel: () => { if (ui.draft && ui.draft.jCustom) { ui.draft.jCustom = null; toast('Switched journeys, so your edits were cleared'); } if (!$('#dJSteps').hidden) dJPaint(); },
+  dJDays: () => { const b = $('#dJSteps'); if (b && !b.hidden) b.querySelectorAll('.dj-st').forEach((x, i, all) => { const sp = x.querySelector('summary .sub'); if (!sp) return; const steps = ui.draft && ui.draft.jCustom && ui.draft.jCustom.jid === $('#dJSel').value ? ui.draft.jCustom.steps : jSteps(journeyOf($('#dJSel').value)); let d = Math.max(1, parseInt($('#dJDays').value) || 7); for (let k = 1; k <= i; k++) d += jDelay(steps[k]); sp.textContent = sp.textContent.replace(/^Day \d+/, 'Day ' + d); }); },
+  dJSubj: el => dJCust(+el.dataset.i, 'subject', el.value),
+  dJBody: el => dJCust(+el.dataset.i, 'body', jeSerHtml(el)),
+  dJNote: el => dJCust(+el.dataset.i, 'note', el.value),
   dJ: el => { const b = $('#dJBox'); if (b) b.hidden = !el.checked; const s = $('#dSend'); if (s) s.lastChild.textContent = sendLabel(); },
   jTplFill: el => { const t = templates().find(x => x.id === el.value); const box = el.closest('.jstep'); if (t && box) { box.querySelector('input[name="step_subject[]"]').value = t.subject; box.querySelector('textarea').value = t.body; } el.value = ''; },
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
