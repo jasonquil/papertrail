@@ -337,7 +337,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .money:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .grid3{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:12px;grid-column:1/-1}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
-.f>span{font-size:.78rem;font-weight:600;color:var(--muted)}
+.f>span,.f>label[for]{font-size:.78rem;font-weight:600;color:var(--muted)}
 .f.wide{grid-column:1/-1}
 .f.inline{flex-direction:row;align-items:center;gap:8px}
 .f.inline input{width:auto}
@@ -4368,8 +4368,8 @@ function draftModal(col, id, purpose, jopt, toAddr){
       ${F('Bcc', `<div class="acwrap">${inp('bcc', '', 'text', 'id="dBcc" placeholder="Start typing a name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdBcc" role="listbox" hidden></ul></div>`)}
     </div>
     <div id="dAi" class="grid2" hidden>${F('What is it for?', inp('aiPurpose', '', 'text', 'id="dPurpose" placeholder="e.g. follow up on the purge quote, offer Thursday"'))}<div class="f"><span>&nbsp;</span><button type="button" class="btn pri" data-act="draftGo" id="dGo">${ic('spark')}Write draft</button></div></div>
-    ${F('Subject', `<div class="qt"><input id="draftSubj" placeholder="Subject"><button type="button" class="btn sm" data-act="copySubj">${ic('copy')}Copy</button></div>`)}
-    ${F('Message', `${rteBar('draftHtml')}<textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden></textarea><div id="draftHtml" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Choose a template, or type your message."></div>`)}
+    <div class="f"><label for="draftSubj">Subject</label><div class="qt"><input id="draftSubj" placeholder="Subject"><button type="button" class="btn sm" data-act="copySubj">${ic('copy')}Copy</button></div></div>
+    <div class="f"><span>Message</span>${rteBar('draftHtml')}<textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden aria-label="Claude's draft"></textarea><div id="draftHtml" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Choose a template, or type your message."></div></div>
     <p class="sub" id="dHint"></p>
     ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
     ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${SIG.html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
