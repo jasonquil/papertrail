@@ -480,6 +480,22 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
   .hb{grid-template-columns:84px minmax(0,1fr) 70px}
 }
 
+.rte-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:4px;border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;background:var(--surface-2)}
+.rte-bar+textarea[hidden]+.rte,.rte-bar+.rte{border-top-left-radius:0;border-top-right-radius:0}
+.rte-bar.src .rte-b:not(.rte-src),.rte-bar.src .rte-sel{opacity:.35;pointer-events:none}
+.rte-b{display:inline-grid;place-items:center;min-width:30px;height:30px;padding:0 6px;border:0;border-radius:6px;background:none;color:var(--fg);font:600 .92rem/1 Georgia,serif;cursor:pointer;position:relative}
+.rte-b:hover{background:var(--surface)}.rte-b.on{background:var(--accent-soft);color:var(--accent)}
+.rte-b .ic{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rte-src{font:700 .72rem var(--body);letter-spacing:.04em;margin-left:auto}
+.rte-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.rte-sel{width:auto!important;height:30px;padding:2px 22px 2px 8px!important;font-size:.82rem!important;border-radius:6px;background-color:var(--surface)}
+.rte-col span{border-bottom:3px solid #C0392B;line-height:1;padding:0 2px}.rte-col.hl span{border-bottom-color:#F5D90A}
+.rte-col input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.rte{min-height:220px;max-height:46vh;overflow:auto;outline:none}
+.rte:empty::before{content:attr(data-ph);color:#888}
+.rte:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.tpl-ed{min-height:300px}
+#tplEdSrc{border-top-left-radius:0;border-top-right-radius:0;font:13px/1.45 var(--mono)}
 /* ===== Selectable looks (Settings → Appearance → Look) ===== */
 
 .stagebar{display:none;gap:2px;height:28px;border-radius:8px;overflow:hidden}
@@ -4302,6 +4318,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   else if (companyId) contact = gr(companyId).contacts.find(c => c.email) || gr(companyId).contacts.find(c => ctMail(c)) || gr(companyId).contacts[0] || null;
   if (jopt && jopt.companyId) companyId = jopt.companyId;
   ui.draftFiles = [];
+  ui.draftHtml = true;
   ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey}; ui.draftHtml = false; ui.sendOk = false;
   const contacts = companyId ? gr(companyId).contacts : (contact ? [contact] : []);
   const tpls = templates();
@@ -4318,7 +4335,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
     </div>
     <div id="dAi" class="grid2" hidden>${F('What is it for?', inp('aiPurpose', '', 'text', 'id="dPurpose" placeholder="e.g. follow up on the purge quote, offer Thursday"'))}<div class="f"><span>&nbsp;</span><button type="button" class="btn pri" data-act="draftGo" id="dGo">${ic('spark')}Write draft</button></div></div>
     ${F('Subject', `<div class="qt"><input id="draftSubj" placeholder="Subject"><button type="button" class="btn sm" data-act="copySubj">${ic('copy')}Copy</button></div>`)}
-    ${F('Message', `<textarea id="draftOut" rows="13" placeholder="Choose a template, or type your message."></textarea><div id="draftHtml" class="mailprev" contenteditable="true" hidden></div>`)}
+    ${F('Message', `${rteBar('draftHtml')}<textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden></textarea><div id="draftHtml" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Choose a template, or type your message."></div>`)}
     <p class="sub" id="dHint"></p>
     ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
     ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${SIG.html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
@@ -4326,19 +4343,47 @@ function draftModal(col, id, purpose, jopt, toAddr){
     <div class="mailbar" id="dNote" hidden></div>`, null, null,
     {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('up')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
   if (pick) applyTemplate(pick);
-  if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); $('#draftOut').value = fillTemplate(jopt.body, data); }
+  if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); setDraftBody(jopt.html ? cleanHtml(fillTemplate(jopt.body, data, true)) : textToHtml(fillTemplate(jopt.body, data))); }
 }
+// ---------- formatting toolbar for email messages and templates ----------
+const textToHtml = t => String(t || '').replace(/\r/g, '').trim().split(/\n{2,}/).map(par => '<p>' + esc(par).replace(/\n/g, '<br>') + '</p>').join('');
+function rteBar(target, opt = {}){
+  const b = (cmd, icon, label, extra = '') => `<button type="button" class="rte-b" data-act="rte" data-cmd="${cmd}" data-t="${target}" title="${label}" aria-label="${label}"${extra}>${icon}</button>`;
+  return `<div class="rte-bar" role="toolbar" aria-label="Formatting" data-for="${target}">
+    ${b('bold', '<b>B</b>', 'Bold (Ctrl+B)')}${b('italic', '<i>I</i>', 'Italic (Ctrl+I)')}${b('underline', '<u>U</u>', 'Underline (Ctrl+U)')}${b('strikeThrough', '<s>S</s>', 'Strikethrough')}
+    <span class="rte-sep"></span>
+    <select class="rte-sel" data-change="rteSize" data-t="${target}" aria-label="Text size" title="Text size"><option value="">Size</option><option value="2">Small</option><option value="3">Normal</option><option value="5">Large</option><option value="6">Huge</option></select>
+    <label class="rte-b rte-col" title="Text color"><span>A</span><input type="color" value="#C0392B" data-change="rteColor" data-t="${target}" data-k="foreColor" aria-label="Text color"></label>
+    <label class="rte-b rte-col hl" title="Highlight"><span>H</span><input type="color" value="#FFF176" data-change="rteColor" data-t="${target}" data-k="hiliteColor" aria-label="Highlight color"></label>
+    <span class="rte-sep"></span>
+    ${b('insertUnorderedList', '<svg viewBox="0 0 24 24" class="ic"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>', 'Bulleted list')}
+    ${b('insertOrderedList', '<svg viewBox="0 0 24 24" class="ic"><path d="M10 6h10M10 12h10M10 18h10M4 5h1.5v4M3.5 9h3M3.5 14.5c.4-.8 2.7-.9 2.7.4 0 1-2.7 1.9-2.7 3.1h2.9"/></svg>', 'Numbered list')}
+    ${b('justifyLeft', '<svg viewBox="0 0 24 24" class="ic"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg>', 'Align left')}${b('justifyCenter', '<svg viewBox="0 0 24 24" class="ic"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg>', 'Center')}
+    ${b('link', '<svg viewBox="0 0 24 24" class="ic"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>', 'Add a link')}
+    ${b('removeFormat', '<svg viewBox="0 0 24 24" class="ic"><path d="M6 5h12M12 5l-3 14M4 20l16-16"/></svg>', 'Clear formatting')}
+    ${opt.fields ? `<span class="rte-sep"></span><select class="rte-sel" data-change="rteField" data-t="${target}" aria-label="Insert a fill-in field"><option value="">+ Field</option>${MERGE_FIELDS.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>` : ''}
+    ${opt.src ? `<button type="button" class="rte-b rte-src" data-act="rteSrc" data-t="${target}" title="Edit the HTML source" aria-pressed="false">HTML</button>` : ''}
+  </div>`;
+}
+const rteRanges = {};
+document.addEventListener('selectionchange', () => { const sl = document.getSelection(); if (!sl || !sl.rangeCount) return; const n = sl.anchorNode; const el = n && (n.nodeType === 1 ? n : n.parentElement); const ed = el && el.closest && el.closest('.rte'); if (ed && ed.id) { rteRanges[ed.id] = sl.getRangeAt(0).cloneRange(); document.querySelectorAll(`.rte-bar[data-for="${ed.id}"] [data-cmd]`).forEach(bt => { let on = false; try { on = ['bold','italic','underline','strikeThrough','insertUnorderedList','insertOrderedList'].includes(bt.dataset.cmd) && document.queryCommandState(bt.dataset.cmd); } catch {} bt.classList.toggle('on', on); }); } });
+document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.rte-bar button')) e.preventDefault(); }, true);
+function rteFocus(id){ const ed = document.getElementById(id); if (!ed) return null; ed.focus(); const r = rteRanges[id]; if (r && ed.contains(r.startContainer)) { const sl = document.getSelection(); sl.removeAllRanges(); sl.addRange(r); } return ed; }
+function rteExec(id, cmd, val){
+  const ed = rteFocus(id); if (!ed) return;
+  if (cmd === 'link') { const sl = document.getSelection(); const had = sl && !sl.isCollapsed; let u = window.prompt('Link address (for example allpointsprotects.com):', 'https://'); if (!u || u === 'https://') return; u = u.trim(); if (!/^(https?:|mailto:)/i.test(u)) u = (/@/.test(u) && !/\//.test(u) ? 'mailto:' : 'https://') + u; rteFocus(id); if (had) document.execCommand('createLink', false, u); else document.execCommand('insertHTML', false, `<a href="${esc(u)}">${esc(u.replace(/^mailto:/, ''))}</a>`); }
+  else { document.execCommand('styleWithCSS', false, cmd === 'foreColor' || cmd === 'hiliteColor' || cmd === 'fontSize'); document.execCommand(cmd, false, val); }
+  ed.dispatchEvent(new Event('input', {bubbles: true}));
+}
+function setDraftBody(html){ const ed = $('#draftHtml'); if (!ed) return; ed.innerHTML = html; ui.draftHtml = true; ed.hidden = false; const o = $('#draftOut'); if (o) o.hidden = true; const bar = document.querySelector('.rte-bar[data-for="draftHtml"]'); if (bar) bar.hidden = false; }
 function applyTemplate(tid){
   const ai = $('#dAi'); if (ai) ai.hidden = tid !== '__ai';
   const hint = $('#dHint');
-  if (tid === '__ai') { ui.draftHtml = false; $('#draftOut').hidden = false; $('#draftHtml').hidden = true; if (hint) hint.textContent = ''; setTimeout(() => $('#dPurpose')?.focus(), 30); return; }
+  if (tid === '__ai') { ui.draftHtml = false; $('#draftOut').hidden = false; $('#draftHtml').hidden = true; const bar = document.querySelector('.rte-bar[data-for="draftHtml"]'); if (bar) bar.hidden = true; if (hint) hint.textContent = ''; setTimeout(() => $('#dPurpose')?.focus(), 30); return; }
   const t = templates().find(x => x.id === tid); if (!t) return;
   const data = mergeData(ui.draft);
-  ui.draftHtml = !!t.html;
   $('#draftSubj').value = fillTemplate(t.subject, data);
-  $('#draftOut').hidden = ui.draftHtml; $('#draftHtml').hidden = !ui.draftHtml;
-  if (ui.draftHtml) $('#draftHtml').innerHTML = cleanHtml(fillTemplate(t.body, data, true));
-  else $('#draftOut').value = fillTemplate(t.body, data);
+  setDraftBody(t.html ? cleanHtml(fillTemplate(t.body, data, true)) : textToHtml(fillTemplate(t.body, data)));
   const missing = [...new Set((t.subject + ' ' + t.body).match(/\{(\w+)\}/g) || [])].map(x => x.slice(1, -1).toLowerCase()).map(k => FIELD_ALIAS[k] || k).filter(k => k in data && !data[k] && k !== 'first_name');
   if (hint) hint.textContent = missing.length ? 'Fill in the bracketed parts before sending.' : '';
 }
@@ -4373,7 +4418,7 @@ function acPick(i){
 function acMove(d){ const list = document.getElementById('ac' + ac.el.id); ac.i = (ac.i + d + ac.items.length) % ac.items.length; list.querySelectorAll('li').forEach((li, j) => li.classList.toggle('on', j === ac.i)); }
 const EMAIL_RE = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
 const splitEmails = v => String(v || '').split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
-const OUT_TAGS = new Set(['P','BR','A','B','STRONG','I','EM','STRIKE','S','CODE','PRE','DIV','HR','UL','OL','LI','H1','H2','H3','H4','H5','H6','TABLE','THEAD','TBODY','TR','TD','TH']);
+const OUT_TAGS = new Set(['P','BR','A','B','STRONG','I','EM','U','STRIKE','S','CODE','PRE','DIV','HR','UL','OL','LI','H1','H2','H3','H4','H5','H6','TABLE','THEAD','TBODY','TR','TD','TH']);
 function outlookHtml(){
   if (GRAPH && ui.draftHtml && $('#draftHtml')) return {html: $('#draftHtml').innerHTML, lost: false};   // Microsoft Graph keeps images and styling
   // Outlook's connector only accepts a narrow set of tags: keep text and links, drop images and inline styling
@@ -4478,8 +4523,8 @@ async function draftGo(){
   try {
     const r = await AI(`${VOICE()}\n\nWrite an email to ${ct ? pname_(ct) + (ct.title ? ', ' + ct.title : '') : 'our contact'}${ui.draft.companyId ? ' at ' + cname(ui.draft.companyId) : ''}. Purpose: ${purpose}.\nUse only facts from the CRM data below. Don't invent prices, dates or commitments; where a detail is missing, leave a bracketed placeholder like [day and time]. Format: first line "Subject: ...", a blank line, then the body.\nToday is ${today()}.\n\nCRM data:\n${JSON.stringify(ctx)}`,
       {cache:false, signal: draftCtl.signal, onText: ({text}) => { const o = $('#draftOut'); if (o) o.value = split(text); }});
-    const o = $('#draftOut'); if (o) o.value = split(r.text);
-  } catch(e){ const o = $('#draftOut'); if (o && e && e.text) o.value = split(e.text); const m = aiErr(e); if (m) toast(m, 'bad'); }
+    const o = $('#draftOut'); if (o) { o.value = split(r.text); setDraftBody(textToHtml(o.value)); }
+  } catch(e){ const o = $('#draftOut'); if (o && e && e.text) { o.value = split(e.text); setDraftBody(textToHtml(o.value)); } const m = aiErr(e); if (m) toast(m, 'bad'); }
   const b = $('#dGo'); if (b) { b.disabled = false; b.lastChild.textContent = 'Write again'; }
   draftCtl = null;
 }
@@ -4510,14 +4555,16 @@ async function spiroImport(){
 function tplEditModal(id){
   const t = id ? templates().find(x => x.id === id) : {name:'', subject:'', body:'{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'};
   if (!t) return;
-  openModal(id ? 'Edit template' : 'New template', `<div class="grid2">${F('Template name', inp('name', t.name, 'text', 'required'))}${F('Format', sel('fmt', [['text','Plain text'],['html','HTML source (keeps formatting and signature)']], t.html ? 'html' : 'text', 'id="tplFmt" data-change="tplFmt"'))}</div>
+  const startHtml = t.html ? cleanHtml(t.body) : textToHtml(t.body);
+  openModal(id ? 'Edit template' : 'New template', `${F('Template name', inp('name', t.name, 'text', 'required'))}
     ${F('Subject', inp('subject', t.subject))}
-    ${F('Message', `<textarea name="body" id="tplBody" rows="12" spellcheck="false">${esc(t.body)}</textarea>`)}
-    <div id="tplPrevWrap"${t.html ? '' : ' hidden'}><div class="f"><span>Preview</span></div><div class="mailprev" id="tplPrev"></div><p class="sub">Images hosted on other websites show in Outlook after you paste, but may not appear in this preview.</p></div>
-    <p class="sub">Fill-in fields: ${MERGE_FIELDS.map(([k, l]) => `<code title="${esc(l)}">{${k}}</code>`).join(' ')}. Spiro-style fields such as <code>%{contact_first_name}</code> work too.</p>`, 'Save template', async f => {
+    <div class="f"><span>Message</span>${rteBar('tplEd', {fields: true, src: true})}<div id="tplEd" class="mailprev rte tpl-ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Write the email. Use + Field to add things like the contact's first name.">${startHtml}</div><textarea id="tplEdSrc" rows="14" spellcheck="false" hidden aria-label="HTML source"></textarea></div>
+    <p class="sub">Words in curly braces, like {first_name}, fill in when someone uses the template. Paste from Outlook or Word to keep formatting and images, or click HTML to edit the source.</p>`, 'Save template', async f => {
       const tid = id || 't_' + uid();
       if (templates().some(t => t.id !== id && norm(t.name) === norm(f.name))) { dupWarn(`There's already a template named “${esc(f.name)}”.`); return false; }
-      const ok = await put('templates', tid, {name: f.name, subject: f.subject, body: f.body, html: f.fmt === 'html'});
+      const ed = $('#tplEd'), src = $('#tplEdSrc'); const body = cleanHtml(src && !src.hidden ? src.value : ed.innerHTML);
+      if (!elText(ed).trim() && !(src && !src.hidden && src.value.trim())) { toast('Write the message first.', 'bad'); return false; }
+      const ok = await put('templates', tid, {name: f.name, subject: f.subject, body, html: true});
       if (ok) { toast('Template saved'); setTimeout(tplManageModal, 0); }
       return ok;
     }, {wide: true, foot: id ? `<button type="button" class="btn ghost" data-act="tplDel" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
@@ -5381,6 +5428,8 @@ const A = {
   outlookDraft: () => outlookDraft(),
   copySubj: () => { const v = $('#draftSubj')?.value; if (v) copyText(v); },
   tplManage: () => tplManageModal(),
+  rte: d => rteExec(d.t, d.cmd),
+  rteSrc: (d, el) => { const ed = document.getElementById(d.t), src = document.getElementById(d.t + 'Src'); if (!ed || !src) return; const on = src.hidden; if (on) { src.value = ed.innerHTML; } else { ed.innerHTML = cleanHtml(src.value); } src.hidden = !on; ed.hidden = on; el.setAttribute('aria-pressed', on); el.classList.toggle('on', on); el.closest('.rte-bar').classList.toggle('src', on); },
   spiroImport: () => spiroImport(),
   tplEdit: d => tplEditModal(d.id),
   tplDel: d => confirmModal('Delete template?', esc(templates().find(t => t.id === d.id)?.name || ''), 'Delete', async () => { const isDefault = DEFAULT_TEMPLATES.some(t => t.id === d.id); const ok = isDefault ? await put('templates', d.id, {deleted: true}) : await del('templates', d.id); if (ok) { toast('Template deleted'); setTimeout(tplManageModal, 0); } return ok; }),
@@ -5389,6 +5438,9 @@ const A = {
 const CHANGE = {
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
   jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
+  rteSize: el => { const v = el.value; el.value = ''; if (v) rteExec(el.dataset.t, 'fontSize', v); },
+  rteColor: el => rteExec(el.dataset.t, el.dataset.k, el.value),
+  rteField: el => { const k = el.value; el.value = ''; if (!k) return; rteFocus(el.dataset.t); document.execCommand('insertText', false, '{' + k + '}'); },
   tplQ: el => { const q = norm(el.value); document.querySelectorAll('#tplList li').forEach(li => { li.hidden = !!q && !li.dataset.q.includes(q); }); },
   jsxCt: el => { if (ui.js.custom && ui.js.ct !== el.value) { ui.js.custom = null; ui.js.exp = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } ui.js.ct = el.value; jsxPaint(); },
   jsxSubj: el => jsxCustomize(+el.dataset.i, 'subject', el.value),
