@@ -1861,6 +1861,8 @@ function modalStep(title){
   const tok = uid(); MST.push({tok, key, tab: ui.setTab, inSet: !!ui.inSettings, reopen: CUR_ACT});
   histPush({mtok: tok});
 }
+// run something once a closed window has finished stepping back out of history (so Back still goes one screen)
+function afterModal(fn){ let n = 0; const t = () => { if ((MST.length || ignorePop) && n++ < 40) setTimeout(t, 25); else fn(); }; setTimeout(t, 30); }
 function modalUnwind(){   // a window was closed with X / Cancel / Save: take its steps back out of history
   if (popping || !MST.length) return;
   const n = MST.length, seq = navSeq; MST.length = 0;
@@ -3089,8 +3091,8 @@ function dealForm(id, pre={}){
       const ok = await put('deals', nid, rec);
       if (ok && rec.stage === 'won' && prev.stage !== 'won') confetti();
       if (ok && id && prev.stage !== rec.stage) logAct({type:'stage', text:`Stage changed to ${stage(rec).l}`, dealId:nid, companyId});
-      if (ok && !id) { toast('Opportunity added'); ui.detail = {col:'deals', id:nid}; schedule(); }
-      if (ok && f.then === 'reminder' && isOpen(rec)) setTimeout(() => taskForm(null, {co: companyId, deal: nid}), 250);
+      if (ok && !id) { toast('Opportunity added'); afterModal(() => { A.oppPage({id: nid}); if (f.then === 'reminder' && isOpen(rec)) setTimeout(() => taskForm(null, {co: companyId, deal: nid}), 150); }); }   // open the new opportunity's page
+      else if (ok && f.then === 'reminder' && isOpen(rec)) setTimeout(() => taskForm(null, {co: companyId, deal: nid}), 250);
       return ok;
     }, {wide: true, foot: `<button type="button" class="btn" id="dfRemBtn" data-act="dfSaveRem"${isOpen(d) ? '' : ' hidden'}>${ic('bell')}Save &amp; set reminder</button>`});
 }
