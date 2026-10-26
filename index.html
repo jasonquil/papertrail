@@ -1354,7 +1354,10 @@ const money2 = n => (+n || 0).toLocaleString('en-US', {style:'currency', currenc
 const moneyShort = n => { n = +n||0; if (Math.abs(n) >= 1e6) return '$'+(n/1e6).toFixed(n%1e6?1:0)+'M'; if (Math.abs(n) >= 1e3) return '$'+(n/1e3).toFixed(n%1e3?1:0)+'k'; return '$'+Math.round(n); };
 const sum = (a,f) => a.reduce((t,x) => t + (+f(x) || 0), 0);
 const L = col => Object.entries(S[col]).map(([id,v]) => ({id, ...v}));
-const byName = (a,b) => (a.name||'').localeCompare(b.name||'');
+const COLL = new Intl.Collator(undefined, {sensitivity: 'base', numeric: true});   // much faster than localeCompare on big lists
+const byName = (a,b) => COLL.compare(a.name||'', b.name||'');
+// sort by a text key worked out once per record (not twice per comparison)
+const sortByKey = (list, key) => { const k = new Map(list.map(r => [r, key(r)])); return list.sort((a, b) => COLL.compare(k.get(a), k.get(b))); };
 const cname = id => S.companies[id]?.name || '';
 const pname_ = c => [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || c.email2 || c.phone || c.mobile || 'Unnamed contact';
 // contacts can have a work email (email) and a personal email (email2); work is preferred for sending
@@ -1381,7 +1384,25 @@ const mkHay = vals => { const r = vals.map(v => String(v ?? '').toLowerCase()).j
 const hayHit = (Q, h) => (Q.n.length > 0 && Q.n.every(t => Array.isArray(t) ? t.some(x => h.n.includes(x)) : h.n.includes(t))) || (Q.raw.length > 0 && Q.raw.every(t => h.r.includes(t)))
   || (Q.d.length >= 3 && Q.d.length >= Q.raw.join('').replace(/[\s\-().#+]/g, '').length - 1 && h.d.includes(Q.d));
 const qHit = (Q, f) => hayHit(Q, mkHay(f));
-let HC = new WeakMap(); const hayReset = () => { HC = new WeakMap(); };   // per-record search text, rebuilt when a record (or any account name) changes
+let HC = new WeakMap(); const hayReset = () => { HC = new WeakMap(); hayWarmSoon(); };
+const HAYF = {
+  deals: {l: d => [d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : '', acctOf(d.companyId)], g: d => [d.name, d.service, d.notes, cname(d.companyId), acctOf(d.companyId)]},
+  companies: {l: c => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo, ...coTags(c)], g: c => [c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes, c.acctNo, ...coTags(c)]},
+  contacts: {l: c => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], g: c => [pname_(c), c.title, c.email, c.email2, c.phone, c.mobile, c.notes, cname(c.companyId), acctOf(c.companyId)]},
+};
+// build the search text for every record in the background, a slice at a time, so the first search is as quick as the rest
+let hayWarmT = 0, hayWarmRun = 0;
+function hayWarmSoon(){ clearTimeout(hayWarmT); hayWarmT = setTimeout(hayWarm, 1500); }
+function hayWarm(){
+  const run = ++hayWarmRun; const jobs = [];
+  for (const col of ['contacts', 'companies', 'deals']) for (const tag of ['l', 'g']) jobs.push([col, tag, L(col), 0]);
+  const idle = window.requestIdleCallback || (f => setTimeout(() => f({timeRemaining: () => 12}), 30));
+  const step = dl => { if (run !== hayWarmRun) return; const t0 = performance.now();
+    while (jobs.length && performance.now() - t0 < 12) { const j = jobs[0]; const [col, tag, list] = j; const end = Math.min(list.length, j[3] + 400);
+      for (let i = j[3]; i < end; i++) { const r = list[i]; hay(r, tag, () => HAYF[col][tag](r), col); } j[3] = end; if (end >= list.length) jobs.shift(); }
+    if (jobs.length) idle(step, {timeout: 500}); };
+  idle(step, {timeout: 500});
+}   // per-record search text, rebuilt when a record (or any account name) changes
 const hay = (rec, tag, f, col) => { const src = (col && rec.id && S[col][rec.id]) || rec; let m = HC.get(src); if (!m) HC.set(src, m = {}); return m[tag] || (m[tag] = mkHay(f())); };
 let _mq = null, _mQ = null;
 const qOf = q => { if (q !== _mq) { _mq = q; _mQ = qParts(q); } return _mQ; };
@@ -1946,7 +1967,10 @@ function lookModal(){
 
 // ---------- rendering ----------
 let raf = 0;
-function schedule(){ if (raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+function schedule(){ ui.qOnly = false; if (raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+// search typing: the box updates right away; the list redraws once typing pauses, and skips re-indexing (typing doesn't change any records)
+let qT = 0;
+function qSchedule(){ clearTimeout(qT); qT = setTimeout(() => { if (raf) return; ui.qOnly = true; raf = requestAnimationFrame(() => { raf = 0; render(); }); }, 180); }
 function preserve(fn){
   const ae = document.activeElement; const aid = ae && ae.id; let sel = null;
   try { if (aid && ae.selectionStart != null) sel = [ae.selectionStart, ae.selectionEnd]; } catch {}
@@ -1959,7 +1983,7 @@ function preserve(fn){
   $('#main').scrollTop = ms; if ($('#drawerBody') && db_ != null) $('#drawerBody').scrollTop = db_; if ($('#msgs') && mg != null) $('#msgs').scrollTop = mg;
 }
 function render(){
-  X = idx();
+  if (!(ui.qOnly && X)) X = idx(); ui.qOnly = false;
   if (ui.detail && !S[ui.detail.col][ui.detail.id] && (booted && (!live || COLS.every(c => loaded[c])))) ui.detail = null;
   preserve(() => {
     $('#nav').innerHTML = navHtml();
@@ -2123,7 +2147,7 @@ V.pipeline = () => {
   const stuck = id => !!(ui.stick && ui.stick.ids.has(id));
   const all = L('deals').filter(mine).filter(d => fltPass('deals', d));
   const rows0 = fzRun(() => all.filter(d => stuck(d.id) || (show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true))
-    .filter(d => matchR(ui.q, d, 'l', () => [d.name, cname(d.companyId), d.service, d.contactId ? nameOf('contacts', d.contactId) : '', acctOf(d.companyId)], 'deals'))
+    .filter(d => matchR(ui.q, d, 'l', () => HAYF.deals.l(d), 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
   let rows = rows0;
   if (ui.stick) { const pos = new Map(ui.stick.order.map((id, i) => [id, i])); rows = rows0.slice().sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e9) - (pos.has(b.id) ? pos.get(b.id) : 1e9)); }   // keep the order you were looking at
@@ -2336,7 +2360,7 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => [c.name, c.city, c.phone, c.address, c.zip, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
+  const rows = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
   return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
@@ -2349,7 +2373,7 @@ V.companies = () => {
 };
 
 V.contacts = () => {
-  const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => [pname_(c), c.email, c.email2, c.phone, c.mobile, c.title, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => (!(a.firstName || a.lastName)) - (!(b.firstName || b.lastName)) || pname_(a).localeCompare(pname_(b))));
+  const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.contacts.l(c), 'contacts')).map(c => [c, ((c.firstName || c.lastName) ? '0' : '1') + pname_(c)])).sort((a, b) => COLL.compare(a[1], b[1])).map(x => x[0]);
   const total = Object.keys(S.contacts).length;
   ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
   return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
@@ -2967,25 +2991,28 @@ let gqT = 0;
 function searchModal(){
   openModal('Search', `<label class="search big">${ic('search')}<input id="gq" type="search" placeholder="Name, account #, email, phone, city, quote number, notes…" autocomplete="off" aria-label="Search all records"></label><div id="gres" class="gres">${searchResults('')}</div>`, null, null, {wide:true});
 }
+// sidebar search helpers: build display rows only for the 8 that show; keep the full count
+const top8 = (list, map) => { const out = list.slice(0, 8).map(map); out.total = list.length; return out; };
 function searchResults(q){
   q = q.trim();
   if (!q) return `<p class="empty-s">Search accounts, contacts, opportunities, quotes, contracts and everything you've logged.</p>`;
+  if (q.length < 2 && !/\d/.test(q)) return `<p class="empty-s">Keep typing…</p>`;   // one letter matches nearly everything
   const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
   const Q = FZ || qParts(q); const hit = (rec, tag, f, col) => hayHit(Q, hay(rec, tag, f, col)); const af = acctFirst(q);
   const mark = s => { let out = esc(s); const t = toks.sort((a,b) => b.length - a.length)[0]; if (t) { const re = new RegExp('(' + esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'); out = out.replace(re, '<mark>$1</mark>'); } return out; };
   const groups = [
-    ['Accounts', L('companies').filter(c => hit(c, 'g', () => [c.name, c.phone, c.address, c.city, c.state, c.zip, c.notes, c.acctNo, ...coTags(c)], 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)).map(c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
-    ['Contacts', L('contacts').filter(c => hit(c, 'g', () => [pname_(c), c.title, c.email, c.email2, c.phone, c.mobile, c.notes, cname(c.companyId), acctOf(c.companyId)], 'contacts')).sort((a,b) => pname_(a).localeCompare(pname_(b))).map(c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
-    ['Opportunities', L('deals').filter(d => hit(d, 'g', () => [d.name, d.service, d.notes, cname(d.companyId), acctOf(d.companyId)], 'deals')).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
-    ['Quotes', L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')).map(x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
-    ['Contracts', L('contracts').filter(c => hit(c, 'g', () => [c.title, c.notes, cname(c.companyId)], 'contracts')).map(c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
+    ['Accounts', top8(L('companies').filter(c => hit(c, 'g', () => HAYF.companies.g(c), 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)), c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
+    ['Contacts', top8(sortByKey(L('contacts').filter(c => hit(c, 'g', () => HAYF.contacts.g(c), 'contacts')), pname_), c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
+    ['Opportunities', top8(L('deals').filter(d => hit(d, 'g', () => HAYF.deals.g(d), 'deals')).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)), d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
+    ['Quotes', top8(L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')), x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
+    ['Contracts', top8(L('contracts').filter(c => hit(c, 'g', () => [c.title, c.notes, cname(c.companyId)], 'contracts')), c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
     ['Notes and activity', X.acts.filter(a => a.type !== 'stage' && hit(a, 'g', () => [a.text], 'activities')).map(a => { const col = a.dealId && S.deals[a.dealId] ? 'deals' : a.companyId && S.companies[a.companyId] ? 'companies' : a.contactId && S.contacts[a.contactId] ? 'contacts' : null; if (!col) return null; const id = col === 'deals' ? a.dealId : col === 'companies' ? a.companyId : a.contactId; const txt = String(a.text||''); const i = txt.toLowerCase().indexOf(toks[0]); const snip = (i > 40 ? '…' : '') + txt.slice(Math.max(0, i - 40), i + 90) + (txt.length > i + 90 ? '…' : ''); return {a:'open', col, id, t:snip, s:`${ACT[a.type]||'Note'} · ${nameOf(col, id)} · ${rel(a.at)}`}; }).filter(Boolean)]
   ];
-  const total = groups.reduce((n, g) => n + g[1].length, 0);
+  const total = groups.reduce((n, g) => n + (g[1].total ?? g[1].length), 0);
   if (!total && !searchResults.fz) { const f = fuzzQ(Q); if (f) { FZ = f; searchResults.fz = true; let out; try { out = searchResults(q); } finally { FZ = null; searchResults.fz = false; }
     if (!/class="empty-s"/.test(out)) return `<p class="fznote">No exact matches for “${esc(q)}”. Showing close matches for <b>${esc(f.label)}</b>.</p>` + out; } }
   if (!total) return `<p class="empty-s">Nothing matches “${esc(q)}”.</p>`;
-  return groups.filter(g => g[1].length).map(([name, rows]) => `<div class="sg"><h3>${name}<span>${rows.length}</span></h3><ul class="srl">${rows.slice(0, 8).map(r => `<li><button type="button" class="sr" data-act="gopen" data-a="${r.a}"${attrs({col:r.col, id:r.id})}><b>${mark(r.t)}</b><small>${mark(r.s)}</small></button></li>`).join('')}${rows.length > 8 ? `<li class="sub" style="padding:4px 10px">${rows.length - 8} more. Add another word to narrow it down.</li>` : ''}</ul></div>`).join('');
+  return groups.filter(g => g[1].length).map(([name, rows]) => `<div class="sg"><h3>${name}<span>${(rows.total ?? rows.length).toLocaleString()}</span></h3><ul class="srl">${rows.slice(0, 8).map(r => `<li><button type="button" class="sr" data-act="gopen" data-a="${r.a}"${attrs({col:r.col, id:r.id})}><b>${mark(r.t)}</b><small>${mark(r.s)}</small></button></li>`).join('')}${(rows.total ?? rows.length) > 8 ? `<li class="sub" style="padding:4px 10px">${((rows.total ?? rows.length) - 8).toLocaleString()} more. Add another word to narrow it down.</li>` : ''}</ul></div>`).join('');
 }
 
 const digits = v => String(v || '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
@@ -4240,13 +4267,26 @@ async function syncNow(coId){
   const added = L('activities').filter(a => a.emailId && a.companyId === coId).length - before;
   toast(added > 0 ? `Added ${added} email${added === 1 ? '' : 's'} to the timeline` : `Found ${st.items.length} email${st.items.length === 1 ? '' : 's'} in Outlook, nothing new to add`);
 }
+// an email Paper Trail sent (or auto-sent) is already on the timeline, just without Outlook's message id:
+// same subject, sent within 15 minutes of each other
+const subjKey = t => String(t || '').split('\n')[0].replace(/^(Sent|Received):\s*/i, '').replace(/\s+/g, ' ').trim().toLowerCase();
+const sentByPT = (coId, subject, at) => L('activities').find(a => a.type === 'email' && !a.emailId && a.companyId === coId && subjKey(a.text) === subjKey(subject) && Math.abs((a.at || 0) - (at || 0)) < 15 * 60000);
+async function emailDedupe(coId){   // tidy up pairs logged before this check existed: keep Paper Trail's entry (it has open tracking), drop the copy from Outlook
+  for (const a of L('activities').filter(x => x.type === 'email' && x.emailId && x.companyId === coId && /^Sent:/i.test(String(x.text || '')))) {
+    const pt = sentByPT(coId, a.text, a.at); if (!pt) continue;
+    if (await patch('activities', pt.id, {emailId: a.emailId})) await del('activities', a.id);
+  }
+}
 async function autoLogEmails(coId){
   if (!canWrite || !prefGet('autoLog', true)) return;
   const st = EM[coId]; if (!st || st.status !== 'done' || st.logging) return;
+  st.logging = true; try { await emailDedupe(coId); } catch {} st.logging = false;
   const logged = new Set(L('activities').filter(a => a.emailId).map(a => a.emailId));
-  const todo = st.items.filter(m => !logged.has(m.id)).sort((a,b) => b.at - a.at).slice(0, 40);
-  if (!todo.length) return;
+  let todo = st.items.filter(m => !logged.has(m.id)).sort((a,b) => b.at - a.at).slice(0, 40);
   st.logging = true;
+  for (const m of todo.filter(m => !m.inbound)) { const pt = sentByPT(coId, m.subject, m.at); if (pt) { await patch('activities', pt.id, {emailId: m.id}); m._dup = true; } }   // link instead of logging twice
+  todo = todo.filter(m => !m._dup);
+  if (!todo.length) { st.logging = false; return; }
   const cts = gr(coId).contacts;
   for (const m of todo) {
     if (!m.summary && m.uri) m.summary = await emailPreview(m.uri);
@@ -4729,7 +4769,7 @@ function tplManageModal(){
     <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
 }
-const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 5;
+const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 6;
 async function spiroImport(){
   const b = $('#spiroBtn'); if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   let list;
@@ -5538,6 +5578,7 @@ const A = {
     const m = (EM[d.co]?.items || []).find(x => x.id === d.mid); if (!m) return;
     const cts = gr(d.co).contacts; const addr = (m.inbound ? [m.sender] : m.recipients).map(a => a.toLowerCase());
     const ct = cts.find(c => ctAddrs(c).some(e => addr.includes(e)));
+    const pt = !m.inbound && sentByPT(d.co, m.subject, m.at); if (pt) { await patch('activities', pt.id, {emailId: m.id}); toast('Already on the timeline (sent from Paper Trail)'); return; }
     if (await logAct({type: 'email', text: `${m.inbound ? 'Received' : 'Sent'}: ${m.subject}${m.summary ? '\n' + m.summary : ''}`, companyId: d.co, contactId: ct?.id, emailId: m.id, at: m.at || Date.now()})) toast('Saved to the account timeline');
   },
   gopen: d => { closeModal(); if (d.a === 'open') A.open(d); else A[d.a]({id: d.id}); },
@@ -5782,8 +5823,8 @@ document.addEventListener('input', e => {
   if (el.id === 'tplBody') { updTplPrev(); return; }
   if (el.id === 'dCc' || el.id === 'dBcc') { acShow(el); return; }
   if (el.id === 'jsIn' || el.id === 'jsDate') { jsPreview(); return; }
-  if (el.id === 'q') { ui.q = el.value; ui.lim = {}; ui.fzNote = ''; schedule(); return; }
-  if (el.id === 'gq') { clearTimeout(gqT); gqT = setTimeout(() => { const r = $('#gres'); if (r && $('#gq')) r.innerHTML = searchResults($('#gq').value); }, 120); return; }
+  if (el.id === 'q') { ui.q = el.value; ui.lim = {}; ui.fzNote = ''; qSchedule(); return; }
+  if (el.id === 'gq') { clearTimeout(gqT); gqT = setTimeout(() => { const r = $('#gres'); if (r && $('#gq')) r.innerHTML = searchResults($('#gq').value); }, 180); return; }
   if (el.closest && el.closest('#qItems')) { updQuoteTotal(); return; }
   if (el.id === 'teamQ' && U) { const v = el.value; U.search(v).then(hits => { if ($('#teamQ')?.value !== v) return; hits.forEach(h => { P[h.id] = h; }); const ul = $('#teamHits'); if (!ul) return; ul.innerHTML = hits.filter(h => h.id !== ME.id).map(h => `<li data-id="${esc(h.id)}"><span>${h.avatarUrl ? `<img class="av" src="${esc(h.avatarUrl)}" alt="">` : ''}<span>${esc(h.name)}</span></span>${(team.ids||[]).includes(h.id) ? '<span class="sub">On the team</span>' : `<button type="button" class="btn sm" data-act="teamAdd" data-id="${esc(h.id)}">Add</button>`}</li>`).join('') || (v ? '<li class="sub">No one found.</li>' : ''); }); }
 });
@@ -7150,7 +7191,7 @@ async function boot(){
   if (d) {
     db = d; live = true;
     for (const c of COLS) {
-      db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); REAL[c] = o; if (!DEMO) S[c] = o; loaded[c] = true; if (c === 'companies') { hayReset(); acctHeal(); } schedule(); },
+      db.collection(c).onSnapshot(snap => { const o = {}; snap.docs.forEach(x => { o[x.id] = x.data(); }); REAL[c] = o; if (!DEMO) S[c] = o; loaded[c] = true; if (c === 'companies') { hayReset(); acctHeal(); } else if (c === 'contacts' || c === 'deals') hayWarmSoon(); schedule(); },
         err => { loaded[c] = true; if (err && err.code === 'revoked') { canWrite = false; toast('Your access to this CRM changed. Reload to continue.', 'bad'); } else toast(`Couldn't load your ${({companies: 'accounts', deals: 'opportunities'})[c] || c} after three tries${err && err.message ? ` (${String(err.message).slice(0, 90)})` : ''}. Reload the page.`, 'bad'); schedule(); });
     }
     if (!SUPA) db.doc('meta/team').onSnapshot(snap => { team = snap.exists ? {ids: snap.data().ids || []} : {ids: []}; schedule(); if (!$('#modal').hidden && $('#teamList')) { const keepQ = $('#teamQ')?.value; teamModal(); if (keepQ) { $('#teamQ').value = keepQ; } } }, () => {});
