@@ -379,6 +379,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .jsend .chk{color:var(--fg);font-weight:600}
 .jsend #dJBox{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .jsend #dJBox[hidden]{display:none}
+.jwin{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:18px;align-items:start}
+.acard{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:12px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0}
+.acard h4{margin:0 0 2px;font-size:1.02rem}.acard .eyebrow{margin:8px 0 0}.acard .eyebrow:first-child{margin-top:0}
+.acard .facts{margin:0;grid-template-columns:auto minmax(0,1fr);font-size:.86rem}.acard .facts dd{overflow-wrap:anywhere}
+.acard-d{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.acard-d li{display:flex;flex-direction:column;font-size:.86rem}.acard-d small{color:var(--muted)}
+.acard .btn{align-self:flex-start;margin-top:6px}
+@media (max-width:820px){.jwin{grid-template-columns:1fr}.acard{position:static}}
 .jsend #dJBox .lnk{display:inline-flex;align-items:center;gap:4px}.jsend #dJBox .lnk .ic{width:14px;height:14px}
 .dj-steps{flex-basis:100%;margin-top:8px;display:flex;flex-direction:column;gap:6px}.dj-steps[hidden]{display:none}
 .dj-st{border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 12px}.dj-st summary{cursor:pointer;padding:9px 0;list-style:none;display:flex;gap:8px;align-items:baseline}.dj-st summary::-webkit-details-marker{display:none}
@@ -4591,7 +4598,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   else if (purpose && PURPOSE_TPL[purpose]) pick = PURPOSE_TPL[purpose];
   else if (col === 'deals') { const st = stage(r).k; pick = st === 'won' ? 't_thanks' : st === 'quoted' ? 't_quote_fu' : 't_inquiry'; }
   if (!tpls.some(t => t.id === pick)) pick = '';
-  openModal(jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : 'Email', `<div class="grid2">
+  openModal(jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : 'Email', `${jopt ? '<div class="jwin"><div class="jwin-main">' : ''}<div class="grid2">
       ${F('To', contacts.length ? sel('contactId', contacts.flatMap(toOpts), ui.draft.contactId + '|' + (ui.draft.toAddr || '').toLowerCase(), 'id="dTo" data-change="draftTo"') : '<p class="sub" style="padding-top:6px">No contacts on this account yet.</p>')}
       ${F('Template', sel('tpl', [['', '— Choose a template —'], ...tpls.map(t => [t.id, t.name]), ...(AI ? [['__ai', 'Write with Claude…']] : [])], pick, 'id="dTpl" data-change="draftTpl"'))}
       ${F('Cc', `<div class="acwrap">${inp('cc', '', 'text', 'id="dCc" placeholder="Start typing a name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdCc" role="listbox" hidden></ul></div>`)}
@@ -4604,7 +4611,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
     ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
     ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${sigClean(SIG.html).html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
     ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk"><input type="checkbox" id="dJ" data-change="dJ"> Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : ''}
-    <div class="mailbar" id="dNote" hidden></div>`, null, null,
+    <div class="mailbar" id="dNote" hidden></div>${jopt ? `</div>${acctCard(companyId, contact && contact.id)}</div>` : ''}`, null, null,
     {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('up')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
   if (pick) applyTemplate(pick);
   if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); setDraftBody(jopt.html ? cleanHtml(fillTemplate(jopt.body, data, true)) : textToHtml(fillTemplate(jopt.body, data))); }
@@ -5147,30 +5154,42 @@ function journeyDetailModal(id){
     const inner = `<div><b>${isCallStep(st) ? ic('phone') + 'Call' : 'Email'} · step ${s.step + 1}</b> <span class="sub">${esc(st ? (isCallStep(st) ? fillTemplate(st.note || '', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span></div><span class="end">${done}${editable ? `<span class="jst-ed">${ic('edit')}</span>` : ''}</span>`;
     return editable ? `<li class="jst-li"><button type="button" class="jst-btn" data-act="jStepEdit" data-id="${id}" data-i="${s.step}" title="Edit this ${isCallStep(st) ? 'call reminder' : 'email'} for ${esc(nameOf('contacts', e.contactId))}">${inner}</button></li>` : `<li>${inner}</li>`; }).join('');
   const md = eMode(e);
-  openModal(`${jName(e.journeyId)}`, `<p><b>${esc(nameOf('contacts', e.contactId))}</b> · ${esc(cname(e.companyId))} ${jStatusChip(e)}</p>
+  openModal(`${jName(e.journeyId)}`, `<div class="jwin"><div class="jwin-main"><p><b>${esc(nameOf('contacts', e.contactId))}</b> · ${esc(cname(e.companyId))} ${jStatusChip(e)}</p>
     ${['active', 'paused'].includes(e.status) ? `<p class="sub">Sending: <b>${md === 'auto' ? 'automatically at 8:45 AM' : 'asks you first'}</b>${e.sendMode ? ' (just for this person)' : ''}${canWrite ? ` · <button type="button" class="lnk" data-act="jMode" data-id="${id}" data-m="${md === 'auto' ? 'approve' : 'auto'}">${md === 'auto' ? 'Ask me first instead' : 'Send automatically instead'}</button>` : ''}</p>` : ''}
     ${e.lastSendError && nextStep(e) && e.lastSendError.step === nextStep(e).step ? `<div class="mailbar warn"><span>${esc(e.lastSendError.msg)}</span></div>` : ''}
     ${e.status === 'paused' && e.stopReason === 'replied' ? `<div class="mailbar warn"><span>They replied${e.replyAt ? ' on ' + fmtDate(ymd(new Date(e.replyAt))) : ''}${e.replySubject ? `: “${esc(e.replySubject)}”` : ''}. Resume if it was just a quick acknowledgement, or end the journey.</span></div>` : ''}
-    <ul class="jsteps">${steps}</ul>`, null, null, {foot: canWrite ? `<button type="button" class="btn ghost" data-act="jDelete" data-id="${id}" style="margin-right:auto">${ic('trash')}Remove</button>${e.status === 'active' ? `<button type="button" class="btn" data-act="jPause" data-id="${id}">Pause</button>${nextStep(e) ? `<button type="button" class="btn" data-act="jSkip" data-id="${id}">Skip next step</button><button type="button" class="btn pri" data-act="jSend" data-id="${id}">${isCallStep(ests[nextStep(e).step]) ? 'Do the call now' : 'Send next email now'}</button>` : ''}` : ''}${e.status === 'paused' ? `<button type="button" class="btn" data-act="jStop" data-id="${id}">End journey</button><button type="button" class="btn pri" data-act="jResume" data-id="${id}">Resume</button>` : ''}` : ''});
+    <ul class="jsteps">${steps}</ul></div>${acctCard(e.companyId, e.contactId)}</div>`, null, null, {wide: true, foot: canWrite ? `<button type="button" class="btn ghost" data-act="jDelete" data-id="${id}" style="margin-right:auto">${ic('trash')}Remove</button>${e.status === 'active' ? `<button type="button" class="btn" data-act="jPause" data-id="${id}">Pause</button>${nextStep(e) ? `<button type="button" class="btn" data-act="jSkip" data-id="${id}">Skip next step</button><button type="button" class="btn pri" data-act="jSend" data-id="${id}">${isCallStep(ests[nextStep(e).step]) ? 'Do the call now' : 'Send next email now'}</button>` : ''}` : ''}${e.status === 'paused' ? `<button type="button" class="btn" data-act="jStop" data-id="${id}">End journey</button><button type="button" class="btn pri" data-act="jResume" data-id="${id}">Resume</button>` : ''}` : ''});
 }
 
+// the account at a glance, shown beside a journey window: address, phone, the contact, open opportunities
+function acctCard(coId, ctId){
+  const c = S.companies[coId]; if (!c) return '';
+  const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
+  const ct = ctId && S.contacts[ctId];
+  const deals = L('deals').filter(d => d.companyId === coId && isOpen(d)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 3);
+  return `<aside class="acard"><p class="eyebrow">Account</p><h4>${esc(c.name)}</h4>
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Address', esc(addr), addr)}${fact('Phone', esc(c.phone), c.phone)}${fact('Owner', who(c.ownerId))}</dl>
+    ${ct ? `<p class="eyebrow">Contact</p><dl class="facts">${fact('Name', esc(pname_(ct)))}${fact('Email', esc(ctMail(ct) || ''), ctMail(ct))}${fact('Phone', esc(ct.phone || ct.mobile || ''), ct.phone || ct.mobile)}</dl>` : ''}
+    ${deals.length ? `<p class="eyebrow">Open opportunities</p><ul class="acard-d">${deals.map(d => `<li><b>${esc(d.name || 'Opportunity')}</b><small>${esc([stage(d).l, d.value ? money(d.value) : '', isDate(d.serviceDate) ? 'service ' + fmtDate(d.serviceDate) : ''].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>` : ''}
+    <button type="button" class="btn sm" data-act="acardOpen" data-id="${esc(coId)}">${ic('building')}Open account</button></aside>`;
+}
 // edit one upcoming step of an active journey, for this person only (the journey itself stays the same)
 function jStepEditModal(eid, idx){
   const e = S.enrollments[eid]; if (!e) return; const st = eSteps(e)[idx]; if (!st) return;
   const who = nameOf('contacts', e.contactId); const call = isCallStep(st);
   const data = mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId});
   const startHtml = st.html ? cleanHtml(fillTemplate(st.body || '', data, true)) : textToHtml(fillTemplate(st.body || '', data));
-  openModal(`${call ? 'Call' : 'Email'} · step ${idx + 1}`, `<p class="sub" style="margin:0 0 10px">Just for <b>${esc(who)}</b>. The ${esc(jName(e.journeyId))} journey itself stays the same.</p>
+  openModal(`${call ? 'Call' : 'Email'} · step ${idx + 1}`, `<div class="jwin"><div class="jwin-main"><p class="sub" style="margin:0 0 10px">Just for <b>${esc(who)}</b>. The ${esc(jName(e.journeyId))} journey itself stays the same.</p>
     ${call ? F('Call note', `<textarea name="note" rows="4">${esc(fillTemplate(st.note || '', data))}</textarea>`)
     : `${F('Subject', inp('subject', fillTemplate(st.subject || '', data), 'text', 'required'))}
-      <div class="f"><span>Message</span>${rteBar('jStepB')}<div id="jStepB" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message">${startHtml}</div></div>`}`, 'Save', async f => {
+      <div class="f"><span>Message</span>${rteBar('jStepB')}<div id="jStepB" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message">${startHtml}</div></div>`}</div>${acctCard(e.companyId, e.contactId)}</div>`, 'Save', async f => {
       const steps = JSON.parse(JSON.stringify(eSteps(e)));
       if (call) steps[idx] = {...steps[idx], note: String(f.note || '').trim() || steps[idx].note};
       else { const ed = $('#jStepB'); if (!elText(ed).trim()) { toast('Write the message first.', 'bad'); return false; } if (!String(f.subject || '').trim()) { toast('The email needs a subject.', 'bad'); return false; }
         steps[idx] = {...steps[idx], subject: String(f.subject).trim(), body: jeSerHtml(ed), html: true}; }
       if (!await patch('enrollments', eid, {steps})) return false;
       toast(`Saved for ${who}`); A.closeModal(); return false;   // back to the journey's list of steps
-    }, {wide: !call});
+    }, {wide: true});
 }
 async function jSetStep(eid, idx, status){
   const e = S.enrollments[eid]; if (!e) return false;
@@ -5637,6 +5656,7 @@ const A = {
   jEditDel: d => confirmModal('Delete journey?', `${esc(jName(d.id))} will be removed. People already on it keep their schedule.`, 'Delete', async () => { const ok = DEFAULT_JOURNEYS.some(j => j.id === d.id) ? await put('journeys', d.id, {deleted: true}) : await del('journeys', d.id); if (ok) toast('Journey deleted'); return ok; }),
   jOpen: d => journeyDetailModal(d.id),
   jStepEdit: d => jStepEditModal(d.id, +d.i),
+  acardOpen: d => { closeModal(); afterModal(() => A.coPage({id: d.id})); },
   dJEdit: () => { const b = $('#dJSteps'); if (!b) return; b.hidden = !b.hidden; if (!b.hidden) dJPaint(); },
   dJReset: () => { if (ui.draft) ui.draft.jCustom = null; dJPaint(); },
   jPause: async d => { if (await patch('enrollments', d.id, {status: 'paused', stopReason: 'manual', pausedAt: Date.now()})) { toast('Journey paused'); if (!$('#modal').hidden) journeyDetailModal(d.id); } },
