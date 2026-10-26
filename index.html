@@ -822,6 +822,7 @@ html:root[data-fish="tackle"]{
 .emv-meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;font-size:.88rem;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .emv-meta span{color:var(--muted)}.emv-meta b{font-weight:600;overflow-wrap:anywhere}
 .emv-load{display:flex;gap:8px;align-items:center}.emv-load svg{width:16px;height:16px}
+.emv-more{display:block;margin:8px 2px 2px;font-size:13px}
 .emv-frame{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:120px;display:block;padding:0}
 .emv-text{white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-wrap:anywhere}
 .emv-files{display:flex;gap:8px;flex-wrap:wrap}
@@ -2494,8 +2495,8 @@ const closeBtn = `<button class="icon-btn" data-act="closeDetail" aria-label="Cl
 // ---------- account activity + Outlook email ----------
 function coTabs(id){
   const t = ui.coTab[id] || 'overview';
-  const g = gr(id); const logged = new Set(g.acts.filter(a => a.emailId).map(a => a.emailId));
-  const n = g.acts.filter(a => a.type !== 'stage').length + (EM[id]?.items || []).filter(m => !logged.has(m.id)).length;
+  const g = gr(id); const isLogged = emLoggedIn(g.acts);
+  const n = g.acts.filter(a => a.type !== 'stage').length + (EM[id]?.items || []).filter(m => !isLogged(m)).length;
   return `<div class="tabs" role="tablist">${[['overview','Overview',0],['activity','Activity',n]].map(([k,l,c]) => `<button role="tab" aria-selected="${t===k}" class="${t===k?'on':''}" data-act="coTab" data-id="${id}" data-t="${k}">${l}${c ? `<span>${c}</span>` : ''}</button>`).join('')}</div>`;
 }
 function mailTargets(id){
@@ -2533,6 +2534,16 @@ function parseEmails(r){
   if (!out.length && r && r.payload && typeof r.payload === 'object') push(r.payload);
   return out;
 }
+// Outlook's message id changes when an email moves between folders, so the same email could be logged twice.
+// internetMessageId never changes (and is the same in everyone's mailbox), so it's the key that decides "already logged".
+const emKeyOf = v => String(v || '').trim().toLowerCase();
+function emLoggedIn(acts){
+  const ids = new Set(), keys = new Set(), list = [];
+  for (const a of acts) if (a.type === 'email') { if (a.emailId) ids.add(a.emailId); if (a.emailKey) keys.add(a.emailKey); list.push(a); }
+  // older entries have no key: same direction and subject, logged within 2 minutes of each other, is the same email
+  return m => ids.has(m.id) || (m.key && keys.has(m.key)) || list.some(a => /^Received:/i.test(String(a.text || '')) === !!m.inbound && subjKey(a.text) === subjKey(m.subject) && Math.abs((a.at || 0) - (m.at || 0)) < 120000);
+}
+const emActId = (coId, m) => { const k = coId + '|' + (m.key || m.id); let h = 2166136261; for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 16777619); } let h2 = 5381; for (let i = 0; i < k.length; i++) h2 = (Math.imul(h2, 33) ^ k.charCodeAt(i)) >>> 0; return 'em' + (h >>> 0).toString(36) + h2.toString(36); };
 function normEmail(m, emails, dom){
   const id = m.id || m.uri || m.internetMessageId; if (!id) return null;
   const at = Date.parse(m.receivedDateTime || m.sentDateTime || '') || 0;
@@ -2543,7 +2554,7 @@ function normEmail(m, emails, dom){
   if (!inbound && !recips.some(isTheirs)) return null;
   const summary = String(m.summary || m.bodyPreview || '').split(/\r?\n/).filter(l => !/EXTERNAL EMAIL|originated from outside your organization|Do not click links or open attachments/i.test(l)).join(' ').replace(/\s+/g, ' ').trim();
   const web = typeof m.webLink === 'string' && /^https:\/\//i.test(m.webLink) ? m.webLink : '';
-  return {id: String(id), uri: typeof m.uri === 'string' ? m.uri : '', subject: String(m.subject || '(no subject)'), sender, recipients: recips, at, summary: summary.slice(0, 280), web, att: !!m.hasAttachments, inbound};
+  return {id: String(id), key: emKeyOf(m.internetMessageId), uri: typeof m.uri === 'string' ? m.uri : '', subject: String(m.subject || '(no subject)'), sender, recipients: recips, at, summary: summary.slice(0, 280), web, att: !!m.hasAttachments, inbound};
 }
 const MAIL_BLOCKING = ['needs_reauth','server_not_connected','selection_required','not_in_manifest','blocked_by_policy','not_granted','capability_disabled','capability_removed','approval_required','server_not_found'];
 function mailErr(e){
@@ -2601,7 +2612,7 @@ function coActivity(id){
   if (MCP && !EM[id]) setTimeout(() => loadEmails(id), 0);
   const g = gr(id); const f = ui.actFilter || 'all';
   const ev = [];
-  const logged = new Set(g.acts.filter(a => a.emailId).map(a => a.emailId));
+  const isLogged = emLoggedIn(g.acts);
   for (const a of g.acts) if (!isSysAct(a)) ev.push({k: a.type === 'email' ? 'email' : a.type === 'job' ? 'job' : a.type === 'stage' ? 'update' : a.type === 'done' ? 'done' : (a.type === 'file' || a.type === 'contract') ? 'doc' : 'log', at: a.at || 0, html: feedItem(a, false)});
   for (const d of g.deals) if (!isOpen(d) && isDate(d.closedAt)) ev.push({k: 'job', at: parseYmd(d.closedAt).getTime() + 43200000,
     html: `<li class="fi"><span class="ft ${d.stage}">${d.stage === 'won' ? 'Won' : d.stage === 'updated' ? 'Updated contract' : 'Lost'}</span><div><p class="subj">${link('deals', d.id)}</p><small>${money(d.value)}${d.service ? ' · ' + esc(d.service) : ''}${d.stage === 'lost' && d.lostReason ? ' · ' + esc(d.lostReason) : ''} · closed ${fmtDate(d.closedAt)}${d.ownerId ? ' · ' + esc(pname(d.ownerId)) : ''}</small></div></li>`});
@@ -2609,7 +2620,7 @@ function coActivity(id){
     html: `<li class="fi"><span class="ft doc">Quote</span><div><p class="subj"><button class="lnk mono" data-act="editQuote" data-id="${q.id}">${esc(q.number)}</button> ${qChip(q)}</p><small>${money2(qTotal(q))} · ${q.sentAt ? 'sent' : 'created'} ${fmtDate(ymd(new Date(when)))}</small></div></li>`}); }
   for (const c of g.contracts) if (isDate(c.start) && !c.files) ev.push({k: 'doc', at: parseYmd(c.start).getTime(),
     html: `<li class="fi"><span class="ft doc">Contract</span><div><p class="subj"><button class="lnk" data-act="editContract" data-id="${c.id}">${esc(c.title || 'Service agreement')}</button></p><small>${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr${c.autoRenew ? ' · auto-renews' : ''}</small></div></li>`});
-  for (const m of (EM[id]?.items || [])) if (!logged.has(m.id)) ev.push({k: 'email', at: m.at, html: emailItem(m, id)});
+  for (const m of (EM[id]?.items || [])) if (!isLogged(m)) ev.push({k: 'email', at: m.at, html: emailItem(m, id)});
   const counts = {all: ev.length}; ev.forEach(e => counts[e.k] = (counts[e.k] || 0) + 1);
   const shown = ev.filter(e => f === 'all' || e.k === f).sort((a, b) => b.at - a.at);
   const none = {all: 'Nothing here yet. Log a call, email, meeting or finished job above.', email: 'No emails yet.', done: 'No completed reminders yet. Check off a reminder and it shows up here.', job: 'No closed jobs yet. Won and lost opportunities and jobs you log as done show up here.', log: 'No calls, meetings or notes logged yet.', doc: 'No files, quotes or contracts yet.'}[f];
@@ -4326,25 +4337,37 @@ async function emailDedupe(coId){   // tidy up pairs logged before this check ex
     const pt = sentByPT(coId, a.text, a.at); if (!pt) continue;
     if (await patch('activities', pt.id, {emailId: a.emailId})) await del('activities', a.id);
   }
+  // the same email synced twice (its Outlook id changed when it moved folders, or two tabs logged it at once): keep one
+  const groups = new Map();
+  for (const a of L('activities').filter(x => x.type === 'email' && x.emailId && x.companyId === coId)) {
+    const k = a.emailKey || `${/^Received:/i.test(String(a.text || '')) ? 'in' : 'out'}|${subjKey(a.text)}|${Math.round((a.at || 0) / 120000)}`;
+    let g = groups.get(k); if (!g) groups.set(k, g = []); g.push(a);
+  }
+  for (const g of groups.values()) if (g.length > 1) {
+    g.sort((x, y) => (y.track ? 1 : 0) - (x.track ? 1 : 0) || (x.createdAt || 0) - (y.createdAt || 0));
+    for (const extra of g.slice(1)) await del('activities', extra.id);
+  }
 }
+const EMLOG = new Set();   // accounts being logged right now, so two syncs can't log the same emails side by side
 async function autoLogEmails(coId){
   if (!canWrite || !prefGet('autoLog', true)) return;
-  const st = EM[coId]; if (!st || st.status !== 'done' || st.logging) return;
-  st.logging = true; try { await emailDedupe(coId); } catch {} st.logging = false;
-  const logged = new Set(L('activities').filter(a => a.emailId).map(a => a.emailId));
-  let todo = st.items.filter(m => !logged.has(m.id)).sort((a,b) => b.at - a.at).slice(0, 40);
-  st.logging = true;
-  for (const m of todo.filter(m => !m.inbound)) { const pt = sentByPT(coId, m.subject, m.at); if (pt) { await patch('activities', pt.id, {emailId: m.id}); m._dup = true; } }   // link instead of logging twice
-  todo = todo.filter(m => !m._dup);
-  if (!todo.length) { st.logging = false; return; }
-  const cts = gr(coId).contacts;
-  for (const m of todo) {
-    if (!m.summary && m.uri) m.summary = await emailPreview(m.uri);
-    const addr = (m.inbound ? [m.sender] : m.recipients).map(a => a.toLowerCase());
-    const ct = cts.find(c => ctAddrs(c).some(e => addr.includes(e)));
-    if (!await logAct({type: 'email', text: `${m.inbound ? 'Received' : 'Sent'}: ${m.subject}${m.summary ? '\n' + m.summary : ''}`, companyId: coId, contactId: ct?.id, emailId: m.id, at: m.at || Date.now()})) break;
-  }
-  st.logging = false;
+  const st = EM[coId]; if (!st || st.status !== 'done' || EMLOG.has(coId)) return;
+  EMLOG.add(coId); st.logging = true;
+  try {
+    try { await emailDedupe(coId); } catch {}
+    // an email sent from Paper Trail is already on the timeline without Outlook's id: link it instead of logging twice
+    for (const m of st.items.filter(m => !m.inbound)) { const pt = sentByPT(coId, m.subject, m.at); if (pt) await patch('activities', pt.id, {emailId: m.id, ...(m.key ? {emailKey: m.key} : {})}); }
+    const isLogged = emLoggedIn(L('activities').filter(a => a.companyId === coId));
+    const todo = st.items.filter(m => !isLogged(m)).sort((a,b) => b.at - a.at).slice(0, 40);
+    const cts = gr(coId).contacts;
+    for (const m of todo) {
+      if (!m.summary && m.uri) m.summary = await emailPreview(m.uri);
+      const addr = (m.inbound ? [m.sender] : m.recipients).map(a => a.toLowerCase());
+      const ct = cts.find(c => ctAddrs(c).some(e => addr.includes(e)));
+      // the entry's id comes from the email itself, so a second device logging it at the same moment writes the same record, not a copy
+      if (!await put('activities', emActId(coId, m), {type: 'email', at: m.at || Date.now(), by: ME.id, text: `${m.inbound ? 'Received' : 'Sent'}: ${m.subject}${m.summary ? '\n' + m.summary : ''}`, companyId: coId, contactId: ct?.id, emailId: m.id, ...(m.key ? {emailKey: m.key} : {})})) break;
+    }
+  } finally { EMLOG.delete(coId); st.logging = false; }
 }
 
 // ---------- team ----------
@@ -4545,14 +4568,53 @@ async function emailOpen(d){
       if (p.body && typeof p.body.content === 'string' && p.body.content.trim()) {
         if (/html/i.test(p.body.contentType || '')) EMV.html = p.body.content; else EMV.text = p.body.content;
       } else if (p.bodyPreview && p.bodyPreview.length > (EMV.text || '').length) EMV.text = p.bodyPreview;
-      if (p.hasAttachments && MCP.graph) { try { const a = await MCP.callTool(MS, 'list_attachments', {uri: want}); if (EMV.mid === want) EMV.files = ((a && a.payload && a.payload.value) || []).filter(f => !f.isInline); } catch {} }
+      if ((p.hasAttachments || /\bcid:/i.test(EMV.html)) && MCP.graph) { try {
+        const a = await MCP.callTool(MS, 'list_attachments', {uri: want}); const all = (a && a.payload && a.payload.value) || [];
+        if (EMV.mid === want) EMV.files = all.filter(f => !f.isInline);
+        // pictures inside the email (signature logos, pasted screenshots) are stored as hidden attachments: fetch them so they show
+        if (EMV.mid === want && /\bcid:/i.test(EMV.html)) {
+          EMV.cids = {}; let budget = 4 * 1048576;
+          for (const f of all.filter(f => f.isInline || /^image\//i.test(f.contentType || '')).slice(0, 15)) {
+            if ((f.size || 0) > budget) continue; budget -= f.size || 0;
+            try { const g = await MCP.callTool(MS, 'get_attachment', {uri: want, id: f.id}); const x = g && g.payload;
+              if (x && x.contentBytes && /^image\//i.test(x.contentType || '')) { const url = `data:${x.contentType};base64,${x.contentBytes}`; if (x.contentId) EMV.cids[String(x.contentId).replace(/^<|>$/g, '').toLowerCase()] = url; if (x.name) EMV.cids['name:' + String(x.name).toLowerCase()] = url; } } catch {}
+          }
+        }
+      } catch {} }
     }
   } catch (e) { if (EMV.mid === want) EMV.err = mailErr(e); }
   if (EMV.mid !== want) return;
   EMV.loading = false; if ($('#emv')) emailPaint();
 }
-function emailFrameDoc(html){
+// The quoted earlier messages under a reply ("From: … Sent: …", Gmail's "On … wrote:"): find where they start.
+function emailQuoteStart(dd){
+  const q = dd.querySelector('#divRplyFwdMsg, #appendonsend, div.gmail_quote, blockquote[type="cite"], .OutlookMessageHeader, div.yahoo_quoted');
+  if (q) { let n = q; if (n.id === 'divRplyFwdMsg' && n.previousElementSibling && n.previousElementSibling.tagName === 'HR') n = n.previousElementSibling; return n; }
+  const w = dd.createTreeWalker(dd.body, NodeFilter.SHOW_TEXT);
+  for (let t = w.nextNode(); t; t = w.nextNode()) {
+    if (!/^\s*From:\s*$|^\s*From:\s+\S/.test(t.data) && !/^\s*-{2,}\s*Original Message/i.test(t.data) && !/^\s*On .{4,120} wrote:\s*$/.test(t.data)) continue;
+    let blk = t.parentElement; while (blk && blk !== dd.body && !/^(P|DIV|TABLE|BLOCKQUOTE)$/.test(blk.tagName)) blk = blk.parentElement;
+    if (!blk || blk === dd.body) continue;
+    if (/From:/.test(t.data) && !/(Sent|Date):/.test((blk.textContent || '') + (blk.nextElementSibling ? blk.nextElementSibling.textContent : ''))) continue;
+    // Outlook draws a thin line above the header, inside a bordered div: start there
+    const box = blk.parentElement && blk.parentElement !== dd.body && /border-top/i.test(blk.parentElement.getAttribute('style') || '') ? blk.parentElement : blk;
+    const before = box.previousElementSibling; return before && before.tagName === 'HR' ? before : box;
+  }
+  return null;
+}
+// only cut when there's a real message above the quote (a forward with no note keeps everything)
+function emailQuoteCut(dd){ const q = emailQuoteStart(dd); if (!q) return null;
+  const r = dd.createRange(); r.setStart(dd.body, 0); r.setEndBefore(q); return r.toString().replace(/\s+/g, ' ').trim().length > 15 ? q : null; }
+function emailCutFrom(node){ const body = node.ownerDocument.body; let n = node;
+  while (n && n !== body) { let x = n.nextSibling; while (x) { const nx = x.nextSibling; x.remove(); x = nx; } const par = n.parentNode; if (n === node) n.remove(); n = par; } }
+function emailFrameDoc(html, full, cids){
   const dd = new DOMParser().parseFromString(html, 'text/html');
+  if (!full) { const q = emailQuoteCut(dd); if (q) emailCutFrom(q); }
+  // the "EXTERNAL EMAIL … originated from outside your organization" warning your mail filter adds
+  for (const el of [...dd.querySelectorAll('table, div, p')].reverse()) { const t = el.textContent || ''; if (t.length < 400 && /EXTERNAL EMAIL|originated from outside (of )?your organization/i.test(t) && el.isConnected && !el.querySelector('img')) { const box = el.closest('table') && (el.closest('table').textContent || '').length < 400 ? el.closest('table') : el; box.remove(); } }
+  dd.querySelectorAll('img').forEach(i => { const src = i.getAttribute('src') || '';
+    if (/^cid:/i.test(src)) { const k = src.slice(4).replace(/^<|>$/g, '').toLowerCase(); const u = cids && (cids[k] || cids['name:' + k.split('@')[0]]); if (u) i.setAttribute('src', u); else i.remove(); }
+    else if (/^(file:|about:)/i.test(src) || !src) i.remove(); });
   dd.querySelectorAll('script,iframe,object,embed,form,meta[http-equiv],link[rel="import"]').forEach(n => n.remove());
   dd.querySelectorAll('*').forEach(n => { for (const at of [...n.attributes]) if (/^on/i.test(at.name) || (/^(href|src)$/i.test(at.name) && /^\s*javascript:/i.test(at.value))) n.removeAttribute(at.name); if (n.tagName === 'A') { n.setAttribute('target', '_blank'); n.setAttribute('rel', 'noopener'); } });
   const css = `<style>html{margin:0;padding:0;background:#fff}body{margin:0;padding:14px 16px;background:#fff;color:#12201E;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}a{color:#0D6B61}</style>`;
@@ -4562,7 +4624,8 @@ function emailPaint(){
   const e = EMV; const when = e.at ? new Date(e.at).toLocaleString('en-US', {weekday: 'short', month: 'short', day: 'numeric', year: new Date(e.at).getFullYear() === new Date().getFullYear() ? undefined : 'numeric', hour: 'numeric', minute: '2-digit'}) : '';
   const meta = [['From', e.from ? [e.from] : []], ['To', e.to || []], ['Cc', e.cc || []], ['Date', when ? [when] : []]].filter(x => x[1].length).map(([k, v]) => `<span>${k}</span><b>${esc(v.join(', '))}</b>`).join('');
   const kb = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
-  const body = e.html ? `<iframe class="emv-frame" id="emvFrame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Email message"></iframe>`
+  const hasQuote = e.html && !e.loading && (() => { try { return !!emailQuoteCut(new DOMParser().parseFromString(e.html, 'text/html')); } catch { return false; } })();
+  const body = e.html ? `<iframe class="emv-frame" id="emvFrame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" title="Email message"></iframe>${hasQuote ? `<button type="button" class="lnk emv-more" data-act="emailFull">${e.full ? 'Hide earlier messages' : 'Show earlier messages in this conversation'}</button>` : ''}`
     : e.text ? `<div class="emv-text">${esc(e.text)}</div>` : e.loading ? '' : `<p class="sub">No message text saved for this email.</p>`;
   const sub = `${e.inbound ? 'Received' : 'Sent'}${e.track ? trackBadge(e.track) : ''}`;
   const foot = `${e.coId && canWrite ? `<button type="button" class="btn pri" data-act="emailReply">${ic('mail')}Reply</button>` : ''}${e.web ? `<a class="btn" href="${esc(e.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}<button type="button" class="btn" data-act="emailCopy">${ic('copy')}Copy text</button><button type="button" class="btn ghost" data-act="closeModal" style="margin-left:auto">Close</button>`;
@@ -4576,7 +4639,7 @@ function emailPaint(){
   if (fr) {
     const fit = () => { try { const h = fr.contentDocument.documentElement.scrollHeight; fr.style.height = Math.max(120, h + 4) + 'px'; } catch {} };
     fr.onload = () => { fit(); try { fr.contentDocument.querySelectorAll('img').forEach(i => i.addEventListener('load', fit)); } catch {} setTimeout(fit, 400); };
-    fr.srcdoc = emailFrameDoc(e.html);
+    fr.srcdoc = emailFrameDoc(e.html, e.full, e.cids);
   }
 }
 function emailPlain(){
@@ -5686,7 +5749,8 @@ const A = {
     const cts = gr(d.co).contacts; const addr = (m.inbound ? [m.sender] : m.recipients).map(a => a.toLowerCase());
     const ct = cts.find(c => ctAddrs(c).some(e => addr.includes(e)));
     const pt = !m.inbound && sentByPT(d.co, m.subject, m.at); if (pt) { await patch('activities', pt.id, {emailId: m.id}); toast('Already on the timeline (sent from Paper Trail)'); return; }
-    if (await logAct({type: 'email', text: `${m.inbound ? 'Received' : 'Sent'}: ${m.subject}${m.summary ? '\n' + m.summary : ''}`, companyId: d.co, contactId: ct?.id, emailId: m.id, at: m.at || Date.now()})) toast('Saved to the account timeline');
+    if (emLoggedIn(L('activities').filter(a => a.companyId === d.co))(m)) { toast('Already on the timeline'); return; }
+    if (await put('activities', emActId(d.co, m), {type: 'email', at: m.at || Date.now(), by: ME.id, text: `${m.inbound ? 'Received' : 'Sent'}: ${m.subject}${m.summary ? '\n' + m.summary : ''}`, companyId: d.co, contactId: ct?.id, emailId: m.id, ...(m.key ? {emailKey: m.key} : {})})) toast('Saved to the account timeline');
   },
   gopen: d => { closeModal(); if (d.a === 'open') A.open(d); else A[d.a]({id: d.id}); },
   flowSkip: d => { closeModal(); dealForm(null, {co: d.co, coName: d.coname, flow: 1}); },
@@ -5759,6 +5823,7 @@ const A = {
   aiClear: d => { delete ui.ai[d.k]; render(); },
   draft: d => draftModal(d.col, d.id, d.purpose, null, d.to),
   emailOpen: d => emailOpen(d),
+  emailFull: () => { EMV.full = !EMV.full; emailPaint(); },
   emailCopy: () => { const t = emailPlain(); if (t) copyText(t); else toast('Nothing to copy yet.', 'bad'); },
   emailReply: () => {
     const e = {...EMV}; const addr = (String(e.inbound ? e.from : (e.to || [])[0] || '').match(/<([^>]+)>/) || [])[1] || (String(e.inbound ? e.from : (e.to || [])[0] || '').includes('@') ? String(e.inbound ? e.from : e.to[0]).trim() : '');
