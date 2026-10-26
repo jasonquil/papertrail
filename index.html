@@ -1982,11 +1982,25 @@ function preserve(fn){
   if (aid) { const el = document.getElementById(aid); if (el && el !== document.activeElement && !el.closest('#modal')) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch {} } }
   $('#main').scrollTop = ms; if ($('#drawerBody') && db_ != null) $('#drawerBody').scrollTop = db_; if ($('#msgs') && mg != null) $('#msgs').scrollTop = mg;
 }
+// update an element to match new HTML by changing only what differs (keeps hover, focus and scroll steady)
+let lastNav = null;
+function morph(el, html){ const t = document.createElement(el.tagName); t.innerHTML = html; morphKids(el, t); }
+function morphKids(a, b){
+  const ac = [...a.childNodes], bc = [...b.childNodes];
+  bc.forEach((n, i) => { const o = ac[i];
+    if (!o) { a.appendChild(n); return; }
+    if (o.nodeType !== n.nodeType || o.nodeName !== n.nodeName) { a.replaceChild(n, o); return; }
+    if (o.nodeType !== 1) { if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; return; }
+    for (const at of [...o.attributes]) if (!n.hasAttribute(at.name)) o.removeAttribute(at.name);
+    for (const at of [...n.attributes]) if (o.getAttribute(at.name) !== at.value) o.setAttribute(at.name, at.value);
+    morphKids(o, n); });
+  for (let i = bc.length; i < ac.length; i++) ac[i].remove();
+}
 function render(){
   if (!(ui.qOnly && X)) X = idx(); ui.qOnly = false;
   if (ui.detail && !S[ui.detail.col][ui.detail.id] && (booted && (!live || COLS.every(c => loaded[c])))) ui.detail = null;
   preserve(() => {
-    $('#nav').innerHTML = navHtml();
+    const nh = navHtml(); if (nh !== lastNav) { morph($('#nav'), nh); lastNav = nh; }   // the sidebar is patched in place, so it never flickers
     $('#main').innerHTML = `<div class="wrap">${viewHtml()}</div>`;
     const dr = $('#drawer');
     if (ui.detail && S[ui.detail.col][ui.detail.id]) { dr.hidden = false; dr.innerHTML = `<div class="scrim" data-act="closeDetail"></div><aside class="drawer" role="dialog" aria-label="Record detail"><div id="drawerBody">${DETAIL[ui.detail.col](ui.detail.id)}</div></aside>`; }
