@@ -3797,7 +3797,7 @@ const sigKey = () => 'pt-sig-' + (ME.id || 'me');
 function sigLoad(){
   try { const v = JSON.parse(localStorage.getItem(sigKey()) || 'null'); if (v) SIG = {...SIG, ...v}; } catch {}
   if (!live || !db || !ME.id) return;
-  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v) { SIG = {html: v.html || '', on: v.on !== false, track: v.track !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} } }, () => {}); } catch {}
+  try { db.doc('sigs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (v) { SIG = {html: v.html || '', on: v.on !== false, track: v.track !== false}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {} setTimeout(sigAutoHost, 1500); } }, () => {}); } catch {}
 }
 async function sigSave(next){
   SIG = {...SIG, ...next}; try { localStorage.setItem(sigKey(), JSON.stringify(SIG)); } catch {}
@@ -3830,10 +3830,44 @@ function sigModal(){
     <div id="sigBox" class="mailprev sigbox" contenteditable="true">${SIG.html || ''}</div>
     <p class="sub" id="sigNote"></p>
     <label class="chk" style="margin-top:6px"><input type="checkbox" name="on" ${SIG.on ? 'checked' : ''}> Add it to my emails automatically</label>`, 'Save signature', async f => {
-      const {html, dropped} = sigClean($('#sigBox').innerHTML);
+      let {html, dropped} = sigClean($('#sigBox').innerHTML);
+      const h = await hostSigImages(html); html = h.html;
       if (html.length > 1500000) { toast('That signature is too big. Use smaller logo images.', 'bad'); return false; }
-      const ok = await sigSave({html, on: !!f.on}); if (ok) toast(dropped ? `Signature saved. ${dropped} picture${dropped === 1 ? '' : 's'} from Outlook couldn't come along; add ${dropped === 1 ? 'it' : 'them'} with Add image.` : 'Signature saved'); return ok;
+      const ok = await sigSave({html, on: !!f.on});
+      if (ok) toast(dropped ? `Signature saved. ${dropped} picture${dropped === 1 ? '' : 's'} from Outlook couldn't come along; add ${dropped === 1 ? 'it' : 'them'} with Add image.` : h.failed ? `Signature saved, but ${h.failed} picture${h.failed === 1 ? '' : 's'} couldn't be hosted yet, so ${h.failed === 1 ? 'it goes' : 'they go'} as attachments for now. An admin needs to run Supabase update 6.` : h.hosted ? 'Signature saved. Your pictures are hosted, so emails link to them instead of attaching them.' : 'Signature saved');
+      return ok;
     }, {wide: true});
+}
+// ---------- signature pictures: hosted in Supabase storage and linked, so emails don't carry them as attachments ----------
+const SIG_BUCKET = 'signature-images';
+async function hostSigImages(html){
+  if (!SUPA || !SUPA.sb || !SUPA.uid || DEMO) return {html, hosted: 0, failed: 0};
+  const doc = new DOMParser().parseFromString(`<div id="r">${html}</div>`, 'text/html'); const root = doc.getElementById('r');
+  let hosted = 0, failed = 0, lastErr = '';
+  for (const img of root.querySelectorAll('img')) {
+    const src = img.getAttribute('src') || ''; const m = src.match(/^data:(image\/(png|jpe?g|gif|webp));base64,(.+)$/i);
+    if (!img.getAttribute('alt')) img.setAttribute('alt', 'All Points Mobile Shredding');
+    if (!m) continue;
+    try {
+      const bin = atob(m[3]); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', u8))].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
+      const ext = m[2].toLowerCase().replace('jpeg', 'jpg'); const path = `${SUPA.uid}/${hash}.${ext}`;
+      const dims = await new Promise(res => { const im = new Image(); im.onload = () => res([im.naturalWidth, im.naturalHeight]); im.onerror = () => res(null); im.src = src; });
+      const up = await SUPA.sb.storage.from(SIG_BUCKET).upload(path, new Blob([u8], {type: m[1]}), {upsert: true, contentType: m[1], cacheControl: '31536000'});
+      if (up.error && !/exists/i.test(up.error.message || '')) throw up.error;
+      const url = SUPA.sb.storage.from(SIG_BUCKET).getPublicUrl(path).data.publicUrl; if (!url) throw new Error('no link');
+      img.setAttribute('src', url);
+      if (dims && !img.getAttribute('width')) { const sw = parseInt((img.getAttribute('style') || '').match(/max-width:\s*(\d+)px/i)?.[1]) || 300; const w = Math.min(dims[0], sw); img.setAttribute('width', w); img.setAttribute('height', Math.round(dims[1] * w / dims[0])); }
+      hosted++;
+    } catch (e) { failed++; lastErr = (e && e.message) || String(e); }
+  }
+  return {html: root.innerHTML, hosted, failed, err: lastErr};
+}
+let sigMigrating = false;
+async function sigAutoHost(){   // signatures saved before hosting existed: move their pictures over once, quietly
+  if (sigMigrating || !SIG.html || !/src="data:image\//i.test(SIG.html) || !SUPA || DEMO) return;
+  sigMigrating = true;
+  try { const r = await hostSigImages(SIG.html); if (r.hosted) await sigSave({html: r.html}); } catch {} finally { sigMigrating = false; }
 }
 // turn images into email attachments shown in place (how Outlook does signatures), so they show without "download pictures"
 function inlineImages(html){

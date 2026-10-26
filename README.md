@@ -44,3 +44,9 @@ Each person's login email must be their Outlook mailbox address, since that's th
 ## Shared team data and Outlook sending
 
 To have the team share one set of records, and to send from Outlook directly, the site needs a database and a Microsoft sign-in (for example Supabase or Firebase, plus Microsoft Graph). That's the next step after the demo.
+
+## Update 6: hosted signature pictures
+Run `supabase-update-6.sql` in Supabase → SQL Editor. It creates a public `signature-images` storage folder where each
+team member can only add or change pictures in their own folder. After that, Paper Trail uploads signature pictures when a
+signature is saved (and moves existing signatures over automatically the next time each person opens Paper Trail), so emails
+link to the pictures instead of attaching them. Until the update is run, pictures keep going out as inline attachments.
