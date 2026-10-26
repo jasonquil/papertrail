@@ -360,6 +360,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .sb code{font:500 .78rem var(--mono);background:var(--surface-2);padding:1px 5px;border-radius:4px;white-space:nowrap}
 .mailprev{background:#fff;color:#222;border:1px solid var(--line);border-radius:8px;padding:14px 16px;max-height:360px;overflow:auto;font:14px/1.45 Calibri,Aptos,Arial,sans-serif;overflow-wrap:anywhere}
 .mailprev p{margin:0 0 10px}
+.mailprev ul,.mailprev ol{margin:0 0 10px;padding-left:22px}.mailprev li{margin:0 0 2px}
+.sig-bad{outline:2px dashed var(--bad);outline-offset:2px}
 .mailprev img{max-width:100%;height:auto;min-width:24px;min-height:16px;background:#eee;vertical-align:middle}
 .mailprev:focus{outline:2px solid var(--accent);outline-offset:1px}
 .acwrap{position:relative}
@@ -3824,6 +3826,12 @@ async function sigInsertFiles(files){
   const box = $('#sigBox'); if (!box) return;
   for (const f of files) { if (!/^image\//.test(f.type)) continue; const src = await shrinkImage(f); box.focus(); document.execCommand('insertHTML', false, `<img src="${src}" alt="${esc(f.name.replace(/\.[^.]+$/, ''))}" style="max-width:300px">`); }
 }
+function sigCheckImages(){
+  const box = $('#sigBox'), note = $('#sigNote'); if (!box) return;
+  const imgs = [...box.querySelectorAll('img')]; let bad = 0, done = 0;
+  const fin = () => { if (++done < imgs.length) return; if (note && bad) { note.innerHTML = `<b style="color:var(--bad)">${bad} picture${bad === 1 ? " can't" : "s can't"} load.</b> Click ${bad === 1 ? 'it' : 'each one'}, press Delete, then put ${bad === 1 ? 'it' : 'them'} back with <b>Add image</b>.`; } };
+  imgs.forEach(im => { const ok = () => { if (!im.naturalWidth) { bad++; im.classList.add('sig-bad'); } fin(); }; if (im.complete) ok(); else { im.addEventListener('load', ok, {once: true}); im.addEventListener('error', () => { bad++; im.classList.add('sig-bad'); fin(); }, {once: true}); } });
+}
 function sigModal(){
   openModal('My email signature', `<p class="sub" style="margin-bottom:8px">Added to the bottom of emails you send from Paper Trail. Paste your signature from Outlook, then add your logos with <b>Add image</b> (Outlook keeps signature pictures hidden, so they don't come along when you copy). You can also paste or drag an image straight in.</p>
     <div class="sigtools"><label class="btn sm">${ic('up')}Add image<input type="file" id="sigImg" accept="image/*" multiple hidden data-change="sigImg"></label><button type="button" class="btn sm ghost" data-act="sigClear">Clear</button></div>
@@ -3837,6 +3845,7 @@ function sigModal(){
       if (ok) toast(dropped ? `Signature saved. ${dropped} picture${dropped === 1 ? '' : 's'} from Outlook couldn't come along; add ${dropped === 1 ? 'it' : 'them'} with Add image.` : h.failed ? `Signature saved, but ${h.failed} picture${h.failed === 1 ? '' : 's'} couldn't be hosted yet, so ${h.failed === 1 ? 'it goes' : 'they go'} as attachments for now. An admin needs to run Supabase update 6.` : h.hosted ? 'Signature saved. Your pictures are hosted, so emails link to them instead of attaching them.' : 'Signature saved');
       return ok;
     }, {wide: true});
+  setTimeout(sigCheckImages, 50);
 }
 // ---------- signature pictures: hosted in Supabase storage and linked, so emails don't carry them as attachments ----------
 const SIG_BUCKET = 'signature-images';
@@ -3856,6 +3865,8 @@ async function hostSigImages(html){
       const up = await SUPA.sb.storage.from(SIG_BUCKET).upload(path, new Blob([u8], {type: m[1]}), {upsert: true, contentType: m[1], cacheControl: '31536000'});
       if (up.error && !/exists/i.test(up.error.message || '')) throw up.error;
       const url = SUPA.sb.storage.from(SIG_BUCKET).getPublicUrl(path).data.publicUrl; if (!url) throw new Error('no link');
+      const loads = await new Promise(res => { const im = new Image(); const t = setTimeout(() => res(false), 10000); im.onload = () => { clearTimeout(t); res(im.naturalWidth > 0); }; im.onerror = () => { clearTimeout(t); res(false); }; im.src = url + '?check=' + Date.now(); });
+      if (!loads) throw new Error('The hosted picture did not load (' + url + ')');   // never swap in a link that doesn't work
       img.setAttribute('src', url);
       if (dims && !img.getAttribute('width')) { const sw = parseInt((img.getAttribute('style') || '').match(/max-width:\s*(\d+)px/i)?.[1]) || 300; const w = Math.min(dims[0], sw); img.setAttribute('width', w); img.setAttribute('height', Math.round(dims[1] * w / dims[0])); }
       hosted++;
@@ -4564,26 +4575,30 @@ async function draftGo(){
 }
 function tplManageModal(){
   const list = templates();
-  const sp = list.filter(t => t.src === 'spiro').length;
+  const sp = list.filter(t => t.src === 'spiro').length, spOld = list.filter(t => t.src === 'spiro' && (t.spv || 1) < SPIRO_TPL_VER).length;
   openModal('Email templates', `<p class="sub">Templates are shared with your team. Words in curly braces, like {first_name}, fill in from the account when you use the template.</p>
-    ${canWrite && sp < SPIRO_TPL_COUNT ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Names are already swapped for fill-in fields, and the pasted signatures are removed because Paper Trail adds yours.${sp ? ` ${sp} are already here; the rest will be added.` : ''}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}Add Spiro templates</button></div>` : ''}
+    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Formatted versions of your Spiro templates are ready.</b> Bold headings, bullet lists and tighter spacing, like they looked in Spiro. This replaces the ${spOld} plain versions added earlier.` : `<b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update Spiro templates' : 'Add Spiro templates'}</button></div>` : ''}
     ${list.length > 10 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}
     <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
 }
-const SPIRO_TPL_COUNT = 101;
+const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 2;
 async function spiroImport(){
   const b = $('#spiroBtn'); if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   let list;
   try { const r = await fetch('spiro-templates.json', {cache: 'no-store'}); if (!r.ok) throw 0; list = await r.json(); }
   catch { toast("Couldn't load the Spiro templates. Refresh the page and try again.", 'bad'); if (b) { b.disabled = false; b.textContent = 'Add Spiro templates'; } return; }
-  const have = templates(); let added = 0, skipped = 0;
+  const have = templates(); let added = 0, updated = 0, skipped = 0;
   for (const t of list) {
-    if (have.some(x => x.id === t.id || norm(x.name) === norm(t.name))) { skipped++; continue; }
-    if (await put('templates', t.id, {name: t.name, subject: t.subject, body: t.body, html: false, order: t.order, src: 'spiro'})) added++;
-    if (b && added % 10 === 0) b.textContent = `Adding… ${added}`;
+    const ex = have.find(x => x.id === t.id) || have.find(x => norm(x.name) === norm(t.name));
+    const rec = {name: t.name, subject: t.subject, body: t.body, html: t.html !== false, order: t.order, src: 'spiro', spv: t.spv || 1};
+    if (ex) {
+      if (ex.src === 'spiro' && (ex.spv || 1) < (t.spv || 1)) { if (await put('templates', ex.id, {...rec, name: ex.name})) updated++; }
+      else skipped++;
+    } else if (await put('templates', t.id, rec)) added++;
+    if (b && (added + updated) % 10 === 0) b.textContent = `Working… ${added + updated}`;
   }
-  toast(`Added ${added} Spiro template${added === 1 ? '' : 's'}${skipped ? ` (${skipped} were already here)` : ''}`);
+  toast([added ? `Added ${added}` : '', updated ? `Updated ${updated}` : ''].filter(Boolean).join(', ') + ` Spiro template${added + updated === 1 ? '' : 's'}` + (skipped && !updated ? ` (${skipped} were already here)` : ''));
   tplManageModal();
 }
 function tplEditModal(id){
