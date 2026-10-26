@@ -4485,9 +4485,27 @@ async function draftGo(){
 }
 function tplManageModal(){
   const list = templates();
+  const sp = list.filter(t => t.src === 'spiro').length;
   openModal('Email templates', `<p class="sub">Templates are shared with your team. Words in curly braces, like {first_name}, fill in from the account when you use the template.</p>
-    <ul class="hits">${list.map(t => `<li><span><b>${esc(t.name)}</b></span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
+    ${canWrite && sp < SPIRO_TPL_COUNT ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span><b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Names are already swapped for fill-in fields, and the pasted signatures are removed because Paper Trail adds yours.${sp ? ` ${sp} are already here; the rest will be added.` : ''}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}Add Spiro templates</button></div>` : ''}
+    ${list.length > 10 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}
+    <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
+}
+const SPIRO_TPL_COUNT = 101;
+async function spiroImport(){
+  const b = $('#spiroBtn'); if (b) { b.disabled = true; b.textContent = 'Adding…'; }
+  let list;
+  try { const r = await fetch('spiro-templates.json', {cache: 'no-store'}); if (!r.ok) throw 0; list = await r.json(); }
+  catch { toast("Couldn't load the Spiro templates. Refresh the page and try again.", 'bad'); if (b) { b.disabled = false; b.textContent = 'Add Spiro templates'; } return; }
+  const have = templates(); let added = 0, skipped = 0;
+  for (const t of list) {
+    if (have.some(x => x.id === t.id || norm(x.name) === norm(t.name))) { skipped++; continue; }
+    if (await put('templates', t.id, {name: t.name, subject: t.subject, body: t.body, html: false, order: t.order, src: 'spiro'})) added++;
+    if (b && added % 10 === 0) b.textContent = `Adding… ${added}`;
+  }
+  toast(`Added ${added} Spiro template${added === 1 ? '' : 's'}${skipped ? ` (${skipped} were already here)` : ''}`);
+  tplManageModal();
 }
 function tplEditModal(id){
   const t = id ? templates().find(x => x.id === id) : {name:'', subject:'', body:'{greeting} {first_name},\n\n\n\nThanks,\n{my_first_name}'};
@@ -5363,6 +5381,7 @@ const A = {
   outlookDraft: () => outlookDraft(),
   copySubj: () => { const v = $('#draftSubj')?.value; if (v) copyText(v); },
   tplManage: () => tplManageModal(),
+  spiroImport: () => spiroImport(),
   tplEdit: d => tplEditModal(d.id),
   tplDel: d => confirmModal('Delete template?', esc(templates().find(t => t.id === d.id)?.name || ''), 'Delete', async () => { const isDefault = DEFAULT_TEMPLATES.some(t => t.id === d.id); const ok = isDefault ? await put('templates', d.id, {deleted: true}) : await del('templates', d.id); if (ok) { toast('Template deleted'); setTimeout(tplManageModal, 0); } return ok; }),
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
@@ -5370,6 +5389,7 @@ const A = {
 const CHANGE = {
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
   jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
+  tplQ: el => { const q = norm(el.value); document.querySelectorAll('#tplList li').forEach(li => { li.hidden = !!q && !li.dataset.q.includes(q); }); },
   jsxCt: el => { if (ui.js.custom && ui.js.ct !== el.value) { ui.js.custom = null; ui.js.exp = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } ui.js.ct = el.value; jsxPaint(); },
   jsxSubj: el => jsxCustomize(+el.dataset.i, 'subject', el.value),
   jsxBody: el => { jsxGrow(el); jsxCustomize(+el.dataset.i, 'body', el.value); },
