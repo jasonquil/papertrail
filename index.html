@@ -7198,27 +7198,36 @@ function mergeModal(col, keepId, otherId){
       return true;
     } : null);
 }
+// Same email / same name at the same account (or similar company name / same phone) puts records in one group.
+// A value shared by a crowd of records (a placeholder email like none@none.com, "Unknown" at a big account) isn't a
+// duplicate signal, so it's skipped: with 25,000 contacts those used to chain thousands together and freeze the page.
+const DUP_CROWD = 12;
 function dupGroups(col){
-  const items = L(col); const parent = {}; const find = x => parent[x] === x ? x : (parent[x] = find(parent[x])); const join = (a, b) => { parent[find(a)] = find(b); };
-  items.forEach(x => parent[x.id] = x.id);
-  const by = {}; const add = (k, id) => { if (!k) return; (by[k] = by[k] || []).push(id); };
+  const items = L(col); const parent = new Map();
+  const find = x => { let r = x; while (parent.get(r) !== r) r = parent.get(r); while (parent.get(x) !== r) { const n = parent.get(x); parent.set(x, r); x = n; } return r; };
+  const join = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent.set(ra, rb); };
+  items.forEach(x => parent.set(x.id, x.id));
+  const by = new Map(); const add = (k, id) => { if (!k) return; let l = by.get(k); if (!l) by.set(k, l = []); l.push(id); };
   for (const x of items) {
     if (col === 'companies') { add('n:' + coKey(x.name), x.id); const ph = digits(x.phone); if (ph.length >= 10) add('p:' + ph, x.id); }
     else { for (const e of ctAddrs(x)) add('e:' + e, x.id); if (x.companyId && pname_(x)) add('n:' + x.companyId + '|' + norm(pname_(x)), x.id); }
   }
-  for (const ids of Object.values(by)) for (let i = 1; i < ids.length; i++) join(ids[0], ids[i]);
-  const groups = {}; for (const x of items) (groups[find(x.id)] = groups[find(x.id)] || []).push(x);
-  return Object.values(groups).filter(g => g.length > 1).sort((a, b) => b.length - a.length);
+  for (const [k, ids] of by) { if (k === 'n:' || ids.length > DUP_CROWD) continue; for (let i = 1; i < ids.length; i++) join(ids[0], ids[i]); }
+  const groups = new Map(); for (const x of items) { const r = find(x.id); let g = groups.get(r); if (!g) groups.set(r, g = []); g.push(x); }
+  return [...groups.values()].filter(g => g.length > 1).sort((a, b) => b.length - a.length);
 }
 function dupFinder(col){
   col = col || ui.dupCol || 'companies'; ui.dupCol = col;
   const groups = dupGroups(col);
   const nameOfR = r => col === 'companies' ? `${r.name}${r.city ? ' · ' + r.city : ''}${r.phone ? ' · ' + r.phone : ''}` : `${pname_(r)}${ctMail(r) ? ' · ' + ctMail(r) : ''} · ${cname(r.companyId)}`;
-  const linked = r => col === 'companies' ? gr(r.id).contacts.length + gr(r.id).deals.length + gr(r.id).acts.length : L('deals').filter(d => d.contactId === r.id).length;
+  // how much hangs off each record, counted once up front (counting inside the sort scanned 30,000 opportunities per comparison)
+  const cnt = new Map(); const bump = k => { if (k) cnt.set(k, (cnt.get(k) || 0) + 1); };
+  if (col === 'contacts') for (const d of L('deals')) bump(d.contactId);
+  const linked = r => col === 'companies' ? gr(r.id).contacts.length + gr(r.id).deals.length + gr(r.id).acts.length : cnt.get(r.id) || 0;
   openModal('Find duplicates', `<div class="segs" role="group" style="margin-bottom:10px">${[['companies', 'Accounts'], ['contacts', 'Contacts']].map(([k, l]) => `<button type="button" class="${col === k ? 'on' : ''}" data-act="dupTab" data-c="${k}">${l}</button>`).join('')}</div>
     <p class="sub" style="margin-bottom:10px">${groups.length ? `${groups.length} possible duplicate group${groups.length === 1 ? '' : 's'}, matched on ${col === 'companies' ? 'similar name or the same phone number' : 'the same email, or the same name at the same account'}. Review each before merging; similar isn't always the same.` : 'No likely duplicates found.'}</p>
     <ul class="users">${groups.slice(0, 150).map(g => { const sorted = g.slice().sort((a, b) => linked(b) - linked(a)); const keep = sorted[0];
-      return `<li class="urow"><div>${sorted.map((r, i) => `<div><b>${i === 0 ? '' : '<span class="sub">duplicate: </span>'}${esc(nameOfR(r))}</b> <small style="display:inline">· ${linked(r)} linked</small></div>`).join('')}</div>
+      return `<li class="urow"><div>${sorted.slice(0, 6).map((r, i) => `<div><b>${i === 0 ? '' : '<span class="sub">duplicate: </span>'}${esc(nameOfR(r))}</b> <small style="display:inline">· ${linked(r)} linked</small></div>`).join('')}${sorted.length > 6 ? `<div class="sub">and ${sorted.length - 6} more</div>` : ''}</div>
         <div class="uact"><button type="button" class="btn sm pri" data-act="dupReview" data-c="${col}" data-keep="${keep.id}" data-other="${sorted[1].id}">Review &amp; merge</button></div></li>`; }).join('')}</ul>
     ${groups.length > 150 ? `<p class="sub">Showing the first 150 groups. Merge some, then come back for the rest.</p>` : ''}`, null);
 }
