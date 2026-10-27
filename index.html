@@ -1718,7 +1718,7 @@ function ndpAuto(dealId){
     'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
 }
 // columns kept in the copied row (blank) but not shown in the window
-const NDP_HIDE = new Set(['Scheduled', 'EMAILED', 'Credit card info', 'Confirm Time Y/N', 'Contacted']);
+const NDP_HIDE = new Set(['Scheduled', 'WINDOW', 'EMAILED', 'Credit card info', 'Confirm Time Y/N', 'Contacted']);
 const ndpCell = v => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
 // one row in the sheet's column order, tab-separated so Excel spreads it across
 function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.map(k => ndpCell(v[k])).join('\t'); }
