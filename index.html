@@ -6,7 +6,7 @@
 <title>Paper Trail</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&family=Pixelify+Sans:wght@500;600&display=swap">
 <style>
 /* Layout: fixed left rail + scrolling work area; a record's detail slides in from the right */
 :root{
@@ -69,6 +69,32 @@ p{margin:0}
 .navi em{margin-left:auto;font-style:normal;font-size:.72rem;background:var(--bad);color:var(--surface);border-radius:999px;padding:1px 7px;font-weight:700}
 .meline{display:flex;align-items:center;gap:8px;padding:10px 10px 0;font-size:.85rem;color:var(--muted);min-width:0}
 .meline span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---------- Theo: Jason's pixel tabby, lives in the empty sidebar space above Settings ---------- */
+.theo-room{position:relative;flex:1 1 0;min-height:0;container-type:size;margin:0 -4px;user-select:none;-webkit-user-select:none;--th-heart:#E0475B;--th-off:rgba(128,140,138,.38);--th-bub:#FFFDF6;--th-ink:#2A1E16;--th-floor:var(--line);--th-font:"Pixelify Sans",var(--mono)}
+.theo-room .th-floor{position:absolute;left:4px;right:4px;bottom:6px;height:4px;background:repeating-linear-gradient(90deg,var(--th-floor) 0 6px,transparent 6px 9px)}
+.theo-room .th-hud{position:absolute;left:6px;top:0;display:flex;align-items:center;gap:6px;background:none;border:0;padding:3px 5px;border-radius:4px;cursor:pointer;font:600 .68rem/1 var(--th-font);letter-spacing:.12em;color:inherit;opacity:.8}
+.theo-room .th-hud:hover,.theo-room .th-hud[aria-expanded="true"]{background:var(--surface-2)}
+.theo-room .th-hearts{display:flex;gap:2px}
+.theo-room .th-hearts canvas{width:12px;height:11px;image-rendering:pixelated}
+.theo-room .th-cat{position:absolute;bottom:9px;left:0;width:88px;height:84px;image-rendering:pixelated;cursor:pointer;will-change:transform}
+.theo-room .th-cat:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.theo-room .th-bub{position:absolute;bottom:102px;left:0;max-width:200px;background:var(--th-bub);color:var(--th-ink);font:500 .74rem/1.25 var(--th-font);padding:5px 8px;border:2px solid var(--th-ink);box-shadow:3px 3px 0 var(--th-ink);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:2}
+.theo-room .th-bub.on{opacity:1;transform:none}
+.theo-room .th-bub::after{content:"";position:absolute;bottom:-8px;left:var(--tail,20px);width:8px;height:8px;background:var(--th-bub);border:2px solid var(--th-ink);border-top:0;border-left:0;transform:skewX(30deg)}
+.theo-room .th-card{position:absolute;left:6px;right:6px;top:22px;background:var(--th-bub);color:var(--th-ink);border:2px solid var(--th-ink);box-shadow:3px 3px 0 var(--th-ink);padding:8px 10px;font:500 .74rem/1.35 var(--th-font);z-index:3}
+.theo-room .th-card b{font-weight:700;letter-spacing:.08em}
+.theo-room .th-bar{height:8px;border:2px solid var(--th-ink);margin:5px 0 6px;background:#fff}
+.theo-room .th-bar s{display:block;height:100%;background:var(--th-heart)}
+.theo-room .th-row{display:flex;justify-content:space-between;gap:8px;width:100%;background:none;border:0;padding:2px 0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.theo-room .th-row:hover span:first-child{text-decoration:underline}
+.theo-room .th-fx{position:absolute;pointer-events:none;font:700 .8rem var(--th-font);color:var(--th-heart);animation:thRise 1.4s steps(7) forwards}
+.theo-room .th-fx.z{color:var(--muted);animation:thFloat 2.4s steps(8) forwards}
+@keyframes thRise{to{transform:translateY(-34px);opacity:0}}
+@keyframes thFloat{0%{opacity:0}20%{opacity:1}to{transform:translate(14px,-30px);opacity:0}}
+@media (max-width:820px){.theo-room{display:none}}
+html[data-look="inlet"] .theo-room{display:none}
+@container (max-height:150px){.theo-room>*{display:none}}   /* not enough empty space in the sidebar: he stays out of the way */
+@media (prefers-reduced-motion:reduce){.theo-room .th-fx{display:none}.theo-room .th-bub{transition:none}}
 
 main{overflow:auto;min-width:0}
 .wrap{max-width:1800px;margin:0 auto;padding:26px 28px 72px;display:flex;flex-direction:column;gap:20px}
@@ -2134,6 +2160,163 @@ function preserve(fn){
   $('#main').scrollTop = ms; if ($('#drawerBody') && db_ != null) $('#drawerBody').scrollTop = db_; if ($('#msgs') && mg != null) $('#msgs').scrollTop = mg;
 }
 // update an element to match new HTML by changing only what differs (keeps hover, focus and scroll steady)
+// ---------- Theo: Jason's pixel tabby (brown, male, 2, small for his age). Only Jason sees him. ----------
+// Health: half from what Jason logged today (6 fills it; before 11am yesterday still counts), half from his overdue reminders.
+const theoOn = () => /^jason@allpointsprotects\.com$/i.test(ME.email || '') || /^jason quillen$/i.test(ME.name || '') || (!live && ME.id === 'jason');
+const TH_PAL = {o: '#2A1E16', b: '#926C48', d: '#4E3624', l: '#DEC8A4', k: '#140E0A', n: '#D68080', p: '#E29696'};
+const TH_SIT = ["..oo..........oo......", "..obo........obo......", "..obpo......opbo......", "..obppooooooppbo......", ".obbbbbdbbdbbbbbo.....", ".obbbbbbddbbbbbbo.....", ".odbbbbbddbbbbbdo.....", ".obbkwbbbbbbkwbbo.....", ".odbkkbbbbbbkkbdo.....", ".obbbbllnnllbbbbo.....", ".obbbllllllllbbbo.....", "..obbbllllllbbbo......", "...oobbllllbboo.......", "...odbbllllbbdo.......", "..obdbblllllbbdbo.....", "..odbbbllllllbbdo..oo.", "..obdbbllllllbdbo.obbo", "..odbbbllllllbbdoodbo.", "..obobllllllblobobbo..", "..obllollllollloobo...", "...oooooooooooooo....."];
+const TH_WALK_TOP = Array(8).fill('......................').concat([".............o....o...", ".o..........obo..obo..", "obo.........obpoopbbo.", "odo........obdbbdbbbbo", ".obo.......obbbbbbkbbo", "..obo......obbbbbbkbbo", "..obooooooobbbbbbbbbno", "...obdbbdbbdbbbbblllo.", "...obdbbdbbdbbbblllo..", "...obbbbbbbbbbbllllo.."]);
+const TH_WALK = [TH_WALK_TOP.concat(["...obo.obo...obo.obo..", "...olo.olo...olo.olo..", "...ooo.ooo...ooo.ooo.."]), TH_WALK_TOP.concat(["..obo...obo.obo...obo.", "..olo...olo.olo...olo.", "..ooo...ooo.ooo...ooo."])];
+const TH_SLEEP = Array(10).fill('......................').concat(["............o....o....", "...........obo..obo...", "...ooooooo.obpoopbbo..", "..obdbbdbbobdbbdbbbbo.", ".obdbbdbbdbbbbbbbbbbo.", ".obbdbbdbbobkkbbbkkbo.", "odbbdbbdbbobbbbbbbbbbo", "obbbbbbbbbbobbbbnbbbo.", "obbbbbbbbbbollllllllo.", ".oddddddddddoollllloo.", "..ooooooooooooooooo..."]);
+TH_PAL.w = '#FAFAF0';
+const thSet = (r, y, x, c) => { r[y] = r[y].slice(0, x) + c + r[y].slice(x + 1); };
+function thFace(eyes, mouth, ears){
+  const r = TH_SIT.slice();
+  const eye = (a, b) => { for (const x of [4, 12]) { thSet(r, 7, x, a[0]); thSet(r, 7, x + 1, a[1]); thSet(r, 8, x, b[0]); thSet(r, 8, x + 1, b[1]); } };
+  if (eyes === 'blink') eye('bb', 'kk');
+  if (eyes === 'sad') { eye('bk', 'kk'); thSet(r, 7, 12, 'k'); thSet(r, 7, 13, 'b'); }
+  if (mouth === 'smile') { thSet(r, 10, 7, 'k'); thSet(r, 10, 10, 'k'); thSet(r, 11, 8, 'k'); thSet(r, 11, 9, 'k'); }
+  if (mouth === 'flat') { thSet(r, 10, 8, 'k'); thSet(r, 10, 9, 'k'); }
+  if (mouth === 'frown') { thSet(r, 10, 8, 'k'); thSet(r, 10, 9, 'k'); thSet(r, 11, 7, 'k'); thSet(r, 11, 10, 'k'); }
+  if (ears === 'down') { r[0] = r[1] = '......................'; r[2] = 'oo..............oo....'; r[3] = 'obp' + 'o'.repeat(12) + 'pbo....'; }
+  return r;
+}
+const TH_HEART = [".oo.oo.", "ohhohho", "ohhhhho", ".ohhho.", "..oho..", "...o..."];
+const TH = {x: 40, dir: 1, state: 'sit', until: 0, target: 40, speed: 16, petUntil: 0, li: 0, H: null, M: null, st: null, drawn: '', el: null, raf: 0, statAt: 0, talkAt: 0, zAt: 0, logged: null};
+const thMood = h => h >= 75 ? 'happy' : h >= 45 ? 'fine' : h >= 20 ? 'sad' : 'sleepy';
+const TH_MOOD = {happy: 'happy', fine: 'doing fine', sad: 'a little sad', sleepy: 'sleeping it off'};
+function thDay(d){ const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function thStats(){
+  const now = new Date(), dow = now.getDay(), weekend = dow === 0 || dow === 6;
+  // the day that counts: today, or Friday over the weekend (his health holds still until Monday)
+  const ref = thDay(now); if (weekend) ref.setDate(ref.getDate() - (dow === 6 ? 1 : 2));
+  const prev = new Date(ref); do prev.setDate(prev.getDate() - 1); while (prev.getDay() === 0 || prev.getDay() === 6);
+  const refY = ymd(ref), prevY = ymd(prev), t = today(), cut = weekend ? ymd(new Date(ref.getTime() + 864e5)) : t;
+  let a = 0, b = 0; const from = prev.getTime();
+  for (const x of Object.values(S.activities || {})) {
+    if (!x || x.by !== ME.id || !(x.at >= from) || x.type === 'stage') continue;
+    if (x.type === 'email' && /^Received:/.test(x.text || '')) continue;   // emails people sent you don't count, only what you did
+    const d = ymd(new Date(x.at)); if (d === refY) a++; else if (d === prevY) b++;
+  }
+  let overdue = 0, due = 0;
+  for (const k of Object.values(S.tasks || {})) { if (!k || k.done || k.assigneeId !== ME.id || !isDate(k.due)) continue; if (k.due < cut) overdue++; else if (k.due === t) due++; }
+  let jr = 0;
+  for (const e of Object.values(S.enrollments || {})) { if (!e || e.status !== 'active' || e.ownerId !== ME.id) continue; const s = nextStep(e); if (s && s.due <= t && !autoWillSend(e, s) && !isCallStep(eSteps(e)[s.step])) jr++; }
+  const morning = !weekend && now.getHours() < 11;
+  const logged = morning ? Math.max(a, b) : a;
+  return {today: a, logged, overdue, due, jr, weekend, morning};
+}
+const thHealth = s => Math.round(Math.min(s.logged / 6, 1) * 50 + Math.max(0, 50 - s.overdue * 12.5));
+const thN = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+function thLines(s){
+  const out = [];
+  if (s.overdue) out.push(`${thN(s.overdue, 'reminder', 'reminders')} overdue!`);
+  if (s.jr) out.push(`${thN(s.jr, 'journey', 'journeys')} left to send`);
+  if (s.due) out.push(`${thN(s.due, 'reminder', 'reminders')} due today`);
+  if (s.weekend) out.push('It\'s the weekend. Go outside');
+  else if (s.today >= 6) out.push(`${s.today} things logged. Treats?`);
+  else out.push(s.today ? `Log ${6 - s.today} more for a full belly` : 'Nothing logged yet today...');
+  if (!s.overdue && !s.jr && !s.due) out.unshift('All caught up. Nap time?');
+  return out;
+}
+function thHeart(fill){
+  const c = document.createElement('canvas'); c.width = 7; c.height = 6; const g = c.getContext('2d');
+  const cs = getComputedStyle(TH.el), on = cs.getPropertyValue('--th-heart').trim(), off = cs.getPropertyValue('--th-off').trim();
+  TH_HEART.forEach((row, y) => { for (let x = 0; x < 7; x++) { const ch = row[x]; if (ch === '.') continue; g.fillStyle = ch === 'o' ? '#2A1E16' : (fill >= 1 || (fill > 0 && x < 4)) ? on : off; g.fillRect(x, y, 1, 1); } });
+  return c;
+}
+function thMount(room){
+  TH.el = room; TH.drawn = '';
+  room.innerHTML = `<button class="th-hud" type="button" aria-expanded="false">THEO <span class="th-hearts"></span></button><div class="th-card" hidden></div><div class="th-bub" role="status" aria-live="polite"></div><canvas class="th-cat" width="22" height="21" tabindex="0" role="img" aria-label="Theo the cat. Click to pet him"></canvas><div class="th-floor"></div>`;
+  const q = s => room.querySelector(s);
+  q('.th-cat').addEventListener('click', thPet);
+  q('.th-cat').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); thPet(); } });
+  q('.th-hud').addEventListener('click', () => { const c = q('.th-card'), open = c.hidden; c.hidden = !open; q('.th-hud').setAttribute('aria-expanded', open); if (open) thCard(); });
+  TH.H = null; thUpdate(true);
+  if (!TH.raf) TH.raf = requestAnimationFrame(thTick);
+}
+function thCard(){
+  const c = TH.el && TH.el.querySelector('.th-card'); if (!c || c.hidden || !TH.st) return; const s = TH.st;
+  const row = (l, v, view) => `<button class="th-row" type="button" data-act="go" data-v="${view}"><span>${l}</span><span>${v}</span></button>`;
+  c.innerHTML = `<b>THEO</b> · ${TH_MOOD[TH.M]}<div class="th-bar"><s style="width:${TH.H}%"></s></div>
+    ${row('Overdue reminders', s.overdue, 'reminders')}${row('Due today', s.due, 'reminders')}${row('Journeys to send', s.jr, 'journeys')}${row('Logged today', s.today >= 6 ? s.today + ' (full)' : s.today + ' of 6', 'today')}`;
+}
+function thUpdate(force){
+  if (!TH.el || !dataReady()) return;
+  const now = Date.now(); if (!force && now - TH.statAt < 4000) return; TH.statAt = now;
+  const s = thStats(), h = thHealth(s), m = thMood(h), was = TH.M, wasLogged = TH.logged;
+  TH.st = s; TH.logged = s.today;
+  if (h !== TH.H || force) {
+    TH.H = h; TH.M = m;
+    const box = TH.el.querySelector('.th-hearts'); box.textContent = '';
+    for (let i = 0; i < 5; i++) { const v = (h - i * 20) / 20; box.appendChild(thHeart(v >= .75 ? 1 : v >= .25 ? .5 : 0)); }
+    TH.el.querySelector('.th-hud').setAttribute('aria-label', `Theo, health ${h} of 100. Show his stats`);
+  }
+  thCard();
+  if (was && was !== m) { TH.state = 'sit'; TH.until = 0; TH.li = 0; m === 'sleepy' ? thSay('zzz...', 2000) : thTalk(); }
+  else if (wasLogged != null && s.today > wasLogged && m !== 'sleepy') { thSay(s.today >= 6 ? `${s.today} logged. Full belly!` : `Nice! ${s.today} of 6`, 3000); for (let i = 0; i < 2; i++) setTimeout(() => thFx('♥'), i * 250); }
+}
+function thSay(text, ms = 4200){
+  const room = TH.el; if (!room) return; const b = room.querySelector('.th-bub'); if (!b) return;
+  b.textContent = text; b.classList.add('on');
+  const rw = room.clientWidth, bw = b.offsetWidth, left = Math.max(4, Math.min(rw - bw - 4, TH.x + 44 - bw / 2));
+  b.style.left = left + 'px'; b.style.setProperty('--tail', Math.max(8, Math.min(bw - 18, TH.x + 38 - left)) + 'px');
+  clearTimeout(thSay.t); thSay.t = setTimeout(() => b.classList.remove('on'), ms); TH.talkAt = Date.now();
+}
+function thTalk(){ if (!TH.st) return; const L = thLines(TH.st); thSay(L[TH.li % L.length]); TH.li++; }
+function thFx(text, z){
+  if (!TH.el) return; const e = document.createElement('span'); e.className = 'th-fx' + (z ? ' z' : ''); e.textContent = text;
+  e.style.left = (TH.x + (z ? 60 : 28 + Math.random() * 26)) + 'px'; e.style.bottom = (z ? 60 : 92) + 'px';
+  TH.el.appendChild(e); setTimeout(() => e.remove(), 2600);
+}
+function thPet(){
+  if (TH.M === 'sleepy') { thSay('mrrp..? (still sleepy)', 2200); thFx('z', true); return; }
+  const n = performance.now(); TH.petUntil = n + 1600; TH.state = 'sit'; TH.until = n + 2600;
+  thSay(TH.M === 'sad' ? 'prr... a little better' : 'prrrrrr', 1800);
+  for (let i = 0; i < 3; i++) setTimeout(() => thFx('♥'), i * 220);
+}
+const thReduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+let thLast = 0;
+function thTick(now){
+  TH.raf = 0;
+  const room = TH.el; if (!room || !room.isConnected) { TH.el = null; return; }
+  TH.raf = requestAnimationFrame(thTick);
+  const dt = Math.min(64, now - (thLast || now)) / 1000; thLast = now;
+  if (!TH.M) return;
+  const maxX = Math.max(4, room.clientWidth - 96);
+  if (now > TH.petUntil) {
+    if (TH.state === 'walk') { TH.x += TH.dir * TH.speed * dt; if ((TH.dir > 0 && TH.x >= TH.target) || (TH.dir < 0 && TH.x <= TH.target)) { TH.x = TH.target; TH.state = 'sit'; TH.until = now + 2000 + Math.random() * 3000; } }
+    else if (now > TH.until) {
+      if (TH.M === 'sad' || TH.M === 'sleepy' || thReduce()) { TH.state = TH.M === 'sleepy' ? 'sleep' : 'sit'; TH.until = now + 4000; }
+      else if (TH.state !== 'walk' && Math.random() < (TH.M === 'happy' ? .7 : .45)) { TH.state = 'walk'; TH.target = 4 + Math.random() * (maxX - 4); TH.dir = TH.target > TH.x ? 1 : -1; TH.speed = TH.M === 'happy' ? 16 : 10; }
+      else { TH.state = 'sit'; TH.until = now + (TH.M === 'happy' ? 2500 : 4500) + Math.random() * 3000; }
+    }
+  }
+  TH.x = Math.max(4, Math.min(maxX, TH.x));
+  const blink = now % 4200 < 160, step = Math.floor(now / 220) % 2;
+  let key, rows, flip = false;
+  if (now < TH.petUntil) { key = 'pet'; rows = () => thFace('blink', 'smile'); }
+  else if (TH.state === 'walk') { key = 'w' + step + TH.dir; rows = () => TH_WALK[step]; flip = TH.dir < 0; }
+  else if (TH.state === 'sleep') { key = 'z'; rows = () => TH_SLEEP; }
+  else if (TH.M === 'sad') { key = 's' + blink; rows = () => thFace(blink ? 'blink' : 'sad', 'frown', 'down'); }
+  else { const mo = TH.M === 'happy' ? 'smile' : 'flat'; key = 'f' + blink + mo; rows = () => thFace(blink ? 'blink' : 'open', mo); }
+  const cv = room.querySelector('.th-cat'); if (!cv) return;
+  if (key !== TH.drawn) { TH.drawn = key; const g = cv.getContext('2d'); g.clearRect(0, 0, 22, 21);
+    rows().forEach((row, y) => { for (let x = 0; x < row.length; x++) { const c = TH_PAL[row[x]]; if (!c) continue; g.fillStyle = c; g.fillRect(flip ? 21 - x : x, y, 1, 1); } }); }
+  cv.style.transform = `translate(${Math.round(TH.x)}px,${TH.state === 'walk' && step ? -3 : 0}px)`;
+  const t = Date.now();
+  if (TH.M === 'sleepy' && t - TH.zAt > 1400) { TH.zAt = t; thFx('z', true); }
+  if (TH.M !== 'sleepy' && t - TH.talkAt > 9000) thTalk();
+  if (t - TH.statAt > 20000) thUpdate();
+}
+// after every render: put Theo in his room (the sidebar is patched in place, so this is usually a no-op)
+function theoSync(){
+  const room = document.getElementById('theoRoom');
+  if (!room) { TH.el = null; return; }
+  if (room !== TH.el || !room.querySelector('.th-cat')) thMount(room);
+  clearTimeout(theoSync.t); theoSync.t = setTimeout(() => thUpdate(true), 600);   // after the data changes, a moment later
+}
+
 let lastNav = null;
 function morph(el, html){ const t = document.createElement(el.tagName); t.innerHTML = html; morphKids(el, t); }
 function morphKids(a, b){
@@ -2144,6 +2327,7 @@ function morphKids(a, b){
     if (o.nodeType !== 1) { if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; return; }
     for (const at of [...o.attributes]) if (!n.hasAttribute(at.name)) o.removeAttribute(at.name);
     for (const at of [...n.attributes]) if (o.getAttribute(at.name) !== at.value) o.setAttribute(at.name, at.value);
+    if (n.hasAttribute('data-own')) return;   // filled by its own code (Theo's room): leave what's inside alone
     morphKids(o, n); });
   for (let i = bc.length; i < ac.length; i++) ac[i].remove();
 }
@@ -2154,6 +2338,7 @@ function render(){
   if (ui.detail && !S[ui.detail.col][ui.detail.id] && (booted && (!live || COLS.every(c => loaded[c])))) ui.detail = null;
   preserve(() => {
     const nh = navHtml(); if (nh !== lastNav) { morph($('#nav'), nh); lastNav = nh; }   // the sidebar is patched in place, so it never flickers
+    theoSync();
     $('#main').innerHTML = `<div class="wrap">${viewHtml()}</div>`;
     const dr = $('#drawer');
     if (ui.detail && S[ui.detail.col][ui.detail.id]) { const body = DETAIL[ui.detail.col](ui.detail.id); const db0 = !dr.hidden && $('#drawerBody');
@@ -2176,6 +2361,7 @@ function navHtml(){
   <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
   <div class="navlist">${VIEWS.map(([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`).join('')}</div>
   ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
+  ${theoOn() ? '<div class="theo-room" id="theoRoom" data-own></div>' : ''}
   <div class="navfoot">
     <button class="navi" data-act="settings">${ic('gear')}<span>Settings</span></button>
     ${ME.id ? `<div class="meline">${av(ME.id)}<span>${esc(ME.name || 'You')}</span></div>` : ''}
