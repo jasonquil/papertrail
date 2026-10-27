@@ -251,6 +251,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .filt button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .mailbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.86rem}
 .mailbar.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.f-note{display:block;margin-top:4px;font-size:.8rem;line-height:1.35;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:5px 8px}
 .fi .subj{font-weight:600}
 .fi .snip{color:var(--muted);font-size:.86rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
 .ft.call,.ft.inbound,.ft.voicemail,.ft.noconnect{background:var(--info-soft);color:var(--info)}.ft.noconnect{opacity:.8}.ft.done{background:var(--good-soft);color:var(--good)}
@@ -3584,6 +3585,10 @@ function dupWarn(text, col, id){
   sb.scrollTop = 0;
 }
 const findDupCompany = (name, phone, exceptId) => L('companies').find(c => c.id !== exceptId && ((name && norm(c.name) === norm(name)) || (digits(phone).length >= 10 && digits(c.phone) === digits(phone))));
+// other contacts that already use this email (people who own two businesses use one address for both)
+function emailHits(email, exceptId){ const e = String(email || '').trim().toLowerCase(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return []; return L('contacts').filter(c => c.id !== exceptId && ctAddrs(c).includes(e)); }
+const emailHitsText = hits => { const by = new Map(); for (const c of hits) { const k = c.companyId && S.companies[c.companyId] ? cname(c.companyId) : 'no account'; (by.get(k) || by.set(k, []).get(k)).push(pname_(c)); }
+  return [...by].slice(0, 4).map(([co, ps]) => `<b>${esc(co)}</b>${ps.filter(Boolean).length ? ` (${esc(ps.filter(Boolean).join(', '))})` : ''}`).join(', ') + (by.size > 4 ? ` and ${by.size - 4} more` : ''); };
 function findDupContact(f, exceptId){
   const ems = ctAddrs(f);
   return L('contacts').find(c => c.id !== exceptId && ((ems.length && ctAddrs(c).some(e => ems.includes(e))) || (f.companyId && c.companyId === f.companyId && norm(pname_(c)) === norm([f.firstName, f.lastName].filter(Boolean).join(' ')))));
@@ -3613,7 +3618,7 @@ function contactForm(id, pre={}){
     ${F('Title', inp('title', c.title))}
     ${F('Account', sel('companyId', withOpt(coOpts('— Choose an account —'), c.companyId, pre.coName), c.companyId))}
     ${id ? '' : F('Or add a new account', inp('newCompany', '', 'text', 'placeholder="New account name"'))}
-    ${F('Email', inp('email', c.email || c.email2 || '', 'email', 'placeholder="name@example.com"'))}
+    ${F('Email', inp('email', c.email || c.email2 || '', 'email', `placeholder="name@example.com" data-change="ctEmailChk" data-id="${id || ''}"`) + (h0 => `<span class="f-note" id="ctEmailNote"${h0.length ? '' : ' hidden'}>${h0.length ? `Woah, that email appears under: ${emailHitsText(h0)}. Are you sure you'd like to continue?` : ''}</span>`)(emailHits(c.email || c.email2, id)))}
     ${F('Phone', inp('phone', c.phone, 'tel'))}
     ${F('Mobile', inp('mobile', c.mobile, 'tel'))}
     ${F('Owner', ownerSel('ownerId', c.ownerId))}
@@ -3622,7 +3627,11 @@ function contactForm(id, pre={}){
       { const prev = id ? S.contacts[id] : null; const p1 = prev ? String(prev.email || '').trim() : '', p2 = prev ? String(prev.email2 || '').trim() : '';
         // a second address from Spiro stays as "Other email", unless the form was showing it as the main one or it now matches the main one
         if (p2 && (!p1 || p2.toLowerCase() === d.email.toLowerCase())) d.email2 = ''; }
-      { const dup = findDupContact(d, id); if (dup) { const shared = ctAddrs(dup).some(e => ctAddrs(d).includes(e)); dupWarn(`${esc(pname_(dup))}${dup.companyId ? ' at ' + esc(cname(dup.companyId)) : ''} is already in the CRM${shared ? ' with this email' : ''}.`, 'contacts', dup.id); return false; } }
+      { const same = L('contacts').find(c => c.id !== id && d.companyId && c.companyId === d.companyId && norm(pname_(c)) === norm([d.firstName, d.lastName].filter(Boolean).join(' ')));   // the same person on the same account: a real duplicate
+        if (same) { dupWarn(`${esc(pname_(same))} is already on ${esc(cname(same.companyId))}.`, 'contacts', same.id); return false; }
+        const hits = emailHits(d.email, id), f = $('#mform');   // same email somewhere else: ask, don't block
+        if (hits.length && f && f.dataset.okEmail !== d.email.toLowerCase()) { dupWarn(`Woah, that email appears under: ${emailHitsText(hits)}. Are you sure you'd like to continue?`, 'contacts', hits[0].id);
+          const n = $('#mform .dupnote'); if (n) n.insertAdjacentHTML('beforeend', '<button type="button" class="btn sm pri" data-act="dupGo">Continue anyway</button>'); return false; } }
       const hadWork = id && String(S.contacts[id].email || '').trim();
       if (!d.companyId && d.newCompany) { const co = L('companies').find(c => norm(c.name) === norm(d.newCompany)); if (co) d.companyId = co.id; else { d.companyId = uid(); if (!await put('companies', d.companyId, {name: d.newCompany, ownerId: d.ownerId || ME.id})) return false; } }
       if (!d.companyId) { toast('Every contact needs an account. Choose one or add a new one.', 'bad'); return false; }
@@ -6237,6 +6246,7 @@ const A = {
   open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
   closeDetail: () => { if (ui.side && !ui.detail && ui.view === 'pipeline') { ui.side = null; render(); pushNav(); return; } ui.detail = null; render(); pushNav(); },
   search: () => searchModal(),
+  dupGo: () => { const f = $('#mform'); if (!f) return; f.dataset.okEmail = String(f.email?.value || '').trim().toLowerCase(); f.requestSubmit(); },
   dupOpen: d => { closeModal(); if (d.col === 'companies') A.coPage({id: d.id}); else if (d.col === 'tasks') taskForm(d.id); else if (d.col === 'contracts') contractForm(d.id); else if (d.col === 'quotes') A.editQuote({id: d.id}); else A.open({col: d.col, id: d.id}); },
   oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.type === 'date' && dpFine()) dpOpen(el); else if ((el.tagName === 'SELECT' || el.type === 'date') && el.showPicker) try { el.showPicker(); } catch {} } },
   loadSample: () => setDemo(true),
@@ -6447,6 +6457,8 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  ctEmailChk: el => { const n = document.getElementById('ctEmailNote'); if (!n) return; const hits = emailHits(el.value, el.dataset.id || null);
+    n.hidden = !hits.length; n.innerHTML = hits.length ? `Woah, that email appears under: ${emailHitsText(hits)}. Are you sure you'd like to continue?` : ''; },
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
   jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
   ncPh: el => { prefSet('namePh', el.checked); nameCleanModal(); },
