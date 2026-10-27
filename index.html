@@ -210,6 +210,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .rem.today{background:var(--today-bg);border-color:var(--today-line)}
 .rem.future{background:var(--future-bg);border-color:var(--future-line)}
 .rem.done b{text-decoration:line-through;color:var(--muted)}
+.rem.done{opacity:.72}.rem.done .rem-n{text-decoration:line-through}
 .rem-b{display:flex;flex-direction:column;min-width:0}
 .rem-b small{color:var(--muted);font-size:.82rem}
 .rem-n{font-size:.84rem;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
@@ -2429,6 +2430,7 @@ function morphKids(a, b){
   for (let i = bc.length; i < ac.length; i++) ac[i].remove();
 }
 function render(){
+  if (ui.remKeep && ui.view !== 'reminders') ui.remKeep = null;   // crossed-out reminders clear once you leave the Reminders page
   if (!(ui.qOnly && X)) X = idx(); ui.qOnly = false;
   if ((ptlOn || ptlT) && dataReady()) ptlDone();
   if (navWant && dataReady()) { const w = navWant; navWant = null; if (w.d && S[w.d.col] && S[w.d.col][w.d.id]) ui.detail = w.d; if (w.s && S.deals[w.s]) ui.side = w.s; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
@@ -2574,11 +2576,14 @@ V.reminders = () => {
   const all = L('tasks').filter(k => !ui.mine || k.assigneeId === ME.id);
   const open = all.filter(k => !k.done);
   const n = g => open.filter(k => remGrp(k) === g).length;
-  const list = all.filter(k => (show === 'open' ? !k.done : k.done) && match(ui.q, k.title, k.notes, cname(k.companyId), k.dealId ? nameOf('deals', k.dealId) : ''));
+  if (show !== 'open') ui.remKeep = null;
+  const kept = id => !!(ui.remKeep && ui.remKeep.has(id));   // finished while you're on this page: stays, crossed out, until you leave
+  const list = all.filter(k => (show === 'open' ? !k.done || kept(k.id) : k.done) && match(ui.q, k.title, k.notes, cname(k.companyId), k.dealId ? nameOf('deals', k.dealId) : ''));
   const ord = {past:0, today:1, future:2, none:3};
-  const row = k => { const g = remGrp(k); const d = isDate(k.due) ? dayDiff(t, k.due) : null;
+  const grp = k => remGrp(k.done ? {...k, done: false} : k);   // a crossed-out one stays in its spot until you leave
+  const row = k => { const g = grp(k); const d = isDate(k.due) ? dayDiff(t, k.due) : null;
     const when = d == null ? 'No date' : d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : d === -1 ? 'Yesterday' : d < 0 ? `${-d} days ago` : `In ${d} days`;
-    return `<li class="rem ${g}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="${k.done?'Mark not done':'Mark done'}" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
+    return `<li class="rem ${g}${k.done ? ' done' : ''}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="${k.done?'Mark not done':'Mark done'}" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
     <div class="rem-b"><b>${esc(k.title)}</b><small>${[k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : '', k.assigneeId && k.assigneeId !== ME.id ? esc(pname(k.assigneeId)) : ''].filter(Boolean).join(' · ')}</small>${k.notes ? `<p class="rem-n">${esc(k.notes)}</p>` : ''}</div>
     <div class="rem-d"><b>${isDate(k.due) ? fmtDate(k.due) : '—'}</b><small>${k.done ? 'Done' + (k.doneAt ? ' ' + rel(k.doneAt) : '') : when}</small></div>
     ${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder">${ic('edit')}</button>` : ''}</li>`; };
@@ -2586,8 +2591,8 @@ V.reminders = () => {
   if (!all.length) body = `<section class="panel">${emptyState('No reminders yet', 'Set a reminder on any account so a follow-up never slips. Past-due reminders show in red, today\'s in yellow and upcoming ones in green.', `<button class="btn pri" data-act="newTask">${ic('bell')}Set a reminder</button>`)}</section>`;
   else if (!list.length) body = `<p class="empty-s">${ui.q ? 'No reminders match.' : show === 'open' ? 'Nothing open. You are all caught up.' : 'No completed reminders yet.'}</p>`;
   else if (show === 'done') body = `<ul class="rems">${list.sort((a,b) => (b.doneAt||0) - (a.doneAt||0)).slice(0, 200).map(row).join('')}</ul>`;
-  else { list.sort((a,b) => ord[remGrp(a)] - ord[remGrp(b)] || (a.due||'').localeCompare(b.due||''));
-    body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => remGrp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${r.length}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
+  else { list.sort((a,b) => ord[grp(a)] - ord[grp(b)] || (a.due||'').localeCompare(b.due||''));
+    body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => grp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${r.filter(k => !k.done).length || ''}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
   return head('Reminders', `${n('past')} past due · ${n('today')} today · ${n('future')} upcoming`,
     searchBox('Search reminders') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + mineSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
 };
@@ -6234,7 +6239,8 @@ const A = {
   newQuote: d => { if (!canWrite) return; quoteBuilder().open({co: d.co, deal: d.deal}); },
   editQuote: d => { const q = S.quotes[d.id]; if (q && q.state) quoteBuilder().open({quoteId: d.id}); else quoteForm(d.id); },
   renew: d => renewModal(d.id),
-  taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done; if (!await patch('tasks', d.id, {done, doneAt: done ? Date.now() : null})) return; if (done) { logAct({type: 'done', text: `Completed: ${k.title}${k.notes ? '\n' + k.notes : ''}`, companyId: k.companyId || '', taskId: d.id}); toast('Reminder done'); } else { for (const a of L('activities').filter(a => a.taskId === d.id)) await del('activities', a.id); } },
+  taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
+    if (done && ui.view === 'reminders' && (ui.remShow || 'open') === 'open') (ui.remKeep = ui.remKeep || new Set()).add(d.id); if (!await patch('tasks', d.id, {done, doneAt: done ? Date.now() : null})) return; if (done) { logAct({type: 'done', text: `Completed: ${k.title}${k.notes ? '\n' + k.notes : ''}`, companyId: k.companyId || '', taskId: d.id}); toast('Reminder done'); } else { for (const a of L('activities').filter(a => a.taskId === d.id)) await del('activities', a.id); } },
   delTask: d => confirmModal('Delete reminder?', esc(S.tasks[d.id]?.title || ''), 'Delete', async () => { await del('tasks', d.id); toast('Reminder deleted'); }),
   delContract: d => confirmModal('Delete contract?', `This removes the ${esc(S.contracts[d.id]?.title || 'contract')} for ${esc(cname(S.contracts[d.id]?.companyId))}.`, 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted'); }),
   delQuote: d => confirmModal('Delete quote?', `Quote ${esc(S.quotes[d.id]?.number)} will be removed.`, 'Delete', async () => { const q = S.quotes[d.id]; const pre = q ? `Quote ${q.number} marked ` : null; for (const a of L('activities')) if (a.quoteId === d.id || (pre && a.companyId === q.companyId && String(a.text||'').startsWith(pre))) await del('activities', a.id); await del('quotes', d.id); toast('Quote deleted'); }),
