@@ -1429,7 +1429,9 @@ const colProxy = o => { if (!o || typeof o !== 'object' || PX.has(o)) return o;
   PX.set(p, o); return p; };
 const S = new Proxy({}, {set(t, k, v){ t[k] = colProxy(v); DV++; return true; }}); COLS.forEach(c => S[c] = {});
 // reuse a result while the records, the day, the Mine/Everyone switch and who's signed in are all unchanged
-const memoD = f => { let key = null, val; return () => { const k = DV + '|' + today() + '|' + (ui.mine ? 1 : 0) + '|' + (ME.id || '') + '|' + AUTOV; if (k !== key) { val = f(); key = k; } return val; }; };
+// (both the Mine and Everyone versions are kept, since Theo counts with Mine on while the page may show Everyone)
+const memoD = f => { let base = null; const vals = new Map(); return () => { const b = DV + '|' + today() + '|' + (ME.id || '') + '|' + AUTOV; if (b !== base) { base = b; vals.clear(); }
+  const m = ui.mine ? 1 : 0; if (!vals.has(m)) vals.set(m, f()); return vals.get(m); }; };
 let AUTOV = 0;   // bumped when the automatic-sending status or the list of people changes
 const loaded = {};
 let team = {ids:[]};
