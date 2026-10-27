@@ -1687,12 +1687,16 @@ async function patch(col, id, fields){
   try { await db.collection(col).doc(id).update(f); return true; }
   catch(e){ writeErr(e); return false; }
 }
+// everything removed by one delete (an account with its contacts, opportunities, journeys…) shares a batch tag, so Trash
+// restores it all together however long the delete took
+let DELBATCH = null;
+async function delBatch(fn){ const was = DELBATCH; DELBATCH = DELBATCH || uid(); try { return await fn(); } finally { DELBATCH = was; } }
 async function del(col, id){
   await bootReady;
   if (col !== 'trash' && S[col] && S[col][id]) {
     const rec = S[col][id];
     const tid = col + '~' + id;
-    const t = {col, rid: id, data: rec, deletedAt: Date.now(), deletedBy: ME.id || '', label: trashLabel(col, rec)};
+    const t = {col, rid: id, data: rec, deletedAt: Date.now(), deletedBy: ME.id || '', label: trashLabel(col, rec), ...(DELBATCH ? {batch: DELBATCH} : {})};
     if (!live || DEMO) S.trash[tid] = t;
     else { try { await db.collection('trash').doc(tid).set(clean(t)); } catch (e) { writeErr(e); return false; } }
   }
@@ -1840,7 +1844,7 @@ function trashLabel(col, r){
   if (col === 'enrollments') return jName(r.journeyId) + ' · ' + nameOf('contacts', r.contactId);
   return r.name || r.title || 'Untitled';
 }
-const trashGroup = t => L('trash').filter(x => x.deletedBy === t.deletedBy && Math.abs((x.deletedAt || 0) - (t.deletedAt || 0)) < 5000);
+const trashGroup = t => L('trash').filter(x => t.batch ? x.batch === t.batch : (!x.batch && x.deletedBy === t.deletedBy && Math.abs((x.deletedAt || 0) - (t.deletedAt || 0)) < 5000));
 function trashModal(){
   const items = L('trash').sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
   const seen = new Set(); const groups = [];
@@ -1853,7 +1857,7 @@ function trashModal(){
 }
 async function trashRestore(tid){
   const t = S.trash[tid]; if (!t) return;
-  const ids = L('trash').filter(x => x.deletedBy === t.deletedBy && Math.abs((x.deletedAt || 0) - (t.deletedAt || 0)) < 5000).map(x => x.id);
+  const ids = trashGroup(t).map(x => x.id);
   let ok = 0;
   for (const tk of ids) { const x = S.trash[tk]; const rid = x && (x.rid || tk.split('~').slice(1).join('~')); if (!x || !S[x.col] || !rid) continue; if (await put(x.col, rid, x.data)) { ok++; await del('trash', tk); } }
   toast(ok ? `Restored ${ok} item${ok === 1 ? '' : 's'}` : "Couldn't restore that.", ok ? '' : 'bad');
@@ -5661,6 +5665,8 @@ async function jResume(eid){
   const schedule = (e.schedule || []).map(s => { if (s.status !== 'pending') return s; let due = prev ? addDays(prev, jDelay(eSteps(e)[s.step])) : (s.due < today() ? today() : s.due); if (j?.skipWeekends) due = shiftWeekend(due); prev = due; return {...s, due}; });
   if (await patch('enrollments', eid, {status: 'active', schedule, stopReason: '', resumedAt: Date.now()})) toast('Journey resumed');
 }
+// every journey enrollment for these contacts (or this account), any status
+const jOfContacts = (ids, coId) => { const set = new Set(ids); return L('enrollments').filter(e => set.has(e.contactId) || (coId && e.companyId === coId)); };
 function jSendNow(eid){
   const e = S.enrollments[eid]; const s = e && nextStep(e); const j = e && journeyOf(e.journeyId);
   if (!s || !j) return;
@@ -6170,12 +6176,16 @@ const A = {
   delTask: d => confirmModal('Delete reminder?', esc(S.tasks[d.id]?.title || ''), 'Delete', async () => { await del('tasks', d.id); toast('Reminder deleted'); }),
   delContract: d => confirmModal('Delete contract?', `This removes the ${esc(S.contracts[d.id]?.title || 'contract')} for ${esc(cname(S.contracts[d.id]?.companyId))}.`, 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted'); }),
   delQuote: d => confirmModal('Delete quote?', `Quote ${esc(S.quotes[d.id]?.number)} will be removed.`, 'Delete', async () => { const q = S.quotes[d.id]; const pre = q ? `Quote ${q.number} marked ` : null; for (const a of L('activities')) if (a.quoteId === d.id || (pre && a.companyId === q.companyId && String(a.text||'').startsWith(pre))) await del('activities', a.id); await del('quotes', d.id); toast('Quote deleted'); }),
-  delContact: d => confirmModal('Delete contact?', `${esc(nameOf('contacts', d.id))} will be removed. Logged activity stays on the account.`, 'Delete', async () => { await del('contacts', d.id); ui.detail = null; toast('Contact deleted'); }),
+  delContact: d => { const js = jOfContacts([d.id]); const live_ = js.filter(e => ['active', 'paused'].includes(e.status)).length;
+    confirmModal('Delete contact?', `${esc(nameOf('contacts', d.id))} will be removed${live_ ? ` and taken off ${live_ === 1 ? 'their journey' : `${live_} journeys`}` : ''}. Logged activity stays on the account. You can restore them from Settings → Trash for 30 days.`, 'Delete', async () => {
+      await delBatch(async () => { for (const e of js) await del('enrollments', e.id);   // a deleted contact's journeys go to Trash with them (and come back with them)
+        await del('contacts', d.id); }); ui.detail = null; toast('Contact deleted'); }); },
   delDeal: d => confirmModal('Delete opportunity?', `${esc(nameOf('deals', d.id))} will be removed. Logged activity stays on the account.`, 'Delete', async () => { await del('deals', d.id); ui.detail = null; if (ui.view === 'opp' && ui.pageOpp === d.id) ui.view = 'pipeline'; toast('Opportunity deleted'); }),
   delCompany: d => { const g = gr(d.id); const n = g.contacts.length + g.deals.length + g.quotes.length + g.contracts.length + g.tasks.length;
-    confirmModal('Delete account?', `${esc(cname(d.id))} will be deleted${n ? `, along with its ${[[g.contacts.length, 'contact'], [g.deals.length, 'opportunit|y|ies'], [g.quotes.length, 'quote'], [g.contracts.length, 'contract'], [g.tasks.length, 'reminder']].filter(([k]) => k).map(([k, w]) => { const [b, one, many] = w.split('|'); return `${k} ${b}${k === 1 ? (one || '') : (many || 's')}`; }).join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}. You can restore it from Settings → Trash for 30 days.`, 'Delete account', async () => {
-      for (const [c, arr] of [['contacts', g.contacts], ['deals', g.deals], ['quotes', g.quotes], ['contracts', g.contracts], ['tasks', g.tasks]]) for (const r of arr) await del(c, r.id);
-      await del('companies', d.id); ui.detail = null; if (ui.view === 'company' && ui.pageCo === d.id) { ui.view = 'companies'; pushNav(); } toast('Account deleted'); schedule(); }); },
+    const js = jOfContacts(g.contacts.map(c => c.id), d.id); const live_ = js.filter(e => ['active', 'paused'].includes(e.status)).length;
+    confirmModal('Delete account?', `${esc(cname(d.id))} will be deleted${n ? `, along with its ${[[g.contacts.length, 'contact'], [g.deals.length, 'opportunit|y|ies'], [g.quotes.length, 'quote'], [g.contracts.length, 'contract'], [g.tasks.length, 'reminder'], [live_, 'journe|y|ys']].filter(([k]) => k).map(([k, w]) => { const [b, one, many] = w.split('|'); return `${k} ${b}${k === 1 ? (one || '') : (many || 's')}`; }).join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}. You can restore it from Settings → Trash for 30 days.`, 'Delete account', async () => {
+      await delBatch(async () => { for (const [c, arr] of [['enrollments', js], ['contacts', g.contacts], ['deals', g.deals], ['quotes', g.quotes], ['contracts', g.contracts], ['tasks', g.tasks]]) for (const r of arr) await del(c, r.id);
+        await del('companies', d.id); }); ui.detail = null; if (ui.view === 'company' && ui.pageCo === d.id) { ui.view = 'companies'; pushNav(); } toast('Account deleted'); schedule(); }); },
   qAddRow: () => { $('#qItems').insertAdjacentHTML('beforeend', itemRow({qty:1})); $('#qItems').lastElementChild.querySelector('input').focus(); },
   qDelRow: (d, el) => { const rows = $('#qItems').children; if (rows.length > 1) el.closest('.item').remove(); else el.closest('.item').querySelectorAll('input').forEach(i => i.value = ''); updQuoteTotal(); },
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
@@ -6889,7 +6899,7 @@ async function onDownload(){
       link.href = url; link.download = fileName(S); link.rel = "noopener";
       document.body.appendChild(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      st.textContent = "Check your Downloads folder. If no PDF showed up, open this page from the link while signed in to Claude, then try again.";
+      st.textContent = window.claude ? "Check your Downloads folder. If no PDF showed up, open this page from the link while signed in to Claude, then try again." : "Downloaded. Check your Downloads folder.";
     }
     {
       const msg = st.textContent;
