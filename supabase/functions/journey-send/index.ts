@@ -7,17 +7,24 @@
 // (the morning schedule calls it with a secret instead; people in the app call it with their own sign-in).
 // Secrets it needs (Edge Functions → Secrets): MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, CRON_SECRET.
 // Optional: SEND_AT (default "08:45"), SEND_TZ (default "America/New_York"), TRACKING ("off" to skip open tracking).
+// Needs supabase-update-8.sql: each email is claimed in the database before it's sent, so the 8:45 run, "Send due emails
+// now" and a person sending from the app can never send the same email twice. Without update 8 it refuses to send.
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const env = (k: string) => Deno.env.get(k) || "";
 const secretKeys = (() => { try { return JSON.parse(env("SUPABASE_SECRET_KEYS") || "{}"); } catch { return {}; } })();
 const KEY = env("SUPABASE_SERVICE_ROLE_KEY") || secretKeys.default || Object.values(secretKeys)[0] || "";
 const URL_ = env("SUPABASE_URL");
-const sb = createClient(URL_, String(KEY));
+let sb = createClient(URL_, String(KEY));
+export function __setClient(c: any) { sb = c; }   // for tests
 const TZ = env("SEND_TZ") || "America/New_York";
 const SEND_AT = env("SEND_AT") || "08:45";
 const TRACK_URL = URL_.replace(/\/$/, "") + "/functions/v1/track";
 const MAX_PER_RUN = 200;
+const TRIES_PER_DAY = 4;
+// Supabase stops a function after about 150 seconds, so a run stops starting new emails after this long and leaves the
+// rest for the next 15-minute check (instead of being cut off between sending an email and recording it)
+const TIME_BUDGET_MS = 100_000;   // a run that fails partway is tried again at the next 15-minute check, up to this many times a day
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info", "access-control-allow-methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json", ...CORS } });
@@ -65,6 +72,14 @@ async function patchEnrollment(id: string, f: (e: Rec) => Rec) {
   if (!cur) return;
   await save("enrollments", id, { ...f(cur), updatedAt: Date.now() });
 }
+// one sender at a time per email (supabase-update-8.sql); an error here means update 8 isn't installed
+const UPDATE8 = "Automatic sending needs supabase-update-8.sql (it makes sure no email goes out twice). Run it in Supabase → SQL Editor.";
+async function claimStep(id: string, step: number, by: string) {
+  const { data, error } = await sb.rpc("claim_journey_step", { p_id: id, p_step: step, p_by: by, p_secs: 3600 });   // held for an hour at most if a run is ever cut off
+  if (error) throw Object.assign(new Error(/claim_journey_step|function/i.test(error.message || "") ? UPDATE8 : `Claiming the email: ${error.message}`), { fatal: true });
+  return data === true;
+}
+async function releaseStep(id: string, by: string) { try { await sb.rpc("release_journey_step", { p_id: id, p_by: by }); } catch { /* it times out on its own */ } }
 const logAct = (a: Rec) => { const now = Date.now(); return save("activities", uid(), { at: now, createdAt: now, updatedAt: now, createdBy: a.by || "", ...a }); };
 
 // ---------- journeys: the built-in ones (copied here by the app) plus the team's saved changes ----------
@@ -145,7 +160,9 @@ async function graphToken() {
   if (!env("MS_TENANT_ID") || !env("MS_CLIENT_ID") || !env("MS_CLIENT_SECRET")) throw new Error("Outlook isn't connected for automatic sending yet (MS_TENANT_ID, MS_CLIENT_ID and MS_CLIENT_SECRET secrets are missing).");
   const r = await fetch(`https://login.microsoftonline.com/${env("MS_TENANT_ID")}/oauth2/v2.0/token`, { method: "POST", body: new URLSearchParams({ client_id: env("MS_CLIENT_ID"), client_secret: env("MS_CLIENT_SECRET"), grant_type: "client_credentials", scope: "https://graph.microsoft.com/.default" }) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error("Microsoft sign-in for automatic sending failed: " + String(j.error_description || j.error || r.status).split("\r\n")[0].replace(/^AADSTS\d+:\s*/, ""));
+  // a sign-in problem affects every email, so it stops the run (and the next 15-minute check tries again) instead of
+  // marking each journey as held
+  if (!r.ok) throw Object.assign(new Error("Microsoft sign-in for automatic sending failed: " + String(j.error_description || j.error || r.status).split("\r\n")[0].replace(/^AADSTS\d+:\s*/, "")), { fatal: true });
   tok = { v: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 };
   return tok.v;
 }
@@ -154,6 +171,8 @@ async function graph(path: string, init: RequestInit = {}) {
   if (!r.ok) {
     const j = await r.json().catch(() => ({}));
     const msg = (j.error && j.error.message) || `Outlook returned ${r.status}`;
+    // Outlook busy or down: stop the run and try again at the next check, rather than holding every journey
+    if (r.status === 429 || r.status === 503 || r.status === 504) throw Object.assign(new Error(`Outlook is busy right now (${r.status}). Paper Trail will try again at the next check.`), { fatal: true });
     throw new Error(r.status === 403 ? `Outlook refused (${msg}). Check that Mail.Send and Mail.ReadBasic.All have admin consent.` : msg);
   }
   return r.status === 202 || r.status === 204 ? {} : r.json();
@@ -171,16 +190,17 @@ async function replySince(owner: string, addrs: string[], since: number) {
 
 // ---------- one run ----------
 type Result = { who: string; journey: string; step: number; result: "sent" | "would send" | "paused" | "ended" | "skipped"; note?: string };
-export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: string }) {
+export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: string; runId?: string }) {
+  const runId = opts.runId || "run:" + uid();
   const today = opts.today || local().ymd;
   const journeys = await journeyMap();
   const enrollments = (await rows("enrollments", ["data->>status", "active"])).filter((r) => !opts.onlyId || r.id === opts.onlyId);
   const profiles: Record<string, Rec> = {};
   { const { data, error } = await sb.from("profiles").select("id,name,email,active"); if (error) throw new Error("Reading people: " + error.message); for (const p of data || []) profiles[p.id] = p; }
   const out: Result[] = [];
-  let sent = 0;
+  let sent = 0, more = false; const t0 = Date.now();
   for (const { id, data: e } of enrollments) {
-    if (sent >= MAX_PER_RUN) break;
+    if (sent >= MAX_PER_RUN || Date.now() - t0 > TIME_BUDGET_MS) { more = true; break; }   // the rest go at the next 15-minute check
     const j = journeys[e.journeyId];
     const s = (e.schedule || []).find((x: Rec) => x.status === "pending");
     if (!s || !isDate(s.due) || s.due > today) continue;
@@ -190,9 +210,11 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
     const ct = (await one("contacts", e.contactId)) || {};
     const who = pname(ct) || "(contact)";
     const jname = (j && j.name) || "Journey";
+    let claimed = false, sentOk = false;
     const fail = async (note: string) => {
       out.push({ who, journey: jname, step: s.step + 1, result: "skipped", note });
-      if (!opts.dryRun) await patchEnrollment(id, (x) => ({ ...x, lastSendError: { at: Date.now(), step: s.step, msg: note } }));
+      if (!opts.dryRun) await patchEnrollment(id, (x) => { const { sendClaim: _c, ...rest } = x; return { ...rest, lastSendError: { at: Date.now(), step: s.step, msg: note } }; });
+      claimed = false;
     };
     try {
       const to = String(ct.email || ct.email2 || "").trim();
@@ -222,27 +244,42 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
       if (missing.size) { await fail(`Not sent: it's missing ${[...missing].join(", ")}. Fill that in, or send this one yourself.`); continue; }
       if (opts.dryRun) { out.push({ who, journey: jname, step: s.step + 1, result: "would send", note: subject }); continue; }
 
+      // claim this one email; if someone else is sending it right now, or it already went, leave it alone
+      if (!(await claimStep(id, s.step, runId))) continue;
+      claimed = true;
+
       const sig = (await one("sigs", e.ownerId)) || {};
       if (sig.html && sig.on !== false) html += `<br><div class="pt-signature">${sig.html}</div>`;
       let track = { token: "", links: [] as string[] };
       if (env("TRACKING") !== "off" && sig.track !== false) { const t = await addTracking(html); html = t.html; track = t; }
       const inl = inlineImages(html);
       await graph(`/users/${encodeURIComponent(owner.email)}/sendMail`, { method: "POST", body: JSON.stringify({ message: { subject, body: { contentType: "HTML", content: inl.html }, toRecipients: [{ emailAddress: { address: to } }], ...(inl.atts.length ? { attachments: inl.atts } : {}) }, saveToSentItems: true }) });
-      sent++;
+      sent++; sentOk = true;
       const now = Date.now();
-      await patchEnrollment(id, (x) => {
+      // it's gone out: record that (a few tries, since a lost record would let a later run send it again)
+      const mark = () => patchEnrollment(id, (x) => {
         const schedule = (x.schedule || []).map((y: Rec) => (y.step === s.step ? { ...y, status: "sent", sentAt: now, sentBy: "auto" } : y));
         const done = !schedule.some((y: Rec) => y.status === "pending");
-        const { lastSendError: _drop, ...rest } = x;
+        const { lastSendError: _drop, sendClaim: _claim, ...rest } = x;
         return { ...rest, schedule, ...(done ? { status: "completed", completedAt: now } : {}) };
       });
+      for (let n = 1; ; n++) { try { await mark(); break; } catch (err) { if (n >= 4) throw err; await new Promise((ok) => setTimeout(ok, 700 * n)); } }
+      claimed = false;
       await logAct({ type: "email", by: e.ownerId, auto: true, text: subject + "\n" + (st.html ? htmlToText(fill(st.body || "", data, new Set(), true)) : fill(st.body || "", data, new Set())), companyId: e.companyId, contactId: e.contactId, dealId: e.dealId || "", ...(track.token ? { track: track.token, links: track.links } : {}) });
       out.push({ who, journey: jname, step: s.step + 1, result: "sent", note: subject });
     } catch (err) {
+      if ((err as Rec).fatal && !sentOk) throw err;   // affects every email (update 8 missing, Microsoft sign-in, Outlook down): stop and retry later
+      if (sentOk) {   // the email went out; only the bookkeeping after it failed. Keep the claim so nothing sends it again soon.
+        if (claimed) { out.push({ who, journey: jname, step: s.step + 1, result: "sent", note: "Sent, but Paper Trail couldn't record it. Check the journey before sending this step again." }); claimed = false; }
+        else out.push({ who, journey: jname, step: s.step + 1, result: "sent", note: "Sent (the timeline entry couldn't be saved)" });
+        continue;
+      }
       await fail(String((err as Error).message || err));
+    } finally {
+      if (claimed) await releaseStep(id, runId);
     }
   }
-  return { today, sent, results: out };
+  return { today, sent, more, results: out };
 }
 
 Deno.serve(async (req) => {
@@ -261,23 +298,39 @@ Deno.serve(async (req) => {
     by = "app";
   }
   const t = local();
+  const dry = !!body.dryRun;
   if (by === "schedule") {
     if (t.hm < SEND_AT) return json({ skipped: `Waiting until ${SEND_AT}` });
     const meta = (await one("meta", "autosend")) || {};
     if (meta.lastRunDate === t.ymd) return json({ skipped: "Already ran today" });
-    await save("meta", "autosend", { ...meta, lastRunDate: t.ymd, runningSince: Date.now() });
+    if (meta.tryDate === t.ymd && (meta.tries || 0) >= TRIES_PER_DAY) return json({ skipped: `Stopped trying for today after ${TRIES_PER_DAY} tries` });
+  }
+  // one run at a time: if another one is going (the schedule, or someone's "Send due emails now"), step aside
+  const runId = `${by}:${uid()}`;
+  if (!dry) {
+    const lock = await sb.rpc("claim_autosend", { p_by: runId, p_secs: 900 });
+    if (lock.error) {
+      const meta = (await one("meta", "autosend").catch(() => null)) || {};
+      await save("meta", "autosend", { ...meta, lastRunAt: Date.now(), lastRunBy: by, lastError: UPDATE8 }).catch(() => {});
+      return json({ error: UPDATE8 }, 500);
+    }
+    if (lock.data !== true) return json({ skipped: "Another send is already running. Try again in a minute.", busy: true });
   }
   try {
-    const r = await run({ dryRun: !!body.dryRun, onlyId: body.enrollmentId ? String(body.enrollmentId) : undefined });
-    if (!body.dryRun) {
+    const r = await run({ dryRun: dry, onlyId: body.enrollmentId ? String(body.enrollmentId) : undefined, runId });
+    if (!dry) {
       const meta = (await one("meta", "autosend")) || {};
-      await save("meta", "autosend", { ...meta, ...(by === "schedule" ? { lastRunDate: t.ymd } : {}), runningSince: null, lastRunAt: Date.now(), lastRunBy: by, lastSent: r.sent, lastResults: r.results.slice(0, 50), lastError: "" });
+      // the day's run is finished once nothing is left over; otherwise the next 15-minute check carries on
+      const finished = by === "schedule" && !r.more ? { lastRunDate: t.ymd } : {};
+      await save("meta", "autosend", { ...meta, ...finished, runningSince: null, runningBy: null, lastRunAt: Date.now(), lastRunBy: by, lastSent: r.sent, lastResults: r.results.slice(0, 50), lastError: "" });
     }
     return json(r);
   } catch (err) {
     const msg = String((err as Error).message || err);
     const meta = (await one("meta", "autosend").catch(() => null)) || {};
-    await save("meta", "autosend", { ...meta, runningSince: null, lastRunAt: Date.now(), lastRunBy: by, lastError: msg }).catch(() => {});
+    // not marked as done for today, so the next 15-minute check tries again (a few times at most)
+    const tries = by === "schedule" ? { tryDate: t.ymd, tries: meta.tryDate === t.ymd ? (meta.tries || 0) + 1 : 1 } : {};
+    await save("meta", "autosend", { ...meta, ...tries, runningSince: null, runningBy: null, lastRunAt: Date.now(), lastRunBy: by, lastError: msg }).catch(() => {});
     return json({ error: msg }, 500);
   }
 });
