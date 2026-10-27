@@ -501,6 +501,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .cpgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 20px}
 .cpf{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid var(--line);min-width:0}
 .cpf.wide{grid-column:1/-1}.cpf.w2{grid-column:span 2}
+.cpf-ok{font-style:normal;font-weight:600;font-size:.72rem;color:var(--good);margin-left:6px;animation:cpfOk 1.8s ease forwards}
+@keyframes cpfOk{0%,70%{opacity:1}100%{opacity:0}}
 /* ---------- date picker: Paper Trail's own calendar (mouse/trackpad); phones keep their native picker; typing a date still works ---------- */
 :root{--dp-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356706B' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E")}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--dp-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA5A0' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E")}}
@@ -2749,7 +2751,7 @@ function oppEditor(d, k){
   const at = `id="oe_${k}"${typed ? ' data-keep' : ''} data-change="oppField" data-k="${k}" data-id="${d.id}" class="oe"`;
   const S_ = (opts, v) => sel('oe', opts, v || '', at);
   switch (k) {
-    case 'companyId': return S_(coOpts('— Choose an account —'), d.companyId);
+    case 'companyId': return S_([['', '— Choose an account —'], ...(d.companyId && S.companies[d.companyId] ? [[d.companyId, S.companies[d.companyId].name]] : [])], d.companyId).replace('<select ', '<select data-lazyco ');   // the full account list loads when you open it, not on every redraw
     case 'type': return S_(OPP_TYPES.includes(d.type || d.name) ? OPP_TYPES.map(x => [x, x]) : [[d.type || d.name, d.type || d.name], ...OPP_TYPES.map(x => [x, x])], d.type || d.name);
     case 'contactId': return S_(ctOpts(d.companyId), d.contactId);
     case 'value': return `<span class="money"><i>$</i><input ${at} type="text" inputmode="decimal" placeholder="0" value="${esc(d[k] || '')}"></span>`;
@@ -2806,7 +2808,7 @@ async function oppSaveField(el){
   up[k] = v;
   ui.oppEdit = null;
   if (String(d[k] ?? '') === String(v ?? '') && Object.keys(up).length === 1) { render(); return; }
-  if (await patch('deals', id, up)) toast('Saved'); else render();
+  if (await patch('deals', id, up)) { ui.oppSaved = {k, id, t: Date.now()}; schedule(); } else render();   // a small check by the field, no pop-up
 }
 V.opp = () => {
   const id = ui.pageOpp; const d = S.deals[id];
@@ -2817,7 +2819,10 @@ V.opp = () => {
   const tasks = L('tasks').filter(k => k.dealId === id && !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
   const ens = L('enrollments').filter(e => e.dealId === id);
   const wc = wide => wide === 2 ? ' w2' : wide ? ' wide' : '';
-  const f = (label, val, wide, k) => k && W ? `<label class="cpf ed${wc(wide)}"><span>${label}</span><div>${oppEditor({...d, id}, k)}</div></label>`
+  if (W) coFillSoon();
+  const sv = ui.oppSaved && ui.oppSaved.id === id && Date.now() - ui.oppSaved.t < 1800 ? ui.oppSaved : null;
+  const just = k => sv && sv.k === k ? `<i class="cpf-ok" style="animation-delay:-${Date.now() - sv.t}ms">✓ Saved</i>` : '';
+  const f = (label, val, wide, k) => k && W ? `<label class="cpf ed${wc(wide)}"><span>${label}${just(k)}</span><div>${oppEditor({...d, id}, k)}</div></label>`
     : `<div class="cpf${wc(wide)}"><span>${label}</span><div>${val || '<span class="sub">—</span>'}</div></div>`;
   const closed = !isOpen(d);
   const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
@@ -3184,6 +3189,14 @@ const inp = (name, val='', type='text', extra='') => `<input name="${name}" type
 const ta = (name, val='', rows=3) => `<textarea name="${name}" rows="${rows}">${esc(val)}</textarea>`;
 const sel = (name, opts, cur, extra='') => `<select name="${name}" ${extra}>${opts.map(o => { const [v,l] = Array.isArray(o) ? o : [o,o]; return `<option value="${esc(v)}" ${String(v) === String(cur ?? '') ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
 const coOpts = (none='— None —') => [['', none], ...L('companies').sort(byName).map(c => [c.id, c.name])];
+// a company dropdown that only fills itself with every account once you click or tab into it
+let coFillC = {v: -1, html: ''};   // the options, built once per change to the accounts
+const coFillHtml = () => { if (coFillC.v !== DV) coFillC = {v: DV, html: coOpts('— Choose an account —').map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('')}; return coFillC.html; };
+function coFill(el){ if (!el || el.dataset.filled) return; el.dataset.filled = '1'; const cur = el.value; el.innerHTML = coFillHtml(); el.value = cur; }
+const coFillSoon = () => { const run = () => { if (document.querySelector('select[data-lazyco]')) coFillHtml(); }; (window.requestIdleCallback || setTimeout)(run, {timeout: 3000}); };   // get the list ready while you're reading the page
+// only when you open it or type in it (not when the page puts the cursor back after a save)
+document.addEventListener('mousedown', e => { const t = e.target.closest && e.target.closest('select[data-lazyco]'); if (t) coFill(t); }, true);
+document.addEventListener('keydown', e => { if (e.target.matches && e.target.matches('select[data-lazyco]') && !['Tab', 'Shift', 'Escape'].includes(e.key)) coFill(e.target); }, true);
 const ownerSel = (name, cur) => { const ids = people().filter(i => i === cur || i === ME.id || !isFormer(i)); if (!ids.length) return sel(name, [['', 'You']], ''); return sel(name, ids.map(i => [i, pname(i)]), cur || ME.id); };
 const cb = (name, checked, label) => `<label class="f inline"><input type="checkbox" name="${name}" ${checked?'checked':''}><span style="font-size:.9rem;color:var(--fg)">${label}</span></label>`;
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
