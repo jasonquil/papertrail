@@ -1480,6 +1480,33 @@ const COLL = new Intl.Collator(undefined, {sensitivity: 'base', numeric: true});
 const byName = (a,b) => COLL.compare(a.name||'', b.name||'');
 // sort by a text key worked out once per record (not twice per comparison)
 const sortByKey = (list, key) => { const k = new Map(list.map(r => [r, key(r)])); return list.sort((a, b) => COLL.compare(k.get(a), k.get(b))); };
+
+// search ranking: names that start with what you typed come first, then a word that starts with it, then names that only contain it, then other matches (email, company…)
+const qFold = v => { v = String(v || ''); return /[^\x00-\x7f]/.test(v) ? v.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() : v.toLowerCase(); };
+const QR_TITLE = /^(dr|mr|mrs|ms|miss|prof)\b[^a-z0-9]*/;
+const qAln = c => (c >= 48 && c <= 57) || (c >= 97 && c <= 122);
+function qRanker(q){
+  const toks = qFold(q).split(/\s+/).filter(Boolean), joined = toks.join(' ');
+  const wordStart = (n, t) => { for (let i = n.indexOf(t); i >= 0; i = n.indexOf(t, i + 1)) if (i === 0 || !qAln(n.charCodeAt(i - 1))) return true; return false; };
+  return name => {
+    if (!toks.length) return 0;
+    const n = qFold(name);
+    if (toks.every(t => wordStart(n, t))) { const m = n.match(QR_TITLE), off = m ? m[0].length : 0; return n.startsWith(toks[0], off) || n.startsWith(joined) ? 0 : 1; }
+    return toks.every(t => n.includes(t)) ? 2 : 3;
+  };
+}
+const qRank = (q, name) => qRanker(q)(name);
+// sorts by `first` (e.g. an exact account #), then rank, then `tie`, then the name A-Z. With `k`, only the best k come back sorted (plus .total), which is all the search window shows.
+function rankSort(list, q, nameOf, first, tie, k){
+  const rk = qRanker(q), cmp = (x, y) => (first ? first(x.r, y.r) : 0) || x.k - y.k || (tie ? tie(x.r, y.r) : 0) || COLL.compare(x.n, y.n);
+  let items = list.map(r => { const n = nameOf(r) || ''; return {r, n, k: rk(n)}; });
+  if (k && items.length > k * 4) {   // keep only the best ranks until there are enough, then sort just those
+    const by = [[], [], [], []]; for (const x of items) by[x.k].push(x);
+    const none = {}, keep = first ? items.filter(x => first(x.r, none) < 0) : [];   // e.g. the exact account # always makes the cut
+    const seen = new Set(keep); items = keep; for (const b of by) { if (items.length >= k) break; for (const x of b) if (!seen.has(x)) items.push(x); }
+  }
+  const out = items.sort(cmp).map(x => x.r); if (k) { out.length = Math.min(out.length, k); out.total = list.length; } return out;
+}
 const cname = id => S.companies[id]?.name || '';
 const pname_ = c => [c.firstName, c.lastName].filter(Boolean).join(' ') || c.email || c.email2 || c.phone || c.mobile || 'Unnamed contact';
 // contacts can have a work email (email) and a personal email (email2); work is preferred for sending
@@ -2788,7 +2815,7 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies')).sort((a, b) => (acctFirst(ui.q) || (() => 0))(a, b) || byName(a, b)));
+  const rows = (() => { const list = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies'))); return !ui.q.trim() ? list.sort(byName) : rankSort(list, ui.q, c => c.name, acctFirst(ui.q)); })();
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
   return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
@@ -2801,7 +2828,9 @@ V.companies = () => {
 };
 
 V.contacts = () => {
-  const rows = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.contacts.l(c), 'contacts')).map(c => [c, ((c.firstName || c.lastName) ? '0' : '1') + pname_(c)])).sort((a, b) => COLL.compare(a[1], b[1])).map(x => x[0]);
+  const rows0 = fzRun(() => L('contacts').filter(mine).filter(c => fltPass('contacts', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.contacts.l(c), 'contacts')));
+  const named = c => (c.firstName || c.lastName) ? 0 : 1;
+  const rows = !ui.q.trim() ? rows0.map(c => [c, named(c) + pname_(c)]).sort((a, b) => COLL.compare(a[1], b[1])).map(x => x[0]) : rankSort(rows0, ui.q, pname_, null, (a, b) => named(a) - named(b));
   const total = Object.keys(S.contacts).length;
   ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
   return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
@@ -3432,7 +3461,7 @@ function searchModal(){
   openModal('Search', `<label class="search big">${ic('search')}<input id="gq" type="search" placeholder="Name, account #, email, phone, city, quote number, notes…" autocomplete="off" aria-label="Search all records"></label><div id="gres" class="gres">${searchResults('')}</div>`, null, null, {wide:true});
 }
 // sidebar search helpers: build display rows only for the 8 that show; keep the full count
-const top8 = (list, map) => { const out = list.slice(0, 8).map(map); out.total = list.length; return out; };
+const top8 = (list, map) => { const out = list.slice(0, 8).map(map); out.total = list.total ?? list.length; return out; };
 function searchResults(q){
   q = q.trim();
   if (!q) return `<p class="empty-s">Search accounts, contacts, opportunities, quotes, contracts and everything you've logged.</p>`;
@@ -3441,11 +3470,11 @@ function searchResults(q){
   const Q = FZ || qParts(q); const hit = (rec, tag, f, col) => hayHit(Q, hay(rec, tag, f, col)); const af = acctFirst(q);
   const mark = s => { let out = esc(s); const t = toks.sort((a,b) => b.length - a.length)[0]; if (t) { const re = new RegExp('(' + esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'); out = out.replace(re, '<mark>$1</mark>'); } return out; };
   const groups = [
-    ['Accounts', top8(L('companies').filter(c => hit(c, 'g', () => HAYF.companies.g(c), 'companies')).sort((a, b) => (af ? af(a, b) : 0) || byName(a, b)), c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
-    ['Contacts', top8(sortByKey(L('contacts').filter(c => hit(c, 'g', () => HAYF.contacts.g(c), 'contacts')), pname_), c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
-    ['Opportunities', top8(L('deals').filter(d => hit(d, 'g', () => HAYF.deals.g(d), 'deals')).sort((a,b) => (b.createdAt||0) - (a.createdAt||0)), d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
-    ['Quotes', top8(L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')), x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
-    ['Contracts', top8(L('contracts').filter(c => hit(c, 'g', () => [c.title, c.notes, cname(c.companyId)], 'contracts')), c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
+    ['Accounts', top8(rankSort(L('companies').filter(c => hit(c, 'g', () => HAYF.companies.g(c), 'companies')), q, c => c.name, af, null, 8), c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
+    ['Contacts', top8(rankSort(L('contacts').filter(c => hit(c, 'g', () => HAYF.contacts.g(c), 'contacts')), q, pname_, null, null, 8), c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
+    ['Opportunities', top8(rankSort(L('deals').filter(d => hit(d, 'g', () => HAYF.deals.g(d), 'deals')), q, d => cname(d.companyId) + ' ' + (d.name || ''), null, (a, b) => (b.createdAt||0) - (a.createdAt||0), 8), d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
+    ['Quotes', top8(rankSort(L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')), q, x => x.number + ' ' + cname(x.companyId), null, () => 0), x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
+    ['Contracts', top8(rankSort(L('contracts').filter(c => hit(c, 'g', () => [c.title, c.notes, cname(c.companyId)], 'contracts')), q, c => cname(c.companyId) + ' ' + (c.title || ''), null, () => 0), c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
     ['Notes and activity', X.acts.filter(a => a.type !== 'stage' && hit(a, 'g', () => [a.text], 'activities')).map(a => { const col = a.dealId && S.deals[a.dealId] ? 'deals' : a.companyId && S.companies[a.companyId] ? 'companies' : a.contactId && S.contacts[a.contactId] ? 'contacts' : null; if (!col) return null; const id = col === 'deals' ? a.dealId : col === 'companies' ? a.companyId : a.contactId; const txt = String(a.text||''); const i = txt.toLowerCase().indexOf(toks[0]); const snip = (i > 40 ? '…' : '') + txt.slice(Math.max(0, i - 40), i + 90) + (txt.length > i + 90 ? '…' : ''); return {a:'open', col, id, t:snip, s:`${ACT[a.type]||'Note'} · ${nameOf(col, id)} · ${rel(a.at)}`}; }).filter(Boolean)]
   ];
   const total = groups.reduce((n, g) => n + (g[1].total ?? g[1].length), 0);
