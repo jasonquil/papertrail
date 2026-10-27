@@ -1717,6 +1717,8 @@ function ndpAuto(dealId){
     'Additional Notes/Stairs/elevator': d.notes || '', 'Amount of Shredding': d.shredAmount || '', 'Quote/Pricing': d.priceQuoted === 0 || d.priceQuoted == null ? '' : String(d.priceQuoted),
     'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
 }
+// columns kept in the copied row (blank) but not shown in the window
+const NDP_HIDE = new Set(['EMAILED', 'Credit card info', 'Confirm Time Y/N', 'Contacted']);
 const ndpCell = v => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
 // one row in the sheet's column order, tab-separated so Excel spreads it across
 function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.map(k => ndpCell(v[k])).join('\t'); }
@@ -6210,7 +6212,7 @@ const A = {
   ndpCopy: d => { const id = d.id, auto = ndpAuto(id); if (!auto) return;
     const saved = prefGet('ndp-' + id, {}) || {};   // what you typed by hand last time for this opportunity (never card numbers)
     const kind = {'Additional Notes/Stairs/elevator': 'ta', 'How are they paying?': 'pay', 'Payment Method': 'pay', 'Scheduled': 'date'};
-    const field = (col, i) => { const v = col in auto ? auto[col] : (col === 'Credit card info' ? '' : saved[col] || ''); const k = kind[col];
+    const field = (col, i) => { if (NDP_HIDE.has(col)) return ''; const v = col in auto ? auto[col] : (col === 'Credit card info' ? '' : saved[col] || ''); const k = kind[col];
       const box = k === 'ta' ? ta('n' + i, v, 2) : inp('n' + i, v, 'text', `${k === 'pay' ? 'list="ndpPay" ' : ''}autocomplete="off"${k === 'date' ? ' placeholder="e.g. 10/28"' : ''}`);
       return F(esc(col) + (col in auto && v ? ' <small class="ndp-auto">from Paper Trail</small>' : ''), box, k === 'ta' ? 'wide' : ''); };
     openModal('Copy to NDP', `<p class="sub">Everything Paper Trail knows is already filled in. Check it, change anything you need, add the rest, then copy. Empty boxes stay blank in the sheet.</p>
