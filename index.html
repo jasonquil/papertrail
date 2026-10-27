@@ -1418,7 +1418,19 @@ const ICON = {
 const ic = (n,c='') => `<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]||''}</svg>`;
 
 // ---------- state ----------
-const S = {}; COLS.forEach(c => S[c] = {});
+// DV counts changes to the records in memory. Each collection is watched (a Proxy that only notices adds, changes and
+// deletes), so anything worked out from the records (the account index, Needs attention, the sidebar counts) is reused
+// until something really changes, instead of being rebuilt on every click.
+let DV = 0;
+const PX = new WeakMap(); const CV = new WeakMap();   // PX: watched collection -> the plain object behind it; CV: each collection's own change count
+const cvBump = t => { CV.set(t, (CV.get(t) || 0) + 1); DV++; };
+const colProxy = o => { if (!o || typeof o !== 'object' || PX.has(o)) return o;
+  const p = new Proxy(o, {set(t, k, v){ t[k] = v; cvBump(t); return true; }, deleteProperty(t, k){ if (k in t) { delete t[k]; cvBump(t); } return true; }});
+  PX.set(p, o); return p; };
+const S = new Proxy({}, {set(t, k, v){ t[k] = colProxy(v); DV++; return true; }}); COLS.forEach(c => S[c] = {});
+// reuse a result while the records, the day, the Mine/Everyone switch and who's signed in are all unchanged
+const memoD = f => { let key = null, val; return () => { const k = DV + '|' + today() + '|' + (ui.mine ? 1 : 0) + '|' + (ME.id || '') + '|' + AUTOV; if (k !== key) { val = f(); key = k; } return val; }; };
+let AUTOV = 0;   // bumped when the automatic-sending status or the list of people changes
 const loaded = {};
 let team = {ids:[]};
 let db = null, U = null, AI = null, DL = null, MCP = null;
@@ -1445,14 +1457,22 @@ const addDays = (s,n) => { const d = parseYmd(s); d.setDate(d.getDate()+n); retu
 const addMonths = (s,n) => { const d = parseYmd(s); const day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); const last = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); d.setDate(Math.min(day,last)); return ymd(d); };
 const dayDiff = (a,b) => Math.round((parseYmd(b) - parseYmd(a)) / 864e5);
 const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s||'');
-const fmtDate = s => { if (!isDate(s)) return '—'; const d = parseYmd(s); return d.toLocaleDateString(undefined, {month:'short', day:'numeric', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined}); };
+// formatting a date is slow in browsers, and the same few hundred dates show up again and again, so each is done once
+const FMTD = new Map(); let fmtdYear = 0;
+const fmtDate = s => { if (!isDate(s)) return '—'; const y = new Date().getFullYear(); if (y !== fmtdYear) { FMTD.clear(); fmtdYear = y; }
+  let o = FMTD.get(s); if (o !== undefined) return o; const d = parseYmd(s);
+  o = d.toLocaleDateString(undefined, {month:'short', day:'numeric', year: d.getFullYear() !== y ? 'numeric' : undefined}); if (FMTD.size > 5000) FMTD.clear(); FMTD.set(s, o); return o; };
 const daysSince = ts => Math.floor((Date.now() - ts) / 864e5);
 const rel = ts => { if (!ts) return ''; const m = Math.floor((Date.now()-ts)/6e4); if (m < 1) return 'just now'; if (m < 60) return m+'m ago'; const h = Math.floor(m/60); if (h < 24) return h+'h ago'; const d = Math.floor(h/24); if (d < 7) return d+'d ago'; return fmtDate(ymd(new Date(ts))); };
 const money = n => '$' + Math.round(+n || 0).toLocaleString('en-US');
 const money2 = n => (+n || 0).toLocaleString('en-US', {style:'currency', currency:'USD'});
 const moneyShort = n => { n = +n||0; if (Math.abs(n) >= 1e6) return '$'+(n/1e6).toFixed(n%1e6?1:0)+'M'; if (Math.abs(n) >= 1e3) return '$'+(n/1e3).toFixed(n%1e3?1:0)+'k'; return '$'+Math.round(n); };
 const sum = (a,f) => a.reduce((t,x) => t + (+f(x) || 0), 0);
-const L = col => Object.entries(S[col]).map(([id,v]) => ({id, ...v}));
+// a collection as a list of {id, ...record}; built once per change to that collection and handed out as a fresh array
+const LC = {};
+const L = col => { const src = S[col], raw = PX.get(src) || src, v = CV.get(raw) || 0; let c = LC[col];
+  if (!c || c.raw !== raw || c.v !== v) c = LC[col] = {raw, v, arr: Object.entries(raw).map(([id, r]) => ({id, ...r}))};
+  return c.arr.slice(); };
 const COLL = new Intl.Collator(undefined, {sensitivity: 'base', numeric: true});   // much faster than localeCompare on big lists
 const byName = (a,b) => COLL.compare(a.name||'', b.name||'');
 // sort by a text key worked out once per record (not twice per comparison)
@@ -1596,9 +1616,11 @@ function ensureProfiles(){
   const miss = [...ids].filter(i => i && !P[i] && i !== ME.id);
   if (!miss.length) return;
   profBusy = true;
-  U.profiles(miss).then(r => { Object.assign(P, r); profBusy = false; schedule(); }).catch(() => { profBusy = false; });
+  U.profiles(miss).then(r => { Object.assign(P, r); AUTOV++; profBusy = false; schedule(); }).catch(() => { profBusy = false; });
 }
-function people(){ const s = new Set([ME.id, ...(team.ids||[])]); for (const c of ['companies','deals','tasks','contracts']) for (const r of Object.values(S[c])) { if (r.ownerId) s.add(r.ownerId); if (r.assigneeId) s.add(r.assigneeId); } return [...s].filter(Boolean); }
+// everyone who owns or is assigned something (for the owner menus); worked out once per change, not per menu
+const people = (() => { let key = null, val; return () => { const k = DV + '|' + (ME.id || '') + '|' + AUTOV + '|' + (team.ids || []).join(','); if (k !== key) { val = peopleBuild(); key = k; } return val.slice(); }; })();
+function peopleBuild(){ const s = new Set([ME.id, ...(team.ids||[])]); for (const c of ['companies','deals','tasks','contracts']) for (const r of Object.values(S[c])) { if (r.ownerId) s.add(r.ownerId); if (r.assigneeId) s.add(r.assigneeId); } return [...s].filter(Boolean); }
 
 // toast + copy
 function toast(msg, kind=''){ const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg; $('#toasts').append(t); setTimeout(() => t.remove(), 3400); }
@@ -1845,12 +1867,43 @@ async function trashPurge(){
 
 // ---------- full backup & restore ----------
 const BACKUP_COLS = COLS.filter(c => c !== 'trash');
+// Also in the backup on the website: everyone's signatures and appearance, the team's journey copies the 8:45 run uses,
+// and the list of people (for reference; logins themselves live in Supabase). Run-time status rows are left out.
+const BACKUP_EXTRA = ['sigs', 'prefs', 'meta'];
+const BACKUP_SKIP_META = ['autosend', 'driveBackup'];
+async function backupExtras(){
+  if (!SUPA || DEMO) return {};
+  const out = {};
+  for (const c of BACKUP_EXTRA) { const {data, error} = await SUPA.sb.from('records').select('id,data').eq('col', c); if (error) throw error;
+    out[c] = {}; for (const r of data || []) if (!(c === 'meta' && BACKUP_SKIP_META.includes(r.id))) out[c][r.id] = r.data; }
+  out.people = USERS.map(u => ({id: u.id, name: u.name, email: u.email, role: u.role, active: u.active}));
+  return out;
+}
 async function backupDownload(){
   const records = {}; for (const c of BACKUP_COLS) records[c] = S[c];
+  let extra = {}; try { extra = await backupExtras(); } catch { toast('Signatures and settings couldn\'t be included this time; your records are all in the backup.', 'bad'); }
+  const {people, ...more} = extra; Object.assign(records, more);
   const n = BACKUP_COLS.reduce((t, c) => t + Object.keys(S[c]).length, 0);
-  await saveFile(`paper-trail-backup-${today()}.json`, JSON.stringify({app: 'Paper Trail', version: 1, savedAt: new Date().toISOString(), records}), 'Backup');
+  const json = JSON.stringify({app: 'Paper Trail', version: 2, savedAt: new Date().toISOString(), records, ...(people ? {people} : {})});
+  const name = `paper-trail-backup-${today()}.json`;
+  // on the website the file is compressed (about a tenth of the size); Restore reads both kinds
+  if (!DL && !window.claude && typeof CompressionStream === 'function') {
+    try { const blob = await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).blob();
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = name + '.gz'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch { await saveFile(name, json, 'Backup'); }
+  } else await saveFile(name, json, 'Backup');
   try { localStorage.setItem('apcrm-lastBackup', String(Date.now())); } catch {}
-  toast(`Backup saved: ${n} records`); schedule();
+  toast(`Backup saved: ${n.toLocaleString()} records`); schedule();
+}
+// restore signatures, appearance and journey copies that are missing or different (never deletes anything)
+async function restoreExtras(recs){
+  if (!SUPA || DEMO) return 0; let n = 0;
+  for (const c of BACKUP_EXTRA) { const want = recs[c]; if (!want || typeof want !== 'object') continue;
+    const {data} = await SUPA.sb.from('records').select('id,data').eq('col', c); const have = Object.fromEntries((data || []).map(r => [r.id, r.data]));
+    const rows = Object.entries(want).filter(([id, d]) => !(c === 'meta' && BACKUP_SKIP_META.includes(id)) && JSON.stringify(have[id]) !== JSON.stringify(d)).map(([id, d]) => ({col: c, id, data: d}));
+    for (let k = 0; k < rows.length; k += 200) { const {error} = await SUPA.sb.from('records').upsert(rows.slice(k, k + 200), {onConflict: 'col,id'}); if (error) throw error; n += Math.min(200, rows.length - k); }
+  }
+  return n;
 }
 function restoreModal(){
   openModal('Restore from backup', `<p class="sub">Choose a Paper Trail backup file (.json or .json.gz). Records in the backup that are missing or different here are put back. Nothing currently in Paper Trail is deleted.</p>
@@ -1860,7 +1913,8 @@ function restoreModal(){
         const text = gz ? await new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text() : await f.text(); data = JSON.parse(text); } catch { toast("That file isn't a Paper Trail backup.", 'bad'); return false; }
       if (!data || data.app !== 'Paper Trail' || !data.records) { toast("That file isn't a Paper Trail backup.", 'bad'); return false; }
       const todo = []; for (const c of BACKUP_COLS) for (let [id, r] of Object.entries(data.records[c] || {})) { if (c === 'companies' && !(+r.acctNo) && S.companies[id] && +S.companies[id].acctNo) r = {...r, acctNo: S.companies[id].acctNo}; if (JSON.stringify(S[c][id]) !== JSON.stringify(r)) todo.push([c, id, r]); }
-      if (!todo.length) { toast('Everything in that backup is already here.'); return true; }
+      let extraN = 0; try { extraN = await restoreExtras(data.records); } catch (e) { toast("Signatures and settings in the backup couldn't be restored: " + ((e && e.message) || 'error'), 'bad'); }
+      if (!todo.length) { toast(extraN ? `Restored ${extraN} signature${extraN === 1 ? '' : 's'} and setting${extraN === 1 ? '' : 's'}; every record was already here.` : 'Everything in that backup is already here.'); return true; }
       const b = $('#mform [type=submit]'); let done = 0;
       if (live && !DEMO && db.collection('companies').setMany) {   // big restores go 500 at a time
         const byCol = {}; for (const [c, id, r] of todo) (byCol[c] = byCol[c] || []).push([id, r]);
@@ -1869,7 +1923,7 @@ function restoreModal(){
           for (const [id, r] of chunk) S[c][id] = r; done += chunk.length; if (b) b.textContent = `Restoring ${done.toLocaleString()} of ${todo.length.toLocaleString()}…`; }
         if (todo.some(([c]) => c === 'companies')) hayReset(); schedule();
       } else for (const [c, id, r] of todo) { if (await put(c, id, r)) done++; if (b && done % 20 === 0) b.textContent = `Restoring ${done} of ${todo.length}…`; }
-      toast(`Restored ${done.toLocaleString()} record${done === 1 ? '' : 's'}`); return true;
+      toast(`Restored ${done.toLocaleString()} record${done === 1 ? '' : 's'}${extraN ? `, plus ${extraN} signature${extraN === 1 ? '' : 's'} and setting${extraN === 1 ? '' : 's'}` : ''}`); return true;
     });
 }
 const backupAge = () => { try { const v = +localStorage.getItem('apcrm-lastBackup'); return v ? Math.floor((Date.now() - v) / 864e5) : null; } catch { return null; } };
@@ -1904,7 +1958,9 @@ async function logAct(a){ return put('activities', uid(), {at: Date.now(), by: M
 
 // ---------- derived ----------
 const isSysAct = a => a.type === 'stage' || a.sys || (a.type === 'note' && /^(Quote \S+ marked |Started .+ for |Contract renewed|.+ replied, so .+ was )/.test(String(a.text || '')));
-function idx(){
+const idx = () => idxMemo();
+const idxMemo = (() => { let v = -1, r = null; return () => { if (v !== DV || !r) { r = idxBuild(); v = DV; } return r; }; })();
+function idxBuild(){
   const by = {}; const g = id => by[id] ??= {contacts:[],deals:[],contracts:[],quotes:[],tasks:[],acts:[]};
   for (const c of ['contacts','deals','contracts','quotes','tasks']) for (const r of L(c)) if (r.companyId) g(r.companyId)[c].push(r);
   const acts = L('activities').filter(a => !isSysAct(a)).sort((a,b) => (b.at||0) - (a.at||0));
@@ -1918,7 +1974,8 @@ function idx(){
 }
 const gr = id => X.by[id] || X.empty;
 
-function attention(){
+const attention = memoD(() => attentionBuild());
+function attentionBuild(){
   const t = today(); const out = [];
   for (const k of L('tasks')) if (!k.done && isDate(k.due) && k.due < t && (!ui.mine || k.assigneeId === ME.id)) {
     out.push({sev:'bad', o:0, kind:'Past-due reminder', title:k.title, sub:`Due ${fmtDate(k.due)} · ${esc(pname(k.assigneeId))}${k.companyId?' · '+esc(cname(k.companyId)):''}`,
@@ -2492,7 +2549,7 @@ V.reminders = () => {
   else if (!list.length) body = `<p class="empty-s">${ui.q ? 'No reminders match.' : show === 'open' ? 'Nothing open. You are all caught up.' : 'No completed reminders yet.'}</p>`;
   else if (show === 'done') body = `<ul class="rems">${list.sort((a,b) => (b.doneAt||0) - (a.doneAt||0)).slice(0, 200).map(row).join('')}</ul>`;
   else { list.sort((a,b) => ord[remGrp(a)] - ord[remGrp(b)] || (a.due||'').localeCompare(b.due||''));
-    body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => remGrp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${r.length}</span></h3></div><ul class="rems">${r.map(row).join('')}</ul></div>` : ''; }).join(''); }
+    body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => remGrp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${r.length}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
   return head('Reminders', `${n('past')} past due · ${n('today')} today · ${n('future')} upcoming`,
     searchBox('Search reminders') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + mineSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
 };
@@ -5122,6 +5179,9 @@ async function sendMail(){
   let {html, lost} = outlookHtml(); let track = null;
   if (lost && !ui.sendOk) { ui.sendOk = true; return draftNote('<span>Heads up: Outlook will remove the images and colored text in this message, including your signature logos. Click <b>Send</b> again to send it anyway, or use <b>Copy message</b> and paste it into Outlook to keep them.</span>', true); }
   const btn = $('#dSend'); btn.disabled = true; btn.lastChild.textContent = 'Sending…';
+  const jr = ui.draft.journey;
+  if (jr) { const why = await jClaim(jr.eid, jr.idx); if (why) { btn.disabled = false; btn.lastChild.textContent = sendLabel(); return draftNote(esc(why), true); } }
+  let mailed = false;
   try {
     let attachments = [];
     if (GRAPH) {
@@ -5135,13 +5195,16 @@ async function sendMail(){
       for (const fl of ui.draftFiles || []) { const d = await fileToDataUrl(fl); attachments.push({name: fl.name, contentType: fl.type || 'application/octet-stream', contentBytes: String(d).split(',')[1] || ''}); }
     }
     await MCP.callTool(MS, 'outlook_send_mail', {to: f.to, ...(f.cc.length ? {cc: f.cc} : {}), ...(f.bcc.length ? {bcc: f.bcc} : {}), subject: f.subject, body: html, bodyType: 'html', ...(attachments.length ? {attachments} : {})}, {cache: false});
+    mailed = true;
     const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut').value.trim();
     const fnames = (ui.draftFiles || []).map(x => x.name);
     logAct({type: 'email', text: f.subject + '\n' + body + (fnames.length ? `\n\nAttached: ${fnames.join(', ')}` : ''), companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId, ...(track && track.token ? {track: track.token, links: track.links} : {})});
-    if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent');
+    if (ui.draft.journey) { await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); ui.jClaimBy = null; }
     await emailJourneyAfterSend();
     closeModal(); toast('Email sent');
   } catch(e){
+    if (jr && !mailed) jRelease(jr.eid);   // not sent: let it go so it can be sent later
+    if (mailed) { closeModal(); toast('Email sent, but part of saving it afterwards failed. Check the timeline.', 'bad'); return; }
     draftNote(esc(mcpMsg(e)), true);
     const b = $('#dSend'); if (b) { b.disabled = false; b.lastChild.textContent = sendLabel(); }
   }
@@ -5441,7 +5504,8 @@ function jStatusChip(e){
   if (e.status === 'completed') return '<span class="chip acc">Completed</span>';
   return `<span class="chip">${e.stopReason === 'replied' ? 'Ended, they replied' : 'Ended'}</span>`;
 }
-function journeyDue(){
+const journeyDue = memoD(() => journeyDueBuild());
+function journeyDueBuild(){
   const t = today();
   return L('enrollments').filter(e => e.status === 'active' && (!ui.mine || e.ownerId === ME.id)).map(e => ({e, s: nextStep(e)})).filter(x => x.s && x.s.due <= t);
 }
@@ -5570,8 +5634,24 @@ async function jSetStep(eid, idx, status){
   const e = S.enrollments[eid]; if (!e) return false;
   const schedule = (e.schedule || []).map(s => s.step === idx ? {...s, status, [status === 'sent' ? 'sentAt' : 'skippedAt']: Date.now()} : s);
   const done = !schedule.some(s => s.status === 'pending');
-  return patch('enrollments', eid, {schedule, ...(done ? {status: 'completed', completedAt: Date.now()} : {})});
+  return patch('enrollments', eid, {schedule, sendClaim: null, ...(done ? {status: 'completed', completedAt: Date.now()} : {})});
 }
+// Before a journey email goes out from the app, claim it in the database (supabase-update-8.sql), the same way the 8:45 run
+// does, so the two can never both send it. Returns '' when it's fine to send, or the reason not to.
+async function jClaim(eid, idx){
+  const e = S.enrollments[eid]; const s = e && (e.schedule || []).find(x => x.step === idx);
+  if (!s || s.status !== 'pending') return 'This email has already been sent or skipped.';
+  if (!SUPA || DEMO) return '';
+  const by = `app:${ME.id || 'me'}:${uid()}`;
+  const {data, error} = await SUPA.sb.rpc('claim_journey_step', {p_id: eid, p_step: idx, p_by: by, p_secs: 600});
+  if (error) return '';   // update 8 isn't installed yet: a person is sending it, so carry on as before
+  if (data === true) { ui.jClaimBy = by; return ''; }
+  const {data: row} = await SUPA.sb.from('records').select('data').eq('col', 'enrollments').eq('id', eid);
+  const cur = row && row[0] && row[0].data; const cs = cur && (cur.schedule || []).find(x => x.step === idx);
+  if (cs && cs.status !== 'pending') return cs.sentBy === 'auto' ? 'Paper Trail already sent this email automatically.' : 'This email has already been sent or skipped.';
+  return 'Paper Trail is sending this email right now (the automatic run or a teammate). Check the journey in a minute.';
+}
+async function jRelease(eid){ const by = ui.jClaimBy; ui.jClaimBy = null; if (!by || !SUPA) return; try { await SUPA.sb.rpc('release_journey_step', {p_id: eid, p_by: by}); } catch {} }
 async function jResume(eid){
   const e = S.enrollments[eid]; if (!e) return;
   const j = journeyOf(e.journeyId); let prev = null;
@@ -5623,7 +5703,7 @@ const autoWillSend = (e, s) => !!(AUTO_OK() && AUTOSEND && AUTOSEND.lastRunAt &&
 let AUTOSEND = null, autoAt = 0, autoBusy = false;
 async function autoLoad(force){
   if (!AUTO_OK() || (!force && Date.now() - autoAt < 60e3)) return; autoAt = Date.now();
-  try { const {data, error} = await SUPA.sb.from('records').select('data').eq('col', 'meta').eq('id', 'autosend'); if (error) return; AUTOSEND = data && data[0] ? data[0].data || {} : {}; schedule(); } catch {}
+  try { const {data, error} = await SUPA.sb.from('records').select('data').eq('col', 'meta').eq('id', 'autosend'); if (error) return; AUTOSEND = data && data[0] ? data[0].data || {} : {}; AUTOV++; schedule(); } catch {}
 }
 function autoBanner(){
   if (!AUTO_OK()) return `<span>Emails that come due are listed here: review each one and send it. Automatic sending works once Paper Trail is connected to your team database.</span>`;
@@ -5632,7 +5712,7 @@ function autoBanner(){
   if (!a.lastRunAt) return `<span><b>Automatic sending isn't switched on yet.</b> Journeys set to send automatically will wait here for you until it is. The setup steps are in the README.</span>${btn}`;
   const when = new Date(a.lastRunAt); const day = ymd(when) === today() ? 'today' : fmtDate(ymd(when));
   const skipped = (a.lastResults || []).filter(r => r.result === 'skipped').length;
-  return `<span><b>Automatic sending is on.</b> Journeys set to send automatically go out at 8:45 AM from the owner's Outlook. Last run ${day} at ${when.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'})}: ${a.lastSent || 0} sent${skipped ? `, ${skipped} held for you` : ''}.${a.lastError ? ` <span style="color:var(--bad)">Problem: ${esc(a.lastError)}</span>` : ''}</span>${btn}`;
+  return `<span><b>Automatic sending is on.</b> Journeys set to send automatically go out at 8:45 AM from the owner's Outlook. Last run ${day} at ${when.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'})}: ${a.lastSent || 0} sent${skipped ? `, ${skipped} held for you` : ''}.${a.lastError ? ` <span style="color:var(--bad)">Problem: ${esc(a.lastError)}</span>${a.tryDate === today() && (a.tries || 0) < 4 && a.lastRunDate !== today() ? ' It will try again at the next 15-minute check (through late morning).' : a.tryDate === today() && (a.tries || 0) >= 4 ? ' It stopped trying for today; fix the problem, then use Send due emails now.' : ''}` : ''}</span>${btn}`;
 }
 async function autoRun(){
   if (!AUTO_OK() || autoBusy) return;
@@ -5640,8 +5720,10 @@ async function autoRun(){
   try {
     const {data, error} = await SUPA.sb.functions.invoke('journey-send', {body: {}});
     if (error) { let m = error.message || 'It did not run.'; try { const j = await error.context.json(); if (j && j.error) m = j.error; } catch {} throw new Error(/not found|404/i.test(m) ? "The journey-send function isn't set up on Supabase yet." : m); }
+    if (data && data.busy) { toast('Another send is already running. Check back in a minute.'); return; }
+    if (data && data.error) throw new Error(data.error);
     const held = (data.results || []).filter(r => r.result === 'skipped').length;
-    toast(`${data.sent || 0} email${data.sent === 1 ? '' : 's'} sent${held ? `, ${held} held for you` : ''}`);
+    toast(`${data.sent || 0} email${data.sent === 1 ? '' : 's'} sent${held ? `, ${held} held for you` : ''}${data.more ? '. The rest go out at the next check (every 15 minutes in the morning)' : ''}`);
   } catch (e) { toast(String(e.message || e), 'bad'); }
   finally { autoBusy = false; autoAt = 0; await autoLoad(true); schedule(); }
 }
@@ -7182,6 +7264,9 @@ function makeSupaDb(sb, uidKey){
   const maxTs = {}; const fireT = {}; const saveT = {};
   const ckey = c => `${uidKey}|${c}`;
   const bump = (c, ts) => { if (ts && (!maxTs[c] || ts > maxTs[c])) maxTs[c] = ts; };
+  // ask for changes from a couple of minutes before the last one seen: two saves landing at almost the same moment can be
+  // stamped slightly out of order, and the overlap makes sure neither is missed (anything fetched twice is just the same)
+  const since = ts => { const t = Date.parse(ts); return isNaN(t) ? ts : new Date(t - 120000).toISOString(); };
   const persist = c => { clearTimeout(saveT[c]); saveT[c] = setTimeout(() => { const x = (subs[c] || [])[0]; if (x && x.ready) IDB.set(ckey(c), {map: x.map, max: maxTs[c] || '', at: Date.now()}); }, 2500); };
   const fire = c => { clearTimeout(fireT[c]); fireT[c] = setTimeout(() => { (subs[c] || []).forEach(x => { if (x.ready) x.cb(x.snap()); }); persist(c); }, 120); };
   const ch = sb.channel('pt-records').on('postgres_changes', {event: '*', schema: 'public', table: 'records'}, ev => {
@@ -7215,7 +7300,7 @@ function makeSupaDb(sb, uidKey){
   // fetch what changed on the server since this copy was last current (and drop anything deleted), then redraw
   async function catchUp(c){
     const x0 = (subs[c] || []).find(x => x.ready); if (!x0 || !maxTs[c]) return;
-    const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', maxTs[c]).order('id'));
+    const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', since(maxTs[c])).order('id'));
     for (const r of changed) { for (const x of subs[c] || []) x.map[r.id] = r.data || {}; bump(c, r.updated_at); }
     if (changed.length) useAdd('catch', jsonSize(changed) + 200);
     const {count, error} = await retry(() => sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c));
@@ -7240,7 +7325,7 @@ function makeSupaDb(sb, uidKey){
     const cached = await IDB.get(ckey(c));
     if (cached && cached.map && cached.max) {
       const map = cached.map; maxTs[c] = cached.max;
-      const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', cached.max).order('id'));
+      const changed = await pages(() => sb.from('records').select('id,data,updated_at').eq('col', c).gt('updated_at', since(cached.max)).order('id'));
       for (const r of changed) { map[r.id] = r.data || {}; bump(c, r.updated_at); }
       useAdd('catch', jsonSize(changed) + 200);
       const {count, error} = await retry(() => sb.from('records').select('id', {count: 'exact', head: true}).eq('col', c));
@@ -7319,6 +7404,7 @@ function makeSupaDb(sb, uidKey){
 }
 let USERS = []; // profiles rows
 function applyProfiles(rows){
+  AUTOV++;
   USERS = rows || [];
   for (const u of USERS) P[u.id] = {name: u.name, email: u.email, role: u.role, active: u.active};
   const me = USERS.find(u => SUPA && SUPA.uid && u.user_id === SUPA.uid);
