@@ -233,6 +233,12 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 
 .feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
 .fi{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px}
+.fi.has-del{grid-template-columns:auto minmax(0,1fr) auto}
+.fi-del{width:28px;height:28px;opacity:0;transition:opacity .12s}
+.fi:hover .fi-del,.fi-del:focus-visible,.fi-del.arm{opacity:1}
+@media (hover:none){.fi-del{opacity:.55}}
+.fi-del.arm{width:auto;padding:0 10px;background:var(--bad-soft);color:var(--bad);font-weight:700;font-size:.8rem}
+.fi-del.arm:hover{background:var(--bad);color:var(--surface)}
 .ft{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;border-radius:5px;padding:2px 6px;height:fit-content;background:var(--surface-2);color:var(--muted);min-width:62px;text-align:center}
 .ft.job{background:var(--good);color:var(--surface)}.ft.won{background:var(--good-soft);color:var(--good)}.ft.lost{background:var(--bad-soft);color:var(--bad)}.ft.doc{background:var(--warn-soft);color:var(--warn)}.ft.in{background:var(--accent-soft);color:var(--accent)}.ft.out{background:var(--surface-2);color:var(--accent);border:1px solid var(--accent-soft)}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
@@ -1661,6 +1667,23 @@ function copyText(text){
 }
 function fallbackCopy(text){ const t = document.createElement('textarea'); t.value = text; t.style.position='fixed'; t.style.opacity='0'; document.body.append(t); t.select(); let ok=false; try { ok = document.execCommand('copy'); } catch {} t.remove(); toast(ok ? 'Copied' : 'Select the text and copy it manually', ok?'':'bad'); }
 
+// ---------- Copy to NDP: one row for Jason's New Daily Purge sheet, columns in the sheet's order, tab-separated so Excel spreads it across ----------
+const NDP_COLS = ['Scheduled', 'WINDOW', 'EMAILED', 'Business Name/Client', 'Sales Rep', 'Lead Source', 'Service Address', 'Additional Notes/Stairs/elevator', 'Office Hours', 'Amount of Shredding', 'Email', 'Storage Unit - unit number/floor number', 'Hard drives/Media/Xrays', 'Quote/Pricing', 'Contact Name', 'Contact Phone', 'Alternate phone number/onsite contact', 'Billing Address (If Different)', 'How are they paying?', 'Credit card info', 'Payment Method', 'Confirm Time Y/N', 'Contacted'];
+// typed in the Copy to NDP window before copying: [column, label, kind]
+const NDP_MANUAL = [['Additional Notes/Stairs/elevator', 'Additional notes / stairs / elevator', 'ta'], ['Office Hours', 'Office hours'], ['Amount of Shredding', 'Amount of shredding'], ['Storage Unit - unit number/floor number', 'Storage unit: unit # / floor #'], ['Hard drives/Media/Xrays', 'Hard drives / media / X-rays'], ['Quote/Pricing', 'Quote / pricing'], ['Alternate phone number/onsite contact', 'Alternate phone / onsite contact'], ['Billing Address (If Different)', 'Billing address (if different)'], ['How are they paying?', 'How are they paying?', 'pay']];
+function ndpRow(dealId, typed = {}){
+  const d = S.deals[dealId]; if (!d) return null; const c = S.companies[d.companyId] || {};
+  // the account's most recently added contact (imported ones share an import time, so their old CRM number breaks the tie)
+  const cts = (d.companyId ? gr(d.companyId).contacts : []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0) || (+b.spiroId || 0) - (+a.spiroId || 0) || String(b.id).localeCompare(String(a.id)));
+  const ct = cts[0] || (d.contactId && S.contacts[d.contactId]) || {};
+  const em = (cts.find(x => x.email) || {}).email || '';
+  const ph = ct.phone || ct.mobile || ''; const phone = String(ph).replace(/\D/g, '').length >= 10 ? fmtPhone(ph) : String(ph).replace(/^\s*\+?1[\s.-]+/, '');
+  const addr = [c.address, [c.city, c.state].filter(Boolean).join(', ') + (c.zip ? ' ' + c.zip : '')].map(x => String(x || '').trim()).filter(Boolean).join(', ');
+  const src = d.source === 'Other' && d.sourceOther ? d.sourceOther : (d.source || '');
+  const v = {...typed, 'Business Name/Client': c.name || '', 'Sales Rep': String(ME.name || '').trim().split(/\s+/)[0] || '', 'Lead Source': src, 'Service Address': addr, 'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
+  return NDP_COLS.map(k => String(v[k] ?? '').replace(/[\t\r\n]+/g, ' ').trim()).join('\t');
+}
+
 // ---------- store ----------
 let bootDone; const bootReady = new Promise(r => bootDone = r);
 function writeErr(e){
@@ -2556,7 +2579,8 @@ function feedItem(a, withCo){
   const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
   const first = nl > -1 ? txt.slice(0, nl) : txt, rest = nl > -1 ? txt.slice(nl + 1).trim() : '';
   const em = a.type === 'email' && a.id;
-  return `<li class="fi"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${em ? ` class="fi-b" data-act="emailOpen" data-aid="${esc(a.id)}" title="Click to read the whole email"` : rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}${fileChips(a.files)}<small>${esc(pname(a.by))} · ${rel(a.at)}${a.type === 'email' ? trackBadge(a) : ''}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div></li>`;
+  const delB = canWrite && a.id && S.activities[a.id] && (a.by === ME.id || isAdmin()) ? `<button type="button" class="icon-btn fi-del" data-act="actDel" data-id="${esc(a.id)}" aria-label="Delete this activity" title="Delete">${ic('trash')}</button>` : '';
+  return `<li class="fi${delB ? ' has-del' : ''}"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${em ? ` class="fi-b" data-act="emailOpen" data-aid="${esc(a.id)}" title="Click to read the whole email"` : rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}${fileChips(a.files)}<small>${esc(pname(a.by))} · ${rel(a.at)}${a.type === 'email' ? trackBadge(a) : ''}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div>${delB}</li>`;
 }
 function coActivityGroups(){
   const since = Date.now() - 30 * 864e5; const g = {};
@@ -2757,7 +2781,7 @@ V.opp = () => {
   const f = (label, val, wide, k) => k && W ? `<label class="cpf ed${wide ? ' wide' : ''}"><span>${label}</span><div>${oppEditor({...d, id}, k)}</div></label>`
     : `<div class="cpf${wide ? ' wide' : ''}"><span>${label}</span><div>${val || '<span class="sub">—</span>'}</div></div>`;
   const closed = !isOpen(d);
-  const headBtns = `<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
+  const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="pipeline">← Opportunities</button>
     <div class="cp-head"><span class="cp-ic">${ic('cols')}</span><div class="cp-name"><h1>${esc(d.name || 'Opportunity')}</h1><p class="sub">${d.companyId ? `<button class="lnk" data-act="coPage" data-id="${d.companyId}">${esc(cname(d.companyId))}</button>` : 'No account'}</p></div>
       <div class="vh-act">${W ? stageSel(d, 'rowStage') : stageChip(d)}${headBtns}</div></div>
@@ -3081,7 +3105,7 @@ const DETAIL = {
     const tasks = L('tasks').filter(k => k.dealId === id && !k.done);
     const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
     return `<div class="dh"><div><p class="eyebrow">Opportunity</p><h2>${esc(d.name)}</h2>${d.companyId ? `<div>${link('companies', d.companyId)}</div>` : ''}</div>${closeBtn}</div>
-    <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
+    <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button><button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     <dl class="facts">
       <dt>Stage</dt><dd>${canWrite ? `<select id="dealStage" data-change="dealStage" data-id="${id}" aria-label="Stage" style="width:auto">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k===s.k?'selected':''}>${s.l}</option>`).join('')}</select>` : stageChip(d)}</dd>
       ${fact('Annual projected', d.value ? `<b class="num">${money(d.value)}</b>` : '')}
@@ -4797,7 +4821,8 @@ async function autoLogEmails(coId){
     try { await emailDedupe(coId); } catch {}
     // an email sent from Paper Trail is already on the timeline without Outlook's id: link it instead of logging twice
     for (const m of st.items.filter(m => !m.inbound)) { const pt = sentByPT(coId, m.subject, m.at); if (pt) await patch('activities', pt.id, {emailId: m.id, ...(m.key ? {emailKey: m.key} : {})}); }
-    const isLogged = emLoggedIn(L('activities').filter(a => a.companyId === coId));
+    const binned = Object.values(S.trash || {}).filter(t => t && t.col === 'activities' && t.data && t.data.companyId === coId).map(t => t.data);   // an email you deleted isn't logged again
+    const isLogged = emLoggedIn(L('activities').filter(a => a.companyId === coId).concat(binned));
     const todo = st.items.filter(m => !isLogged(m)).sort((a,b) => b.at - a.at).slice(0, 40);
     const cts = gr(coId).contacts;
     for (const m of todo) {
@@ -6125,6 +6150,22 @@ function journeyLibraryModal(){
 
 // ---------- actions ----------
 const A = {
+  ndpCopy: d => { const id = d.id, deal = S.deals[id]; if (!deal) return;
+    const saved = prefGet('ndp-' + id, {}) || {};   // what you typed last time for this opportunity
+    const field = ([col, label, kind], i) => kind === 'ta' ? F(label, ta('n' + i, saved[col] || '', 2), 'wide')
+      : F(label, inp('n' + i, saved[col] || '', 'text', kind === 'pay' ? 'list="ndpPay" autocomplete="off"' : 'autocomplete="off"') + (col === 'Quote/Pricing' && deal.priceQuoted ? `<small class="sub">Price quoted on this opportunity: ${money2(deal.priceQuoted)}</small>` : ''));
+    openModal('Copy to NDP', `<p class="sub">Fill in what you know, then copy. The account, your name, lead source, address, email and contact fill in on their own. Anything left empty stays blank in the sheet.</p>
+      <div class="grid2">${NDP_MANUAL.map(field).join('')}</div><datalist id="ndpPay"><option value="Credit card"><option value="Check"><option value="Cash"><option value="Invoice"><option value="Card on file"></datalist>`, 'Copy row', f => {
+        const typed = {}; NDP_MANUAL.forEach(([col], i) => { typed[col] = f['n' + i] || ''; });
+        prefSet('ndp-' + id, typed);
+        const row = ndpRow(id, typed); const done = () => toast('Copied for New Daily Purge. Click the first cell of an empty row and paste.');
+        try { navigator.clipboard.writeText(row).then(done, () => { fallbackCopy(row); }); } catch { fallbackCopy(row); }
+        return true; }); },
+  actDel: async (d, el) => {
+    if (!el.classList.contains('arm')) { el.classList.add('arm'); el.textContent = 'Delete?'; el.setAttribute('aria-label', 'Click again to delete this activity'); clearTimeout(el._t); el._t = setTimeout(() => { if (el.isConnected) { el.classList.remove('arm'); el.innerHTML = ic('trash'); el.setAttribute('aria-label', 'Delete this activity'); } }, 4000); return; }
+    clearTimeout(el._t); const a = S.activities[d.id]; if (!a) return;
+    if (await del('activities', d.id)) toast('Activity deleted. It\'s in Settings → Trash if you need it back.');
+  },
   theoToggle: (d, el) => { const on = !prefGet('theo', true); prefSet('theo', on); el.textContent = on ? 'Hide Theo' : 'Show Theo'; render(); toast(on ? 'Theo is back' : 'Theo is hidden. Show him again from Settings anytime.'); },
   go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
