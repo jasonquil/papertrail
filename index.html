@@ -2292,7 +2292,7 @@ function thMount(room){
   q('.th-cat').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); thPet(); } });
   q('.th-hud').addEventListener('click', () => { const c = q('.th-card'), open = c.hidden; c.hidden = !open; q('.th-hud').setAttribute('aria-expanded', open); if (open) thCard(); });
   TH.H = null; thUpdate(true);
-  if (!TH.raf) TH.raf = requestAnimationFrame(thTick);
+  if (!TH.raf) TH.raf = setTimeout(() => thTick(performance.now()), 0);
 }
 function thCard(){
   const c = TH.el && TH.el.querySelector('.th-card'); if (!c || c.hidden || !TH.st) return; const s = TH.st;
@@ -2339,8 +2339,11 @@ let thLast = 0;
 function thTick(now){
   TH.raf = 0;
   const room = TH.el; if (!room || !room.isConnected) { TH.el = null; return; }
-  TH.raf = requestAnimationFrame(thTick);
-  const dt = Math.min(64, now - (thLast || now)) / 1000; thLast = now;
+  // he moves about a pixel every 60 ms, so a frame every 66 ms looks the same as 60 a second and costs far less battery;
+  // while the tab is hidden he checks in once a second
+  TH.raf = setTimeout(() => thTick(performance.now()), document.hidden ? 1000 : 66);
+  if (document.hidden) return;
+  const dt = Math.min(250, now - (thLast || now)) / 1000; thLast = now;
   if (!TH.M) return;
   const maxX = Math.max(4, room.clientWidth - 96);
   if (now > TH.petUntil) {
@@ -2362,7 +2365,7 @@ function thTick(now){
   const cv = room.querySelector('.th-cat'); if (!cv) return;
   if (key !== TH.drawn) { TH.drawn = key; const g = cv.getContext('2d'); g.clearRect(0, 0, 22, 21);
     rows().forEach((row, y) => { for (let x = 0; x < row.length; x++) { const c = TH_PAL[row[x]]; if (!c) continue; g.fillStyle = c; g.fillRect(flip ? 21 - x : x, y, 1, 1); } }); }
-  cv.style.transform = `translate(${Math.round(TH.x)}px,${TH.state === 'walk' && step ? -3 : 0}px)`;
+  const tf = `translate(${Math.round(TH.x)}px,${TH.state === 'walk' && step ? -3 : 0}px)`; if (tf !== TH.tf) { TH.tf = tf; cv.style.transform = tf; }   // only touch the page when he actually moved
   const t = Date.now();
   if (TH.M === 'sleepy' && t - TH.zAt > 1400) { TH.zAt = t; thFx('z', true); }
   if (TH.M !== 'sleepy' && t - TH.talkAt > 9000) thTalk();
