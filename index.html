@@ -2191,20 +2191,21 @@ function thStats(){
   // the day that counts: today, or Friday over the weekend (his health holds still until Monday)
   const ref = thDay(now); if (weekend) ref.setDate(ref.getDate() - (dow === 6 ? 1 : 2));
   const prev = new Date(ref); do prev.setDate(prev.getDate() - 1); while (prev.getDay() === 0 || prev.getDay() === 6);
-  const refY = ymd(ref), prevY = ymd(prev), t = today(), cut = weekend ? ymd(new Date(ref.getTime() + 864e5)) : t;
+  const refY = ymd(ref), prevY = ymd(prev), t = today();
   let a = 0, b = 0; const from = prev.getTime();
   for (const x of Object.values(S.activities || {})) {
     if (!x || x.by !== ME.id || !(x.at >= from) || x.type === 'stage') continue;
     if (x.type === 'email' && /^Received:/.test(x.text || '')) continue;   // emails people sent you don't count, only what you did
     const d = ymd(new Date(x.at)); if (d === refY) a++; else if (d === prevY) b++;
   }
+  // the same counts the CRM shows (sidebar badges, Today), always just yours, as if "Mine" were on
   let overdue = 0, due = 0;
-  for (const k of Object.values(S.tasks || {})) { if (!k || k.done || k.assigneeId !== ME.id || !isDate(k.due)) continue; if (k.due < cut) overdue++; else if (k.due === t) due++; }
-  let jr = 0;
-  for (const e of Object.values(S.enrollments || {})) { if (!e || e.status !== 'active' || e.ownerId !== ME.id) continue; const s = nextStep(e); if (s && s.due <= t && !autoWillSend(e, s) && !isCallStep(eSteps(e)[s.step])) jr++; }
+  for (const k of Object.values(S.tasks || {})) { if (!k || k.done || k.assigneeId !== ME.id || !isDate(k.due) || k.due > t) continue; if (k.due < t) overdue++; else due++; }
+  const was = ui.mine; let jr = 0, att = 0;
+  try { ui.mine = true; jr = journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length; att = attention().length; } finally { ui.mine = was; }
   const morning = !weekend && now.getHours() < 11;
   const logged = morning ? Math.max(a, b) : a;
-  return {today: a, logged, overdue, due, jr, weekend, morning};
+  return {today: a, logged, overdue, due, jr, att, weekend, morning};
 }
 const thHealth = s => Math.round(Math.min(s.logged / 6, 1) * 50 + Math.max(0, 50 - s.overdue * 12.5));
 const thN = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -2213,10 +2214,11 @@ function thLines(s){
   if (s.overdue) out.push(`${thN(s.overdue, 'reminder', 'reminders')} overdue!`);
   if (s.jr) out.push(`${thN(s.jr, 'journey', 'journeys')} left to send`);
   if (s.due) out.push(`${thN(s.due, 'reminder', 'reminders')} due today`);
+  if (s.att) out.push(`${thN(s.att, 'thing needs', 'things need')} you on Today`);
   if (s.weekend) out.push('It\'s the weekend. Go outside');
   else if (s.today >= 6) out.push(`${s.today} things logged. Treats?`);
   else out.push(s.today ? `Log ${6 - s.today} more for a full belly` : 'Nothing logged yet today...');
-  if (!s.overdue && !s.jr && !s.due) out.unshift('All caught up. Nap time?');
+  if (!s.overdue && !s.jr && !s.due && !s.att) out.unshift('All caught up. Nap time?');
   return out;
 }
 function thHeart(fill){
@@ -2239,7 +2241,7 @@ function thCard(){
   const c = TH.el && TH.el.querySelector('.th-card'); if (!c || c.hidden || !TH.st) return; const s = TH.st;
   const row = (l, v, view) => `<button class="th-row" type="button" data-act="go" data-v="${view}"><span>${l}</span><span>${v}</span></button>`;
   c.innerHTML = `<b>THEO</b> · ${TH_MOOD[TH.M]}<div class="th-bar"><s style="width:${TH.H}%"></s></div>
-    ${row('Overdue reminders', s.overdue, 'reminders')}${row('Due today', s.due, 'reminders')}${row('Journeys to send', s.jr, 'journeys')}${row('Logged today', s.today >= 6 ? s.today + ' (full)' : s.today + ' of 6', 'today')}`;
+    ${row('Needs you on Today', s.att, 'today')}${row('Overdue reminders', s.overdue, 'reminders')}${row('Due today', s.due, 'reminders')}${row('Journeys to send', s.jr, 'journeys')}${row('Logged today', s.today >= 6 ? s.today + ' (full)' : s.today + ' of 6', 'today')}`;
 }
 function thUpdate(force){
   if (!TH.el || !dataReady()) return;
