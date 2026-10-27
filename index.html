@@ -106,6 +106,7 @@ main{overflow:auto;min-width:0}
 .lg-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:14px}
 .lg-card h1{font:800 1.4rem var(--display);margin:6px 0 0}.lg-card form{display:flex;flex-direction:column;gap:12px}.lg-card .btn{justify-content:center}
 .lg-demo{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;padding-top:14px;border-top:1px solid var(--line)}
+.lg-forgot{align-self:flex-end;font-size:.84rem;margin-top:-4px}
 .lg-msg{color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:8px 10px;font-size:.88rem;margin:0}.lg-card .brand{padding:0}
 .users{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}.urow{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;flex-wrap:wrap}
 .urow small{display:block;color:var(--muted)}.uact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.uact select{width:auto}.chip.warn{background:var(--warn-soft);color:var(--warn)}
@@ -1409,7 +1410,7 @@ const COLS = ['companies','contacts','deals','quotes','activities','tasks','cont
 const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'following',l:'Closed Still Following Up',p:25},{k:'won',l:'Closed Won',p:100},{k:'updated',l:'Updated Contract',p:100},{k:'lost',l:'Closed Lost',p:0}];
 const CLOSED = ['won','updated','lost'];
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
-const OPP_TYPES = ['Shredding Purge','Scheduled Shredding','Medical Waste','Hard Drive Destruction','Product Destruction','Other'];
+const OPP_TYPES = ['Shredding Purge','Ongoing Purge','Scheduled Shredding','Medical Waste','Sharps Only','Hard Drive Destruction','Product Destruction','Drop Off','Other'];
 const SVC_TYPES = ['Shredding','Medical Waste','Hard Drive/ Media','Shred & Med','Scanning','Product Destruction','Chat - Unknown'];
 const INTERVALS = ['As Needed','Weekly','Bi-Weekly','Every 2 weeks','Every 4 weeks','Monthly','Bi-Monthly','Every 8 weeks','Quarterly','Twice a year','Yearly','On call','One-time'];
 const INITIAL_CALL = ['Jason','Kate','Ann','Austin','Sarah','House'];
@@ -1481,6 +1482,7 @@ let db = null, U = null, AI = null, DL = null, MCP = null;
 const EM = {}; // companyId -> {status, items, err, partial, at}
 let ME = {id:null, name:''};
 let canWrite = true, live = false, booted = false, STANDALONE = false, SUPA = null, DEMO = false;
+let AUTH_RET = null;   // what a password reset link brought back in the address bar
 let GUEST = false; try { GUEST = /(^|[?&])demo\b/.test(location.search.slice(1)) || sessionStorage.getItem('pt-guest') === '1'; if (GUEST) sessionStorage.setItem('pt-guest', '1'); } catch {}
 const guestExit = () => { try { sessionStorage.removeItem('pt-guest'); sessionStorage.removeItem('pt-demo'); } catch {} location.href = location.pathname; };
 const REAL = {}; // live records kept aside while demo mode shows sample data
@@ -1560,6 +1562,8 @@ const nameOf = (col,id) => { const r = S[col][id]; if (!r) return 'Deleted recor
 const stage = d => { const k = LEGACY_STAGE[d.stage] || d.stage || 'lead'; return STAGES.find(s => s.k === k) || STAGES[0]; };
 const isOpen = d => !CLOSED.includes(d.stage||'lead');
 const isWon = d => d.stage === 'won' || d.stage === 'updated';
+// a Drop Off is kept and listed, but isn't a real opportunity: it's left out of every count and total
+const isReal = d => (d.type || d.name) !== 'Drop Off';
 const qTotal = q => q.total != null ? +q.total : sum(q.items||[], i => (+i.qty||0) * (+i.price||0));
 // search: "Port St. Lucie", "Port St Lucie" and "Port Saint Lucie" all find each other; words can come in any order
 const SYN = {saint: 'st', street: 'st', fort: 'ft', mount: 'mt', avenue: 'ave', av: 'ave', road: 'rd', boulevard: 'blvd', drive: 'dr', doctor: 'dr', lane: 'ln', court: 'ct', place: 'pl', parkway: 'pkwy', pkway: 'pkwy', highway: 'hwy', terrace: 'ter', circle: 'cir', suite: 'ste', north: 'n', south: 's', east: 'e', west: 'w', northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw', center: 'ctr', centre: 'ctr', company: 'co', corporation: 'corp', incorporated: 'inc', limited: 'ltd', associates: 'assoc', department: 'dept', building: 'bldg', apartment: 'apt', number: 'no', '&': 'and',
@@ -2672,16 +2676,16 @@ V.pipeline = () => {
   let rows = rows0;
   if (ui.stick) { const pos = new Map(ui.stick.order.map((id, i) => [id, i])); rows = rows0.slice().sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e9) - (pos.has(b.id) ? pos.get(b.id) : 1e9)); }   // keep the order you were looking at
   ui.oppOrder = rows.map(d => d.id);
-  const nOpen = all.filter(isOpen).length;
+  const nOpen = all.filter(d => isOpen(d) && isReal(d)).length;
   const segs = `<div class="segs" role="group" aria-label="Show">${[['open','Open'],['won','Won'],['lost','Lost'],['all','All']].map(([k,l]) => `<button class="${show===k?'on':''}" data-act="oppShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   ui.lastRows = {...(ui.lastRows || {}), deals: rows};
   const oppView = ui.oppView || prefGet('oppView', '') || (LOOK.look === 'dispatch' ? 'board' : 'list');
   const vseg = `<div class="segs" role="group" aria-label="View"><button class="${oppView === 'list' ? 'on' : ''}" data-act="oppView" data-v="list">List</button><button class="${oppView === 'board' ? 'on' : ''}" data-act="oppView" data-v="board">Board</button></div>`;
-  const openRows = all.filter(isOpen); const sb = ['lead', 'quoted', 'contract', 'following'].map(k => [k, openRows.filter(d => stage(d).k === k).length]).filter(x => x[1]);
+  const openRows = all.filter(d => isOpen(d) && isReal(d)); const sb = ['lead', 'quoted', 'contract', 'following'].map(k => [k, openRows.filter(d => stage(d).k === k).length]).filter(x => x[1]);
   const sbar = sb.length ? `<div class="stagebar" aria-hidden="true">${sb.map(([k, n]) => `<span style="flex:${n};background:${({lead: '#6EB1F0', quoted: '#EDB25A', contract: '#B39DF2', following: '#C9B6F5'})[k]}">${esc(STAGES.find(x => x.k === k).l)} ${n}</span>`).join('')}</div>` : '';
   if (all.length && oppView === 'board') {
     const cols = show === 'open' ? ['lead', 'quoted', 'contract', 'following'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['lost'] : STAGES.map(x => x.k);
-    const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const tot = ds.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${ds.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
+    const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const real = ds.filter(isReal); const tot = real.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${real.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
     return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal')) + sbar
       + (side ? `<div class="oppsplit"><div class="oppsplit-l">${board}</div>${oppSide(side)}</div>` : board);
   }
@@ -2727,8 +2731,8 @@ function coSummary(id){
   const addr = [c.address, c.city].filter(Boolean).join(' in ');
   parts.push(`${c.name} is owned by ${pname(c.ownerId).replace(' (you)', '')}${addr ? ` and is located at ${addr}` : ''}.`);
   if (c.phone) parts.push(`Their phone number is ${c.phone}.`);
-  const od = g.deals.filter(isOpen); if (od.length) parts.push(`${od.length} open opportunit${od.length === 1 ? 'y' : 'ies'}, ${money(sum(od, d => d.value))} projected.`);
-  const won = g.deals.filter(isWon); if (won.length) parts.push(`${won.length} closed won.`);
+  const od = g.deals.filter(d => isOpen(d) && isReal(d)); if (od.length) parts.push(`${od.length} open opportunit${od.length === 1 ? 'y' : 'ies'}, ${money(sum(od, d => d.value))} projected.`);
+  const won = g.deals.filter(d => isWon(d) && isReal(d)); if (won.length) parts.push(`${won.length} closed won.`);
   const next = g.tasks.filter(k => !k.done && isDate(k.due)).sort((a, b) => a.due < b.due ? -1 : 1)[0]; if (next) parts.push(`Next reminder: ${next.title}, ${fmtDate(next.due)}.`);
   const je = L('enrollments').filter(e => e.companyId === id && e.status === 'active'); if (je.length) parts.push(`${je.length} contact${je.length === 1 ? ' is' : 's are'} on a journey.`);
   return parts.join(' ');
@@ -2855,7 +2859,7 @@ V.company = () => {
   if (!c && !dataReady()) return `<p class="empty-s">Loading…</p>`;
   if (!c) return `<p class="empty-s">This account no longer exists. <button class="lnk" data-act="go" data-v="companies">Back to Accounts</button></p>`;
   const g = gr(id); const tab = ui.cpTab || 'details';
-  const counts = {activity: g.acts.filter(a => a.type !== 'stage').length, reminders: g.tasks.filter(k => !k.done).length, contacts: g.contacts.length, opps: g.deals.length, quotes: g.quotes.length, contracts: g.contracts.length, journeys: L('enrollments').filter(e => e.companyId === id).length};
+  const counts = {activity: g.acts.filter(a => a.type !== 'stage').length, reminders: g.tasks.filter(k => !k.done).length, contacts: g.contacts.length, opps: g.deals.filter(isReal).length, quotes: g.quotes.length, contracts: g.contracts.length, journeys: L('enrollments').filter(e => e.companyId === id).length};
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
   const W = canWrite;
   const cf = (label, val, k, wide) => W ? `<label class="cpf ed${wide ? ' wide' : ''}"><span>${label}</span><div>${coEditor({...c, id}, k)}</div></label>` : cpField(label, val, wide);
@@ -2896,7 +2900,7 @@ V.companies = () => {
   return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import from your current CRM in Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
-      const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
+      const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
       return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
     }).join('') || `<tr><td colspan="6" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
@@ -3126,7 +3130,7 @@ const DETAIL = {
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({companyid:id})}
     ${sec('Contacts', g.contacts.length, rowsOr(g.contacts.sort((a,b)=>pname_(a).localeCompare(pname_(b))), contactRow, 'No contacts yet.'), 'newContact', {co:id})}
-    ${sec('Opportunities', g.deals.length, rowsOr(g.deals.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)), dealRow, 'No opportunities yet.'), 'newDeal', {co:id})}
+    ${sec('Opportunities', g.deals.filter(isReal).length, rowsOr(g.deals.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)), dealRow, 'No opportunities yet.'), 'newDeal', {co:id})}
     ${sec('Quotes', g.quotes.length, rowsOr(g.quotes.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)), quoteRow, 'No quotes yet.'), 'newQuote', {co:id})}
     ${sec('Contracts', g.contracts.length, rowsOr(g.contracts.sort((a,b)=>(b.end||'')<(a.end||'')?-1:1), contractRow, 'No contracts yet.'), 'newContract', {co:id})}
     ${sec('Reminders', openTasks.length, tasksList(openTasks), 'newTask', {co:id})}
@@ -3142,7 +3146,7 @@ const DETAIL = {
     <dl class="facts">${fact('Email', ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(ctMail(c))}</button>` : '', ctMail(c))}${c.email && c.email2 ? fact('Other email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({contactid:id, companyid:c.companyId})}
-    ${sec('Opportunities', deals.length, rowsOr(deals, dealRow, 'No opportunities with this contact.'), 'newDeal', {co:c.companyId, ct:id})}
+    ${sec('Opportunities', deals.filter(isReal).length, rowsOr(deals, dealRow, 'No opportunities with this contact.'), 'newDeal', {co:c.companyId, ct:id})}
     ${c.companyId ? `<div><button class="btn sm" data-act="coPage" data-id="${c.companyId}" data-t="activity">View ${esc(cname(c.companyId))} activity</button></div>` : ''}`;
   },
   deals(id){
@@ -4206,7 +4210,7 @@ const withData = (list, k) => { const seen = new Set(list); const n = {}; for (c
 const anyOpt = (list, label) => [['', label || 'Any'], ...list.map(x => Array.isArray(x) ? x : [x, x])];
 const ownerOpts = () => people().map(i => [i, nm(i)]).sort((a, b) => a[1].localeCompare(b[1]));
 const mainContact = coId => gr(coId).contacts.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
-const coStats = coId => { const ds = gr(coId).deals; const won = ds.filter(isWon); const last = won.map(d => ymdOf(d.serviceDate) || ymdOf(d.closedAt)).filter(Boolean).sort().pop() || '';
+const coStats = coId => { const ds = gr(coId).deals.filter(isReal); const won = ds.filter(isWon); const last = won.map(d => ymdOf(d.serviceDate) || ymdOf(d.closedAt)).filter(Boolean).sort().pop() || '';
   return {open: ds.filter(isOpen).length, won: won.length, wonValue: sum(won, d => d.value), last}; };
 const coStatus = (coId, st) => { if (!st) return true; const x = coStats(coId); return st === 'open' ? x.open > 0 : st === 'won' ? x.won > 0 : st === 'noopen' ? x.open === 0 : st === 'never' ? x.won === 0 : true; };
 const EXP = {
@@ -6386,6 +6390,20 @@ const A = {
   uActive: async d => { const u = USERS.find(x => x.id === d.id); if (!u) return; const off = u.active; await uPatch(d.id, {active: !u.active});
     if (off && raTotal(d.id)) reassignModal(d.id, {title: `Reassign ${u.name}'s records?`, intro: `${esc(u.name)} is deactivated and owns ${raTotal(d.id)} record${raTotal(d.id) === 1 ? '' : 's'}. Choose who takes them over, or skip and do it later from Settings.`, skip: 'Not now'}); },
   reassign: d => reassignModal(d.id || ''),
+  // a former user (added by an import) who actually works here: same profile, so every record they own stays theirs
+  uMakeReal: d => { const u = USERS.find(x => x.id === d.id); if (!u || !isAdmin() || !SUPA) return;
+    openModal(`Make ${u.name} a user`, `<p class="sub">${esc(u.name)} keeps everything they already own. They get an invite code that works for 7 days; send them the site link and the code, and they choose their own password under “First time here?”.</p>
+      <div class="grid2">${F('Work email', inp('uEmail', '', 'email', 'placeholder="name@allpointsprotects.com" required'))}${F('Role', sel('uRole', [['manager', 'Manager'], ['admin', 'Admin']], 'manager'))}</div>`, 'Make a user', async f => {
+        const email = (f.uEmail || '').trim().toLowerCase();
+        if (!EMAIL_RE.test(email)) { toast('Enter a valid work email.', 'bad'); return false; }
+        if (USERS.some(x => x.id !== u.id && (x.email || '').toLowerCase() === email)) { toast('That email is already a user.', 'bad'); return false; }
+        const {error} = await SUPA.sb.from('profiles').update({email, role: f.uRole || 'manager', active: true}).eq('id', u.id);
+        if (error) { toast("Couldn't make them a user: " + error.message, 'bad'); return false; }
+        const code = inviteCode();
+        const iv = await SUPA.sb.from('invites').upsert({profile_id: u.id, code, expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'});
+        await loadProfiles(); usersModal();
+        toast(iv.error ? `${u.name} is a user now, but the invite code couldn't be saved: ${iv.error.message}. Use “New code”.` : `${u.name} is a user now. Their invite code is ${code}.`, iv.error ? 'bad' : undefined);
+        return false; }); },
   uCode: async d => { const {error} = await SUPA.sb.from('invites').upsert({profile_id: d.id, code: inviteCode(), expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'}); if (error) toast("Couldn't make a new code: " + error.message, 'bad'); else { toast('New code made. It works for 7 days.'); await loadProfiles(); usersModal(); } },
   export: () => exportCsv(),
   expOpen: d => exportModal(d.t),
@@ -7665,28 +7683,45 @@ async function loadProfiles(){
   schedule();
   if (!$('#modal').hidden && $('#usersList')) usersModal();
 }
-function loginHtml(mode, msg){
+function loginHtml(mode, msg, email){
+  const top = `<div class="lg-card"><div class="brand"><span class="mark">PT</span><span><b>Paper Trail</b></span></div>`;
+  const err = msg ? `<p class="lg-msg" role="alert">${esc(msg)}</p>` : '';
+  const back = `<button class="lnk" type="button" data-lg="signin">Back to sign in</button>`;
+  if (mode === 'forgot') return `${top}<h1>Reset your password</h1><p class="sub">Enter your work email and we'll send you a link to choose a new password.</p>
+    <form id="lgForm" data-mode="forgot"><label class="f"><span>Email</span><input name="email" type="email" autocomplete="username" required value="${esc(email || '')}"></label>${err}<button class="btn pri" type="submit">Email me a reset link</button></form>${back}</div>`;
+  if (mode === 'sent') return `${top}<h1>Check your email</h1><p>If <b>${esc(email || 'that email')}</b> has a Paper Trail account, a link to choose a new password is on its way. It can take a few minutes, so check your junk folder too.</p><p class="sub">The link works once and expires after an hour.</p>${back}</div>`;
+  if (mode === 'reset') return `${top}<h1>Choose a new password</h1><p class="sub">You're signed in from the reset link. Pick a new password to finish.</p>
+    <form id="lgForm" data-mode="reset"><label class="f"><span>New password</span><input name="password" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters"></label>
+      <label class="f"><span>Type it again</span><input name="password2" type="password" minlength="8" autocomplete="new-password" required></label>${err}<button class="btn pri" type="submit">Save my new password</button></form></div>`;
   const first = mode === 'first';
-  return `<div class="lg-card"><div class="brand"><span class="mark">PT</span><span><b>Paper Trail</b></span></div>
+  return `${top}
     <h1>${first ? 'Set up your account' : 'Sign in'}</h1>
     ${first ? '<p class="sub">Use the email and invite code your admin gave you, then choose a password.</p>' : ''}
     <form id="lgForm" data-mode="${mode}">
       <label class="f"><span>Email</span><input name="email" type="email" autocomplete="username" required></label>
       ${first ? '<label class="f"><span>Invite code</span><input name="code" autocomplete="off" required></label>' : ''}
       <label class="f"><span>${first ? 'Choose a password' : 'Password'}</span><input name="password" type="password" minlength="8" autocomplete="${first ? 'new-password' : 'current-password'}" required></label>
+      ${first ? '' : '<button class="lnk lg-forgot" type="button" data-lg="forgot">Forgot password?</button>'}
       ${msg ? `<p class="lg-msg" role="alert">${esc(msg)}</p>` : ''}
       <button class="btn pri" type="submit">${first ? 'Create my account' : 'Sign in'}</button>
     </form>
     <button class="lnk" type="button" data-lg="${first ? 'signin' : 'first'}">${first ? 'Already set up? Sign in' : 'First time here? Set up your account'}</button>
     <div class="lg-demo"><button class="btn" type="button" data-lgdemo>${ic('spark')}Open the demo</button><span class="sub">Sample data, no sign-in. Nothing real is shown or saved.</span></div></div>`;
 }
-function supaLogin(sb){
+function supaLogin(sb, startMode, startMsg){
   return new Promise(resolve => {
     const el = document.createElement('div'); el.id = 'login'; document.body.appendChild(el);
-    const show = (mode, msg) => { el.innerHTML = loginHtml(mode, msg); const f = el.querySelector('input'); if (f) f.focus(); };
-    el.addEventListener('click', e => { if (e.target.closest('[data-lgdemo]')) { try { sessionStorage.setItem('pt-guest', '1'); } catch {} location.reload(); return; } const b = e.target.closest('[data-lg]'); if (b) show(b.dataset.lg); });
+    const show = (mode, msg, email) => { el.innerHTML = loginHtml(mode, msg, email); const f = el.querySelector('input:not([value]), input[value=""]') || el.querySelector('input'); if (f) f.focus(); };
+    el.addEventListener('click', e => { if (e.target.closest('[data-lgdemo]')) { try { sessionStorage.setItem('pt-guest', '1'); } catch {} location.reload(); return; } const b = e.target.closest('[data-lg]'); if (b) { const em = el.querySelector('[name=email]'); show(b.dataset.lg, null, em ? em.value.trim() : ''); } });
     el.addEventListener('submit', async e => {
       e.preventDefault(); const f = e.target; const mode = f.dataset.mode; const btn = f.querySelector('[type=submit]');
+      if (mode === 'forgot') {   // Supabase emails a one-time link back to this page
+        const email = f.email.value.trim().toLowerCase(); btn.disabled = true; btn.textContent = 'Sending…';
+        const r = await sb.auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname});
+        if (r.error) show('forgot', /second|rate|limit/i.test(r.error.message) ? 'Too many reset emails just now. Wait a few minutes and try again.' : r.error.message, email);
+        else show('sent', null, email);
+        return;
+      }
       const email = f.email.value.trim().toLowerCase(), password = f.password.value, code = f.code ? f.code.value.trim() : '';
       btn.disabled = true; btn.textContent = mode === 'first' ? 'Setting up…' : 'Signing in…';
       try {
@@ -7706,17 +7741,40 @@ function supaLogin(sb){
         el.remove(); resolve();
       } catch (err) { show(mode, (err && err.message) || 'Something went wrong. Try again.'); const i = el.querySelector('[name=email]'); if (i) i.value = email; }
     });
-    show('signin');
+    show(startMode || 'signin', startMsg);
+  });
+}
+// arrived from a reset email: signed in already, so just choose the new password
+function supaNewPassword(sb){
+  return new Promise(resolve => {
+    const el = document.createElement('div'); el.id = 'login'; document.body.appendChild(el);
+    const show = msg => { el.innerHTML = loginHtml('reset', msg); el.querySelector('input').focus(); };
+    el.addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target; const btn = f.querySelector('[type=submit]');
+      if (f.password.value !== f.password2.value) { show("Those two passwords don't match. Try again."); return; }
+      btn.disabled = true; btn.textContent = 'Saving…';
+      const r = await sb.auth.updateUser({password: f.password.value});
+      if (r.error) { show(/same|different/i.test(r.error.message) ? 'Pick a password you haven\'t used here before.' : r.error.message); return; }
+      el.remove(); resolve(); toast('New password saved. You\'re signed in.');
+    });
+    show();
   });
 }
 async function supaStart(){
   const cfg = window.PAPER_TRAIL || {};
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true}});
   SUPA = {sb, uid: null};
+  let loginMsg = '', loginMode = '';
+  if (AUTH_RET && AUTH_RET.type === 'recovery' && AUTH_RET.access_token) {   // came from a password reset email
+    const r = await sb.auth.setSession({access_token: AUTH_RET.access_token, refresh_token: AUTH_RET.refresh_token || ''});
+    if (r.error) { loginMode = 'forgot'; loginMsg = 'That reset link has expired or was already used. Send yourself a new one.'; }
+    else await supaNewPassword(sb);
+  } else if (AUTH_RET && (AUTH_RET.error_code || AUTH_RET.error)) { loginMode = 'forgot'; loginMsg = 'That reset link has expired or was already used. Send yourself a new one.'; }
+  AUTH_RET = null;
   const {data} = await sb.auth.getSession();
   let ok = false;
   if (data && data.session) { const m = await sb.rpc('is_member'); ok = !m.error && !!m.data; if (!ok) await sb.auth.signOut(); }
-  if (!ok) await supaLogin(sb);
+  if (!ok) await supaLogin(sb, loginMode, loginMsg);
   const u = await sb.auth.getUser(); SUPA.uid = u.data && u.data.user ? u.data.user.id : null;
   await loadProfiles();
   sb.channel('pt-profiles').on('postgres_changes', {event: '*', schema: 'public', table: 'profiles'}, () => loadProfiles().catch(() => {})).subscribe();
@@ -7779,7 +7837,7 @@ async function usageModal(month){
 const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o = ''; const r = new Uint32Array(8); crypto.getRandomValues(r); for (const n of r) o += a[n % a.length]; return o.slice(0, 4) + '-' + o.slice(4); };
 function usersModal(){
   const admin = isAdmin();
-  const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
+  const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm" data-act="uMakeReal" data-id="${u.id}" title="They work here: give them a login and keep everything they own">Make a user</button><button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
     return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former user' : esc(u.email)}</small></div>
       <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>`}
       ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
@@ -8047,7 +8105,8 @@ function contractView(id){
 // ---------- boot ----------
 async function boot(){
   if (/[?&](code|error)=/.test(location.search) && (window.name === 'pt-ms-login' || window.name === 'pt-ms-silent')) { document.body.innerHTML = '<p style="font:16px system-ui;padding:24px">Signing you in…</p>'; return; }
-  const h = (location.hash || '').slice(1); const hs = hashNav(h);
+  if (/(^|[#&])(access_token|error_code|error)=/.test(location.hash)) { try { AUTH_RET = Object.fromEntries(new URLSearchParams(location.hash.slice(1))); } catch {} }   // a password reset link: read it before the address bar is tidied
+  const h = AUTH_RET ? '' : (location.hash || '').slice(1); const hs = hashNav(h);
   if (hs) { ui.view = hs.v; ui.pageCo = hs.co; ui.pageOpp = hs.opp; ui.cpTab = hs.t || 'details'; if (hs.d || hs.s) navWant = {d: hs.d, s: hs.s}; }
   try { history.replaceState(navState(), '', navHash(navState())); } catch {}
   render();
