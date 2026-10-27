@@ -1,52 +1,101 @@
 # Paper Trail
 
-A simple CRM for a small sales team: accounts, contacts, opportunities, reminders, journeys, quotes and contracts.
+The All Points CRM: accounts, contacts, opportunities, reminders, journeys (automatic follow-ups), quotes, contracts,
+Outlook email, and email open tracking. Live at **https://jasonquil.github.io/papertrail/**.
+Add `?demo` to the address (or click **Open the demo** on the sign-in page) for sample data that never touches real records.
 
-## Put it on GitHub Pages
+## What's in this repository
 
-1. On GitHub, create a new repository (for example `paper-trail`).
-2. Click **Add file → Upload files** and drag in `index.html`, `README.md` and `.nojekyll` from this folder. Click **Commit changes**.
-3. Go to **Settings → Pages**. Under **Build and deployment**, set Source to **Deploy from a branch**, pick **main** and **/ (root)**, then click **Save**.
-4. After about a minute, the site is live at `https://<your-username>.github.io/paper-trail/`.
+| File | What it is |
+|---|---|
+| `index.html` | The whole app. GitHub Pages serves it; every push to `main` is live in a minute or two. |
+| `config.js` | The Supabase project and Microsoft app IDs the app connects to. None of these are secrets. |
+| `spiro-templates.json` | The 101 email templates from Spiro (Settings → Email templates → Add Spiro templates). |
+| `supabase/functions/journey-send/` | Sends journey emails at 8:45 AM and for **Send due emails now**. |
+| `supabase/functions/track/` | Records email opens and link clicks. |
+| `supabase-setup.sql` | The complete database, for rebuilding Paper Trail in a **new, empty** Supabase project. |
+| `supabase-update-4.sql` … `-8.sql` | Changes to run once on the existing database (see below). |
+| `supabase-check.sql` | A read-only check that lists which database pieces are in place. |
 
-If you can't see `.nojekyll` (files starting with a dot are hidden on Mac), skip it. The site works without it.
+## How it fits together
 
-## How this version works
+- **Data:** everything lives in Supabase, in one `records` table (each row is one account, contact, opportunity,
+  activity, reminder, quote, contract, journey, etc.). Logins are Supabase accounts linked to the `profiles` table;
+  admins add people in Settings → Users and give them a 7-day invite code.
+- **Speed:** each browser keeps a saved copy of the records and downloads only what changed since its last visit.
+  Changes from teammates arrive live; if the connection drops (sleep, Wi-Fi), the app catches up when it's back.
+- **Outlook:** each person connects Outlook once (Settings → Outlook → Manage) and signs in with Microsoft. Paper Trail
+  then sends from their own mailbox, shows customer emails on each account, and logs them on the timeline.
+- **Journeys:** emails either wait on the Journeys page for a person (**Ask me first**) or go out at 8:45 AM New York
+  time (**Send automatically**). Before each automatic email, Paper Trail checks for a reply and pauses instead.
+  Each email is claimed in the database before it's sent, so nothing can send the same email twice.
 
-- **Your data stays in your browser.** Everything you add is saved on the computer and browser you're using. Someone else opening the link sees their own empty copy.
-- **Load sample data** (in the blue bar at the top) fills it with five example accounts for a demo. **Clear all data** wipes it.
-- **Back up or move your data** with Settings → Export.
-- Outlook sending and email sync, and the "with Claude" features, only work in the claude.ai version. Here, email opens as a draft you can copy.
+## Database updates
+
+Run each once in Supabase → **SQL Editor** → New query → paste → **Run**. All are safe to run again.
+Not sure what's installed? Run `supabase-check.sql`; it lists each piece with ✓ or ✗.
+
+| Update | What it does |
+|---|---|
+| 4 | Email open and click tracking (also deploy the `track` function, below). |
+| 5 | The 8:45 AM schedule for automatic journey sending (see that section first). |
+| 6 | Hosted signature pictures, so emails link to logos instead of attaching them. |
+| 7 | Faster loading with 80,000+ records. |
+| 8 | **Required for automatic sending.** No journey email can go out twice; "last changed" times come from the database clock; faster lookups. Without it, automatic sending refuses to send (people can still send by hand). |
 
 ## Automatic journey sending (8:45 AM)
 
-Each journey has a **Sending** setting: **Ask me first** (emails wait on the Journeys page until you send them) or **Send automatically** (they go out at 8:45 AM, New York time, from the journey owner's own Outlook). You can also change it for one person in the Start a journey window or on their journey.
+One-time setup, about 15 minutes:
 
-Before each automatic email, Paper Trail checks the owner's mailbox for a reply from that contact. If there is one, it pauses (or ends) the journey instead of sending. It never sends an email that's missing a name or other field, and calls always wait for a person. Anything it holds back shows on the Journeys page with the reason.
+1. **Let Paper Trail send from Outlook on its own.** Microsoft Entra admin center → **App registrations → Paper Trail**:
+   - **API permissions → Add a permission → Microsoft Graph → Application permissions**: add **Mail.Send** and
+     **Mail.ReadBasic.All**, then **Grant admin consent for All Points**.
+   - **Certificates & secrets → New client secret** (24 months). Copy the **Value** right away; it's shown once.
+   - Recommended: an Exchange application access policy limiting the app to the team's mailboxes.
+2. **Secrets in Supabase.** **Edge Functions → Secrets**, add `MS_TENANT_ID` (`e3e693fe-6a3f-4b70-9b1f-da24e6e9df75`),
+   `MS_CLIENT_ID` (`66c32d40-29b1-4310-b6be-39d4402dea72`), `MS_CLIENT_SECRET` (the value from step 1), and
+   `CRON_SECRET` (any long random password). Never put these in this repository or in a chat.
+3. **Run `supabase-update-8.sql`.**
+4. **Deploy the function.** **Edge Functions → Deploy a new function → Via editor**, name it `journey-send`, paste
+   `supabase/functions/journey-send/index.ts`, **Deploy**, then turn **off** "Verify JWT" in its settings. (It checks the
+   schedule's password, or the person's Paper Trail sign-in, itself.) When this file changes, paste the new version and
+   deploy again.
+5. **Turn on the schedule.** In `supabase-update-5.sql`, replace `PASTE-YOUR-SECRET` with your `CRON_SECRET`, then run it.
+6. **Try it.** Set a journey to **Send automatically**, start it on yourself, and click **Send due emails now** on the
+   Journeys page. The banner there shows the last run, how many went out, and any problem.
 
-One-time setup (about 15 minutes):
+How it behaves: the schedule checks every 15 minutes through the morning and does the day's sending at the first check
+after 8:45. If Outlook is down or the Microsoft sign-in fails, it tries again at the next check (up to 4 times a day).
+A run sends for about 100 seconds at most and leaves the rest for the next check. Emails missing a fill-in field, or
+to a contact without an email address, are held on the Journeys page with the reason; calls always wait for a person.
+Each person's Paper Trail login email must be their Outlook mailbox, since that's where their journeys send from.
+To stop automatic sending: `select cron.unschedule('paper-trail-journeys');`
 
-1. **Let Paper Trail send from Outlook on its own.** In the Microsoft Entra admin center, open **App registrations → Paper Trail**.
-   - **API permissions → Add a permission → Microsoft Graph → Application permissions**, add **Mail.Send** and **Mail.ReadBasic.All**, then click **Grant admin consent for All Points**.
-   - **Certificates & secrets → New client secret**, pick 24 months, and copy the **Value** right away (it's only shown once).
-   - Recommended: limit it to the team's mailboxes with an Exchange application access policy, so the app can't send as anyone else.
-2. **Add the secrets in Supabase.** In **Edge Functions → Secrets**, add:
-   - `MS_TENANT_ID` = `e3e693fe-6a3f-4b70-9b1f-da24e6e9df75`
-   - `MS_CLIENT_ID` = `66c32d40-29b1-4310-b6be-39d4402dea72`
-   - `MS_CLIENT_SECRET` = the value you copied in step 1
-   - `CRON_SECRET` = any long random password (you'll paste it once more in step 4)
-3. **Add the function.** In **Edge Functions → Deploy a new function → Via editor**, name it `journey-send`, paste in `supabase/functions/journey-send/index.ts`, and click **Deploy**. Then open its settings and turn **off** "Verify JWT". (It checks the schedule's password, or the person's Paper Trail sign-in, itself.)
-4. **Turn on the schedule.** Open `supabase-update-5.sql`, replace `PASTE-YOUR-SECRET` with your `CRON_SECRET`, and run it in **SQL Editor**.
-5. **Try it.** Set a journey to **Send automatically**, start it on yourself, and click **Send due emails now** on the Journeys page. The banner there shows when it last ran and how many went out.
+## Email open and click tracking
 
-Each person's login email must be their Outlook mailbox address, since that's the mailbox their journeys send from. To stop automatic sending, run `select cron.unschedule('paper-trail-journeys');` in the SQL Editor.
+Deploy `supabase/functions/track/index.ts` as a function named `track` with "Verify JWT" **off** (email programs can't
+sign in), and run update 4. Each person can turn tracking off for their own emails in Settings → Outlook → Manage (My connections).
 
-## Shared team data and Outlook sending
+## Outlook sign-in (Microsoft Entra)
 
-To have the team share one set of records, and to send from Outlook directly, the site needs a database and a Microsoft sign-in (for example Supabase or Firebase, plus Microsoft Graph). That's the next step after the demo.
+The **Paper Trail** app registration has a **Single-page application** redirect URI of
+`https://jasonquil.github.io/papertrail/` and these delegated permissions: `User.Read`, `Mail.Read`, `Mail.Send`,
+`offline_access`. If the site's address ever changes, add the new address there too.
 
-## Update 6: hosted signature pictures
-Run `supabase-update-6.sql` in Supabase → SQL Editor. It creates a public `signature-images` storage folder where each
-team member can only add or change pictures in their own folder. After that, Paper Trail uploads signature pictures when a
-signature is saved (and moves existing signatures over automatically the next time each person opens Paper Trail), so emails
-link to the pictures instead of attaching them. Until the update is run, pictures keep going out as inline attachments.
+## Backups
+
+**Settings → Backup → Back up** downloads everything: all records, plus everyone's signatures and appearance
+settings, the journey copies the 8:45 run uses, and a list of the people (for reference). On the website it's a
+compressed `.json.gz` file. **Restore** puts back anything missing or different and never deletes. Not included:
+files attached to accounts (they stay in Supabase storage), logins and passwords.
+
+**Rebuilding from scratch** (if the Supabase project were lost): create a new Supabase project; run
+`supabase-setup.sql`; turn off "Confirm email" (Authentication → Sign In / Providers → Email); add yourself as the first
+admin with the two lines at the end of that file; put the new project's URL and publishable key in `config.js`; sign in
+with the invite code; restore your latest backup; add your teammates again in Settings → Users. Then redo the automatic
+sending and tracking steps above.
+
+## Running without a database
+
+With the Supabase lines in `config.js` left blank, Paper Trail runs on its own in one browser, saving records there only
+(Settings → Backup still works). Outlook, journeys sending automatically and tracking need the database.
