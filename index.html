@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Paper Trail</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230D6B61%27/%3E%3Ctext x=%2732%27 y=%2743%27 text-anchor=%27middle%27 font-family=%27Arial Black,Arial,Helvetica,sans-serif%27 font-weight=%27900%27 font-size=%2730%27 letter-spacing=%271%27 fill=%27%23fff%27%3EPT%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&family=Pixelify+Sans:wght@500;600&display=swap">
@@ -2225,7 +2226,8 @@ function preserve(fn){
 // update an element to match new HTML by changing only what differs (keeps hover, focus and scroll steady)
 // ---------- Theo: Jason's pixel tabby (brown, male, 2, small for his age). Only Jason sees him. ----------
 // Health: half from what Jason logged today (6 fills it; before 11am yesterday still counts), half from his overdue reminders.
-const theoOn = () => /^jason@allpointsprotects\.com$/i.test(ME.email || '') || /^jason quillen$/i.test(ME.name || '') || (!live && ME.id === 'jason');
+const theoMe = () => /^jason@allpointsprotects\.com$/i.test(ME.email || '') || /^jason quillen$/i.test(ME.name || '') || (!live && ME.id === 'jason');
+const theoOn = () => theoMe() && prefGet('theo', true);   // he can be hidden from Settings → You
 const TH_PAL = {o: '#2A1E16', b: '#926C48', d: '#4E3624', l: '#DEC8A4', k: '#140E0A', n: '#D68080', p: '#E29696'};
 const TH_SIT = ["..oo..........oo......", "..obo........obo......", "..obpo......opbo......", "..obppooooooppbo......", ".obbbbbdbbdbbbbbo.....", ".obbbbbbddbbbbbbo.....", ".odbbbbbddbbbbbdo.....", ".obbkwbbbbbbkwbbo.....", ".odbkkbbbbbbkkbdo.....", ".obbbbllnnllbbbbo.....", ".obbbllllllllbbbo.....", "..obbbllllllbbbo......", "...oobbllllbboo.......", "...odbbllllbbdo.......", "..obdbblllllbbdbo.....", "..odbbbllllllbbdo..oo.", "..obdbbllllllbdbo.obbo", "..odbbbllllllbbdoodbo.", "..obobllllllblobobbo..", "..obllollllollloobo...", "...oooooooooooooo....."];
 const TH_WALK_TOP = Array(8).fill('......................').concat([".............o....o...", ".o..........obo..obo..", "obo.........obpoopbbo.", "odo........obdbbdbbbbo", ".obo.......obbbbbbkbbo", "..obo......obbbbbbkbbo", "..obooooooobbbbbbbbbno", "...obdbbdbbdbbbbblllo.", "...obdbbdbbdbbbblllo..", "...obbbbbbbbbbbllllo.."]);
@@ -2486,7 +2488,7 @@ V.today = () => {
   const rstat = route ? (() => { const g = k => tasks.filter(x => remGrp(x) === k).length; return `<div class="routestat"><div class="late"><b>${g('past')}</b><span>late</span></div><div class="due"><b>${g('today')}</b><span>due today</span></div><div><b>${deals.length}</b><span>open deals</span></div></div>`; })() : '';
   const fresh = FISH ? L('deals').filter(d => (d.createdAt || 0) >= Date.now() - 7 * 864e5).length : 0;
   return nudge + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), mineSeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
-  + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your Spiro data over from Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
+  + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your data over from your current CRM in Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + rstat + `<div class="cols2">
     <div class="stack">${readyPanel()}
     <section class="panel"><div class="ph"><h3>Needs attention</h3><span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span></div>
@@ -2790,7 +2792,7 @@ V.companies = () => {
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
   return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
-  + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import your Spiro export from Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
+  + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import from your current CRM in Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(isOpen); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
@@ -2825,8 +2827,10 @@ V.contracts = () => {
 // ---------- detail drawers ----------
 const sec = (title, n, body, addAct, d, label, icon) => `<div class="sec"><div class="sech"><h3>${title}${n != null ? `<span>${n}</span>` : ''}</h3>${addAct && canWrite ? `<button class="btn sm ghost" data-act="${addAct}"${attrs(d)}>${ic(icon || 'plus')}${label || 'Add'}</button>` : ''}</div>${body}</div>`;
 const rowsOr = (arr, fn, none) => arr.length ? `<ul class="rows">${arr.map(fn).join('')}</ul>` : `<p class="empty-s">${none}</p>`;
-const spiroFacts = r => Object.entries((r && r.spiro) || {}).map(([k, v]) => fact(esc(k), esc(v))).join('');
-const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length ? `<section class="panel"><div class="ph"><h3>More from Spiro</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(k), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
+// labels saved on imported records (some older ones say "in Spiro") read as the current CRM
+const spLabel = k => String(k).replace(/\s+in Spiro$/i, ' in your current CRM').replace(/^Spiro\s+/i, 'Current CRM ').replace(/Spiro/gi, 'current CRM');
+const spiroFacts = r => Object.entries((r && r.spiro) || {}).map(([k, v]) => fact(esc(spLabel(k)), esc(v))).join('');
+const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length ? `<section class="panel"><div class="ph"><h3>More from your current CRM</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(spLabel(k)), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
 const fact = (k, v, copy) => v ? `<dt>${k}</dt><dd>${v}${copy ? `<button class="copy" data-act="copy" data-t="${esc(copy)}" aria-label="Copy ${k}">${ic('copy')}</button>` : ''}</dd>` : '';
 function logBox(ctx){
   if (!canWrite) return '';
@@ -3357,12 +3361,12 @@ function nameCleanModal(){
   const show = (c, fx) => { const after = {...c, ...fx}; return `<li><span class="nc-was">${esc(pname_(c))}</span><span class="nc-to">→ ${(after.firstName || after.lastName) ? esc(pname_(after)) : `<i>${esc(pname_(after))}</i>`}</span></li>`; };
   const sample = plan.ct.filter(([c]) => !ph || !NAME_PH.test(c.lastName || '') || /[^A-Za-z\s]/.test(c.firstName || '')).slice(0, 10);
   const any = plan.ct.length || plan.co.length || plan.dl.length;
-  openModal('Clean up Spiro data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.dl.length ? `the automatic close date on <b>${plan.dl.length.toLocaleString()} open opportunit${plan.dl.length === 1 ? 'y' : 'ies'}</b>` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
+  openModal('Clean up imported data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.dl.length ? `the automatic close date on <b>${plan.dl.length.toLocaleString()} open opportunit${plan.dl.length === 1 ? 'y' : 'ies'}</b>` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
     ${sample.length ? `<ul class="nc-list">${sample.map(([c, fx]) => show(c, fx)).join('')}${plan.co.slice(0, 3).map(([a, fx]) => `<li><span class="nc-was">${esc(a.name)}</span><span class="nc-to">→ ${esc(fx.name)}</span></li>`).join('')}</ul>` : ''}
-    ${plan.dl.length ? `<p class="sub">Spiro filled in a close date about 30 days after each deal was created, so on open opportunities it didn't mean anything. Closed deals keep theirs.</p>` : ''}
+    ${plan.dl.length ? `<p class="sub">Your current CRM filled in a close date about 30 days after each deal was created, so on open opportunities it didn't mean anything. Closed deals keep theirs.</p>` : ''}
     <p class="sub">Names that were really an email address are rebuilt from the email when it has a first and last name in it (clara.taylor@… becomes Clara Taylor); otherwise the email shows in place of a name. Missed-call contacts show their phone number.</p>
     <label class="chk" style="margin:10px 0 0"><input type="checkbox" data-change="ncPh" ${ph ? 'checked' : ''}> Also remove placeholder last names like “Unknown” and “N/A” (${extra.toLocaleString()} more contacts, so “Heather Unknown” becomes “Heather”)</label>
-    <p class="sub">This choice is remembered for future Spiro imports. <button type="button" class="lnk" data-act="backup">Download a backup first</button> if you'd like a copy of the names as they are now.</p>`,
+    <p class="sub">This choice is remembered for future imports. <button type="button" class="lnk" data-act="backup">Download a backup first</button> if you'd like a copy of the names as they are now.</p>`,
     any ? 'Clean up' : null, async (fd, f) => {
       const P_ = nameCleanPlan(!!prefGet('namePh', false));
       const btn = f.querySelector('[type=submit]'); const say = t => { if (btn) btn.textContent = t; };
@@ -3391,7 +3395,7 @@ function wipeModal(){
   openModal('Delete all data', `<p><b>This permanently deletes ${total.toLocaleString()} records</b>: ${n('companies').toLocaleString()} accounts, ${n('contacts').toLocaleString()} contacts, ${n('deals').toLocaleString()} opportunities, plus all quotes, activity, reminders, contracts and attachments, and everything in Trash. It can't be undone and it isn't sent to Trash. Everyone on the team sees the empty Paper Trail right away.</p>
     <p class="sub">Users, email templates, journeys, appearance settings and usage stay. Account numbers start again at ${ACCT_START}.</p>
     <p class="sub"><button type="button" class="lnk" data-act="backup">Download a backup first</button> if you might want any of it back.</p>
-    ${formers.length ? `<label class="chk" style="margin:8px 0"><input type="checkbox" name="formers" checked> Also remove the ${formers.length} former Spiro users (they're added again by the next import)</label>` : ''}
+    ${formers.length ? `<label class="chk" style="margin:8px 0"><input type="checkbox" name="formers" checked> Also remove the ${formers.length} former users (they're added again by the next import)</label>` : ''}
     <label class="f"><span>Type DELETE to confirm</span><input name="confirm" autocomplete="off" placeholder="DELETE"></label>`, 'Delete everything', async f => {
       if (String(f.confirm || '').trim() !== 'DELETE') { toast('Type DELETE (in capitals) to confirm.', 'bad'); return false; }
       const b = $('#mform [type=submit]'); const say = t => { if (b) b.textContent = t; };
@@ -3771,7 +3775,14 @@ const IMPORT = {
     ['lostReason','Reason for loss',['reasonforloss','lostreason','lossreason']],
     ['closeDate','Close date',['closedate','expectedclose','expectedclosedate','closingdate']],
     ['contact','Contact email or name',['contact','contactname','primarycontact','contactemail','email']],
-    ['owner','Owner (name or email)',['owner','opportunityowner','ownername','assignedto','closedby','salesrep','user']]]}
+    ['owner','Owner (name or email)',['owner','opportunityowner','ownername','assignedto','closedby','salesrep','user']]]},
+  tasks: {label:'Reminders', fields:[
+    ['title','Reminder',['reminder','title','subject','task','followup']],
+    ['due','Reminder date',['reminderdate','remindon','duedate','due','date']],
+    ['related','Account or contact name',['relatedtocompany','relatedto','regarding','company','account','contact','name']],
+    ['notes','Notes',['description','notes','note','comments']],
+    ['owner','Assigned to (name or email; blank = you)',['assignedto','assignee','owner','user']],
+    ['done','Done',['done','completed','complete']]]}
 };
 function guessMap(type, headers){
   const used = new Set(); const map = {};
@@ -3859,11 +3870,11 @@ function spBuild(files, ppl){
   const now = Date.now(); const seenCo = new Set();
   const coRec = r => { const sid = spTidy(r['Company Id']); const id = idFor('companies', 'spc', sid); seenCo.add(id);
     const notes = [spTidy(r['Description']) && String(r['Description']).trim(), spTidy(r['Profile Notes']) && String(r['Profile Notes']).trim()].filter(Boolean).join('\n\n');
-    return [id, {spiroId: sid, name: (acctNameFix(spTidy(r['Name'])) ?? spTidy(r['Name'])) || 'Unnamed account', phone: phoneNorm(r['Phone']), website: spTidy(r['Website']), address: spTidy(r['Address']), city: spTidy(r['City']), state: spTidy(r['State']), zip: spTidy(r['Zipcode']), notes, ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: coFirst[sid] || S.companies[id]?.createdAt || now, source: 'Spiro',
+    return [id, {spiroId: sid, name: (acctNameFix(spTidy(r['Name'])) ?? spTidy(r['Name'])) || 'Unnamed account', phone: phoneNorm(r['Phone']), website: spTidy(r['Website']), address: spTidy(r['Address']), city: spTidy(r['City']), state: spTidy(r['State']), zip: spTidy(r['Zipcode']), notes, ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: coFirst[sid] || S.companies[id]?.createdAt || now, source: 'Imported',
       spiro: spExtra(r, [['Phone 2', 'Phone 2'], ['Phone 3', 'Phone 3'], ['Service Agreement on File?', 'Service agreement on file'], ['Credit Card Given', 'Credit card given'], ['Health Care Facility', 'Health care facility'], ['Number of Locations', 'Number of locations'], ['Anniversary Increase %', 'Anniversary increase %'], ['Current Vendor Contract Expiration Date', 'Current vendor contract expires'], ['Acquisition Number', 'Acquisition number'], ['Customer Status', 'Customer status'], ['Tier', 'Tier'], ['Products Medical Status', 'Medical status'], ['Products Medical Notes', 'Medical notes'], ['Products Shredding Status', 'Shredding status'], ['Products Shredding Note', 'Shredding note']])}]; };
   for (const r of (files.companies || {rows: []}).rows) if (spTidy(r['Company Id'])) out.companies.push(coRec(r));
   // accounts referenced by contacts or opportunities but missing from the accounts file
-  const needCo = (sid, name, owner) => { if (!sid) return ''; const id = idFor('companies', 'spc', sid); if (!seenCo.has(id) && !S.companies[id]) { seenCo.add(id); out.companies.push([id, {spiroId: sid, name: spTidy(name) || 'Unnamed account', ownerId: ppl.owner(owner), createdAt: coFirst[sid] || now, source: 'Spiro'}]); } return id; };
+  const needCo = (sid, name, owner) => { if (!sid) return ''; const id = idFor('companies', 'spc', sid); if (!seenCo.has(id) && !S.companies[id]) { seenCo.add(id); out.companies.push([id, {spiroId: sid, name: spTidy(name) || 'Unnamed account', ownerId: ppl.owner(owner), createdAt: coFirst[sid] || now, source: 'Imported'}]); } return id; };
   for (const r of (files.contacts || {rows: []}).rows) { const sid = spTidy(r['Contact Id']); if (!sid) continue;
     const id = idFor('contacts', 'spt', sid);
     let email = spTidy(r['Email']).toLowerCase(), email2 = spTidy(r['Email (Secondary)']).toLowerCase(); if (email2 === email) email2 = '';
@@ -3872,7 +3883,7 @@ function spBuild(files, ppl){
     const [fn_, ln_] = [nfx && 'firstName' in nfx ? nfx.firstName : spTidy(r['First Name']), nfx && 'lastName' in nfx ? nfx.lastName : spTidy(r['Last Name'])];
     out.contacts.push([id, {spiroId: sid, firstName: fn_, lastName: ln_, title: spTidy(r['Title']), email, email2, phone: (nfx && nfx.phone) || (phoneNorm(r['Phone']) + (ext ? ' x' + ext : '')), mobile: phoneNorm(r['Mobile']), notes: String(r['Description'] || '').trim(),
       companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: S.contacts[id]?.createdAt || now,
-      spiro: spExtra(r, [['Home Phone', 'Home phone', phoneNorm], ['Fax', 'Fax', phoneNorm], ['Services', 'Services'], ['Day of Service', 'Day of service'], ['Contract Start Date', 'Contract start date'], ['Last Activity Date (Read Only)', 'Last activity in Spiro']])}]); }
+      spiro: spExtra(r, [['Home Phone', 'Home phone', phoneNorm], ['Fax', 'Fax', phoneNorm], ['Services', 'Services'], ['Day of Service', 'Day of service'], ['Contract Start Date', 'Contract start date'], ['Last Activity Date (Read Only)', 'Last activity in your current CRM']])}]); }
   for (const r of (files.deals || {rows: []}).rows) { const sid = spTidy(r['Opportunity Id']); if (!sid) continue;
     const id = idFor('deals', 'spo', sid);
     const st = SP_STAGE[spTidy(r['Sales Stage']).toLowerCase()] || mapStage(r['Sales Stage']);
@@ -3884,7 +3895,7 @@ function spBuild(files, ppl){
       closeDate: closed ? close : '', closedAt: closed ? (close || spDate(r['Created'])) : '', closedBy: closed ? ppl.closer(r['Closed By']) : '',
       source: spTidy(r['Lead Source'], SOURCES), sourceOther: spTidy(r['Lead Source Other']), initialCall: spTidy(r['Initial Call'], INITIAL_CALL), firstCallClose: fcc, noCloseReason: spTidy(r['Did not Close on First Call'], NO_CLOSE), lostReason: st === 'lost' ? spTidy(r['Reason for Loss'], LOSS_REASONS) : '',
       notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
-      spiro: spExtra(r, [['Closed Amount', 'Closed amount', v => num(v) ? money2(num(v)) : ''], ['Estimated Bin Count', 'Estimated bin count'], ['Repeat Client', 'Repeat client', spYN], ['Service Agreement on File', 'Service agreement on file'], ['Contract Anniversary Date', 'Contract anniversary', v => v && fmtDate(spDate(v) || v)], ['Contract END Date', 'Contract end date', v => v && fmtDate(spDate(v) || v)], ['Commission', 'Commission'], ['APER?', 'APER?'], ['Priority', 'Priority'], ['Website', 'Website'], ['Opportunity', 'Spiro opportunity name', v => v && v !== type ? v : ''], ['Closed By', 'Closed by in Spiro', v => /,/.test(v) || /^(house|other)$/i.test(v) ? v : '']])}]); }
+      spiro: spExtra(r, [['Closed Amount', 'Closed amount', v => num(v) ? money2(num(v)) : ''], ['Estimated Bin Count', 'Estimated bin count'], ['Repeat Client', 'Repeat client', spYN], ['Service Agreement on File', 'Service agreement on file'], ['Contract Anniversary Date', 'Contract anniversary', v => v && fmtDate(spDate(v) || v)], ['Contract END Date', 'Contract end date', v => v && fmtDate(spDate(v) || v)], ['Commission', 'Commission'], ['APER?', 'APER?'], ['Priority', 'Priority'], ['Website', 'Website'], ['Opportunity', 'Opportunity name in your current CRM', v => v && v !== type ? v : ''], ['Closed By', 'Closed by in your current CRM', v => /,/.test(v) || /^(house|other)$/i.test(v) ? v : '']])}]); }
   { let next = acctMax(); out.companies.slice().sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0)).forEach(([id, d]) => { if (!(S.companies[id] && +S.companies[id].acctNo)) d.acctNo = ++next; }); }
   for (const c of Object.keys(out)) for (const pair of out[c]) { const d = pair[1]; Object.keys(d).forEach(k => { if (SP_NAME_CLEAN && c === 'contacts' && (k === 'firstName' || k === 'lastName')) return; if (d[k] === '' || d[k] === undefined || d[k] === 0 && (k === 'value' || k === 'priceQuoted')) delete d[k]; }); }
   return out;
@@ -3899,12 +3910,12 @@ function spSummary(){
   const {files, bad} = imp.spiro; const ppl = spPeople(files); imp.spiro.ppl = ppl;
   const fm = Object.entries(ppl.former);
   const stc = {}; for (const r of (files.deals || {rows: []}).rows) { const k = spTidy(r['Sales Stage']); stc[k] = (stc[k] || 0) + 1; }
-  el.innerHTML = `<div class="spsum"><p><b>Spiro export found.</b> Everything below is linked by Spiro's own IDs, so accounts with the same name stay separate and importing the same files again updates records instead of duplicating them.</p>
+  el.innerHTML = `<div class="spsum"><p><b>Export from your current CRM found.</b> Everything below is linked by its own IDs, so accounts with the same name stay separate and importing the same files again updates records instead of duplicating them.</p>
     <ul class="users">${['companies', 'contacts', 'deals'].map(k => `<li class="urow"><div><b>${SP_LABEL[k]}</b><small>${files[k] ? esc(files[k].name) : 'Not chosen'}</small></div><div class="uact">${files[k] ? `<span class="chip good">${files[k].rows.length.toLocaleString()}</span>` : '<span class="chip">—</span>'}</div></li>`).join('')}</ul>
-    ${bad.length ? `<p class="sub" style="color:var(--bad)">Not a Spiro export, skipped: ${esc(bad.join(', '))}</p>` : ''}
+    ${bad.length ? `<p class="sub" style="color:var(--bad)">Not recognized as an export from your current CRM, skipped: ${esc(bad.join(', '))}</p>` : ''}
     ${files.deals ? `<p class="sub">Stages: ${Object.entries(stc).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(k)} ${n.toLocaleString()}`).join(' · ')}</p>` : ''}
     ${fm.length ? `<p class="sub">These people aren't Paper Trail users, so they'll be added as former users. Their names stay on their records, and you can reassign anything from Settings → Users: <b>${fm.map(([, n]) => esc(n)).join(', ')}</b>.</p>` : ''}
-    <p class="sub">Spiro's “Latest Weekly Summary” is left out. Spiro fields Paper Trail doesn't have appear under “More from Spiro” on each record. Keep this window open until it finishes.</p></div>`;
+    <p class="sub">The “Latest Weekly Summary” field is left out. Fields Paper Trail doesn't have appear under “More from your current CRM” on each record. Keep this window open until it finishes.</p></div>`;
   const b = $('#mform [type=submit]'); if (b) b.textContent = `Import ${['companies', 'contacts', 'deals'].reduce((n, k) => n + (files[k] ? files[k].rows.length : 0), 0).toLocaleString()} records`;
 }
 async function spImport(form){
@@ -3931,14 +3942,14 @@ async function spImport(form){
   }
   if (!live) saveLocal();
   schedule();
-  toast(`Spiro import done: ${made.toLocaleString()} added, ${upd.toLocaleString()} updated.`);
+  toast(`Import done: ${made.toLocaleString()} added, ${upd.toLocaleString()} updated.`);
   return true;
 }
 
 const imp = {type:'accounts', headers:[], rows:[], map:{}, name:'', spiro:null};
 function importModal(){
   imp.headers = []; imp.rows = []; imp.map = {}; imp.name = ''; imp.spiro = null;
-  openModal('Import from Spiro or a spreadsheet', `<p class="sub"><b>From Spiro:</b> export Companies, Contacts and Opportunities as CSV files and choose all three at once. Paper Trail recognizes them and links everything for you.</p><p class="sub"><b>Another spreadsheet:</b> choose one file at a time. Import accounts first, then contacts, then opportunities. Every contact and opportunity needs an account name, so rows without one are skipped. Matching accounts and contacts are updated instead of duplicated.</p>
+  openModal('Import from current CRM or a spreadsheet', `<p class="sub"><b>From your current CRM:</b> export Companies, Contacts and Opportunities as CSV files and choose all three at once. Paper Trail recognizes them and links everything for you.</p><p class="sub"><b>Another spreadsheet:</b> choose one file at a time. Import accounts first, then contacts, then opportunities. Every contact and opportunity needs an account name, so rows without one are skipped. Matching accounts and contacts are updated instead of duplicated.</p><p class="sub"><b>Reminders:</b> pick Reminders below. Each one goes on the account (or the contact's account) named in the file, assigned to you unless the file says otherwise.</p>
     <div class="grid2">${F('What is in this file?', `<select id="impType" data-change="impType">${Object.entries(IMPORT).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')}</select>`)}
     ${F('CSV file(s)', `<input type="file" id="impFile" accept=".csv,text/csv" multiple data-change="impFile">`)}</div>
     <div id="impBody"></div>`, 'Import', runImport, {wide: true});
@@ -3965,7 +3976,7 @@ async function runImport(_, form){
   const ctByName = {}; for (const c of L('contacts')) ctByName[(c.companyId || '') + '|' + norm(pname_(c))] = c.id;
   const ctAnyName = {}; for (const c of L('contacts')) ctAnyName[norm(pname_(c))] = c.id;
   const dealByKey = {}; for (const d of L('deals')) dealByKey[norm(d.name) + '|' + (d.companyId||'')] = d.id;
-  let created = 0, updated = 0, skipped = 0, noCo = 0;
+  let created = 0, updated = 0, skipped = 0, noCo = 0, dupes = 0; const noMatch = [];
   const btn = form.querySelector('[type=submit]');
   const queue = []; const BATCH = 400;
   const flush = async () => {
@@ -4016,6 +4027,18 @@ async function runImport(_, form){
       const ex = (email && ctByEmail[email.toLowerCase()]) || (byNm && (!email || !ctAddrs(S.contacts[byNm]).length) ? byNm : '');
       if (ex) { if (await write('contacts', ex, {...S.contacts[ex], ...rec})) updated++; else break; }
       else { const id = uid(); if (await write('contacts', id, rec)) { if (email) ctByEmail[email.toLowerCase()] = id; ctByName[companyId + '|' + norm(first + ' ' + last)] = id; ctAnyName[norm(first + ' ' + last)] = id; created++; } else break; }
+    } else if (imp.type === 'tasks') {
+      // a reminder belongs to an account: the name is an account, or a contact (then it goes on their account). Never makes new accounts.
+      const title = get(r,'title'), due = toYmd(get(r,'due')), rel = get(r,'related');
+      if (!title && !rel) { skipped++; continue; }
+      const ctId = !coByName[norm(rel)] && (ctAnyName[norm(rel)] || ctAnyName[norm(rel.replace(/^(dr|mr|mrs|ms|miss)\.?\s+/i, ''))]);
+      const companyId = coByName[norm(rel)] || (ctId && S.contacts[ctId]?.companyId) || '';
+      if (!companyId || !S.companies[companyId]) { noMatch.push(rel || title); continue; }
+      const t = title || 'Follow up', dn = /^(y|yes|x|true|done|completed?|1)$/i.test(get(r,'done'));
+      if (!dn && L('tasks').some(k => !k.done && k.companyId === companyId && norm(k.title) === norm(t))) { dupes++; continue; }   // already set: importing the same file twice doesn't double up
+      const rec = {title: t, due: due || today(), assigneeId: ownerFrom(get(r,'owner')), companyId, contactId: ctId || '', notes: get(r,'notes'), done: dn, source: 'Imported'};
+      Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
+      if (await write('tasks', uid(), rec)) created++; else break;
     } else {
       const name = get(r,'name'); if (!name) { skipped++; continue; }
       const companyId = get(r,'company') ? await ensureCo(get(r,'company')) : '';
@@ -4036,6 +4059,12 @@ async function runImport(_, form){
   const okFlush = !failed && await flush();
   schedule();
   if (!okFlush) { toast('Some records could not be saved. Check your connection and import the same file again; nothing will be duplicated.', 'bad'); return false; }
+  if (imp.type === 'tasks') {
+    const msg = `${created} reminder${created === 1 ? '' : 's'} added${dupes ? `, ${dupes} already set` : ''}${noMatch.length ? `. ${noMatch.length} not found in Paper Trail, so they were skipped: ${noMatch.slice(0, 8).join(', ')}${noMatch.length > 8 ? ` and ${noMatch.length - 8} more` : ''}` : ''}.`;
+    toast(msg, noMatch.length ? 'bad' : undefined);
+    if (noMatch.length) { const el = $('#impBody'); if (el) el.innerHTML = `<p><b>${esc(msg)}</b></p><p class="sub">Add those accounts or contacts (or fix the spelling in the file) and import the same file again. Reminders that already went in won't be added twice.</p>`; const b = form.querySelector('[type=submit]'); if (b) b.textContent = 'Import again'; return false; }
+    return true;
+  }
   toast(`Import done: ${created} added, ${updated} updated${skipped ? `, ${skipped} empty rows skipped` : ''}${noCo ? `, ${noCo} skipped because they had no account name` : ''}.`);
   return true;
 }
@@ -4142,6 +4171,7 @@ function settingsModal(){
       row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
       GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
       row('spark', 'Appearance', 'Colors, mode, text size, spacing, font and start page.', btn('look', 'Customize')),
+      theoMe() ? row('spark', 'Theo', 'Your pixel cat in the sidebar, above Settings.', btn('theoToggle', prefGet('theo', true) ? 'Hide Theo' : 'Show Theo')) : '',
       adm ? '' : demo]],
     ['team', 'Team', 'users', 'Shared with everyone on the team.', [
       SUPA ? row('users', 'Users', adm ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', btn('users', adm ? 'Manage' : 'View'))
@@ -4149,10 +4179,10 @@ function settingsModal(){
       row('mail', 'Email templates', 'The ready-made emails your team picks from.', btn('tplManage', 'Edit')),
       TAGS_ON ? row('tag', 'Tags', 'Rename, merge or delete account tags, or suggest tags from history.', btn('tags', 'Manage')) : '']],
     ['data', 'Data', 'down', 'Move records in and out of Paper Trail.', [
-      canWrite && adm ? row('up', 'Import', 'Bring in accounts, contacts or opportunities from Spiro or any CSV.', btn('import', 'Import CSV')) : '',
+      canWrite && adm ? row('up', 'Import', 'Bring in accounts, contacts, opportunities or reminders from your current CRM or any CSV.', btn('import', 'Import CSV')) : '',
       row('down', 'Export', 'Download every account and contact as a CSV for Excel.', btn('export', 'Export CSV')),
       canWrite ? row('users', 'Find duplicates', 'Spot look-alike accounts and contacts and merge them.', btn('dupFind', 'Find')) : '',
-      canWrite && adm ? row('edit', 'Clean up Spiro data', 'Fix names Spiro saved oddly (stray quotes and symbols, email addresses or phone numbers as names) and clear its automatic close dates.', btn('nameClean', 'Review')) : '',
+      canWrite && adm ? row('edit', 'Clean up imported data', 'Fix names your current CRM saved oddly (stray quotes and symbols, email addresses or phone numbers as names) and clear its automatic close dates.', btn('nameClean', 'Review')) : '',
       adm ? row('doc', 'Backup', `Download a full backup, or restore from one.${backupAge() == null ? '' : ` Last backup: ${backupAge() === 0 ? 'today' : backupAge() + ' days ago'}.`}`, `<span class="sa-b"><button type="button" class="btn pri" data-act="backup">Back up</button><button type="button" class="btn" data-act="restore">Restore</button></span>`) : '',
       DRIVE_BACKUP && SUPA && !DEMO && adm ? drvRow() : '']],
     ['admin', 'Admin', 'chart', 'Only Admins see this section.', adm ? [
@@ -5259,7 +5289,7 @@ function tplManageModal(){
   const list = templates();
   const sp = list.filter(t => t.src === 'spiro').length, spOld = list.filter(t => t.src === 'spiro' && !t.edited && (t.spv || 1) < SPIRO_TPL_VER).length;
   openModal('Email templates', `<p class="sub">Templates are shared with your team. Words in curly braces, like {first_name}, fill in from the account when you use the template.</p>
-    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Updated versions of your Spiro templates are ready.</b> Bold section headings and bulleted lists throughout, no sign-off since your signature is added when you send, and wording fixes (HIPAA spelling, “30+ years” throughout). This replaces the ${spOld} earlier versions. Templates you've edited yourself are left alone.` : `<b>Your ${SPIRO_TPL_COUNT} Spiro templates are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update Spiro templates' : 'Add Spiro templates'}</button></div>` : ''}
+    ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Updated versions of the templates from your current CRM are ready.</b> Bold section headings and bulleted lists throughout, no sign-off since your signature is added when you send, and wording fixes (HIPAA spelling, “30+ years” throughout). This replaces the ${spOld} earlier versions. Templates you've edited yourself are left alone.` : `<b>Your ${SPIRO_TPL_COUNT} templates from your current CRM are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update templates' : 'Add these templates'}</button></div>` : ''}
     ${list.length > 10 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}
     <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
     ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
@@ -5269,7 +5299,7 @@ async function spiroImport(){
   const b = $('#spiroBtn'); if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   let list;
   try { const r = await fetch('spiro-templates.json', {cache: 'no-store'}); if (!r.ok) throw 0; list = await r.json(); }
-  catch { toast("Couldn't load the Spiro templates. Refresh the page and try again.", 'bad'); if (b) { b.disabled = false; b.textContent = 'Add Spiro templates'; } return; }
+  catch { toast("Couldn't load the templates. Refresh the page and try again.", 'bad'); if (b) { b.disabled = false; b.textContent = 'Add these templates'; } return; }
   const have = templates(); let added = 0, updated = 0, skipped = 0;
   for (const t of list) {
     const ex = have.find(x => x.id === t.id) || have.find(x => norm(x.name) === norm(t.name));
@@ -5280,7 +5310,7 @@ async function spiroImport(){
     } else if (await put('templates', t.id, rec)) added++;
     if (b && (added + updated) % 10 === 0) b.textContent = `Working… ${added + updated}`;
   }
-  toast([added ? `Added ${added}` : '', updated ? `Updated ${updated}` : ''].filter(Boolean).join(', ') + ` Spiro template${added + updated === 1 ? '' : 's'}` + (skipped && !updated ? ` (${skipped} were already here)` : ''));
+  toast([added ? `Added ${added}` : '', updated ? `Updated ${updated}` : ''].filter(Boolean).join(', ') + ` template${added + updated === 1 ? '' : 's'} from your current CRM` + (skipped && !updated ? ` (${skipped} were already here)` : ''));
   tplManageModal();
 }
 function tplEditModal(id){
@@ -6061,6 +6091,7 @@ function journeyLibraryModal(){
 
 // ---------- actions ----------
 const A = {
+  theoToggle: (d, el) => { const on = !prefGet('theo', true); prefSet('theo', on); el.textContent = on ? 'Hide Theo' : 'Show Theo'; render(); toast(on ? 'Theo is back' : 'Theo is hidden. Show him again from Settings anytime.'); },
   go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
   open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
@@ -6337,7 +6368,7 @@ const CHANGE = {
   impFile: el => { const file = el.files && el.files[0]; if (!file) return;
     { const all = [...el.files]; const b = $('#impBody'); if (b) b.innerHTML = '<p class="sub">Reading…</p>';
       file.slice(0, 4000).text().then(head => { const isSp = SP_KIND(parseCSV(head.split(/\r?\n/)[0] || '')[0] || []);
-        if (all.length > 1 || isSp) { spLoadFiles(all).then(x => { if (!Object.keys(x.files).length) { imp.spiro = null; if (b) b.innerHTML = `<p class="empty-s">These aren't Spiro exports. Choose one file at a time to map its columns.</p>`; return; } imp.spiro = x; const ts = $('#impType'); if (ts) ts.closest('.f').hidden = true; spSummary(); }).catch(() => toast("Couldn't read those files.", 'bad')); return; }
+        if (all.length > 1 || isSp) { spLoadFiles(all).then(x => { if (!Object.keys(x.files).length) { imp.spiro = null; if (b) b.innerHTML = `<p class="empty-s">These aren't exports from your current CRM. Choose one file at a time to map its columns.</p>`; return; } imp.spiro = x; const ts = $('#impType'); if (ts) ts.closest('.f').hidden = true; spSummary(); }).catch(() => toast("Couldn't read those files.", 'bad')); return; }
         imp.spiro = null; const ts = $('#impType'); if (ts) ts.closest('.f').hidden = false; readOne(); }); }
     function readOne(){ const r = new FileReader(); r.onload = () => { const rows = parseCSV(String(r.result)); imp.name = file.name; imp.headers = rows[0] || []; imp.rows = rows.slice(1);
     const n = file.name.toLowerCase(); const t = /opportunit|deal/.test(n) ? 'deals' : /contact|people|person/.test(n) ? 'contacts' : /compan|account|organi/.test(n) ? 'accounts' : imp.type; imp.type = t; const ts = $('#impType'); if (ts) ts.value = t;
@@ -7551,8 +7582,8 @@ async function usageModal(month){
 const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o = ''; const r = new Uint32Array(8); crypto.getRandomValues(r); for (const n of r) o += a[n % a.length]; return o.slice(0, 4) + '-' + o.slice(4); };
 function usersModal(){
   const admin = isAdmin();
-  const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former Spiro user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
-    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former Spiro user' : esc(u.email)}</small></div>
+  const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
+    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former user' : esc(u.email)}</small></div>
       <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>`}
       ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button><button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}"${/\.invalid$/.test(u.email || '') ? ' hidden' : ''}>${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
