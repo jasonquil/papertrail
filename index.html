@@ -500,7 +500,39 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .cp-body{display:flex;flex-direction:column;gap:16px}
 .cpgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 20px}
 .cpf{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid var(--line);min-width:0}
-.cpf.wide{grid-column:1/-1}.cpf.ed{cursor:pointer}.cpf.ed>div{display:block}.cpf .oe{width:100%;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 6px;margin-left:-7px;min-height:30px;box-shadow:none}
+.cpf.wide{grid-column:1/-1}.cpf.w2{grid-column:span 2}
+/* ---------- date picker: Paper Trail's own calendar (mouse/trackpad); phones keep their native picker; typing a date still works ---------- */
+:root{--dp-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2356706B' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--dp-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA5A0' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E")}}
+:root[data-theme="dark"]{--dp-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA5A0' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E")}
+@media (pointer:fine){
+  input[type=date]::-webkit-calendar-picker-indicator{display:none}
+  input[type=date]{background-image:var(--dp-ic);background-repeat:no-repeat;background-position:right 9px center;background-size:16px;padding-right:34px;cursor:text}
+}
+.dp{position:fixed;z-index:80;width:276px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px;font:500 .875rem var(--body);user-select:none;-webkit-user-select:none;animation:dpIn .12s ease-out}
+@keyframes dpIn{from{transform:translateY(-4px)}to{transform:none}}
+.dp-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dp-h b{font:700 .95rem var(--display);letter-spacing:-.005em}
+.dp-nav{width:30px;height:30px;border:0;border-radius:8px;background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.dp-nav:hover{background:var(--surface-2);color:var(--fg)}
+.dp-nav svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dp-w,.dp-g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dp-w span{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:4px 0}
+.dp-d{height:34px;border:0;border-radius:9px;background:none;color:var(--fg);font:inherit;font-variant-numeric:tabular-nums;cursor:pointer;position:relative}
+.dp-d:hover{background:var(--surface-2)}
+.dp-d.out{color:var(--muted);opacity:.55}
+.dp-d.wk{color:var(--muted)}
+.dp-d.today{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);font-weight:700}
+.dp-d.cur{background:var(--surface-2);outline:2px solid var(--accent);outline-offset:-2px}
+.dp-d.sel,.dp-d.sel:hover{background:var(--accent);color:var(--accent-fg);font-weight:700;box-shadow:none;opacity:1}
+.dp-f{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.dp-f button{border:0;background:none;color:var(--accent);font:600 .82rem var(--body);padding:6px 8px;border-radius:7px;cursor:pointer}
+.dp-f button:hover{background:var(--accent-soft)}
+.dp-f .dp-clr{color:var(--muted)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}.grid3 .f.wide{grid-column:1/-1}
+@media (max-width:720px){.grid3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}@media (max-width:460px){.grid3{grid-template-columns:minmax(0,1fr)}}
+.ndp-auto{font-weight:500;color:var(--accent);font-size:.72rem;margin-left:4px}.cpf.ed{cursor:pointer}.cpf.ed>div{display:block}.cpf .oe{width:100%;font:inherit;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 6px;margin-left:-7px;min-height:30px;box-shadow:none}
 .cpf select.oe{appearance:none;-webkit-appearance:none;padding-right:24px;cursor:pointer;background-repeat:no-repeat;background-position:right 7px center;background-size:10px}
 .cpf.ed:hover .oe{border-color:var(--line);background-color:var(--surface)}
 .cpf.ed:hover select.oe,.cpf select.oe:focus{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E")}
@@ -510,7 +542,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .cpf>span{font-size:.75rem;color:var(--muted)}
 .cpf>div{display:flex;align-items:center;gap:6px;overflow-wrap:anywhere;min-height:1.5em}
 @media (max-width:820px){.cpgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
-@media (max-width:520px){.cpgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.cpgrid{grid-template-columns:minmax(0,1fr)}.cpf.w2{grid-column:auto}}
 .jlib{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .jcard{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;cursor:pointer}
 .jcard:hover{border-color:var(--accent)}
@@ -1669,9 +1701,8 @@ function fallbackCopy(text){ const t = document.createElement('textarea'); t.val
 
 // ---------- Copy to NDP: one row for Jason's New Daily Purge sheet, columns in the sheet's order, tab-separated so Excel spreads it across ----------
 const NDP_COLS = ['Scheduled', 'WINDOW', 'EMAILED', 'Business Name/Client', 'Sales Rep', 'Lead Source', 'Service Address', 'Additional Notes/Stairs/elevator', 'Office Hours', 'Amount of Shredding', 'Email', 'Storage Unit - unit number/floor number', 'Hard drives/Media/Xrays', 'Quote/Pricing', 'Contact Name', 'Contact Phone', 'Alternate phone number/onsite contact', 'Billing Address (If Different)', 'How are they paying?', 'Credit card info', 'Payment Method', 'Confirm Time Y/N', 'Contacted'];
-// typed in the Copy to NDP window before copying: [column, label, kind]
-const NDP_MANUAL = [['Additional Notes/Stairs/elevator', 'Additional notes / stairs / elevator', 'ta'], ['Office Hours', 'Office hours'], ['Amount of Shredding', 'Amount of shredding'], ['Storage Unit - unit number/floor number', 'Storage unit: unit # / floor #'], ['Hard drives/Media/Xrays', 'Hard drives / media / X-rays'], ['Quote/Pricing', 'Quote / pricing'], ['Alternate phone number/onsite contact', 'Alternate phone / onsite contact'], ['Billing Address (If Different)', 'Billing address (if different)'], ['How are they paying?', 'How are they paying?', 'pay']];
-function ndpRow(dealId, typed = {}){
+// what Paper Trail fills in on its own (the window shows every column, so these can be checked and changed before copying)
+function ndpAuto(dealId){
   const d = S.deals[dealId]; if (!d) return null; const c = S.companies[d.companyId] || {};
   // the account's most recently added contact (imported ones share an import time, so their old CRM number breaks the tie)
   const cts = (d.companyId ? gr(d.companyId).contacts : []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0) || (+b.spiroId || 0) - (+a.spiroId || 0) || String(b.id).localeCompare(String(a.id)));
@@ -1680,9 +1711,13 @@ function ndpRow(dealId, typed = {}){
   const ph = ct.phone || ct.mobile || ''; const phone = String(ph).replace(/\D/g, '').length >= 10 ? fmtPhone(ph) : String(ph).replace(/^\s*\+?1[\s.-]+/, '');
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', ') + (c.zip ? ' ' + c.zip : '')].map(x => String(x || '').trim()).filter(Boolean).join(', ');
   const src = d.source === 'Other' && d.sourceOther ? d.sourceOther : (d.source || '');
-  const v = {...typed, 'Business Name/Client': c.name || '', 'Sales Rep': String(ME.name || '').trim().split(/\s+/)[0] || '', 'Lead Source': src, 'Service Address': addr, 'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
-  return NDP_COLS.map(k => String(v[k] ?? '').replace(/[\t\r\n]+/g, ' ').trim()).join('\t');
+  return {'Business Name/Client': c.name || '', 'Sales Rep': String(ME.name || '').trim().split(/\s+/)[0] || '', 'Lead Source': src, 'Service Address': addr,
+    'Additional Notes/Stairs/elevator': d.notes || '', 'Amount of Shredding': d.shredAmount || '', 'Quote/Pricing': d.priceQuoted === 0 || d.priceQuoted == null ? '' : String(d.priceQuoted),
+    'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
 }
+const ndpCell = v => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+// one row in the sheet's column order, tab-separated so Excel spreads it across
+function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.map(k => ndpCell(v[k])).join('\t'); }
 
 // ---------- store ----------
 let bootDone; const bootReady = new Promise(r => bootDone = r);
@@ -2651,7 +2686,7 @@ V.pipeline = () => {
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
       const lt = X.lastAct[d.id];
-      return `<tr data-act="oppPage" data-id="${d.id}" data-st="${stage(d).k}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td class="num sub">${acctOf(d.companyId) || '—'}</td><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}${stageMeter(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
+      return `<tr data-act="oppPage" data-id="${d.id}" data-st="${stage(d).k}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td class="num sub">${acctOf(d.companyId) || '—'}</td><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}${stageMeter(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
     }).join('') || `<tr><td colspan="${show==='open'?6:8}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`).replace(/(<div class="tbl"><table>[\s\S]*$)/, m => side ? `<div class="oppsplit"><div class="oppsplit-l">${m}</div>${oppSide(side)}</div>` : m);
 };
 // wide screens: clicking an opportunity opens it beside the list instead of leaving the page
@@ -2700,9 +2735,9 @@ function oppSummary(id){
   const sv = [d.serviceType, d.service ? d.service.toLowerCase() : '', d.interval ? '(' + d.interval.toLowerCase() + ')' : ''].filter(Boolean).join(' ');
   parts.push(`${d.name || 'This opportunity'} is ${d.companyId ? `an opportunity for ${cname(d.companyId)}` : 'an opportunity'}${d.contactId && S.contacts[d.contactId] ? ` with ${pname_(S.contacts[d.contactId])}` : ''}, owned by ${pname(d.ownerId).replace(' (you)', '')}${d.value ? `, valued at ${money(d.value)} a year` : ''}.`);
   if (sv) parts.push(`Service: ${sv}.`);
-  if (d.stage === 'won') parts.push(`Closed won${isDate(d.closedAt) ? ' on ' + fmtDate(d.closedAt) : ''}${d.closedBy ? ' by ' + pname(d.closedBy).replace(' (you)', '') : ''}${d.priceQuoted ? ` at ${money2(d.priceQuoted)}` : ''}.`);
+  if (d.stage === 'won') parts.push(`Closed won${isDate(d.closedAt) ? ' on ' + fmtDate(d.closedAt) : ''}${d.closedBy ? ' by ' + pname(d.closedBy).replace(' (you)', '') : ''}${d.priceQuoted ? ` at ${pqShow(d.priceQuoted)}` : ''}.`);
   else if (d.stage === 'lost') parts.push(`Closed lost${isDate(d.closedAt) ? ' on ' + fmtDate(d.closedAt) : ''}${d.lostReason ? ', reason: ' + d.lostReason : ''}.`);
-  else parts.push(`It is at ${stage(d).l}${d.priceQuoted ? `, quoted at ${money2(d.priceQuoted)}` : ''}${d.createdAt ? `, opened ${fmtDate(new Date(d.createdAt).toISOString().slice(0, 10))}` : ''}.`);
+  else parts.push(`It is at ${stage(d).l}${d.priceQuoted ? `, quoted at ${pqShow(d.priceQuoted)}` : ''}${d.createdAt ? `, opened ${fmtDate(new Date(d.createdAt).toISOString().slice(0, 10))}` : ''}.`);
   if (isDate(d.serviceDate)) parts.push(`Service date ${d.serviceDate < today() ? 'was' : 'is'} ${fmtDate(d.serviceDate)}.`);
   const next = L('tasks').filter(k => k.dealId === id && !k.done && isDate(k.due)).sort((a, b) => a.due < b.due ? -1 : 1)[0]; if (next) parts.push(`Next reminder: ${next.title}, ${fmtDate(next.due)}.`);
   const je = L('enrollments').filter(e => e.dealId === id && e.status === 'active'); if (je.length) parts.push(`On a journey: ${jName(je[0].journeyId)}.`);
@@ -2710,14 +2745,16 @@ function oppSummary(id){
 }
 function oppEditor(d, k){
   const o = (list, v) => ['', ...(v && !list.includes(v) ? [v, ...list] : list)].map(x => [x, x || '—']);
-  const typed = ['value', 'priceQuoted', 'notes', 'sourceOther'].includes(k);
+  const typed = ['value', 'priceQuoted', 'shredAmount', 'notes', 'sourceOther'].includes(k);
   const at = `id="oe_${k}"${typed ? ' data-keep' : ''} data-change="oppField" data-k="${k}" data-id="${d.id}" class="oe"`;
   const S_ = (opts, v) => sel('oe', opts, v || '', at);
   switch (k) {
     case 'companyId': return S_(coOpts('— Choose an account —'), d.companyId);
     case 'type': return S_(OPP_TYPES.includes(d.type || d.name) ? OPP_TYPES.map(x => [x, x]) : [[d.type || d.name, d.type || d.name], ...OPP_TYPES.map(x => [x, x])], d.type || d.name);
     case 'contactId': return S_(ctOpts(d.companyId), d.contactId);
-    case 'value': case 'priceQuoted': return `<span class="money"><i>$</i><input ${at} type="text" inputmode="decimal" placeholder="0" value="${esc(d[k] || '')}"></span>`;
+    case 'value': return `<span class="money"><i>$</i><input ${at} type="text" inputmode="decimal" placeholder="0" value="${esc(d[k] || '')}"></span>`;
+    case 'priceQuoted': return `<span class="money"><i>$</i><input ${at} type="text" placeholder="e.g. 175/85" value="${esc(d.priceQuoted || '')}"></span>`;
+    case 'shredAmount': return `<input ${at} type="text" placeholder="e.g. 30 boxes" value="${esc(d.shredAmount || '')}">`;
     case 'notes': return `<textarea ${at} rows="1" placeholder="Add a description">${esc(d.notes || '')}</textarea>`;
     case 'sourceOther': return `<input ${at} type="text" placeholder="—" value="${esc(d.sourceOther || '')}">`;
     case 'serviceDate': case 'closedAt': return `<input ${at.replace('data-change="oppField"', 'data-change="oppDate" data-keep')} type="date" value="${esc(isDate(d[k]) ? d[k] : '')}">`;   // saves once the date is finished, not after every part
@@ -2758,8 +2795,9 @@ let oppDateT = 0;
 async function oppSaveField(el){
   const id = el.dataset.id, k = el.dataset.k, d = S.deals[id]; if (!d) return;
   let v = el.value; const up = {};
-  if (k === 'value' || k === 'priceQuoted') v = num(v);
-  if (k === 'notes' || k === 'sourceOther') v = v.trim();
+  if (k === 'value') v = num(v);
+  if (k === 'priceQuoted') v = pqVal(v);
+  if (k === 'notes' || k === 'sourceOther' || k === 'shredAmount') v = v.trim();
   if (k === 'lostReason' && d.stage === 'lost' && !v) { toast('A lost opportunity needs a reason.', 'bad'); render(); return; }
   if (k === 'companyId') { if (!v) { toast('Every opportunity needs a company.', 'bad'); render(); return; } if (d.contactId && S.contacts[d.contactId]?.companyId !== v) up.contactId = ''; }
   if (k === 'type') { if (!v) { render(); return; } const dup = isOpen(d) && L('deals').find(x => x.id !== id && x.companyId === d.companyId && isOpen(x) && (x.type || x.name) === v); if (dup) { toast(`${cname(d.companyId)} already has an open ${v} opportunity.`, 'bad'); render(); return; } up.name = v; }
@@ -2778,8 +2816,9 @@ V.opp = () => {
   const quotes = L('quotes').filter(q => q.dealId === id).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const tasks = L('tasks').filter(k => k.dealId === id && !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
   const ens = L('enrollments').filter(e => e.dealId === id);
-  const f = (label, val, wide, k) => k && W ? `<label class="cpf ed${wide ? ' wide' : ''}"><span>${label}</span><div>${oppEditor({...d, id}, k)}</div></label>`
-    : `<div class="cpf${wide ? ' wide' : ''}"><span>${label}</span><div>${val || '<span class="sub">—</span>'}</div></div>`;
+  const wc = wide => wide === 2 ? ' w2' : wide ? ' wide' : '';
+  const f = (label, val, wide, k) => k && W ? `<label class="cpf ed${wc(wide)}"><span>${label}</span><div>${oppEditor({...d, id}, k)}</div></label>`
+    : `<div class="cpf${wc(wide)}"><span>${label}</span><div>${val || '<span class="sub">—</span>'}</div></div>`;
   const closed = !isOpen(d);
   const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="pipeline">← Opportunities</button>
@@ -2789,8 +2828,8 @@ V.opp = () => {
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
       <div class="cpgrid">
       ${f('Company', d.companyId ? esc(cname(d.companyId)) : '', false, 'companyId')}${f('Opportunity', esc(d.type || d.name), false, 'type')}${f('Initial call', esc(d.initialCall), false, 'initialCall')}
-      ${cpField('Sales stage', W ? stageSel(d, 'rowStage') : stageChip(d))}${f('Annual projected amount', d.value ? `<b class="num">${money(d.value)}</b>` : '', false, 'value')}${f('Price quoted', d.priceQuoted ? `<span class="num">${money2(d.priceQuoted)}</span>` : '', false, 'priceQuoted')}
-      ${f('Description', d.notes ? `<span style="white-space:pre-wrap">${esc(d.notes)}</span>` : '', true, 'notes')}
+      ${cpField('Sales stage', W ? stageSel(d, 'rowStage') : stageChip(d))}${f('Annual projected amount', d.value ? `<b class="num">${money(d.value)}</b>` : '', false, 'value')}${f('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '', false, 'priceQuoted')}
+      ${f('Amount of shredding', esc(d.shredAmount), false, 'shredAmount')}${f('Description', d.notes ? `<span style="white-space:pre-wrap">${esc(d.notes)}</span>` : '', 2, 'notes')}
       ${f('Service', esc(d.service), false, 'service')}${f('Service type', esc(d.serviceType), false, 'serviceType')}${f('Service interval', esc(d.interval), false, 'interval')}
       ${f('Service date', isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '', false, 'serviceDate')}${cpField('Created', d.createdAt ? new Date(d.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${f('Owner', who(d.ownerId), false, 'ownerId')}
       ${f('Lead source', esc(d.source), false, 'source')}${f('Lead source other', esc(d.sourceOther), false, 'sourceOther')}
@@ -2832,7 +2871,7 @@ V.company = () => {
   else if (tab === 'reminders') { const open = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1); const done = g.tasks.filter(k => k.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
     body = `<section class="panel"><div class="ph"><h3>Open</h3>${W ? `<button class="btn sm pri" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}</div>${tasksList(open)}</section><section class="panel"><h3>Completed</h3>${done.length ? `<ul class="tasks">${done.map(taskRow).join('')}</ul>` : '<p class="empty-s">Nothing completed yet.</p>'}</section>`; }
   else if (tab === 'contacts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>Mobile</th></tr></thead><tbody>${g.contacts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(ct => `<tr data-act="open" data-col="contacts" data-id="${ct.id}"><td><b>${esc(pname_(ct))}</b></td><td>${esc(ct.title || '—')}</td><td>${ctMailLink(ct) || '—'}</td><td class="num">${esc(ct.phone || '—')}</td><td class="num">${esc(ct.mobile || '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No contacts yet.</td></tr>'}</tbody></table></div>`;
-  else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(d.name || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? money2(d.priceQuoted) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
+  else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(d.name || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
   else if (tab === 'quotes') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newQuote" data-co="${id}">${ic('plus')}New quote</button>` : ''}</div><section class="panel">${rowsOr(g.quotes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), quoteRow, 'No quotes yet.')}</section>`;
   else if (tab === 'contracts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContract" data-co="${id}">${ic('plus')}Contract</button>` : ''}</div><section class="panel">${rowsOr(g.contracts, contractRow, 'No contracts yet.')}</section>`;
   else if (tab === 'journeys') { const es = L('enrollments').filter(e => e.companyId === id).sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
@@ -3109,7 +3148,7 @@ const DETAIL = {
     <dl class="facts">
       <dt>Stage</dt><dd>${canWrite ? `<select id="dealStage" data-change="dealStage" data-id="${id}" aria-label="Stage" style="width:auto">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k===s.k?'selected':''}>${s.l}</option>`).join('')}</select>` : stageChip(d)}</dd>
       ${fact('Annual projected', d.value ? `<b class="num">${money(d.value)}</b>` : '')}
-      ${fact('Price quoted', d.priceQuoted ? `<span class="num">${money2(d.priceQuoted)}</span>` : '')}
+      ${fact('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '')}${fact('Amount of shredding', esc(d.shredAmount || ''))}
       ${fact('Service', esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · ')))}
       ${fact('Service date', isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '')}
       ${fact('Close date', isDate(d.closeDate) ? (late ? `<span class="chip bad">${fmtDate(d.closeDate)}, past due</span>` : fmtDate(d.closeDate)) : '')}
@@ -3148,6 +3187,10 @@ const coOpts = (none='— None —') => [['', none], ...L('companies').sort(byNa
 const ownerSel = (name, cur) => { const ids = people().filter(i => i === cur || i === ME.id || !isFormer(i)); if (!ids.length) return sel(name, [['', 'You']], ''); return sel(name, ids.map(i => [i, pname(i)]), cur || ME.id); };
 const cb = (name, checked, label) => `<label class="f inline"><input type="checkbox" name="${name}" ${checked?'checked':''}><span style="font-size:.9rem;color:var(--fg)">${label}</span></label>`;
 const num = v => { const n = parseFloat(String(v).replace(/[$,\s]/g,'')); return isFinite(n) ? n : 0; };
+// price quoted holds the whole price structure ("175/85"); a plain number is still kept as a number
+const pqVal = v => { const t = String(v ?? '').trim().replace(/^\$\s*/, ''); if (!t) return ''; return /^\d[\d,]*(\.\d+)?$/.test(t) ? num(t) : t; };
+const pqShow = v => v === '' || v == null || v === 0 ? '' : typeof v === 'number' ? money2(v) : /^\d/.test(String(v)) ? '$' + v : String(v);
+const pqNum = v => typeof v === 'number' ? v : num((String(v || '').match(/\d[\d,]*(\.\d+)?/) || ['0'])[0]);
 
 // ---------- account tags ----------
 const TAGS_ON = false;   // account tags are built but not released yet; flip to true to turn them on
@@ -3247,7 +3290,7 @@ function tagSuggestions(){
     if (/shred/i.test(st) || /shred|purge/i.test(nm_)) put_(d.companyId, 'Shredding');
     if (/med/i.test(st) || /medical waste|sharps|biohazard|red bag/i.test(nm_)) put_(d.companyId, 'Medical Waste');
     if (/hard drive|media|electronic|e-?waste/i.test(st) || /hard ?drive|\bhd\b|media destruction|itad|data destruction|electronic|e-?waste/i.test(nm_)) {
-      const amt = Math.max(+d.value || 0, +d.priceQuoted || 0);
+      const amt = Math.max(+d.value || 0, pqNum(d.priceQuoted));
       if (amt >= ITAD_MIN && !resi[d.companyId]) big[d.companyId] = true; else small[d.companyId] = true; } }
   for (const id of Object.keys(big)) put_(id, 'ITAD');
   for (const id of Object.keys(small)) if (!big[id]) put_(id, 'Electronics');
@@ -3319,7 +3362,7 @@ const FL = {
     {k: 'lostReason', l: 'Reason for loss', opts: () => withData(LOSS_REASONS, 'lostReason'), test: (d, v) => d.lostReason === v},
     {k: 'city', l: 'Account city', opts: cityOpts, test: (d, v) => nrm(coOf(d).city) === v},
     {k: 'value', l: 'Annual projected ($)', num: d => +d.value || 0},
-    {k: 'priceQuoted', l: 'Price quoted ($)', num: d => +d.priceQuoted || 0},
+    {k: 'priceQuoted', l: 'Price quoted ($)', num: d => pqNum(d.priceQuoted)},
     {k: 'created', l: 'Created', date: d => d.createdAt},
     {k: 'closeDate', l: 'Close date', date: d => d.closeDate},
     {k: 'closedAt', l: 'Closed date', date: d => isOpen(d) ? '' : d.closedAt},
@@ -3584,7 +3627,8 @@ function dealForm(id, pre={}){
     <label class="f full" id="dfNewCo" hidden><span>New account name</span>${inp('newCompany', '', 'text', 'placeholder="Name of the new account"')}</label>
     ${F('Sales stage', sel('stage', STAGES.map(s => [s.k, s.l]), stage(d).k, 'data-change="dfStage"'))}
     ${F('Annual projected amount', `<span class="money"><i>$</i>${inp('value', d.value ? d.value : '', 'text', 'inputmode="decimal"')}</span>`)}
-    ${F('Price quoted', `<span class="money"><i>$</i>${inp('priceQuoted', d.priceQuoted ? d.priceQuoted : '', 'text', 'inputmode="decimal"')}</span>`)}
+    ${F('Price quoted', `<span class="money"><i>$</i>${inp('priceQuoted', d.priceQuoted ? d.priceQuoted : '', 'text', 'placeholder="e.g. 175/85"')}</span>`)}
+    ${F('Amount of shredding', inp('shredAmount', d.shredAmount || '', 'text', 'placeholder="e.g. 30 boxes"'))}
     <label class="f full"><span>Description</span>${ta('notes', d.notes, 3)}</label>
     ${F('Service', sel('service', o(SERVICES, d.service), d.service, 'data-change="dfSvcPick"'))}
     ${F('Service type', sel('serviceType', o(SVC_TYPES, d.serviceType), d.serviceType, 'data-change="dfSvcPick"'))}
@@ -3606,7 +3650,7 @@ function dealForm(id, pre={}){
       if (!companyId) { toast('Every opportunity needs a company. Choose one or add a new one.', 'bad'); return false; }
       { const dupD = !CLOSED.includes(f.stage) && f.type && L('deals').find(x => x.id !== id && x.companyId === companyId && isOpen(x) && (x.type || x.name) === f.type); if (dupD) { dupWarn(`${esc(cname(companyId))} already has an open ${esc(f.type)} opportunity.`, 'deals', dupD.id); return false; } }
       const nid = id || uid(); const prev = id ? S.deals[id] : {};
-      const rec = {...prev, companyId, type: f.type, name: f.type, contactId: (prev.contactId && S.contacts[prev.contactId]?.companyId === companyId ? prev.contactId : '') || (pre.ct && S.contacts[pre.ct]?.companyId === companyId ? pre.ct : ''), stage: f.stage, value: num(f.value), priceQuoted: num(f.priceQuoted),
+      const rec = {...prev, companyId, type: f.type, name: f.type, contactId: (prev.contactId && S.contacts[prev.contactId]?.companyId === companyId ? prev.contactId : '') || (pre.ct && S.contacts[pre.ct]?.companyId === companyId ? pre.ct : ''), stage: f.stage, value: num(f.value), priceQuoted: pqVal(f.priceQuoted), shredAmount: (f.shredAmount || '').trim(),
         service: f.service, serviceType: f.serviceType, interval: f.interval, serviceDate: f.serviceDate, source: f.source, sourceOther: f.source === 'Other' ? f.sourceOther : '',
         initialCall: f.initialCall, firstCallClose: f.firstCallClose, notes: f.notes, noCloseReason: f.firstCallClose === 'No' ? f.noCloseReason : '', lostReason: f.stage === 'lost' ? f.lostReason : ''};
       if (!rec.ownerId) rec.ownerId = ME.id;
@@ -3949,7 +3993,7 @@ function spBuild(files, ppl){
     const close = spDate(r['Close Date']); const closed = CLOSED.includes(st);
     const fcc = spYN(r['First Call Close']);
     out.deals.push([id, {spiroId: sid, name: type, type, companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), stage: st,
-      value: num(r['Annual Projected Amount']), priceQuoted: num(r['Price Quoted']), service: spTidy(r['Service'], SERVICES), serviceType: spTidy(r['Service Type'], SVC_TYPES), interval: spTidy(r['Service Interval'], INTERVALS), serviceDate: spDate(r['Service Date']),
+      value: num(r['Annual Projected Amount']), priceQuoted: pqVal(r['Price Quoted']), service: spTidy(r['Service'], SERVICES), serviceType: spTidy(r['Service Type'], SVC_TYPES), interval: spTidy(r['Service Interval'], INTERVALS), serviceDate: spDate(r['Service Date']),
       closeDate: closed ? close : '', closedAt: closed ? (close || spDate(r['Created'])) : '', closedBy: closed ? ppl.closer(r['Closed By']) : '',
       source: spTidy(r['Lead Source'], SOURCES), sourceOther: spTidy(r['Lead Source Other']), initialCall: spTidy(r['Initial Call'], INITIAL_CALL), firstCallClose: fcc, noCloseReason: spTidy(r['Did not Close on First Call'], NO_CLOSE), lostReason: st === 'lost' ? spTidy(r['Reason for Loss'], LOSS_REASONS) : '',
       notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
@@ -4104,7 +4148,7 @@ async function runImport(_, form){
       const cv = get(r,'contact').toLowerCase();
       const contactId = cv ? (ctByEmail[cv] || ctByName[companyId + '|' + norm(cv)] || ctAnyName[norm(cv)] || '') : '';
       const st = mapStage(get(r,'stage'));
-      const rec = {name, type: name, companyId, contactId, stage: st, value: num(get(r,'value')), priceQuoted: num(get(r,'priceQuoted')), service: get(r,'service'), serviceType: get(r,'serviceType'), interval: get(r,'interval'), serviceDate: toYmd(get(r,'serviceDate')), closeDate: toYmd(get(r,'closeDate')), source: get(r,'source'), sourceOther: get(r,'sourceOther'), initialCall: get(r,'initialCall'), firstCallClose: get(r,'firstCallClose'), noCloseReason: get(r,'noCloseReason'), lostReason: get(r,'lostReason'), ownerId: ownerFrom(get(r,'owner'))};
+      const rec = {name, type: name, companyId, contactId, stage: st, value: num(get(r,'value')), priceQuoted: pqVal(get(r,'priceQuoted')), service: get(r,'service'), serviceType: get(r,'serviceType'), interval: get(r,'interval'), serviceDate: toYmd(get(r,'serviceDate')), closeDate: toYmd(get(r,'closeDate')), source: get(r,'source'), sourceOther: get(r,'sourceOther'), initialCall: get(r,'initialCall'), firstCallClose: get(r,'firstCallClose'), noCloseReason: get(r,'noCloseReason'), lostReason: get(r,'lostReason'), ownerId: ownerFrom(get(r,'owner'))};
       if (CLOSED.includes(st)) rec.closedAt = rec.closeDate || today();
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
       const key = norm(name) + '|' + (companyId||'');
@@ -4160,7 +4204,7 @@ const EXP = {
       ['Owner', d => nm(d.ownerId)], ['Service', d => d.service], ['Service Interval', d => d.interval], ['Service Date', d => mdy(d.serviceDate)], ['Service Type', d => d.serviceType],
       ['Annual Projected Amount', d => d.value || ''], ['Lead Source', d => d.source], ['Lead Source Other', d => d.sourceOther], ['Initial Call', d => d.initialCall],
       ['First Call Close', d => d.firstCallClose], ['Reason for Loss', d => d.lostReason], ['Did not Close on First Call', d => d.noCloseReason],
-      ['Closed By', d => isOpen(d) ? '' : nm(d.closedBy)], ['Price Quoted', d => d.priceQuoted || '']],
+      ['Closed By', d => isOpen(d) ? '' : nm(d.closedBy)], ['Price Quoted', d => d.priceQuoted || ''], ['Amount of Shredding', d => d.shredAmount || '']],
     form: () => {
       const cur = ui.oppShow || 'open'; const on = k => cur === 'all' || (cur === 'open' ? isOpen({stage: k}) : cur === k);
       return `<div class="f"><span>Sales stage</span><div class="chips">${STAGES.map(st => `<label class="chk"><input type="checkbox" name="st_${st.k}" ${on(st.k) ? 'checked' : ''} data-change="expCount"> ${st.l}</label>`).join('')}</div></div>
@@ -4958,7 +5002,7 @@ function mergeData(dr){
   return {greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening',
     first_name: ct?.firstName || '', last_name: ct?.lastName || '', contact_name: ct ? pname_(ct) : '', company: co.name || '',
     my_name: conn.name || ME.name || '', my_first_name: (conn.name || ME.name || '').split(' ')[0],
-    quote_number: q?.number || '', quote_total: q ? money2(qTotal(q)) : '', price_quoted: deal?.priceQuoted ? money2(deal.priceQuoted) : '',
+    quote_number: q?.number || '', quote_total: q ? money2(qTotal(q)) : '', price_quoted: deal?.priceQuoted ? pqShow(deal.priceQuoted) : '',
     service: (deal?.serviceType && deal.serviceType !== 'Chat - Unknown' ? deal.serviceType : deal?.name || '').toLowerCase(), interval: (deal?.interval || '').toLowerCase(),
     service_date: isDate(deal?.serviceDate) ? parseYmd(deal.serviceDate).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'}) : '',
     contract_end: k ? parseYmd(k.end).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : ''};
@@ -6150,17 +6194,19 @@ function journeyLibraryModal(){
 
 // ---------- actions ----------
 const A = {
-  ndpCopy: d => { const id = d.id, deal = S.deals[id]; if (!deal) return;
-    const saved = prefGet('ndp-' + id, {}) || {};   // what you typed last time for this opportunity
-    const field = ([col, label, kind], i) => kind === 'ta' ? F(label, ta('n' + i, saved[col] || '', 2), 'wide')
-      : F(label, inp('n' + i, saved[col] || '', 'text', kind === 'pay' ? 'list="ndpPay" autocomplete="off"' : 'autocomplete="off"') + (col === 'Quote/Pricing' && deal.priceQuoted ? `<small class="sub">Price quoted on this opportunity: ${money2(deal.priceQuoted)}</small>` : ''));
-    openModal('Copy to NDP', `<p class="sub">Fill in what you know, then copy. The account, your name, lead source, address, email and contact fill in on their own. Anything left empty stays blank in the sheet.</p>
-      <div class="grid2">${NDP_MANUAL.map(field).join('')}</div><datalist id="ndpPay"><option value="Credit card"><option value="Check"><option value="Cash"><option value="Invoice"><option value="Card on file"></datalist>`, 'Copy row', f => {
-        const typed = {}; NDP_MANUAL.forEach(([col], i) => { typed[col] = f['n' + i] || ''; });
-        prefSet('ndp-' + id, typed);
-        const row = ndpRow(id, typed); const done = () => toast('Copied for New Daily Purge. Click the first cell of an empty row and paste.');
+  ndpCopy: d => { const id = d.id, auto = ndpAuto(id); if (!auto) return;
+    const saved = prefGet('ndp-' + id, {}) || {};   // what you typed by hand last time for this opportunity (never card numbers)
+    const kind = {'Additional Notes/Stairs/elevator': 'ta', 'How are they paying?': 'pay', 'Payment Method': 'pay', 'Scheduled': 'date'};
+    const field = (col, i) => { const v = col in auto ? auto[col] : (col === 'Credit card info' ? '' : saved[col] || ''); const k = kind[col];
+      const box = k === 'ta' ? ta('n' + i, v, 2) : inp('n' + i, v, 'text', `${k === 'pay' ? 'list="ndpPay" ' : ''}autocomplete="off"${k === 'date' ? ' placeholder="e.g. 10/28"' : ''}`);
+      return F(esc(col) + (col in auto && v ? ' <small class="ndp-auto">from Paper Trail</small>' : ''), box, k === 'ta' ? 'wide' : ''); };
+    openModal('Copy to NDP', `<p class="sub">Everything Paper Trail knows is already filled in. Check it, change anything you need, add the rest, then copy. Empty boxes stay blank in the sheet.</p>
+      <div class="grid3 ndp">${NDP_COLS.map(field).join('')}</div><datalist id="ndpPay"><option value="Credit card"><option value="Check"><option value="Cash"><option value="Invoice"><option value="Card on file"></datalist>`, 'Copy row', f => {
+        const vals = {}; NDP_COLS.forEach((col, i) => { vals[col] = f['n' + i] || ''; });
+        const keep = {}; for (const col of NDP_COLS) if (!(col in auto) && col !== 'Credit card info' && vals[col]) keep[col] = vals[col]; prefSet('ndp-' + id, keep);
+        const row = ndpRow(id, vals); const done = () => toast('Copied for New Daily Purge. Click the first cell of an empty row and paste.');
         try { navigator.clipboard.writeText(row).then(done, () => { fallbackCopy(row); }); } catch { fallbackCopy(row); }
-        return true; }); },
+        return true; }, {wide: true}); },
   actDel: async (d, el) => {
     if (!el.classList.contains('arm')) { el.classList.add('arm'); el.textContent = 'Delete?'; el.setAttribute('aria-label', 'Click again to delete this activity'); clearTimeout(el._t); el._t = setTimeout(() => { if (el.isConnected) { el.classList.remove('arm'); el.innerHTML = ic('trash'); el.setAttribute('aria-label', 'Delete this activity'); } }, 4000); return; }
     clearTimeout(el._t); const a = S.activities[d.id]; if (!a) return;
@@ -6173,7 +6219,7 @@ const A = {
   closeDetail: () => { if (ui.side && !ui.detail && ui.view === 'pipeline') { ui.side = null; render(); pushNav(); return; } ui.detail = null; render(); pushNav(); },
   search: () => searchModal(),
   dupOpen: d => { closeModal(); if (d.col === 'companies') A.coPage({id: d.id}); else if (d.col === 'tasks') taskForm(d.id); else if (d.col === 'contracts') contractForm(d.id); else if (d.col === 'quotes') A.editQuote({id: d.id}); else A.open({col: d.col, id: d.id}); },
-  oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if ((el.tagName === 'SELECT' || el.type === 'date') && el.showPicker) try { el.showPicker(); } catch {} } },
+  oppEdit: d => { if (!canWrite || ui.oppEdit === d.k) return; ui.oppEdit = d.k; render(); const el = $('#oe_' + d.k); if (el) { el.focus(); if (el.type === 'date' && dpFine()) dpOpen(el); else if ((el.tagName === 'SELECT' || el.type === 'date') && el.showPicker) try { el.showPicker(); } catch {} } },
   loadSample: () => setDemo(true),
   demoOn: () => setDemo(true),
   merge: d => mergeModal(d.col, d.id),
@@ -6465,6 +6511,66 @@ const FORMS = {
 function updQuoteTotal(){ const items = [...document.querySelectorAll('#qItems .item')]; let t = 0; for (const it of items) { const [, q, p] = it.querySelectorAll('input'); const lt = num(q.value) * num(p.value); t += lt; const s = it.querySelector('.lt2'); if (s) s.textContent = money2(lt); } const el = $('#qTotal'); if (el) el.textContent = money2(t); }
 
 document.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.ac')) e.preventDefault(); });
+
+// ---------- date picker: our own calendar for every date box (mouse/trackpad only; phones keep theirs) ----------
+const DP = {el: null, input: null, y: 0, m: 0, cur: ''};
+const dpFine = () => matchMedia('(pointer:fine)').matches;
+const dpYmd = d => ymd(d);
+function dpOpen(input){
+  if (!dpFine() || input.disabled || input.readOnly) return;
+  const v = isDate(input.value) ? parseYmd(input.value) : new Date();
+  DP.input = input; DP.y = v.getFullYear(); DP.m = v.getMonth(); DP.cur = isDate(input.value) ? input.value : today();
+  if (!DP.el) { DP.el = document.createElement('div'); DP.el.className = 'dp'; DP.el.setAttribute('role', 'dialog'); DP.el.setAttribute('aria-label', 'Choose a date');
+    DP.el.addEventListener('mousedown', e => e.preventDefault());   // keep the cursor in the date box, so leaving it doesn't save half a choice
+    DP.el.addEventListener('click', dpClick); }
+  document.body.appendChild(DP.el); dpPaint(); dpPlace();
+}
+function dpClose(){ if (DP.el) DP.el.remove(); DP.input = null; }
+function dpPaint(){
+  const first = new Date(DP.y, DP.m, 1), start = new Date(DP.y, DP.m, 1 - first.getDay()), sel = DP.input && isDate(DP.input.value) ? DP.input.value : '', t = today();
+  const chev = d => `<svg viewBox="0 0 24 24"><path d="${d}"/></svg>`;
+  let days = ''; for (let i = 0; i < 42; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), k = dpYmd(d);
+    const cls = ['dp-d', d.getMonth() !== DP.m ? 'out' : '', d.getDay() === 0 || d.getDay() === 6 ? 'wk' : '', k === t ? 'today' : '', k === sel ? 'sel' : '', k === DP.cur && k !== sel ? 'cur' : ''].filter(Boolean).join(' ');
+    days += `<button type="button" tabindex="-1" class="${cls}" data-dp="${k}" aria-label="${d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'})}"${k === sel ? ' aria-pressed="true"' : ''}>${d.getDate()}</button>`; }
+  DP.el.innerHTML = `<div class="dp-h"><button type="button" tabindex="-1" class="dp-nav" data-dp="prev" aria-label="Previous month">${chev('M15 6l-6 6 6 6')}</button><b>${first.toLocaleString('en-US', {month: 'long', year: 'numeric'})}</b><button type="button" tabindex="-1" class="dp-nav" data-dp="next" aria-label="Next month">${chev('M9 6l6 6-6 6')}</button></div>
+    <div class="dp-w">${['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(x => `<span>${x}</span>`).join('')}</div><div class="dp-g">${days}</div>
+    <div class="dp-f"><button type="button" tabindex="-1" class="dp-clr" data-dp="clear">Clear</button><button type="button" tabindex="-1" data-dp="today">Today</button></div>`;
+}
+function dpPlace(){
+  if (!DP.input || !DP.el) return; const r = DP.input.getBoundingClientRect(), h = DP.el.offsetHeight, w = DP.el.offsetWidth;
+  const below = r.bottom + 6 + h <= innerHeight - 8 || r.top - 6 - h < 8;
+  DP.el.style.top = (below ? r.bottom + 6 : r.top - 6 - h) + 'px';
+  DP.el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + 'px';
+}
+function dpSet(v){
+  const el = DP.input; if (!el) return; el.value = v;
+  el.dispatchEvent(new Event('input', {bubbles: true})); el.dispatchEvent(new Event('change', {bubbles: true}));
+  dpClose(); if (el.classList.contains('oe')) el.blur();   // an opportunity field saves when you leave it
+}
+function dpMonth(n){ const d = new Date(DP.y, DP.m + n, 1); DP.y = d.getFullYear(); DP.m = d.getMonth(); const c = parseYmd(DP.cur); DP.cur = dpYmd(new Date(DP.y, DP.m, Math.min(c.getDate(), new Date(DP.y, DP.m + 1, 0).getDate()))); dpPaint(); dpPlace(); }
+function dpClick(e){
+  const b = e.target.closest('[data-dp]'); if (!b) return; const a = b.dataset.dp;
+  if (a === 'prev') return dpMonth(-1); if (a === 'next') return dpMonth(1);
+  if (a === 'clear') return dpSet(''); if (a === 'today') return dpSet(today());
+  if (isDate(a)) dpSet(a);
+}
+document.addEventListener('mousedown', e => {
+  const t = e.target;
+  if (DP.el && DP.el.isConnected && !DP.el.contains(t) && t !== DP.input) dpClose();
+  if (t && t.type === 'date' && t !== DP.input && dpFine()) setTimeout(() => { if (document.activeElement === t) dpOpen(t); }, 0);
+}, true);
+document.addEventListener('focusin', e => { const t = e.target; if (t && t.type === 'date' && t !== DP.input && dpFine() && t.matches(':focus-visible')) dpOpen(t); });
+document.addEventListener('focusout', e => { if (e.target === DP.input) setTimeout(() => { if (DP.input && document.activeElement !== DP.input) dpClose(); }, 0); });
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if (t && t.type === 'date' && dpFine() && ((e.altKey && e.key === 'ArrowDown') || e.key === 'F4')) { e.preventDefault(); if (DP.input === t) dpClose(); else dpOpen(t); return; }
+  if (!DP.input || t !== DP.input) return;
+  if (e.key === 'Escape') dpClose();   // Esc closes the calendar and, as before, cancels the edit
+  if (e.key === 'Tab') dpClose();
+}, true);
+document.addEventListener('input', e => { if (e.target === DP.input && isDate(DP.input.value)) { const d = parseYmd(DP.input.value); DP.cur = DP.input.value; DP.y = d.getFullYear(); DP.m = d.getMonth(); dpPaint(); } }, true);
+addEventListener('scroll', e => { if (DP.el && DP.el.isConnected && !DP.el.contains(e.target)) dpPlace(); }, true);
+addEventListener('resize', () => dpPlace());
 document.addEventListener('focusout', e => { const t = e.target; if (t && t.classList && t.classList.contains('oe')) { const k = t.dataset.k;
   if (t.type === 'date') { setTimeout(() => { if (document.activeElement === t || !t.isConnected) return; clearTimeout(oppDateT); const y = +String(t.value || '').slice(0, 4); if (!t.value || (y >= 2000 && y <= 2100)) oppSaveField(t); else { ui.oppEdit = null; render(); } }, 150); return; }   // leaving a date field saves it
   setTimeout(() => { if (ui.oppEdit === k && document.activeElement !== $('#oe_' + k)) { ui.oppEdit = null; render(); } }, 200); } });
