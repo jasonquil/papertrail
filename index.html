@@ -1314,6 +1314,51 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
   .cmp-lay select option{color:var(--fg)}
 }
 #mform.cmp-sheet > .sh h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- the sidebar calendar ---------- */
+.mcal{flex:none;margin:auto -2px 0;padding:10px 2px 0;border-top:1px solid var(--line);font-family:var(--body)}
+.mcal + .navfoot{margin-top:0}
+.mcal-h{display:flex;align-items:center;gap:2px;margin-bottom:6px}
+.mcal.folded .mcal-h{margin:0}
+.mcal-t{flex:1;min-width:0;display:flex;align-items:center;gap:6px;border:0;background:none;padding:5px 6px;border-radius:6px;color:var(--fg);font:700 .86rem/1.2 var(--body);text-align:left;cursor:pointer}
+.mcal-t:hover{background:var(--surface-2)}
+.mcal-t .ic{width:14px;height:14px;color:var(--muted);flex:none}
+.mcal-today{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--accent);font:700 .74rem/1 var(--body);cursor:pointer}
+.mcal-today:hover{background:var(--surface-2)}
+.mcal-n{width:28px;height:28px;flex:none}.mcal-n .ic{width:16px;height:16px}
+.mcal-wd,.mcal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px}
+.mcal-wd span{text-align:center;padding:2px 0 4px;color:var(--muted);font:700 .66rem/1 var(--body)}
+.mcal-d{position:relative;height:30px;padding:0;border:0;border-radius:8px;background:none;color:var(--fg);font:600 .78rem/1 var(--body);font-variant-numeric:tabular-nums;cursor:pointer;display:grid;place-items:center}
+.mcal-d:hover{background:var(--surface-2)}
+.mcal-d:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.mcal-d.we{color:var(--muted)}
+.mcal-d.out{color:var(--muted);opacity:.5}
+.mcal-d span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%}
+.mcal-d.today span{background:var(--accent);color:var(--accent-fg);font-weight:800}
+.mcal-d.sel{box-shadow:inset 0 0 0 2px var(--accent)}
+/* reminders: a dot; services: a dash (told apart by shape as well as color) */
+.mcal-d .dots{position:absolute;left:0;right:0;bottom:1px;display:flex;justify-content:center;align-items:center;gap:2px;pointer-events:none}
+.mcal-d .dots b{display:block;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.mcal-d .dots b.s{width:8px;height:3px;border-radius:2px;background:var(--warn)}
+.mcal-d.today .dots{bottom:-1px}
+html[data-look="inlet"] .mcal{display:none}
+@media (max-width:820px){.mcal{display:none}}
+/* what's on a day */
+.calpop{position:fixed;z-index:45;width:290px;max-width:calc(100vw - 20px);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:10px}
+@media (prefers-reduced-motion:no-preference){.calpop{animation:pop .14s ease-out}}
+.calpop-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calpop-h b{font:700 .95rem/1.25 var(--display)}
+.calpop-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:260px;overflow:auto}
+.calpop-l button{width:100%;display:flex;align-items:flex-start;gap:10px;padding:7px 8px;border:0;border-radius:8px;background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.calpop-l button:hover{background:var(--surface-2)}
+.calpop-l span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.calpop-l b{font-weight:600;font-size:.88rem}
+.calpop-l small{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calpop-l i{flex:none;margin-top:6px;display:block}
+.calpop-l .cp-r{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.calpop-l .cp-s{width:10px;height:4px;border-radius:2px;background:var(--warn);margin-top:7px}
+.calpop-e{margin:0}
+.calpop-f{display:flex;flex-wrap:wrap;gap:6px}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -2761,12 +2806,68 @@ function navHtml(){
   <div class="navlist">${VIEWS.map(([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`).join('')}</div>
   ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
   ${theoOn() ? '<div class="theo-room" id="theoRoom" data-own></div>' : ''}
+  ${calOn() && booted ? mcalHtml() : ''}
   <div class="navfoot">
     <button class="navi" data-act="settings">${ic('gear')}<span>Settings</span></button>
     ${ME.id ? `<div class="meline">${av(ME.id)}<span>${esc(ME.name || 'You')}</span></div>` : ''}
     ${FISH ? `<svg class="tk-lure" width="26" height="58" viewBox="0 0 26 60" aria-hidden="true"><path d="M13 0v10" stroke="#6E5A43"/><circle cx="13" cy="12" r="2.5" fill="none" stroke="#6E5A43" stroke-width="1.5"/><path d="M13 15c9 4 10 22 0 32C3 37 4 19 13 15z" fill="#D9A400" stroke="#2B1D12" stroke-width="1.5"/><path d="M13 47v6m0 0c-3 0-4 3-2 5m2-5c3 0 4 3 2 5" stroke="#2B1D12" stroke-width="1.5" fill="none"/></svg>` : ''}
   </div>`;
 }
+
+
+// ---------- the month calendar in the sidebar (Settings → You → Calendar) ----------
+// Like the clock calendar in Windows, plus your own schedule: a dot for days with reminders, a dash for scheduled services.
+// Click a day for what's on it, to copy the date ("Thursday, November 13"), or to start a reminder on it.
+const calOn = () => prefGet('mcal', true);
+const calLong = ds => { const d = parseYmd(ds); return d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', ...(d.getFullYear() !== new Date().getFullYear() ? {year: 'numeric'} : {})}); };
+const calMine = x => !ui.mine || x === ME.id;
+const calMarks = (() => { let key = '', val = {}; return (y, m) => { const k = DV + '|' + y + '|' + m + '|' + (ui.mine ? 1 : 0) + '|' + (ME.id || ''); if (k !== key) { key = k; val = {};
+  const from = ymd(new Date(y, m, -7)), to = ymd(new Date(y, m + 1, 8));
+  for (const t of L('tasks')) if (!t.done && isDate(t.due) && t.due >= from && t.due <= to && calMine(t.assigneeId)) (val[t.due] ??= {r: 0, s: 0}).r++;
+  for (const d of L('deals')) { const sd = ymdOf(d.serviceDate); if (sd && sd >= from && sd <= to && isReal(d) && stage(d).k !== 'lost' && calMine(d.ownerId)) (val[sd] ??= {r: 0, s: 0}).s++; }
+  } return val; }; })();
+function mcalHtml(){
+  const now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + (ui.calM || 0), 1), y = base.getFullYear(), m = base.getMonth(), open = prefGet('mcalOpen', true);
+  const title = base.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+  const head = `<div class="mcal-h"><button type="button" class="mcal-t" data-act="calFold" aria-expanded="${open}" title="${open ? 'Fold the calendar away' : 'Show the calendar'}">${esc(title)}${ic(open ? 'chevdown' : 'chevup')}</button>${open ? `${ui.calM ? '<button type="button" class="mcal-today" data-act="calToday">Today</button>' : ''}<button type="button" class="icon-btn mcal-n" data-act="calNav" data-d="-1" aria-label="Previous month"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button><button type="button" class="icon-btn mcal-n" data-act="calNav" data-d="1" aria-label="Next month"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>` : ''}</div>`;
+  if (!open) return `<section class="mcal folded" aria-label="Calendar">${head}</section>`;
+  const t = today(), marks = calMarks(y, m), first = base.getDay(), days = new Date(y, m + 1, 0).getDate(), weeks = Math.ceil((first + days) / 7);
+  const focus = ui.calSel && ui.calSel.slice(0, 7) === ymd(base).slice(0, 7) ? ui.calSel : (t.slice(0, 7) === ymd(base).slice(0, 7) ? t : ymd(base));
+  let cells = '';
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(y, m, 1 - first + i), ds = ymd(d), mk = marks[ds], out = d.getMonth() !== m, we = d.getDay() === 0 || d.getDay() === 6;
+    const what = mk ? [mk.s ? `${mk.s} service${mk.s === 1 ? '' : 's'}` : '', mk.r ? `${mk.r} reminder${mk.r === 1 ? '' : 's'}` : ''].filter(Boolean).join(', ') : '';
+    cells += `<button type="button" class="mcal-d${out ? ' out' : ''}${we ? ' we' : ''}${ds === t ? ' today' : ''}${ds === ui.calSel ? ' sel' : ''}" data-act="calDay" data-d="${ds}" tabindex="${ds === focus ? 0 : -1}" aria-label="${esc(calLong(ds))}${ds === t ? ', today' : ''}${what ? ', ' + what : ''}"${what ? ` title="${what}"` : ''}${ds === t ? ' aria-current="date"' : ''}><span>${d.getDate()}</span>${mk ? `<i class="dots" aria-hidden="true">${mk.s ? '<b class="s"></b>' : ''}${mk.r ? '<b class="r"></b>' : ''}</i>` : ''}</button>`;
+  }
+  return `<section class="mcal" aria-label="Calendar">${head}<div class="mcal-wd" aria-hidden="true">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(x => `<span>${x}</span>`).join('')}</div><div class="mcal-g">${cells}</div></section>`;
+}
+// what's on a day, beside the calendar
+function calPop(ds, anchor){
+  calClose(); ui.calSel = ds; schedule();
+  const rems = L('tasks').filter(k => !k.done && k.due === ds && calMine(k.assigneeId)).sort((a, b) => String(a.title).localeCompare(String(b.title)));
+  const svcs = L('deals').filter(d => ymdOf(d.serviceDate) === ds && isReal(d) && stage(d).k !== 'lost' && calMine(d.ownerId));
+  const who = id => !ui.mine && id && id !== ME.id ? ' · ' + esc(pname(id)) : '';
+  const blank = document.querySelector('#modal:not([hidden]) #dBlanks:not([hidden]) input');
+  const el = document.createElement('div'); el.className = 'calpop'; el.id = 'calPop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', calLong(ds));
+  el.innerHTML = `<div class="calpop-h"><b>${esc(calLong(ds))}</b><button type="button" class="icon-btn" data-act="calClose" aria-label="Close">${ic('x')}</button></div>
+    ${svcs.length || rems.length ? `<ul class="calpop-l">${svcs.map(d => `<li><button type="button" data-act="oppPage" data-id="${esc(d.id)}"><i class="cp-s" aria-hidden="true"></i><span><b>${esc(d.type || d.name || 'Service')}</b><small>Service · ${esc(cname(d.companyId))}${who(d.ownerId)}</small></span></button></li>`).join('')}${rems.map(k => `<li><button type="button" data-act="editTask" data-id="${esc(k.id)}"><i class="cp-r" aria-hidden="true"></i><span><b>${esc(k.title || 'Reminder')}</b><small>Reminder${k.companyId ? ' · ' + esc(cname(k.companyId)) : ''}${who(k.assigneeId)}</small></span></button></li>`).join('')}</ul>` : `<p class="sub calpop-e">Nothing scheduled${ui.mine ? ' for you' : ''}.</p>`}
+    <div class="calpop-f"><button type="button" class="btn sm" data-act="calCopy" data-d="${ds}">${ic('copy')}Copy date</button>${blank ? `<button type="button" class="btn sm pri" data-act="calUse" data-d="${ds}">Put in the email</button>` : ''}${canWrite ? `<button type="button" class="btn sm ghost" data-act="newTask" data-due="${ds}">${ic('plus')}Reminder</button>` : ''}</div>`;
+  document.body.appendChild(el);
+  const nav = $('#nav').getBoundingClientRect(), r = anchor ? anchor.getBoundingClientRect() : nav, h = el.offsetHeight;
+  el.style.left = Math.round(nav.right + 10) + 'px'; el.style.top = Math.round(Math.max(10, Math.min(innerHeight - h - 10, r.top + r.height / 2 - h / 2))) + 'px';
+  el.addEventListener('click', e => { if (e.target.closest('[data-act]') && !e.target.closest('[data-act="calCopy"]')) setTimeout(calClose, 0); });
+}
+function calClose(){ const p = $('#calPop'); if (p) p.remove(); if (ui.calSel) { ui.calSel = null; schedule(); } }
+document.addEventListener('mousedown', e => { const p = $('#calPop'); if (p && !p.contains(e.target) && !(e.target.closest && e.target.closest('.mcal-d'))) calClose(); }, true);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#calPop')) { e.preventDefault(); e.stopPropagation(); const d = ui.calSel; calClose(); const b = d && document.querySelector(`.mcal-d[data-d="${d}"]`); if (b) b.focus(); return; }
+  const b = e.target.closest && e.target.closest('.mcal-d'); if (!b) return;   // arrow keys move around the month
+  const step = {ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7}[e.key]; if (!step) return; e.preventDefault();
+  const d = parseYmd(b.dataset.d); d.setDate(d.getDate() + step); const ds = ymd(d), now = new Date();
+  const want = (d.getFullYear() - now.getFullYear()) * 12 + d.getMonth() - now.getMonth();
+  ui.calSel = null; if (want !== (ui.calM || 0)) { ui.calM = want; render(); }
+  document.querySelectorAll('.mcal-d').forEach(x => x.tabIndex = -1); const nb = document.querySelector(`.mcal-d[data-d="${ds}"]`); if (nb) { nb.tabIndex = 0; nb.focus(); }
+}, true);
 
 function viewHtml(){
   let banner = '';
@@ -3964,7 +4065,7 @@ function nextReminderType(coId){
   return REMINDER_TYPES[Math.min(n, REMINDER_TYPES.length - 1)];
 }
 function taskForm(id, pre={}){
-  const k = id ? S.tasks[id] : {assigneeId: ME.id, due: today(), companyId: pre.co, dealId: pre.deal || ''};
+  const k = id ? S.tasks[id] : {assigneeId: ME.id, due: isDate(pre.due) ? pre.due : today(), companyId: pre.co, dealId: pre.deal || ''};
   const known = REMINDER_TYPES.includes(k.title);
   const pick = id ? (known ? k.title : '__other') : (pre.co ? nextReminderType(pre.co) : REMINDER_TYPES[0]);
   openModal(id ? 'Edit reminder' : pre.co ? `Set a reminder for ${cname(pre.co)}` : 'New reminder', `<div class="grid2">
@@ -4564,6 +4665,7 @@ function settingsModal(){
       row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
       GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
       row('spark', 'Appearance', 'Colors, mode, text size, spacing, font and start page.', btn('look', 'Customize')),
+      row('clock', 'Calendar', 'A month calendar in the sidebar, above Settings, with your reminders and services.', btn('calToggle', calOn() ? 'Hide calendar' : 'Show calendar')),
       theoMe() ? row('spark', 'Theo', 'Your pixel cat in the sidebar, above Settings.', btn('theoToggle', prefGet('theo', true) ? 'Hide Theo' : 'Show Theo')) : '',
       adm ? '' : demo]],
     ['team', 'Team', 'users', 'Shared with everyone on the team.', [
@@ -6692,6 +6794,14 @@ const A = {
     clearTimeout(el._t); const a = S.activities[d.id]; if (!a) return;
     if (await del('activities', d.id)) toast('Activity deleted. It\'s in Settings → Trash if you need it back.');
   },
+  calNav: d => { calClose(); ui.calM = (ui.calM || 0) + (+d.d || 0); render(); },
+  calToday: () => { calClose(); ui.calM = 0; render(); },
+  calFold: () => { calClose(); prefSet('mcalOpen', !prefGet('mcalOpen', true)); render(); },
+  calDay: (d, el) => { if ($('#calPop') && ui.calSel === d.d) { calClose(); return; } calPop(d.d, el); },
+  calClose: () => calClose(),
+  calCopy: d => { copyText(calLong(d.d)); },
+  calUse: d => { const ins = [...document.querySelectorAll('#dBlanks input')]; const inp_ = ins.find(i => /date|day|when/i.test(i.dataset.blank) && !i.value) || ins.find(i => !i.value) || ins[0]; if (inp_) { cmpFill(inp_.dataset.blank, calLong(d.d)); toast('Added to the email'); } },
+  calToggle: (d, el) => { const on = !calOn(); prefSet('mcal', on); el.textContent = on ? 'Hide calendar' : 'Show calendar'; render(); toast(on ? 'The calendar is back in the sidebar' : 'Calendar hidden. Show it again from Settings anytime.'); },
   theoToggle: (d, el) => { const on = !prefGet('theo', true); prefSet('theo', on); el.textContent = on ? 'Hide Theo' : 'Show Theo'; render(); toast(on ? 'Theo is back' : 'Theo is hidden. Show him again from Settings anytime.'); },
   go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
