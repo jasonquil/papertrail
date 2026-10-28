@@ -1368,6 +1368,13 @@ html[data-look="inlet"] .mcal{display:none}
 .msel-x .money{width:180px;background:var(--surface);border-radius:7px}
 .msel-x input{font-weight:600;color:var(--fg)}
 @media (prefers-reduced-motion:no-preference){.msel-x:not([hidden]){animation:pop .14s ease-out}}
+
+/* single-choice buttons (Copy to NDP: how they're paying) */
+.msel-r span::before{border-radius:50%}
+.msel-r:has(input:checked) span::before{background:var(--accent);box-shadow:inset 0 0 0 3px var(--surface);border-color:var(--accent)}
+.ndp-pay{align-items:center}
+.ndp-pay .ndp-other{width:200px;height:36px}
+.ndp-pay .ndp-other[hidden]{display:none}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -2031,10 +2038,13 @@ function ndpAuto(dealId){
     'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
 }
 // columns kept in the copied row (blank) but not shown in the window
-const NDP_HIDE = new Set(['Scheduled', 'WINDOW', 'EMAILED', 'Credit card info', 'Confirm Time Y/N', 'Contacted']);
+const NDP_HIDE = new Set(['Scheduled', 'WINDOW', 'EMAILED', 'Credit card info', 'Payment Method', 'Confirm Time Y/N', 'Contacted']);
+// the copied row starts at Business Name/Client: put the cursor in that cell of the sheet and paste
+const NDP_FROM = NDP_COLS.indexOf('Business Name/Client');
+const NDP_PAY = ['Credit card', 'Check', 'Cash', 'Invoice', 'Card on file'];
 const ndpCell = v => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
 // one row in the sheet's column order, tab-separated so Excel spreads it across
-function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.map(k => ndpCell(v[k])).join('\t'); }
+function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.slice(NDP_FROM).map(k => ndpCell(v[k])).join('\t'); }
 
 // ---------- store ----------
 let bootDone; const bootReady = new Promise(r => bootDone = r);
@@ -6820,15 +6830,19 @@ function journeyLibraryModal(){
 const A = {
   ndpCopy: d => { const id = d.id, auto = ndpAuto(id); if (!auto) return;
     const saved = prefGet('ndp-' + id, {}) || {};   // what you typed by hand last time for this opportunity (never card numbers)
-    const kind = {'Additional Notes/Stairs/elevator': 'ta', 'How are they paying?': 'pay', 'Payment Method': 'pay', 'Scheduled': 'date'};
+    const kind = {'Additional Notes/Stairs/elevator': 'ta', 'How are they paying?': 'pay', 'Scheduled': 'date'};
     const field = (col, i) => { if (NDP_HIDE.has(col)) return ''; const v = col in auto ? auto[col] : (col === 'Credit card info' ? '' : saved[col] || ''); const k = kind[col];
-      const box = k === 'ta' ? ta('n' + i, v, 2) : inp('n' + i, v, 'text', `${k === 'pay' ? 'list="ndpPay" ' : ''}autocomplete="off"${k === 'date' ? ' placeholder="e.g. 10/28"' : ''}`);
+      if (k === 'pay') { const other = v && !NDP_PAY.includes(v);   // choice buttons, plus Other… with its own box
+        return `<div class="f wide" role="radiogroup" aria-label="${esc(col)}"><span>${esc(col)}</span><div class="msel ndp-pay">${[...NDP_PAY, 'Other…'].map(o => { const val = o === 'Other…' ? '__other' : o, on = o === 'Other…' ? other : v === o;
+          return `<label class="msel-o msel-r"><input type="radio" name="n${i}" value="${esc(val)}"${on ? ' checked' : ''} data-change="ndpPay"><span>${esc(o)}</span></label>`; }).join('')}
+          <input class="ndp-other" name="n${i}_o" value="${esc(other ? v : '')}" placeholder="How?" aria-label="Other way of paying" autocomplete="off"${other ? '' : ' hidden'}></div></div>`; }
+      const box = k === 'ta' ? ta('n' + i, v, 2) : inp('n' + i, v, 'text', `autocomplete="off"${k === 'date' ? ' placeholder="e.g. 10/28"' : ''}`);
       return F(esc(col) + (col in auto && v ? ' <small class="ndp-auto">from Paper Trail</small>' : ''), box, k === 'ta' ? 'wide' : ''); };
     openModal('Copy to NDP', `<p class="sub">Everything Paper Trail knows is already filled in. Check it, change anything you need, add the rest, then copy. Empty boxes stay blank in the sheet.</p>
-      <div class="grid3 ndp">${NDP_COLS.map(field).join('')}</div><datalist id="ndpPay"><option value="Credit card"><option value="Check"><option value="Cash"><option value="Invoice"><option value="Card on file"></datalist>`, 'Copy row', f => {
-        const vals = {}; NDP_COLS.forEach((col, i) => { vals[col] = f['n' + i] || ''; });
+      <div class="grid3 ndp">${NDP_COLS.map(field).join('')}</div>`, 'Copy row', f => {
+        const vals = {}; NDP_COLS.forEach((col, i) => { vals[col] = f['n' + i] === '__other' ? (f['n' + i + '_o'] || '').trim() : f['n' + i] || ''; });
         const keep = {}; for (const col of NDP_COLS) if (!(col in auto) && col !== 'Credit card info' && vals[col]) keep[col] = vals[col]; prefSet('ndp-' + id, keep);
-        const row = ndpRow(id, vals); const done = () => toast('Copied for New Daily Purge. Click the first cell of an empty row and paste.');
+        const row = ndpRow(id, vals); const done = () => toast('Copied for New Daily Purge. Click the Business Name/Client cell of an empty row and paste.');
         try { navigator.clipboard.writeText(row).then(done, () => { fallbackCopy(row); }); } catch { fallbackCopy(row); }
         return true; }, {wide: true}); },
   actDel: async (d, el) => {
@@ -7132,6 +7146,7 @@ const CHANGE = {
       const auto = s_.dataset.auto === '1';
       if (!s_.value || auto) { const v = fill[k] || ''; if (s_.tagName === 'SELECT') s_.value = [...s_.options].some(op => op.value === v) ? v : ''; else mselSet(s_.closest('.msel'), v); s_.dataset.auto = s_.value ? '1' : ''; } } },
   dfSvcPick: el => { el.dataset.auto = ''; },
+  ndpPay: el => { const box = el.closest('.ndp-pay'), o = box && box.querySelector('.ndp-other'); if (!o) return; const other = el.value === '__other' && el.checked; o.hidden = !other; if (other) o.focus(); },
   mselPick: el => { const box = el.closest('.msel'), h = box && box.querySelector('input[type=hidden]'); if (!h) return; h.value = svcJoin([...box.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value)); elecBox(box);
     if (box.id === 'dfSvcType' && el.value === 'Electronics' && el.checked) setTimeout(() => $('#dfElec input')?.focus(), 30);   // ticking Electronics: straight to its amount
     h.dispatchEvent(new Event('change', {bubbles: true})); },
