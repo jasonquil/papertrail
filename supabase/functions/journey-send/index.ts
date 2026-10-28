@@ -122,7 +122,8 @@ async function mergeData(e: Rec, ct: Rec, owner: Rec, needsDeal: boolean) {
   // older names read as today's: "Hard Drive/ Media" is electronics, "Shred & Med" is shredding and medical waste
   const OLD: Record<string, string[]> = { "hard drive/ media": ["electronics"], "hard drive/media": ["electronics"], "shred & med": ["shredding", "medical waste"] };
   const types = [...new Set(String(deal?.serviceType || "").split(",").map((x: string) => x.trim().toLowerCase()).filter((x: string) => x && x !== "chat - unknown").flatMap((x: string) => OLD[x] || [x]))];
-  const svc = deal ? (types.length ? (types.length < 2 ? types[0] : types.slice(0, -1).join(", ") + " and " + types[types.length - 1]) : deal.name || "") : "";
+  const dname = /^scheduled shredding$/i.test(String(deal?.name || "").trim()) ? "Recurring Shredding" : deal?.name || "";   // older name
+  const svc = deal ? (types.length ? (types.length < 2 ? types[0] : types.slice(0, -1).join(", ") + " and " + types[types.length - 1]) : dname) : "";
   return {
     greeting: h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",
     first_name: ct.firstName || "", last_name: ct.lastName || "", contact_name: pname(ct), company: co.name || "",

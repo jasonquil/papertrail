@@ -1696,7 +1696,11 @@ const COLS = ['companies','contacts','deals','quotes','activities','tasks','cont
 const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'following',l:'Closed Still Following Up',p:25},{k:'won',l:'Closed Won',p:100},{k:'updated',l:'Updated Contract',p:100},{k:'lost',l:'Closed Lost',p:0}];
 const CLOSED = ['won','updated','lost'];
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
-const OPP_TYPES = ['Shredding Purge','Ongoing Purge','Scheduled Shredding','Medical Waste','Sharps Only','Hard Drive Destruction','Product Destruction','Drop Off','Other'];
+const OPP_TYPES = ['Shredding Purge','Ongoing Purge','Recurring Shredding','Shred Event','Medical Waste','Sharps Only','Hard Drive Destruction','Product Destruction','Drop Off','Other'];
+// older opportunity names read as today's ("Scheduled Shredding" is Recurring Shredding); Clean up imported data renames them for good
+const OPP_OLD = {'scheduled shredding': 'Recurring Shredding'};
+const oppTypeName = v => OPP_OLD[String(v || '').trim().toLowerCase()] || v || '';
+const oppType = d => oppTypeName(d && (d.type || d.name));
 const SVC_TYPES = ['Shredding','Medical Waste','Electronics','Scanning','Product Destruction','Chat - Unknown'];
 // Service type can hold several (a shredding purge plus electronics): kept as one line, "Shredding, Electronics", in the
 // order of the list, so everything that shows, searches, downloads or copies it keeps working as before.
@@ -1863,7 +1867,7 @@ const ctMail = c => c ? String(c.email || c.email2 || '').trim() : '';
 const isPersonalOnly = c => c && !String(c.email || '').trim() && !!String(c.email2 || '').trim();
 const persTag = '<span class="ptag" title="Personal email. Add their work email when they share it.">personal</span>';
 const ctMailLink = (c, style) => ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${c.id}"${style ? ` style="${style}"` : ''} title="Email ${esc(pname_(c))}">${esc(ctMail(c))}</button>` : '';
-const nameOf = (col,id) => { const r = S[col][id]; if (!r) return 'Deleted record'; if (col==='contacts') return pname_(r); if (col==='quotes') return r.number; return r.name || r.title || 'Untitled'; };
+const nameOf = (col,id) => { const r = S[col][id]; if (!r) return 'Deleted record'; if (col==='contacts') return pname_(r); if (col==='quotes') return r.number; if (col==='deals') return oppTypeName(r.name) || r.title || 'Untitled'; return r.name || r.title || 'Untitled'; };
 const stage = d => { const k = LEGACY_STAGE[d.stage] || d.stage || 'lead'; return STAGES.find(s => s.k === k) || STAGES[0]; };
 const isOpen = d => !CLOSED.includes(d.stage||'lead');
 const isWon = d => d.stage === 'won' || d.stage === 'updated';
@@ -2130,7 +2134,7 @@ function loadSample(){
   ct('p5', 'c5', 'Lisa', 'Moreno', 'Paralegal', 'lisa@hobesoundlaw.example', '(772) 555-0108');
   const dl = (id, companyId, contactId, type, stage, extra) => S.deals[id] = {companyId, contactId, type, name: type, stage, ownerId: S.companies[companyId].ownerId, createdAt: now - (extra.ago || 10) * day, ...extra};
   dl('d1', 'c1', 'p1', 'Shredding Purge', 'won', {value: 185, priceQuoted: 185, service: 'Purge', serviceType: 'Shredding', interval: 'One-time', serviceDate: addDays(t, 7), source: 'AdWords', initialCall: 'Jason', firstCallClose: 'Yes', closedAt: addDays(t, -1), closedBy: 'jason', notes: '185/95 for 2 bins', ago: 3});
-  dl('d2', 'c2', 'p2', 'Scheduled Shredding', 'quoted', {value: 1140, priceQuoted: 95, service: 'Recurring', serviceType: 'Shredding', interval: 'Every 4 weeks', source: 'Local and Organic', initialCall: 'Kate', firstCallClose: 'No', noCloseReason: 'Needed approval', notes: '2 consoles, monthly. Waiting on the owner to sign off.', ago: 9});
+  dl('d2', 'c2', 'p2', 'Recurring Shredding', 'quoted', {value: 1140, priceQuoted: 95, service: 'Recurring', serviceType: 'Shredding', interval: 'Every 4 weeks', source: 'Local and Organic', initialCall: 'Kate', firstCallClose: 'No', noCloseReason: 'Needed approval', notes: '2 consoles, monthly. Waiting on the owner to sign off.', ago: 9});
   dl('d3', 'c3', 'p3', 'Medical Waste', 'lead', {value: 2400, service: 'Recurring', serviceType: 'Medical Waste', interval: 'Monthly', source: 'Chat GPT', initialCall: 'House', notes: 'Two exam floors. Asked about sharps pickup.', ago: 1});
   dl('d4', 'c4', 'p4', 'Shredding Purge', 'lost', {value: 340, priceQuoted: 340, service: 'Purge', serviceType: 'Shredding', interval: 'One-time', source: 'Previous Client', initialCall: 'Ann', firstCallClose: 'No', noCloseReason: 'Shopping prices', closedAt: addDays(t, -12), closedBy: 'ann', lostReason: 'Price', ago: 20});
   dl('d5', 'c5', 'p5', 'Hard Drive Destruction', 'quoted', {value: 450, priceQuoted: 450, service: 'Purge', serviceType: 'Electronics', elecValue: 450, interval: 'One-time', source: 'Existing Client', initialCall: 'Kate', notes: '30 drives from the old server room.', ago: 5});
@@ -2180,8 +2184,8 @@ function buildDemo(){
     out.contacts[pid] = {companyId: id, firstName: fn, lastName: ln, title: titles[i % titles.length], email: i === 2 ? `${fn.toLowerCase()}.${ln.toLowerCase()}@gmail.example` : `${fn.toLowerCase()}@${dom}`, email2: '', phone: `(772) 555-${String(300 + i * 11).padStart(4, '0')}`, ownerId: owner, createdAt: now - (28 + i * 9) * day};
     if (i % 4 === 0) out.contacts[pid + 'b'] = {companyId: id, firstName: pick(first), lastName: pick(last), title: 'Assistant', email: `info@${dom}`, phone: '', ownerId: owner, createdAt: now - (20 + i) * day};
   });
-  const types = [['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 185, 175], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Monthly', 715, 55], ['Medical Waste', 'Recurring', 'Medical Waste', 'Monthly', 780, 65],
-    ['Hard Drive Destruction', 'Purge', 'Electronics', 'As Needed', 450, 225], ['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 340, 185], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Bi-Weekly', 1170, 45]];
+  const types = [['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 185, 175], ['Recurring Shredding', 'Recurring', 'Shredding', 'Monthly', 715, 55], ['Medical Waste', 'Recurring', 'Medical Waste', 'Monthly', 780, 65],
+    ['Hard Drive Destruction', 'Purge', 'Electronics', 'As Needed', 450, 225], ['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 340, 185], ['Recurring Shredding', 'Recurring', 'Shredding', 'Bi-Weekly', 1170, 45]];
   const srcs = ['Local and Organic', 'AdWords', 'Shred Nations', 'Previous Client', 'Chat GPT', 'A3', 'Existing Client'];
   const notes = ['185/95 for 2 bins', '30 boxes @175/85', 'console @55 monthly', '15 gallon @65; monthly', '12 drives, wants certificates', '2 consoles bi-weekly @45', '4 drawer file cabinet @185/95', 'large purge, 40+ boxes'];
   const stagesPlan = ['won', 'won', 'won', 'won', 'won', 'won', 'won', 'won', 'won', 'lost', 'lost', 'lost', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'contract', 'contract', 'lead', 'lead', 'lead', 'lead', 'lead', 'won', 'quoted'];
@@ -3057,7 +3061,7 @@ V.pipeline = () => {
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
       const lt = X.lastAct[d.id];
-      return `<tr data-act="oppPage" data-id="${d.id}" data-st="${stage(d).k}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td class="num sub">${acctOf(d.companyId) || '—'}</td><td><b>${esc(d.name || d.type || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}${stageMeter(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
+      return `<tr data-act="oppPage" data-id="${d.id}" data-st="${stage(d).k}"${side && side === d.id ? ' class="sel" aria-selected="true"' : ''}><td class="num sub">${acctOf(d.companyId) || '—'}</td><td><b>${esc(oppTypeName(d.name || d.type) || 'Opportunity')}</b>${d.serviceType || d.service || d.interval ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${link('companies', d.companyId) || '—'}</td><td>${canWrite ? stageSel(d, 'rowStage') : stageChip(d)}${stageMeter(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td>${show==='open' ? '' : `<td>${!isOpen(d) && isDate(d.closedAt) ? fmtDate(d.closedAt) : ''}</td><td>${isOpen(d) ? '' : d.stage === 'lost' ? esc(d.lostReason || 'Not recorded') : isDate(d.serviceDate) ? `${fmtDate(d.serviceDate)}<span class="t2">${d.serviceDate <= today() ? 'Serviced' : 'Scheduled'}</span>` : '—'}</td>`}</tr>`;
     }).join('') || `<tr><td colspan="${show==='open'?6:8}" class="sub">${ui.q ? 'No opportunities match.' : 'None here.'}</td></tr>`}</tbody></table></div>${pgFoot('deals', rows.length)}`).replace(/(<div class="tbl"><table>[\s\S]*$)/, m => side ? `<div class="oppsplit"><div class="oppsplit-l">${m}</div>${oppSide(side)}</div>` : m);
 };
 // wide screens: clicking an opportunity opens it beside the list instead of leaving the page
@@ -3121,7 +3125,7 @@ function oppEditor(d, k){
   const S_ = (opts, v) => sel('oe', opts, v || '', at);
   switch (k) {
     case 'companyId': return S_([['', '— Choose an account —'], ...(d.companyId && S.companies[d.companyId] ? [[d.companyId, S.companies[d.companyId].name]] : [])], d.companyId).replace('<select ', '<select data-lazyco ');   // the full account list loads when you open it, not on every redraw
-    case 'type': return S_(OPP_TYPES.includes(d.type || d.name) ? OPP_TYPES.map(x => [x, x]) : [[d.type || d.name, d.type || d.name], ...OPP_TYPES.map(x => [x, x])], d.type || d.name);
+    case 'type': return S_(OPP_TYPES.includes(oppType(d)) ? OPP_TYPES.map(x => [x, x]) : [[oppType(d), oppType(d)], ...OPP_TYPES.map(x => [x, x])], oppType(d));
     case 'contactId': return S_(ctOpts(d.companyId), d.contactId);
     case 'value': case 'elecValue': return `<span class="money"><i>$</i><input ${at} type="text" inputmode="decimal" placeholder="0" value="${esc(d[k] || '')}"></span>`;
     case 'priceQuoted': return `<span class="money"><i>$</i><input ${at} type="text" placeholder="e.g. 175/85" value="${esc(d.priceQuoted || '')}"></span>`;
@@ -3171,7 +3175,7 @@ async function oppSaveField(el){
   if (k === 'notes' || k === 'sourceOther' || k === 'shredAmount') v = v.trim();
   if (k === 'lostReason' && d.stage === 'lost' && !v) { toast('A lost opportunity needs a reason.', 'bad'); render(); return; }
   if (k === 'companyId') { if (!v) { toast('Every opportunity needs a company.', 'bad'); render(); return; } if (d.contactId && S.contacts[d.contactId]?.companyId !== v) up.contactId = ''; }
-  if (k === 'type') { if (!v) { render(); return; } const dup = isOpen(d) && L('deals').find(x => x.id !== id && x.companyId === d.companyId && isOpen(x) && (x.type || x.name) === v); if (dup) { toast(`${cname(d.companyId)} already has an open ${v} opportunity.`, 'bad'); render(); return; } up.name = v; }
+  if (k === 'type') { if (!v) { render(); return; } const dup = isOpen(d) && L('deals').find(x => x.id !== id && x.companyId === d.companyId && isOpen(x) && oppType(x) === v); if (dup) { toast(`${cname(d.companyId)} already has an open ${v} opportunity.`, 'bad'); render(); return; } up.name = v; }
   if (k === 'firstCallClose' && v !== 'No') up.noCloseReason = '';
   if (k === 'closedAt' && !isDate(v)) v = today();
   up[k] = v;
@@ -3196,12 +3200,12 @@ V.opp = () => {
   const closed = !isOpen(d);
   const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="pipeline">← Opportunities</button>
-    <div class="cp-head"><span class="cp-ic">${ic('cols')}</span><div class="cp-name"><h1>${esc(d.name || 'Opportunity')}</h1><p class="sub">${d.companyId ? `<button class="lnk" data-act="coPage" data-id="${d.companyId}">${esc(cname(d.companyId))}</button>` : 'No account'}</p></div>
+    <div class="cp-head"><span class="cp-ic">${ic('cols')}</span><div class="cp-name"><h1>${esc(oppTypeName(d.name) || 'Opportunity')}</h1><p class="sub">${d.companyId ? `<button class="lnk" data-act="coPage" data-id="${d.companyId}">${esc(cname(d.companyId))}</button>` : 'No account'}</p></div>
       <div class="vh-act">${W ? stageSel(d, 'rowStage') : stageChip(d)}${headBtns}</div></div>
 
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
       <div class="cpgrid">
-      ${f('Company', d.companyId ? esc(cname(d.companyId)) : '', false, 'companyId')}${f('Opportunity', esc(d.type || d.name), false, 'type')}${f('Initial call', esc(d.initialCall), false, 'initialCall')}
+      ${f('Company', d.companyId ? esc(cname(d.companyId)) : '', false, 'companyId')}${f('Opportunity', esc(oppType(d)), false, 'type')}${f('Initial call', esc(d.initialCall), false, 'initialCall')}
       ${cpField('Sales stage', W ? stageSel(d, 'rowStage') : stageChip(d))}${f('Annual projected amount', d.value ? `<b class="num">${money(d.value)}</b>` : '', false, 'value')}${f('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '', false, 'priceQuoted')}
       ${f('Amount of shredding', esc(d.shredAmount), false, 'shredAmount')}${f('Description', d.notes ? `<span style="white-space:pre-wrap">${esc(d.notes)}</span>` : '', 2, 'notes')}
       ${f('Service', esc(d.service), false, 'service')}${f('Service interval', esc(d.interval), false, 'interval')}${f('Service date', isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '', false, 'serviceDate')}
@@ -3245,7 +3249,7 @@ V.company = () => {
   else if (tab === 'reminders') { const open = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1); const done = g.tasks.filter(k => k.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
     body = `<section class="panel"><div class="ph"><h3>Open</h3>${W ? `<button class="btn sm pri" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}</div>${tasksList(open)}</section><section class="panel"><h3>Completed</h3>${done.length ? `<ul class="tasks">${done.map(taskRow).join('')}</ul>` : '<p class="empty-s">Nothing completed yet.</p>'}</section>`; }
   else if (tab === 'contacts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>Mobile</th></tr></thead><tbody>${g.contacts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(ct => `<tr data-act="open" data-col="contacts" data-id="${ct.id}"><td><b>${esc(pname_(ct))}</b></td><td>${esc(ct.title || '—')}</td><td>${ctMailLink(ct) || '—'}</td><td class="num">${esc(ct.phone || '—')}</td><td class="num">${esc(ct.mobile || '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No contacts yet.</td></tr>'}</tbody></table></div>`;
-  else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(d.name || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
+  else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
   else if (tab === 'quotes') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newQuote" data-co="${id}">${ic('plus')}New quote</button>` : ''}</div><section class="panel">${rowsOr(g.quotes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), quoteRow, 'No quotes yet.')}</section>`;
   else if (tab === 'contracts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContract" data-co="${id}">${ic('plus')}Contract</button>` : ''}</div><section class="panel">${rowsOr(g.contracts, contractRow, 'No contracts yet.')}</section>`;
   else if (tab === 'journeys') { const es = L('enrollments').filter(e => e.companyId === id).sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
@@ -3335,8 +3339,8 @@ function aiBox(key){
 }
 const timeline = (acts, none) => acts.length ? `<ul class="feed">${acts.slice(0,40).map(a => feedItem(a, false)).join('')}</ul>` : `<p class="empty-s">${none}</p>`;
 const contactRow = c => `<li class="rowi" data-act="open" data-col="contacts" data-id="${c.id}"><div><b>${esc(pname_(c))}</b><small>${esc([c.title, c.phone].filter(Boolean).join(' · '))}${ctMail(c) ? `${c.title || c.phone ? ' · ' : ''}${ctMailLink(c, 'font-weight:500')}` : ''}${!c.title && !c.phone && !ctMail(c) ? 'No details' : ''}</small></div></li>`;
-const dealRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name)}</b><small>${money(d.value)}${isDate(d.closeDate) ? ' · close ' + fmtDate(d.closeDate) : ''}</small></div><span class="end">${stageChip(d)}</span></li>`;
-const oppHistRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name || 'Opportunity')}</b><small>${[svcShow(d.serviceType), d.value ? money(d.value) : '', !isOpen(d) && isDate(d.closedAt) ? 'closed ' + fmtDate(d.closedAt) : '', d.stage === 'lost' ? (d.lostReason ? 'reason: ' + d.lostReason : '') : isOpen(d) ? '' : isDate(d.serviceDate) ? (d.serviceDate <= today() ? 'serviced ' : 'service scheduled ') + fmtDate(d.serviceDate) : (d.stage === 'won' ? 'no service date' : '')].filter(Boolean).map(esc).join(' · ')}</small></div><span class="end">${stageChip(d)}</span></li>`;
+const dealRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(oppTypeName(d.name))}</b><small>${money(d.value)}${isDate(d.closeDate) ? ' · close ' + fmtDate(d.closeDate) : ''}</small></div><span class="end">${stageChip(d)}</span></li>`;
+const oppHistRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b><small>${[svcShow(d.serviceType), d.value ? money(d.value) : '', !isOpen(d) && isDate(d.closedAt) ? 'closed ' + fmtDate(d.closedAt) : '', d.stage === 'lost' ? (d.lostReason ? 'reason: ' + d.lostReason : '') : isOpen(d) ? '' : isDate(d.serviceDate) ? (d.serviceDate <= today() ? 'serviced ' : 'service scheduled ') + fmtDate(d.serviceDate) : (d.stage === 'won' ? 'no service date' : '')].filter(Boolean).map(esc).join(' · ')}</small></div><span class="end">${stageChip(d)}</span></li>`;
 const quoteRow = q => `<li class="rowi" data-act="editQuote" data-id="${q.id}"><div><b class="mono">${esc(q.number)}</b><small>${money2(qTotal(q))} · valid until ${fmtDate(q.validUntil)}</small></div><span class="end">${qChip(q)}</span></li>`;
 const contractRow = c => c.files || !isDate(c.start) ? `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Contract')}</b><small>${(c.files || []).length} file${(c.files || []).length === 1 ? '' : 's'} · added ${c.createdAt ? fmtDate(ymd(new Date(c.createdAt))) : ''}${c.addedBy || c.ownerId ? ' by ' + esc(nm(c.addedBy || c.ownerId)) : ''}</small></div><span class="end">${ic('doc')}</span></li>` : `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Service agreement')}</b><small>${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr${c.autoRenew ? ' · auto-renews' : ''}</small></div><span class="end">${(c.status||'active') === 'active' ? dueChip(c.end) : '<span class="chip">Ended</span>'}</span></li>`;
 const tasksList = ts => ts.length ? `<ul class="tasks">${ts.map(taskRow).join('')}</ul>` : `<p class="empty-s">No open reminders.</p>`;
@@ -3519,7 +3523,7 @@ const DETAIL = {
     const quotes = L('quotes').filter(q => q.dealId === id);
     const tasks = L('tasks').filter(k => k.dealId === id && !k.done);
     const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
-    return `<div class="dh"><div><p class="eyebrow">Opportunity</p><h2>${esc(d.name)}</h2>${d.companyId ? `<div>${link('companies', d.companyId)}</div>` : ''}</div>${closeBtn}</div>
+    return `<div class="dh"><div><p class="eyebrow">Opportunity</p><h2>${esc(oppTypeName(d.name))}</h2>${d.companyId ? `<div>${link('companies', d.companyId)}</div>` : ''}</div>${closeBtn}</div>
     <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button><button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     <dl class="facts">
       <dt>Stage</dt><dd>${canWrite ? `<select id="dealStage" data-change="dealStage" data-id="${id}" aria-label="Stage" style="width:auto">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k===s.k?'selected':''}>${s.l}</option>`).join('')}</select>` : stageChip(d)}</dd>
@@ -3764,7 +3768,7 @@ const FL = {
     {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (d, v) => d.ownerId === v},
     {k: 'closedBy', l: 'Closed by', opts: () => ownerOpts(), test: (d, v) => !isOpen(d) && d.closedBy === v},
     {k: 'initialCall', l: 'Initial call', opts: () => withData(INITIAL_CALL, 'initialCall'), test: (d, v) => String(d.initialCall || '').split(',').map(x => x.trim()).includes(v)},
-    {k: 'type', l: 'Opportunity', opts: () => withData(OPP_TYPES, 'type'), test: (d, v) => (d.type || d.name) === v},
+    {k: 'type', l: 'Opportunity', opts: () => withData(OPP_TYPES, 'type'), test: (d, v) => oppType(d) === v},
     {k: 'service', l: 'Service', opts: () => withData(SERVICES, 'service'), test: (d, v) => d.service === v},
     {k: 'serviceType', l: 'Service type', opts: () => withData(SVC_TYPES, 'serviceType'), test: (d, v) => svcHas(d.serviceType, v)},
     {k: 'interval', l: 'Service interval', opts: () => withData(INTERVALS, 'interval'), test: (d, v) => d.interval === v},
@@ -3869,9 +3873,14 @@ function nameCleanPlan(ph){
   // older service type names: "Hard Drive/ Media" becomes Electronics, "Shred & Med" becomes Shredding, Medical Waste
   const sv = new Map(); for (const d of L('deals')) { const now = svcShow(d.serviceType); if (d.serviceType && now !== d.serviceType) sv.set(d.id, now); }
   const svN = sv.size;
+  // older opportunity names: Scheduled Shredding becomes Recurring Shredding
+  const ot = new Map(); for (const d of L('deals')) { const now = OPP_OLD[String(d.type || '').trim().toLowerCase()] || OPP_OLD[String(d.name || '').trim().toLowerCase()]; if (now) ot.set(d.id, now); }
+  const otN = ot.size;
+  for (const pair of dl) if (ot.has(pair[0].id)) { pair[1].type = pair[1].name = ot.get(pair[0].id); ot.delete(pair[0].id); }
+  for (const [id, v] of ot) dl.push([{id, ...S.deals[id]}, {type: v, name: v}]);
   for (const pair of dl) if (sv.has(pair[0].id)) { pair[1].serviceType = sv.get(pair[0].id); sv.delete(pair[0].id); }
   for (const [id, v] of sv) dl.push([{id, ...S.deals[id]}, {serviceType: v}]);
-  return {ct, co, dl, cdN, svN};
+  return {ct, co, dl, cdN, svN, otN};
 }
 function nameCleanModal(){
   if (!isAdmin()) return;
@@ -3880,7 +3889,7 @@ function nameCleanModal(){
   const show = (c, fx) => { const after = {...c, ...fx}; return `<li><span class="nc-was">${esc(pname_(c))}</span><span class="nc-to">→ ${(after.firstName || after.lastName) ? esc(pname_(after)) : `<i>${esc(pname_(after))}</i>`}</span></li>`; };
   const sample = plan.ct.filter(([c]) => !ph || !NAME_PH.test(c.lastName || '') || /[^A-Za-z\s]/.test(c.firstName || '')).slice(0, 10);
   const any = plan.ct.length || plan.co.length || plan.dl.length;
-  openModal('Clean up imported data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.cdN ? `the automatic close date on <b>${plan.cdN.toLocaleString()} open opportunit${plan.cdN === 1 ? 'y' : 'ies'}</b>` : '', plan.svN ? `the service type on <b>${plan.svN.toLocaleString()} opportunit${plan.svN === 1 ? 'y' : 'ies'}</b> (Hard Drive/ Media becomes Electronics; Shred &amp; Med becomes Shredding and Medical Waste)` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
+  openModal('Clean up imported data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.cdN ? `the automatic close date on <b>${plan.cdN.toLocaleString()} open opportunit${plan.cdN === 1 ? 'y' : 'ies'}</b>` : '', plan.svN ? `the service type on <b>${plan.svN.toLocaleString()} opportunit${plan.svN === 1 ? 'y' : 'ies'}</b> (Hard Drive/ Media becomes Electronics; Shred &amp; Med becomes Shredding and Medical Waste)` : '', plan.otN ? `the name of <b>${plan.otN.toLocaleString()} opportunit${plan.otN === 1 ? 'y' : 'ies'}</b> (Scheduled Shredding becomes Recurring Shredding)` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
     ${sample.length ? `<ul class="nc-list">${sample.map(([c, fx]) => show(c, fx)).join('')}${plan.co.slice(0, 3).map(([a, fx]) => `<li><span class="nc-was">${esc(a.name)}</span><span class="nc-to">→ ${esc(fx.name)}</span></li>`).join('')}</ul>` : ''}
     ${plan.cdN ? `<p class="sub">Your current CRM filled in a close date about 30 days after each deal was created, so on open opportunities it didn't mean anything. Closed deals keep theirs.</p>` : ''}
     <p class="sub">Names that were really an email address are rebuilt from the email when it has a first and last name in it (clara.taylor@… becomes Clara Taylor); otherwise the email shows in place of a name. Missed-call contacts show their phone number.</p>
@@ -4075,7 +4084,7 @@ function dealForm(id, pre={}){
       let companyId = f.companyId === '__new' ? '' : f.companyId;
       if (!companyId && f.newCompany) { const co = L('companies').find(c => norm(c.name) === norm(f.newCompany)); if (co) companyId = co.id; else { companyId = uid(); if (!await put('companies', companyId, {name: f.newCompany, state: 'FL', ownerId: ME.id})) return false; } }
       if (!companyId) { toast('Every opportunity needs a company. Choose one or add a new one.', 'bad'); return false; }
-      { const dupD = !CLOSED.includes(f.stage) && f.type && L('deals').find(x => x.id !== id && x.companyId === companyId && isOpen(x) && (x.type || x.name) === f.type); if (dupD) { dupWarn(`${esc(cname(companyId))} already has an open ${esc(f.type)} opportunity.`, 'deals', dupD.id); return false; } }
+      { const dupD = !CLOSED.includes(f.stage) && f.type && L('deals').find(x => x.id !== id && x.companyId === companyId && isOpen(x) && oppType(x) === f.type); if (dupD) { dupWarn(`${esc(cname(companyId))} already has an open ${esc(f.type)} opportunity.`, 'deals', dupD.id); return false; } }
       const nid = id || uid(); const prev = id ? S.deals[id] : {};
       const rec = {...prev, companyId, type: f.type, name: f.type, contactId: (prev.contactId && S.contacts[prev.contactId]?.companyId === companyId ? prev.contactId : '') || (pre.ct && S.contacts[pre.ct]?.companyId === companyId ? pre.ct : ''), stage: f.stage, value: num(f.value), priceQuoted: pqVal(f.priceQuoted), shredAmount: (f.shredAmount || '').trim(),
         service: f.service, serviceType: svcShow(f.serviceType), elecValue: svcHas(f.serviceType, 'Electronics') ? num(f.elecValue) : 0, interval: f.interval, serviceDate: f.serviceDate, source: f.source, sourceOther: f.source === 'Other' ? f.sourceOther : '',
@@ -4199,7 +4208,7 @@ function changeStage(id, k){
 }
 function lostModal(id){
   const d = S.deals[id];
-  openModal('Mark Closed Lost', `<p class="sub">${esc(d.name || 'Opportunity')} · ${esc(cname(d.companyId))}</p><div class="grid2">
+  openModal('Mark Closed Lost', `<p class="sub">${esc(oppTypeName(d.name) || 'Opportunity')} · ${esc(cname(d.companyId))}</p><div class="grid2">
     ${F('Reason for loss', sel('lostReason', ['', ...LOSS_REASONS], d.lostReason, 'required'), 'wide')}
     ${F('Closed date', inp('closedAt', isDate(d.closedAt) ? d.closedAt : today(), 'date', 'required'))}
     ${F('Closed by', ownerSel('closedBy', d.closedBy || ME.id))}</div>`, 'Mark Closed Lost', async f => {
@@ -4615,7 +4624,7 @@ const mdy = v => { if (!v) return ''; const d = typeof v === 'number' ? new Date
 const ymdOf = v => !v ? '' : typeof v === 'number' ? ymd(new Date(v)) : String(v).slice(0, 10);
 const nm = id => id ? pname(id).replace(' (you)', '') : '';
 const inRange = (v, from, to) => { const d = ymdOf(v); if (!from && !to) return true; if (!d) return false; return (!from || d >= from) && (!to || d <= to); };
-const withData = (list, k) => { const seen = new Set(list); const n = {}; for (const d of L('deals')) { const raw = k === 'type' ? (d.type || d.name) : d[k]; for (const v of k === 'serviceType' ? svcList(raw) : k === 'initialCall' ? String(raw || '').split(',').map(x => x.trim()) : [raw]) if (v && !seen.has(v)) n[v] = (n[v] || 0) + 1; } return [...list, ...Object.keys(n).filter(v => n[v] >= (k === 'initialCall' ? 1 : 10)).sort()]; };
+const withData = (list, k) => { const seen = new Set(list); const n = {}; for (const d of L('deals')) { const raw = k === 'type' ? oppType(d) : d[k]; for (const v of k === 'serviceType' ? svcList(raw) : k === 'initialCall' ? String(raw || '').split(',').map(x => x.trim()) : [raw]) if (v && !seen.has(v)) n[v] = (n[v] || 0) + 1; } return [...list, ...Object.keys(n).filter(v => n[v] >= (k === 'initialCall' ? 1 : 10)).sort()]; };
 const anyOpt = (list, label) => [['', label || 'Any'], ...list.map(x => Array.isArray(x) ? x : [x, x])];
 const ownerOpts = () => people().map(i => [i, nm(i)]).sort((a, b) => a[1].localeCompare(b[1]));
 const mainContact = coId => gr(coId).contacts.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
@@ -4626,7 +4635,7 @@ const EXP = {
   deals: {
     title: 'opportunities', file: 'opportunities',
     cols: [
-      ['Opportunity Id', d => d.id], ['Company', d => cname(d.companyId)], ['Account Number', d => acctOf(d.companyId)], ['Opportunity', d => d.name || d.type],
+      ['Opportunity Id', d => d.id], ['Company', d => cname(d.companyId)], ['Account Number', d => acctOf(d.companyId)], ['Opportunity', d => oppTypeName(d.name) || d.type],
       ['Contact', d => d.contactId && S.contacts[d.contactId] ? pname_(S.contacts[d.contactId]) : ''], ['Contact Email', d => d.contactId ? ctMail(S.contacts[d.contactId]) : ''],
       ['Sales Stage', d => stage(d).l], ['Closed Date', d => isOpen(d) ? '' : mdy(d.closedAt)], ['Created', d => mdy(d.createdAt)], ['Description', d => d.notes],
       ['Owner', d => nm(d.ownerId)], ['Service', d => d.service], ['Service Interval', d => d.interval], ['Service Date', d => mdy(d.serviceDate)], ['Service Type', d => svcShow(d.serviceType)],
@@ -4643,7 +4652,7 @@ const EXP = {
     rows: f => L('deals').filter(d => STAGES.some(st => f['st_' + st.k] && stage(d).k === st.k)
       && inRange(f.dateBy === 'closed' ? (isOpen(d) ? '' : d.closedAt) : f.dateBy === 'service' ? d.serviceDate : d.createdAt, f.from, f.to)
       && (!f.ownerId || d.ownerId === f.ownerId) && (!f.closedBy || (!isOpen(d) && d.closedBy === f.closedBy)) && (!f.initialCall || String(d.initialCall || '').split(',').map(x => x.trim()).includes(f.initialCall))
-      && (!f.type || (d.type || d.name) === f.type) && (!f.service || d.service === f.service) && (!f.serviceType || svcHas(d.serviceType, f.serviceType)) && (!f.interval || d.interval === f.interval))
+      && (!f.type || oppType(d) === f.type) && (!f.service || d.service === f.service) && (!f.serviceType || svcHas(d.serviceType, f.serviceType)) && (!f.interval || d.interval === f.interval))
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
   },
   companies: {
@@ -6364,7 +6373,7 @@ function acctCard(coId, ctId){
   return `<aside class="acard"><p class="eyebrow">Account</p><h4>${esc(c.name)}</h4>
     <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Address', esc(addr), addr)}${fact('Phone', esc(c.phone), c.phone)}${fact('Owner', who(c.ownerId))}</dl>
     ${ct ? `<p class="eyebrow">Contact</p><dl class="facts">${fact('Name', esc(pname_(ct)))}${fact('Email', esc(ctMail(ct) || ''), ctMail(ct))}${fact('Phone', esc(ct.phone || ct.mobile || ''), ct.phone || ct.mobile)}</dl>` : ''}
-    ${deals.length ? `<p class="eyebrow">Open opportunities</p><ul class="acard-d">${deals.map(d => `<li><b>${esc(d.name || 'Opportunity')}</b><small>${esc([stage(d).l, d.value ? money(d.value) : '', isDate(d.serviceDate) ? 'service ' + fmtDate(d.serviceDate) : ''].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>` : ''}
+    ${deals.length ? `<p class="eyebrow">Open opportunities</p><ul class="acard-d">${deals.map(d => `<li><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b><small>${esc([stage(d).l, d.value ? money(d.value) : '', isDate(d.serviceDate) ? 'service ' + fmtDate(d.serviceDate) : ''].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>` : ''}
     <button type="button" class="btn sm" data-act="acardOpen" data-id="${esc(coId)}">${ic('building')}Open account</button></aside>`;
 }
 // edit one upcoming step of an active journey, for this person only (the journey itself stays the same)
@@ -8047,7 +8056,7 @@ function fillCompanies(cur){
 }
 function fillDeals(coId, cur){
   const ds = api.L("deals").filter(d => d.companyId === coId && (api.isOpen(d) || d.id === cur));
-  $("deal").innerHTML = '<option value="">— None —</option>' + ds.map(d => `<option value="${esc(d.id)}">${esc(d.name || "Opportunity")}</option>`).join("");
+  $("deal").innerHTML = '<option value="">— None —</option>' + ds.map(d => `<option value="${esc(d.id)}">${esc(oppTypeName(d.name) || "Opportunity")}</option>`).join("");
   $("deal").value = cur || "";
 }
 function fillCust(){
