@@ -7192,7 +7192,7 @@ function dpPaint(){
   const first = new Date(DP.y, DP.m, 1), start = new Date(DP.y, DP.m, 1 - first.getDay()), sel = DP.input && isDate(DP.input.value) ? DP.input.value : '', t = today();
   const chev = d => `<svg viewBox="0 0 24 24"><path d="${d}"/></svg>`;
   let days = ''; for (let i = 0; i < 42; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), k = dpYmd(d);
-    const cls = ['dp-d', d.getMonth() !== DP.m ? 'out' : '', d.getDay() === 0 || d.getDay() === 6 ? 'wk' : '', k === t ? 'today' : '', k === sel ? 'sel' : '', k === DP.cur && k !== sel ? 'cur' : ''].filter(Boolean).join(' ');
+    const cls = ['dp-d', d.getMonth() !== DP.m ? 'out' : '', d.getDay() === 0 || d.getDay() === 6 ? 'wk' : '', k === t ? 'today' : '', k === sel ? 'sel' : ''].filter(Boolean).join(' ');   // no extra ring that follows the month arrows (it looked like a picked date)
     days += `<button type="button" tabindex="-1" class="${cls}" data-dp="${k}" aria-label="${d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'})}"${k === sel ? ' aria-pressed="true"' : ''}>${d.getDate()}</button>`; }
   DP.el.innerHTML = `<div class="dp-h"><button type="button" tabindex="-1" class="dp-nav" data-dp="prev" aria-label="Previous month">${chev('M15 6l-6 6 6 6')}</button><b>${first.toLocaleString('en-US', {month: 'long', year: 'numeric'})}</b><button type="button" tabindex="-1" class="dp-nav" data-dp="next" aria-label="Next month">${chev('M9 6l6 6-6 6')}</button></div>
     <div class="dp-w">${['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(x => `<span>${x}</span>`).join('')}</div><div class="dp-g">${days}</div>
