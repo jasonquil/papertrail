@@ -2858,7 +2858,7 @@ function navHtml(){
 
 
 // ---------- the month calendar in the sidebar (Settings → Appearance → Sidebar calendar) ----------
-// Like the clock calendar in Windows, plus your own schedule: a dot for days with reminders, a dash for scheduled services.
+// Like the clock calendar in Windows, plus your reminders: a dot on days that have one.
 // Click a day for what's on it, to copy the date ("Thursday, November 13"), or to start a reminder on it.
 const calOn = () => LOOK.calendar !== 'hide';   // Settings → Appearance → Sidebar calendar
 const calLong = ds => { const d = parseYmd(ds); return d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', ...(d.getFullYear() !== new Date().getFullYear() ? {year: 'numeric'} : {})}); };
@@ -2866,7 +2866,6 @@ const calMine = x => !ui.mine || x === ME.id;
 const calMarks = (() => { let key = '', val = {}; return (y, m) => { const k = DV + '|' + y + '|' + m + '|' + (ui.mine ? 1 : 0) + '|' + (ME.id || ''); if (k !== key) { key = k; val = {};
   const from = ymd(new Date(y, m, -7)), to = ymd(new Date(y, m + 1, 8));
   for (const t of L('tasks')) if (!t.done && isDate(t.due) && t.due >= from && t.due <= to && calMine(t.assigneeId)) (val[t.due] ??= {r: 0, s: 0}).r++;
-  for (const d of L('deals')) { const sd = ymdOf(d.serviceDate); if (sd && sd >= from && sd <= to && isReal(d) && stage(d).k !== 'lost' && calMine(d.ownerId)) (val[sd] ??= {r: 0, s: 0}).s++; }
   } return val; }; })();
 function mcalHtml(){
   const now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + (ui.calM || 0), 1), y = base.getFullYear(), m = base.getMonth(), open = prefGet('mcalOpen', true);
@@ -2887,7 +2886,7 @@ function mcalHtml(){
 function calPop(ds, anchor){
   calClose(); ui.calSel = ds; schedule();
   const rems = L('tasks').filter(k => !k.done && k.due === ds && calMine(k.assigneeId)).sort((a, b) => String(a.title).localeCompare(String(b.title)));
-  const svcs = L('deals').filter(d => ymdOf(d.serviceDate) === ds && isReal(d) && stage(d).k !== 'lost' && calMine(d.ownerId));
+  const svcs = [];   // service dates aren't shown on the calendar
   const who = id => !ui.mine && id && id !== ME.id ? ' · ' + esc(pname(id)) : '';
   const blank = document.querySelector('#modal:not([hidden]) #dBlanks:not([hidden]) input');
   const el = document.createElement('div'); el.className = 'calpop'; el.id = 'calPop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', calLong(ds));
