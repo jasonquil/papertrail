@@ -5222,7 +5222,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (jopt && jopt.companyId) companyId = jopt.companyId;
   ui.draftFiles = [];
   ui.draftHtml = true;
-  ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey}; ui.draftHtml = false; ui.sendOk = false;
+  ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey}; ui.sendOk = false;   // (the editor is the message box from the start, so writing from scratch counts)
   const contacts = companyId ? gr(companyId).contacts : (contact ? [contact] : []);
   const tpls = templates();
   let pick = '';
