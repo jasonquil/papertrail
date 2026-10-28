@@ -368,6 +368,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .sheet{position:relative;margin:6vh auto 0;width:min(620px,calc(100% - 32px));max-height:88vh;background:var(--bg);border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column}
 .sheet.wide{width:min(860px,calc(100% - 32px))}
 .sh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+/* windows can be dragged by their title bar, to see what's underneath */
+@media (hover:hover) and (min-width:700px){#modal .sh{cursor:grab}#modal .sheet.dragging .sh{cursor:grabbing}#modal .sheet.dragging{box-shadow:0 18px 50px rgba(0,0,0,.28);user-select:none}}
+#modal.moved .scrim{opacity:.35}
+#modal .sheet.moved{animation:none}
 .sb{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .sf{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -3191,10 +3195,32 @@ function openModal(title, body, submitLabel, onSubmit, opts={}){
   m.hidden = false; modalStep(title);
   m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh">${back ? `<div class="sh-t"><button type="button" class="icon-btn sh-back" data-act="setBack" aria-label="Back to Settings" title="Back to Settings">${ic('back')}</button><h3>${esc(title)}</h3></div>` : `<h3>${esc(title)}</h3>`}<button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
   const f = $('#mform'); if (wasOpen) f.classList.add('still');   // switching screens inside an open window: no entrance animation
+  if (wasOpen && ui.modalPos) sheetMove(f, ui.modalPos.x, ui.modalPos.y); else { ui.modalPos = null; m.classList.remove('moved'); }
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
   setTimeout(() => f.querySelector('.sb input:not([type=hidden]):not([type=checkbox]), .sb textarea, .sb select')?.focus(), 40);
 }
-function closeModal(){ imgPopClose(); const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
+// ---------- move a window: drag its title bar (double-click the title bar to put it back) ----------
+function sheetMove(sh, x, y){
+  // keep the title bar on screen: at least 140px of it showing sideways, and never above the top or below the bottom
+  const cur = sh._pos || {x: 0, y: 0}, r0 = sh.getBoundingClientRect(), ox = r0.left - cur.x, oy = r0.top - cur.y;   // where it sits unmoved
+  x = Math.max(140 - ox - r0.width, Math.min(innerWidth - 140 - ox, x));
+  y = Math.max(-oy, Math.min(innerHeight - 56 - oy, y));
+  ui.modalPos = {x, y}; sh._pos = {x, y}; sh.style.transform = x || y ? `translate(${Math.round(x)}px,${Math.round(y)}px)` : '';
+  sh.classList.toggle('moved', !!(x || y)); $('#modal').classList.toggle('moved', !!(x || y));
+}
+document.addEventListener('pointerdown', e => {
+  const head = e.target.closest && e.target.closest('#modal .sheet > .sh'); if (!head || e.button !== 0) return;
+  if (e.target.closest('button, a, input, select, textarea, label, [data-act]')) return;   // the close and back buttons still work
+  if (innerWidth < 700 || !matchMedia('(hover:hover)').matches) return;   // phones and tablets: windows fill the screen anyway
+  const sh = head.parentElement, start = ui.modalPos || {x: 0, y: 0}, sx = e.clientX, sy = e.clientY;
+  let moved = false;
+  const mv = ev => { const dx = ev.clientX - sx, dy = ev.clientY - sy; if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return; moved = true; sh.classList.add('dragging'); sheetMove(sh, start.x + dx, start.y + dy); ev.preventDefault(); };
+  const up = () => { sh.classList.remove('dragging'); removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+});
+document.addEventListener('dblclick', e => { const head = e.target.closest && e.target.closest('#modal .sheet > .sh'); if (!head || e.target.closest('button, input, select, textarea')) return; ui.modalPos = null; sheetMove(head.parentElement, 0, 0); });
+addEventListener('resize', () => { const sh = $('#mform'); if (sh && ui.modalPos) sheetMove(sh, ui.modalPos.x, ui.modalPos.y); });
+function closeModal(){ imgPopClose(); const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved'); ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
 const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
