@@ -1090,6 +1090,96 @@ button.fld{cursor:pointer;padding:2px 8px}
 .fishegg.wig{animation:fishWig .35s ease-in-out}
 @keyframes fishWig{0%,100%{transform:rotate(0)}30%{transform:rotate(-18deg) translateX(-2px)}70%{transform:rotate(14deg) translateX(2px)}}
 .sets{position:relative;padding-bottom:18px}
+
+/* ---------- email window: the message is a sheet of letter paper on the desk ----------
+   Everything that goes to the customer (To, subject, message, signature, files) is on the white page, in the colors they'll see.
+   What stays with us (journeys, editing templates) sits on the desk around it. */
+.cmp{--ink:#1F2A29;--ink-2:#5F6F6C;--rule:#E3E9E7;--paper:#FFFFFF;--tool:#F6F8F7;--paper-r:12px;position:relative;z-index:0;display:flex;flex-direction:column;gap:12px;container:cmp/inline-size}
+html[data-look="custody"] .cmp,[data-fish="tackle"] .cmp{--paper-r:3px}
+html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inlet"] .cmp{--paper-r:16px}
+.cmp-paper{position:relative;background:var(--paper);color:var(--ink);border:1px solid var(--rule);border-radius:var(--paper-r);box-shadow:0 1px 2px rgba(16,40,36,.06),0 10px 28px -14px rgba(16,40,36,.22);margin:2px 4px 14px;transition:box-shadow .15s,border-color .15s}
+/* a short stack of paper underneath: the one decorative touch */
+.cmp-paper::before,.cmp-paper::after{content:"";position:absolute;z-index:-1;border:1px solid var(--rule);border-top:0;border-radius:0 0 var(--paper-r) var(--paper-r);height:14px}
+.cmp-paper::before{left:8px;right:8px;bottom:-7px;background:#F4F7F6;box-shadow:0 2px 4px rgba(16,40,36,.05)}
+.cmp-paper::after{left:18px;right:18px;bottom:-13px;background:#E9EEED;box-shadow:0 2px 4px rgba(16,40,36,.05)}
+.cmp-paper:focus-within{border-color:color-mix(in srgb,var(--accent) 45%,var(--rule))}
+.cmp-row{display:flex;align-items:center;gap:10px;min-height:48px;padding:4px 14px 4px 18px;border-bottom:1px solid var(--rule)}
+.cmp-row[hidden]{display:none}
+.cmp-row:focus-within{box-shadow:inset 3px 0 0 var(--accent)}
+.cmp-k{flex:0 0 32px;color:var(--ink-2);font:600 .8rem/1 var(--body);cursor:default}
+.cmp-v{flex:1;min-width:0}
+.cmp .cmp-row select,.cmp .cmp-row input{border:0;border-radius:6px;background-color:transparent;color:var(--ink);font:500 .95rem/1.3 var(--body);padding:7px 6px;width:100%;box-shadow:none}
+.cmp .cmp-row select{cursor:pointer;text-overflow:ellipsis}
+.cmp .cmp-row select:hover{background-color:#F3F6F5}
+.cmp .cmp-row select:focus,.cmp .cmp-row input:focus{outline:none}
+.cmp .cmp-row input::placeholder{color:#A3AFAC}
+.cmp-av{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,#fff);color:color-mix(in srgb,var(--accent) 72%,#000);font:700 .7rem/1 var(--body);letter-spacing:.04em}
+.cmp-ccb{display:flex;gap:2px;flex:none}
+.cmp-lnk{border:0;background:none;color:var(--ink-2);font:600 .8rem/1 var(--body);padding:7px 9px;border-radius:6px;cursor:pointer}
+.cmp-lnk:hover{color:color-mix(in srgb,var(--accent) 80%,#000);background:#F1F5F4}
+.cmp-lnk:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cmp-lnk[hidden]{display:none}
+.cmp-none{margin:0;color:var(--ink-2);font-size:.88rem}
+.cmp .cmp-subj input{font:650 1.12rem/1.3 var(--body);letter-spacing:-.005em;padding:10px 6px}
+.cmp .cmp-subj .icon-btn{color:var(--ink-2);flex:none}
+.cmp .cmp-subj .icon-btn:hover{color:var(--ink);background:#F1F5F4}
+.cmp-ai{display:flex;gap:10px;align-items:flex-end;padding:10px 18px;border-bottom:1px solid var(--rule);background:#FBFCFC}
+.cmp-ai[hidden]{display:none}.cmp-ai .f{flex:1;margin:0}.cmp-ai .f span{color:var(--ink-2)}
+.cmp .cmp-ai input{background:#fff;color:var(--ink);border-color:var(--rule)}
+/* writing tools: template first (it's usually the first thing picked), then formatting; they stay in view while you scroll */
+.cmp-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;background:var(--tool);border-bottom:1px solid var(--rule);position:sticky;top:-16px;z-index:2}
+.cmp-tpl{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 2px 0 10px;border:1px solid var(--rule);border-radius:calc(var(--paper-r) * 1.5);background:#fff;color:var(--ink);flex:none}
+.cmp-tpl .ic{width:15px;height:15px;color:color-mix(in srgb,var(--accent) 80%,#000)}
+.cmp .cmp-tpl select{border:0;background-color:transparent;color:var(--ink);font:600 .84rem/1 var(--body);padding:0 24px 0 0;height:30px;max-width:230px;width:auto;cursor:pointer}
+.cmp .cmp-tpl:focus-within{border-color:var(--accent)}
+.cmp .cmp-tpl select,.cmp .cmp-tpl select:focus,.cmp .cmp-tpl select:focus-visible,.cmp .cmp-row select:focus-visible,.cmp .cmp-row input:focus-visible{outline:none;box-shadow:none;border-color:transparent}
+.cmp .rte-bar{flex:1;border:0;background:transparent;padding:0;border-radius:0;gap:1px}
+.cmp .rte-b{color:var(--ink);min-width:28px;height:28px}
+.cmp .rte-b:hover{background:#E8EEEC}
+.cmp .rte-b.on{background:color-mix(in srgb,var(--accent) 16%,#fff);color:color-mix(in srgb,var(--accent) 75%,#000)}
+.cmp .rte-sep{background:var(--rule)}
+.cmp .rte-sel{background-color:transparent;border-color:transparent;color:var(--ink)}
+.cmp .rte-sel:hover{border-color:var(--rule);background-color:#fff}
+.cmp .cmp-body{border:0;border-radius:0;background:transparent;color:#222;min-height:260px;max-height:none;padding:20px 24px 14px;font-size:14.5px;line-height:1.5}
+.cmp .cmp-body:focus{outline:none}
+.cmp .cmp-body:empty::before{color:#A3AFAC}
+.cmp #draftOut{border:0;border-radius:0;background:transparent;color:#222;padding:20px 24px;font:14.5px/1.5 Calibri,Aptos,Arial,sans-serif;min-height:260px;resize:vertical}
+/* signature: folded to a preview until you want all of it */
+.cmp-sig{margin:0 24px;padding:10px 0 14px;border-top:1px dashed var(--rule)}
+.cmp-sigh{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
+.cmp .cmp-sigp{margin:6px 0 0;padding:0;border:0;border-radius:0;background:transparent;max-height:92px;overflow:hidden;-webkit-mask-image:linear-gradient(#000 50%,transparent);mask-image:linear-gradient(#000 50%,transparent);transition:opacity .15s}
+.cmp-sig.open .cmp-sigp{max-height:none;-webkit-mask-image:none;mask-image:none}
+.cmp-sig.off .cmp-sigp{opacity:.32;filter:grayscale(1)}
+.cmp-files{padding:0 24px 16px}.cmp-files:empty{display:none}
+.cmp-files .fchip{background:#F6F8F7;border-color:var(--rule);color:var(--ink)}
+/* switches (signature on the page, journey on the desk) */
+.cmp-sw{position:relative;display:inline-flex;align-items:center;gap:9px;font:600 .82rem/1 var(--body);color:var(--ink-2);cursor:pointer;user-select:none}
+.cmp .cmp-sw input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.cmp-swt{position:relative;flex:none;width:30px;height:18px;border-radius:9px;background:#C9D3D0;transition:background .15s}
+.cmp-swt::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.cmp-sw input:checked+.cmp-swt{background:var(--accent)}
+.cmp-sw input:checked+.cmp-swt::after{transform:translateX(12px)}
+.cmp-sw input:focus-visible+.cmp-swt{outline:2px solid var(--accent);outline-offset:2px}
+.cmp .jsend{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin:0 4px}
+.cmp .jsend .cmp-sw{color:var(--fg);font-size:.88rem}
+.cmp .jsend .cmp-swt{background:var(--line)}
+.cmp .jsend .cmp-sw input:checked+.cmp-swt{background:var(--accent)}
+.cmp #dHint:empty{display:none}.cmp #dHint{margin:0 6px}
+.cmp .mailbar{margin:0 4px}
+@media (prefers-reduced-motion:reduce){.cmp-swt,.cmp-swt::after,.cmp-paper,.cmp-sigp{transition:none}}
+@media (max-width:640px){
+  .cmp-paper{margin:0 0 14px}.cmp-row{padding:4px 10px 4px 12px}.cmp-k{flex-basis:28px}
+  .cmp .cmp-body,.cmp #draftOut{padding:16px}.cmp-sig{margin:0 16px}.cmp-files{padding:0 16px 14px}
+}
+/* when the letter is narrow (a phone, or beside the account card in a journey email): template on its own line,
+   formatting in one row underneath that scrolls sideways if it has to */
+@container cmp (max-width:720px){
+  .cmp-tools{padding:6px 8px;gap:6px}
+  .cmp-tpl{flex:1 1 100%}.cmp .cmp-tpl select{max-width:none;width:100%}
+  .cmp .rte-bar{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .cmp .rte-bar::-webkit-scrollbar{display:none}
+  .cmp .rte-bar>*{flex:none}
+}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -1452,6 +1542,7 @@ const ICON = {
   spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z"/>',
   up:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', down:'<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/>',
+  clip:'<path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',
   cal:'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   cols:'<rect x="3.5" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="16.5" y="4" width="4" height="7" rx="1"/>',
@@ -5098,7 +5189,9 @@ async function copyRich(el){
 }
 const PURPOSE_TPL = {quote:'t_quote_fu', renewal:'t_renewal', checkin:'t_checkin', followup:'t_quote_fu'};
 let draftCtl = null;
-const toOpts = c => { const out = []; if (String(c.email || '').trim()) out.push([c.id + '|' + c.email.trim().toLowerCase(), `${pname_(c)} <${c.email.trim()}>`]); if (String(c.email2 || '').trim()) out.push([c.id + '|' + c.email2.trim().toLowerCase(), `${pname_(c)} <${c.email2.trim()}>`]); return out.length ? out : [[c.id + '|', pname_(c) + ' (no email)']]; };
+// the name as an email address line shows it: Spiro's stand-in last name "Unknown" is left off
+const toName = c => { const n = pname_(c); return /\s+unknown$/i.test(n) && n.trim().split(/\s+/).length > 1 ? n.replace(/\s+unknown$/i, '') : n; };
+const toOpts = c => { const out = []; if (String(c.email || '').trim()) out.push([c.id + '|' + c.email.trim().toLowerCase(), `${toName(c)} <${c.email.trim()}>`]); if (String(c.email2 || '').trim()) out.push([c.id + '|' + c.email2.trim().toLowerCase(), `${toName(c)} <${c.email2.trim()}>`]); return out.length ? out : [[c.id + '|', toName(c) + ' (no email)']]; };
 // ---------- read a whole email (pop-up window) ----------
 const EMV = {};   // the email open in the reader
 function emailBase(d){
@@ -5230,24 +5323,40 @@ function draftModal(col, id, purpose, jopt, toAddr){
   else if (purpose && PURPOSE_TPL[purpose]) pick = PURPOSE_TPL[purpose];
   else if (col === 'deals') { const st = stage(r).k; pick = st === 'won' ? 't_thanks' : st === 'quoted' ? 't_quote_fu' : 't_inquiry'; }
   if (!tpls.some(t => t.id === pick)) pick = '';
-  openModal(jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : 'Email', `${jopt ? '<div class="jwin"><div class="jwin-main">' : ''}<div class="grid2">
-      ${F('To', contacts.length ? sel('contactId', contacts.flatMap(toOpts), ui.draft.contactId + '|' + (ui.draft.toAddr || '').toLowerCase(), 'id="dTo" data-change="draftTo"') : '<p class="sub" style="padding-top:6px">No contacts on this account yet.</p>')}
-      ${F('Template', sel('tpl', [['', '— Choose a template —'], ...tpls.map(t => [t.id, t.name]), ...(AI ? [['__ai', 'Write with Claude…']] : [])], pick, 'id="dTpl" data-change="draftTpl"'))}
-      ${F('Cc', `<div class="acwrap">${inp('cc', '', 'text', 'id="dCc" placeholder="Start typing a name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdCc" role="listbox" hidden></ul></div>`)}
-      ${F('Bcc', `<div class="acwrap">${inp('bcc', '', 'text', 'id="dBcc" placeholder="Start typing a name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdBcc" role="listbox" hidden></ul></div>`)}
+  openModal(jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : 'Email', `${jopt ? '<div class="jwin"><div class="jwin-main">' : ''}<div class="cmp">
+    <div class="cmp-paper">
+      <div class="cmp-row cmp-to">
+        <label class="cmp-k" for="dTo">To</label>
+        ${contacts.length ? `<span class="cmp-av" id="dAv" aria-hidden="true"></span><div class="cmp-v">${sel('contactId', contacts.flatMap(toOpts), ui.draft.contactId + '|' + (ui.draft.toAddr || '').toLowerCase(), 'id="dTo" data-change="draftTo"')}</div>` : '<p class="cmp-v cmp-none">No contacts on this account yet. Add one to send an email.</p>'}
+        <span class="cmp-ccb"><button type="button" class="cmp-lnk" data-act="dCcShow" data-k="Cc" id="dCcB">Cc</button><button type="button" class="cmp-lnk" data-act="dCcShow" data-k="Bcc" id="dBccB">Bcc</button></span>
+      </div>
+      <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label><div class="cmp-v acwrap">${inp('cc', '', 'text', 'id="dCc" placeholder="Name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdCc" role="listbox" hidden></ul></div></div>
+      <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label><div class="cmp-v acwrap">${inp('bcc', '', 'text', 'id="dBcc" placeholder="Name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdBcc" role="listbox" hidden></ul></div></div>
+      <div class="cmp-row cmp-subj"><input id="draftSubj" placeholder="Subject" aria-label="Subject" autocomplete="off"><button type="button" class="icon-btn" data-act="copySubj" title="Copy the subject" aria-label="Copy the subject">${ic('copy')}</button></div>
+      <div id="dAi" class="cmp-ai" hidden>${F('What is it for?', inp('aiPurpose', '', 'text', 'id="dPurpose" placeholder="e.g. follow up on the purge quote, offer Thursday"'))}<button type="button" class="btn pri" data-act="draftGo" id="dGo">${ic('spark')}Write draft</button></div>
+      <div class="cmp-tools">
+        <span class="cmp-tpl" title="Start from a template">${ic('doc')}${sel('tpl', [['', 'Template'], ...tpls.map(t => [t.id, t.name]), ...(AI ? [['__ai', 'Write with Claude…']] : [])], pick, 'id="dTpl" data-change="draftTpl" aria-label="Template"')}</span>
+        ${rteBar('draftHtml')}
+      </div>
+      <textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden aria-label="Claude's draft"></textarea><div id="draftHtml" class="mailprev rte cmp-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Write your message, or start from a template."></div>
+      ${GRAPH ? (SIG.html ? `<div class="cmp-sig${SIG.on ? '' : ' off'}" id="dSigBox"><div class="cmp-sigh"><label class="cmp-sw"><input type="checkbox" id="dSig" data-change="dSigT" ${SIG.on ? 'checked' : ''}><span class="cmp-swt" aria-hidden="true"></span>Signature</label><button type="button" class="cmp-lnk" data-act="dSigMore" id="dSigMore" aria-expanded="false">Show all</button></div><div class="mailprev sigprev cmp-sigp">${sigClean(SIG.html).html}</div></div>` : `<p class="cmp-sig cmp-none">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
+      ${GRAPH ? `<div id="dFiles" class="cmp-files"></div>` : ''}
     </div>
-    <div id="dAi" class="grid2" hidden>${F('What is it for?', inp('aiPurpose', '', 'text', 'id="dPurpose" placeholder="e.g. follow up on the purge quote, offer Thursday"'))}<div class="f"><span>&nbsp;</span><button type="button" class="btn pri" data-act="draftGo" id="dGo">${ic('spark')}Write draft</button></div></div>
-    <div class="f"><label for="draftSubj">Subject</label><div class="qt"><input id="draftSubj" placeholder="Subject"><button type="button" class="btn sm" data-act="copySubj">${ic('copy')}Copy</button></div></div>
-    <div class="f"><span>Message</span>${rteBar('draftHtml')}<textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden aria-label="Claude's draft"></textarea><div id="draftHtml" class="mailprev rte" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Choose a template, or type your message."></div></div>
     <p class="sub" id="dHint"></p>
-    ${GRAPH ? `<div id="dFiles" class="fltbar" style="margin:0 0 8px"></div>` : ''}
-    ${GRAPH ? (SIG.html ? `<label class="chk"><input type="checkbox" id="dSig" ${SIG.on ? 'checked' : ''}> Add my signature</label><div class="mailprev sigprev">${sigClean(SIG.html).html}</div>` : `<p class="sub">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
-    ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk"><input type="checkbox" id="dJ" data-change="dJ"> Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : ''}
-    <div class="mailbar" id="dNote" hidden></div>${jopt ? `</div>${acctCard(companyId, contact && contact.id)}</div>` : ''}`, null, null,
-    {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">Edit templates</button><button type="button" class="btn" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('up')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend">${ic('mail')}Send</button>` : ''}`});
+    ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk cmp-sw"><input type="checkbox" id="dJ" data-change="dJ"><span class="cmp-swt" aria-hidden="true"></span>Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : ''}
+    <div class="mailbar" id="dNote" hidden></div></div>${jopt ? `</div>${acctCard(companyId, contact && contact.id)}</div>` : ''}`, null, null,
+    {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">${ic('edit')}Edit templates</button><button type="button" class="btn ghost" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('clip')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend" title="Send (Ctrl+Enter)">${ic('mail')}Send</button>` : ''}`});
+  cmpAvatar();
   if (pick) applyTemplate(pick);
   if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); setDraftBody(jopt.html ? cleanHtml(fillTemplate(jopt.body, data, true)) : textToHtml(fillTemplate(jopt.body, data))); }
 }
+// the recipient's initials beside the To line
+function cmpAvatar(){ const av = $('#dAv'); if (!av) return; const ct = ui.draft && S.contacts[ui.draft.contactId];
+  const nm = ct ? toName(ct) : '';
+  const ini = nm.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || (ui.draft && ui.draft.toAddr || '?')[0].toUpperCase();
+  av.textContent = ini; av.title = nm; }
+// Ctrl+Enter (Cmd+Enter on a Mac) sends from the email window
+document.addEventListener('keydown', e => { if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return; const b = $('#dSend'); if (!b || b.disabled || !e.target.closest || !e.target.closest('#mform')) return; e.preventDefault(); b.click(); });
 // ---------- formatting toolbar for email messages and templates ----------
 const textToHtml = t => String(t || '').replace(/\r/g, '').trim().split(/\n{2,}/).map(par => '<p>' + esc(par).replace(/\n/g, '<br>') + '</p>').join('');
 function rteBar(target, opt = {}){
@@ -6471,6 +6580,8 @@ const A = {
   draft: d => draftModal(d.col, d.id, d.purpose, null, d.to),
   emailOpen: d => emailOpen(d),
   emailFull: () => { EMV.full = !EMV.full; emailPaint(); },
+  dCcShow: d => { const row = $(`#d${d.k}Row`), b = $(`#d${d.k}B`); if (row) row.hidden = false; if (b) b.hidden = true; const f = $(`#d${d.k}`); if (f) f.focus(); },
+  dSigMore: () => { const box = $('#dSigBox'), b = $('#dSigMore'); if (!box) return; const open = box.classList.toggle('open'); if (b) { b.textContent = open ? 'Show less' : 'Show all'; b.setAttribute('aria-expanded', open); } },
   emailCopy: () => { const t = emailPlain(); if (t) copyText(t); else toast('Nothing to copy yet.', 'bad'); },
   emailReply: () => {
     const e = {...EMV}; const addr = (String(e.inbound ? e.from : (e.to || [])[0] || '').match(/<([^>]+)>/) || [])[1] || (String(e.inbound ? e.from : (e.to || [])[0] || '').includes('@') ? String(e.inbound ? e.from : e.to[0]).trim() : '');
@@ -6544,7 +6655,8 @@ const CHANGE = {
   jTplFill: el => { const t = templates().find(x => x.id === el.value); const box = el.closest('.jstep'); if (t && box) { box.querySelector('input[name="step_subject[]"]').value = t.subject; box.querySelector('textarea').value = t.body; } el.value = ''; },
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
   tplFmt: () => updTplPrev(),
-  draftTo: el => { if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
+  dSigT: el => { const box = $('#dSigBox'); if (box) box.classList.toggle('off', !el.checked); },
+  draftTo: el => { setTimeout(cmpAvatar, 0); if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
   dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = CLOSED.includes(el.value); const closed = CLOSED.includes(el.value); const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
   // New opportunity: picking the opportunity type fills in its usual service fields. A field the person set themselves is never overwritten;
   // switching to another type clears only what was filled in automatically.
