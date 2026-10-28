@@ -119,7 +119,9 @@ async function mergeData(e: Rec, ct: Rec, owner: Rec, needsDeal: boolean) {
   const h = local().hour;
   const total = q ? (q.total != null ? +q.total : (q.items || []).reduce((t: number, i: Rec) => t + (+i.qty || 0) * (+i.price || 0), 0)) : 0;
   // several service types read as "shredding and hard drive/ media" (same as the app)
-  const types = String(deal?.serviceType || "").split(",").map((x: string) => x.trim()).filter((x: string) => x && x !== "Chat - Unknown").map((x: string) => x.toLowerCase());
+  // older names read as today's: "Hard Drive/ Media" is electronics, "Shred & Med" is shredding and medical waste
+  const OLD: Record<string, string[]> = { "hard drive/ media": ["electronics"], "hard drive/media": ["electronics"], "shred & med": ["shredding", "medical waste"] };
+  const types = [...new Set(String(deal?.serviceType || "").split(",").map((x: string) => x.trim().toLowerCase()).filter((x: string) => x && x !== "chat - unknown").flatMap((x: string) => OLD[x] || [x]))];
   const svc = deal ? (types.length ? (types.length < 2 ? types[0] : types.slice(0, -1).join(", ") + " and " + types[types.length - 1]) : deal.name || "") : "";
   return {
     greeting: h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",

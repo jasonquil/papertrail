@@ -1362,6 +1362,12 @@ html[data-look="inlet"] .mcal{display:none}
 .msel-o:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .msel-oe{padding:4px 0}
 .msel-oe .msel-o{min-height:32px;font-size:.82rem}
+
+.msel-x{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-size:.84rem;font-weight:700}
+.msel-x[hidden]{display:none}
+.msel-x .money{width:180px;background:var(--surface);border-radius:7px}
+.msel-x input{font-weight:600;color:var(--fg)}
+@media (prefers-reduced-motion:no-preference){.msel-x:not([hidden]){animation:pop .14s ease-out}}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -1691,10 +1697,13 @@ const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out
 const CLOSED = ['won','updated','lost'];
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
 const OPP_TYPES = ['Shredding Purge','Ongoing Purge','Scheduled Shredding','Medical Waste','Sharps Only','Hard Drive Destruction','Product Destruction','Drop Off','Other'];
-const SVC_TYPES = ['Shredding','Medical Waste','Hard Drive/ Media','Shred & Med','Scanning','Product Destruction','Chat - Unknown'];
-// Service type can hold several (a shredding purge plus hard drives): kept as one line, "Shredding, Hard Drive/ Media", in the
-// order of the list, so everything that shows, searches, downloads or copies it keeps working as before
-const svcList = v => String(v || '').split(',').map(x => x.trim()).filter(Boolean);
+const SVC_TYPES = ['Shredding','Medical Waste','Electronics','Scanning','Product Destruction','Chat - Unknown'];
+// Service type can hold several (a shredding purge plus electronics): kept as one line, "Shredding, Electronics", in the
+// order of the list, so everything that shows, searches, downloads or copies it keeps working as before.
+// Older names read as today's: "Hard Drive/ Media" is Electronics, and "Shred & Med" is Shredding plus Medical Waste.
+const SVC_OLD = {'hard drive/ media': ['Electronics'], 'hard drive/media': ['Electronics'], 'hard drive / media': ['Electronics'], 'shred & med': ['Shredding', 'Medical Waste'], 'shred and med': ['Shredding', 'Medical Waste']};
+const svcList = v => [...new Set(String(v || '').split(',').map(x => x.trim()).filter(Boolean).flatMap(x => SVC_OLD[x.toLowerCase()] || [x]))];
+const svcShow = v => svcJoin(svcList(v));   // what to show: today's names, in order
 const svcJoin = arr => { const at = x => { const i = SVC_TYPES.indexOf(x); return i < 0 ? 99 : i; }; return [...new Set(arr.map(x => String(x).trim()).filter(Boolean))].sort((a, b) => at(a) - at(b)).join(', '); };
 const svcHas = (v, want) => svcList(v).includes(want);
 // for emails: "shredding and hard drive/ media"
@@ -1704,7 +1713,9 @@ function mselHtml(name, list, value, attrs = '', id = '', label = ''){
   const cur = svcList(value), opts = [...list, ...cur.filter(x => !list.includes(x))];
   return `<div class="msel"${id ? ` id="${id}"` : ''} role="group"${label ? ` aria-label="${esc(label)}"` : ''}>${opts.map(x => `<label class="msel-o"><input type="checkbox" value="${esc(x)}"${cur.includes(x) ? ' checked' : ''} data-change="mselPick"><span>${esc(x)}</span></label>`).join('')}<input type="hidden" name="${name}" value="${esc(svcJoin(cur))}" ${attrs}></div>`;
 }
-function mselSet(box, value){ if (!box) return; const cur = svcList(value); box.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = cur.includes(c.value)); const h = box.querySelector('input[type=hidden]'); if (h) h.value = svcJoin(cur); }
+function mselSet(box, value){ if (!box) return; const cur = svcList(value); box.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = cur.includes(c.value)); const h = box.querySelector('input[type=hidden]'); if (h) h.value = svcJoin(cur); elecBox(box); }
+// the new-opportunity form shows its Electronics amount only while Electronics is ticked
+function elecBox(box){ if (!box || box.id !== 'dfSvcType') return; const x = $('#dfElec'), h = box.querySelector('input[type=hidden]'); if (x && h) x.hidden = !svcHas(h.value, 'Electronics'); }
 const INTERVALS = ['As Needed','Weekly','Bi-Weekly','Every 2 weeks','Every 4 weeks','Monthly','Bi-Monthly','Every 8 weeks','Quarterly','Twice a year','Yearly','On call','One-time'];
 const INITIAL_CALL = ['Jason','Kate','Ann','Austin','Sarah','House'];
 const NO_CLOSE = ['Not Decision Maker','Readiness','Gathering Quotes','Schedule','Unknown','Other'];
@@ -2122,7 +2133,7 @@ function loadSample(){
   dl('d2', 'c2', 'p2', 'Scheduled Shredding', 'quoted', {value: 1140, priceQuoted: 95, service: 'Recurring', serviceType: 'Shredding', interval: 'Every 4 weeks', source: 'Local and Organic', initialCall: 'Kate', firstCallClose: 'No', noCloseReason: 'Needed approval', notes: '2 consoles, monthly. Waiting on the owner to sign off.', ago: 9});
   dl('d3', 'c3', 'p3', 'Medical Waste', 'lead', {value: 2400, service: 'Recurring', serviceType: 'Medical Waste', interval: 'Monthly', source: 'Chat GPT', initialCall: 'House', notes: 'Two exam floors. Asked about sharps pickup.', ago: 1});
   dl('d4', 'c4', 'p4', 'Shredding Purge', 'lost', {value: 340, priceQuoted: 340, service: 'Purge', serviceType: 'Shredding', interval: 'One-time', source: 'Previous Client', initialCall: 'Ann', firstCallClose: 'No', noCloseReason: 'Shopping prices', closedAt: addDays(t, -12), closedBy: 'ann', lostReason: 'Price', ago: 20});
-  dl('d5', 'c5', 'p5', 'Hard Drive Destruction', 'quoted', {value: 450, priceQuoted: 450, service: 'Purge', serviceType: 'Hard Drive/ Media', interval: 'One-time', source: 'Existing Client', initialCall: 'Kate', notes: '30 drives from the old server room.', ago: 5});
+  dl('d5', 'c5', 'p5', 'Hard Drive Destruction', 'quoted', {value: 450, priceQuoted: 450, service: 'Purge', serviceType: 'Electronics', elecValue: 450, interval: 'One-time', source: 'Existing Client', initialCall: 'Kate', notes: '30 drives from the old server room.', ago: 5});
   dl('d6', 'c1', 'p1', 'Shredding Purge', 'won', {value: 220, priceQuoted: 220, service: 'Purge', serviceType: 'Shredding', interval: 'One-time', serviceDate: addDays(t, -180), source: 'AdWords', initialCall: 'Jason', firstCallClose: 'Yes', closedAt: addDays(t, -186), closedBy: 'jason', ago: 190});
   const tk = (id, companyId, title, due, assigneeId, dealId) => S.tasks[id] = {companyId, title, due, assigneeId, dealId: dealId || '', done: false, createdAt: now - 2 * day};
   tk('t1', 'c2', '2nd Follow Up on Purge', addDays(t, -1), 'kate', 'd2');
@@ -2170,7 +2181,7 @@ function buildDemo(){
     if (i % 4 === 0) out.contacts[pid + 'b'] = {companyId: id, firstName: pick(first), lastName: pick(last), title: 'Assistant', email: `info@${dom}`, phone: '', ownerId: owner, createdAt: now - (20 + i) * day};
   });
   const types = [['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 185, 175], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Monthly', 715, 55], ['Medical Waste', 'Recurring', 'Medical Waste', 'Monthly', 780, 65],
-    ['Hard Drive Destruction', 'Purge', 'Hard Drive/ Media', 'As Needed', 450, 225], ['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 340, 185], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Bi-Weekly', 1170, 45]];
+    ['Hard Drive Destruction', 'Purge', 'Electronics', 'As Needed', 450, 225], ['Shredding Purge', 'Purge', 'Shredding', 'As Needed', 340, 185], ['Scheduled Shredding', 'Recurring', 'Shredding', 'Bi-Weekly', 1170, 45]];
   const srcs = ['Local and Organic', 'AdWords', 'Shred Nations', 'Previous Client', 'Chat GPT', 'A3', 'Existing Client'];
   const notes = ['185/95 for 2 bins', '30 boxes @175/85', 'console @55 monthly', '15 gallon @65; monthly', '12 drives, wants certificates', '2 consoles bi-weekly @45', '4 drawer file cabinet @185/95', 'large purge, 40+ boxes'];
   const stagesPlan = ['won', 'won', 'won', 'won', 'won', 'won', 'won', 'won', 'won', 'lost', 'lost', 'lost', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'quoted', 'contract', 'contract', 'lead', 'lead', 'lead', 'lead', 'lead', 'won', 'quoted'];
@@ -3092,7 +3103,7 @@ function coSummary(id){
 // ---------- full opportunity page ----------
 function oppSummary(id){
   const d = S.deals[id]; const parts = [];
-  const sv = [d.serviceType, d.service ? d.service.toLowerCase() : '', d.interval ? '(' + d.interval.toLowerCase() + ')' : ''].filter(Boolean).join(' ');
+  const sv = [svcShow(d.serviceType), d.service ? d.service.toLowerCase() : '', d.interval ? '(' + d.interval.toLowerCase() + ')' : ''].filter(Boolean).join(' ');
   parts.push(`${d.name || 'This opportunity'} is ${d.companyId ? `an opportunity for ${cname(d.companyId)}` : 'an opportunity'}${d.contactId && S.contacts[d.contactId] ? ` with ${pname_(S.contacts[d.contactId])}` : ''}, owned by ${pname(d.ownerId).replace(' (you)', '')}${d.value ? `, valued at ${money(d.value)} a year` : ''}.`);
   if (sv) parts.push(`Service: ${sv}.`);
   if (d.stage === 'won') parts.push(`Closed won${isDate(d.closedAt) ? ' on ' + fmtDate(d.closedAt) : ''}${d.closedBy ? ' by ' + pname(d.closedBy).replace(' (you)', '') : ''}${d.priceQuoted ? ` at ${pqShow(d.priceQuoted)}` : ''}.`);
@@ -3105,14 +3116,14 @@ function oppSummary(id){
 }
 function oppEditor(d, k){
   const o = (list, v) => ['', ...(v && !list.includes(v) ? [v, ...list] : list)].map(x => [x, x || '—']);
-  const typed = ['value', 'priceQuoted', 'shredAmount', 'notes', 'sourceOther'].includes(k);
+  const typed = ['value', 'elecValue', 'priceQuoted', 'shredAmount', 'notes', 'sourceOther'].includes(k);
   const at = `id="oe_${k}"${typed ? ' data-keep' : ''} data-change="oppField" data-k="${k}" data-id="${d.id}" class="oe"`;
   const S_ = (opts, v) => sel('oe', opts, v || '', at);
   switch (k) {
     case 'companyId': return S_([['', '— Choose an account —'], ...(d.companyId && S.companies[d.companyId] ? [[d.companyId, S.companies[d.companyId].name]] : [])], d.companyId).replace('<select ', '<select data-lazyco ');   // the full account list loads when you open it, not on every redraw
     case 'type': return S_(OPP_TYPES.includes(d.type || d.name) ? OPP_TYPES.map(x => [x, x]) : [[d.type || d.name, d.type || d.name], ...OPP_TYPES.map(x => [x, x])], d.type || d.name);
     case 'contactId': return S_(ctOpts(d.companyId), d.contactId);
-    case 'value': return `<span class="money"><i>$</i><input ${at} type="text" inputmode="decimal" placeholder="0" value="${esc(d[k] || '')}"></span>`;
+    case 'value': case 'elecValue': return `<span class="money"><i>$</i><input ${at} type="text" inputmode="decimal" placeholder="0" value="${esc(d[k] || '')}"></span>`;
     case 'priceQuoted': return `<span class="money"><i>$</i><input ${at} type="text" placeholder="e.g. 175/85" value="${esc(d.priceQuoted || '')}"></span>`;
     case 'shredAmount': return `<input ${at} type="text" placeholder="e.g. 30 boxes" value="${esc(d.shredAmount || '')}">`;
     case 'notes': return `<textarea ${at} rows="1" placeholder="Add a description">${esc(d.notes || '')}</textarea>`;
@@ -3155,7 +3166,7 @@ let oppDateT = 0;
 async function oppSaveField(el){
   const id = el.dataset.id, k = el.dataset.k, d = S.deals[id]; if (!d) return;
   let v = el.value; const up = {};
-  if (k === 'value') v = num(v);
+  if (k === 'value' || k === 'elecValue') v = num(v);
   if (k === 'priceQuoted') v = pqVal(v);
   if (k === 'notes' || k === 'sourceOther' || k === 'shredAmount') v = v.trim();
   if (k === 'lostReason' && d.stage === 'lost' && !v) { toast('A lost opportunity needs a reason.', 'bad'); render(); return; }
@@ -3194,7 +3205,7 @@ V.opp = () => {
       ${cpField('Sales stage', W ? stageSel(d, 'rowStage') : stageChip(d))}${f('Annual projected amount', d.value ? `<b class="num">${money(d.value)}</b>` : '', false, 'value')}${f('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '', false, 'priceQuoted')}
       ${f('Amount of shredding', esc(d.shredAmount), false, 'shredAmount')}${f('Description', d.notes ? `<span style="white-space:pre-wrap">${esc(d.notes)}</span>` : '', 2, 'notes')}
       ${f('Service', esc(d.service), false, 'service')}${f('Service interval', esc(d.interval), false, 'interval')}${f('Service date', isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '', false, 'serviceDate')}
-      ${f('Service type', esc(d.serviceType), true, 'serviceType')}${cpField('Created', d.createdAt ? new Date(d.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${f('Owner', who(d.ownerId), false, 'ownerId')}
+      ${f('Service type', esc(svcShow(d.serviceType)), true, 'serviceType')}${svcHas(d.serviceType, 'Electronics') || d.elecValue ? f('Electronics: annual projected amount', d.elecValue ? money(d.elecValue) : '', false, 'elecValue') : ''}${cpField('Created', d.createdAt ? new Date(d.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${f('Owner', who(d.ownerId), false, 'ownerId')}
       ${f('Lead source', esc(d.source), false, 'source')}${f('Lead source other', esc(d.sourceOther), false, 'sourceOther')}
       ${f('First call close', esc(d.firstCallClose), false, 'firstCallClose')}${d.firstCallClose === 'No' || d.noCloseReason ? f('Did not close on first call', esc(d.noCloseReason), false, 'noCloseReason') : cpField('Did not close on first call', '')}${d.stage === 'lost' ? f('Reason for loss', esc(d.lostReason), false, 'lostReason') : cpField('Reason for loss', '')}
       ${closed ? f('Closed date', isDate(d.closedAt) ? fmtDate(d.closedAt) : '', false, 'closedAt') : cpField('Closed date', '')}${closed ? f('Closed by', d.closedBy ? who(d.closedBy) : '', false, 'closedBy') : cpField('Closed by', '')}
@@ -3325,7 +3336,7 @@ function aiBox(key){
 const timeline = (acts, none) => acts.length ? `<ul class="feed">${acts.slice(0,40).map(a => feedItem(a, false)).join('')}</ul>` : `<p class="empty-s">${none}</p>`;
 const contactRow = c => `<li class="rowi" data-act="open" data-col="contacts" data-id="${c.id}"><div><b>${esc(pname_(c))}</b><small>${esc([c.title, c.phone].filter(Boolean).join(' · '))}${ctMail(c) ? `${c.title || c.phone ? ' · ' : ''}${ctMailLink(c, 'font-weight:500')}` : ''}${!c.title && !c.phone && !ctMail(c) ? 'No details' : ''}</small></div></li>`;
 const dealRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name)}</b><small>${money(d.value)}${isDate(d.closeDate) ? ' · close ' + fmtDate(d.closeDate) : ''}</small></div><span class="end">${stageChip(d)}</span></li>`;
-const oppHistRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name || 'Opportunity')}</b><small>${[d.serviceType, d.value ? money(d.value) : '', !isOpen(d) && isDate(d.closedAt) ? 'closed ' + fmtDate(d.closedAt) : '', d.stage === 'lost' ? (d.lostReason ? 'reason: ' + d.lostReason : '') : isOpen(d) ? '' : isDate(d.serviceDate) ? (d.serviceDate <= today() ? 'serviced ' : 'service scheduled ') + fmtDate(d.serviceDate) : (d.stage === 'won' ? 'no service date' : '')].filter(Boolean).map(esc).join(' · ')}</small></div><span class="end">${stageChip(d)}</span></li>`;
+const oppHistRow = d => `<li class="rowi" data-act="open" data-col="deals" data-id="${d.id}"><div><b>${esc(d.name || 'Opportunity')}</b><small>${[svcShow(d.serviceType), d.value ? money(d.value) : '', !isOpen(d) && isDate(d.closedAt) ? 'closed ' + fmtDate(d.closedAt) : '', d.stage === 'lost' ? (d.lostReason ? 'reason: ' + d.lostReason : '') : isOpen(d) ? '' : isDate(d.serviceDate) ? (d.serviceDate <= today() ? 'serviced ' : 'service scheduled ') + fmtDate(d.serviceDate) : (d.stage === 'won' ? 'no service date' : '')].filter(Boolean).map(esc).join(' · ')}</small></div><span class="end">${stageChip(d)}</span></li>`;
 const quoteRow = q => `<li class="rowi" data-act="editQuote" data-id="${q.id}"><div><b class="mono">${esc(q.number)}</b><small>${money2(qTotal(q))} · valid until ${fmtDate(q.validUntil)}</small></div><span class="end">${qChip(q)}</span></li>`;
 const contractRow = c => c.files || !isDate(c.start) ? `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Contract')}</b><small>${(c.files || []).length} file${(c.files || []).length === 1 ? '' : 's'} · added ${c.createdAt ? fmtDate(ymd(new Date(c.createdAt))) : ''}${c.addedBy || c.ownerId ? ' by ' + esc(nm(c.addedBy || c.ownerId)) : ''}</small></div><span class="end">${ic('doc')}</span></li>` : `<li class="rowi" data-act="editContract" data-id="${c.id}"><div><b>${esc(c.title || 'Service agreement')}</b><small>${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr${c.autoRenew ? ' · auto-renews' : ''}</small></div><span class="end">${(c.status||'active') === 'active' ? dueChip(c.end) : '<span class="chip">Ended</span>'}</span></li>`;
 const tasksList = ts => ts.length ? `<ul class="tasks">${ts.map(taskRow).join('')}</ul>` : `<p class="empty-s">No open reminders.</p>`;
@@ -3514,7 +3525,7 @@ const DETAIL = {
       <dt>Stage</dt><dd>${canWrite ? `<select id="dealStage" data-change="dealStage" data-id="${id}" aria-label="Stage" style="width:auto">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k===s.k?'selected':''}>${s.l}</option>`).join('')}</select>` : stageChip(d)}</dd>
       ${fact('Annual projected', d.value ? `<b class="num">${money(d.value)}</b>` : '')}
       ${fact('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '')}${fact('Amount of shredding', esc(d.shredAmount || ''))}
-      ${fact('Service', esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · ')))}
+      ${fact('Service', esc([svcShow(d.serviceType), d.service, d.interval].filter(Boolean).join(' · ')))}
       ${fact('Service date', isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '')}
       ${fact('Close date', isDate(d.closeDate) ? (late ? `<span class="chip bad">${fmtDate(d.closeDate)}, past due</span>` : fmtDate(d.closeDate)) : '')}
       ${fact('Lead source', esc(d.source === 'Other' && d.sourceOther ? 'Other: ' + d.sourceOther : d.source))}
@@ -3854,7 +3865,13 @@ function nameCleanPlan(ph){
   for (const c of L('contacts')) { const fx = nameFix(c, {placeholders: ph}); if (fx) ct.push([c, fx]); }
   for (const a of L('companies')) { const n = acctNameFix(a.name); if (n) co.push([a, {name: n}]); }
   const dl = L('deals').filter(d => d.spiroId && isOpen(d) && d.closeDate).map(d => [d, {closeDate: ''}]);   // Spiro's automatic "close date" (about 30 days after created)
-  return {ct, co, dl};
+  const cdN = dl.length;
+  // older service type names: "Hard Drive/ Media" becomes Electronics, "Shred & Med" becomes Shredding, Medical Waste
+  const sv = new Map(); for (const d of L('deals')) { const now = svcShow(d.serviceType); if (d.serviceType && now !== d.serviceType) sv.set(d.id, now); }
+  const svN = sv.size;
+  for (const pair of dl) if (sv.has(pair[0].id)) { pair[1].serviceType = sv.get(pair[0].id); sv.delete(pair[0].id); }
+  for (const [id, v] of sv) dl.push([{id, ...S.deals[id]}, {serviceType: v}]);
+  return {ct, co, dl, cdN, svN};
 }
 function nameCleanModal(){
   if (!isAdmin()) return;
@@ -3863,9 +3880,9 @@ function nameCleanModal(){
   const show = (c, fx) => { const after = {...c, ...fx}; return `<li><span class="nc-was">${esc(pname_(c))}</span><span class="nc-to">→ ${(after.firstName || after.lastName) ? esc(pname_(after)) : `<i>${esc(pname_(after))}</i>`}</span></li>`; };
   const sample = plan.ct.filter(([c]) => !ph || !NAME_PH.test(c.lastName || '') || /[^A-Za-z\s]/.test(c.firstName || '')).slice(0, 10);
   const any = plan.ct.length || plan.co.length || plan.dl.length;
-  openModal('Clean up imported data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.dl.length ? `the automatic close date on <b>${plan.dl.length.toLocaleString()} open opportunit${plan.dl.length === 1 ? 'y' : 'ies'}</b>` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
+  openModal('Clean up imported data', `<p>${any ? [plan.ct.length ? `<b>${plan.ct.length.toLocaleString()} contact name${plan.ct.length === 1 ? '' : 's'}</b>` : '', plan.co.length ? `<b>${plan.co.length} account name${plan.co.length === 1 ? '' : 's'}</b>` : '', plan.cdN ? `the automatic close date on <b>${plan.cdN.toLocaleString()} open opportunit${plan.cdN === 1 ? 'y' : 'ies'}</b>` : '', plan.svN ? `the service type on <b>${plan.svN.toLocaleString()} opportunit${plan.svN === 1 ? 'y' : 'ies'}</b> (Hard Drive/ Media becomes Electronics; Shred &amp; Med becomes Shredding and Medical Waste)` : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' will be fixed. Nothing else on them changes.' : 'Everything looks clean. Nothing to fix.'}</p>
     ${sample.length ? `<ul class="nc-list">${sample.map(([c, fx]) => show(c, fx)).join('')}${plan.co.slice(0, 3).map(([a, fx]) => `<li><span class="nc-was">${esc(a.name)}</span><span class="nc-to">→ ${esc(fx.name)}</span></li>`).join('')}</ul>` : ''}
-    ${plan.dl.length ? `<p class="sub">Your current CRM filled in a close date about 30 days after each deal was created, so on open opportunities it didn't mean anything. Closed deals keep theirs.</p>` : ''}
+    ${plan.cdN ? `<p class="sub">Your current CRM filled in a close date about 30 days after each deal was created, so on open opportunities it didn't mean anything. Closed deals keep theirs.</p>` : ''}
     <p class="sub">Names that were really an email address are rebuilt from the email when it has a first and last name in it (clara.taylor@… becomes Clara Taylor); otherwise the email shows in place of a name. Missed-call contacts show their phone number.</p>
     <label class="chk" style="margin:10px 0 0"><input type="checkbox" data-change="ncPh" ${ph ? 'checked' : ''}> Also remove placeholder last names like “Unknown” and “N/A” (${extra.toLocaleString()} more contacts, so “Heather Unknown” becomes “Heather”)</label>
     <p class="sub">This choice is remembered for future imports. <button type="button" class="lnk" data-act="backup">Download a backup first</button> if you'd like a copy of the names as they are now.</p>`,
@@ -4042,7 +4059,8 @@ function dealForm(id, pre={}){
     ${F('Service', sel('service', o(SERVICES, d.service), d.service, 'data-change="dfSvcPick"'))}
     ${F('Service interval', sel('interval', o(INTERVALS, d.interval), d.interval, 'data-change="dfSvcPick"'))}
     ${F('Service date', inp('serviceDate', d.serviceDate, 'date'))}
-    <div class="f full"><span>Service type <small class="sub">(pick all that apply)</small></span>${mselHtml('serviceType', SVC_TYPES, d.serviceType, 'data-change="dfSvcPick"', 'dfSvcType', 'Service type')}</div>
+    <div class="f full"><span>Service type <small class="sub">(pick all that apply)</small></span>${mselHtml('serviceType', SVC_TYPES, d.serviceType, 'data-change="dfSvcPick"', 'dfSvcType', 'Service type')}
+      <label class="msel-x" id="dfElec"${svcHas(d.serviceType, 'Electronics') ? '' : ' hidden'}><span>Electronics: annual projected amount</span><span class="money"><i>$</i>${inp('elecValue', d.elecValue ? d.elecValue : '', 'text', 'inputmode="decimal" placeholder="0"')}</span></label></div>
     <label class="f" id="dfClosed"${hid(!isOpen(d))}><span>Closed date</span>${inp('closedAt', d.closedAt || '', 'date', 'id="dfClosedAt"')}</label>
     <label class="f" id="dfClosedBy"${hid(!isOpen(d))}><span>Closed by</span>${ownerSel('closedBy', d.closedBy || ME.id)}</label>
     <span class="gap" id="dfGap1"${hid(!isOpen(d))}></span><span class="gap" id="dfGap2" hidden></span>
@@ -4060,7 +4078,7 @@ function dealForm(id, pre={}){
       { const dupD = !CLOSED.includes(f.stage) && f.type && L('deals').find(x => x.id !== id && x.companyId === companyId && isOpen(x) && (x.type || x.name) === f.type); if (dupD) { dupWarn(`${esc(cname(companyId))} already has an open ${esc(f.type)} opportunity.`, 'deals', dupD.id); return false; } }
       const nid = id || uid(); const prev = id ? S.deals[id] : {};
       const rec = {...prev, companyId, type: f.type, name: f.type, contactId: (prev.contactId && S.contacts[prev.contactId]?.companyId === companyId ? prev.contactId : '') || (pre.ct && S.contacts[pre.ct]?.companyId === companyId ? pre.ct : ''), stage: f.stage, value: num(f.value), priceQuoted: pqVal(f.priceQuoted), shredAmount: (f.shredAmount || '').trim(),
-        service: f.service, serviceType: f.serviceType, interval: f.interval, serviceDate: f.serviceDate, source: f.source, sourceOther: f.source === 'Other' ? f.sourceOther : '',
+        service: f.service, serviceType: svcShow(f.serviceType), elecValue: svcHas(f.serviceType, 'Electronics') ? num(f.elecValue) : 0, interval: f.interval, serviceDate: f.serviceDate, source: f.source, sourceOther: f.source === 'Other' ? f.sourceOther : '',
         initialCall: f.initialCall, firstCallClose: f.firstCallClose, notes: f.notes, noCloseReason: f.firstCallClose === 'No' ? f.noCloseReason : '', lostReason: f.stage === 'lost' ? f.lostReason : ''};
       if (!rec.ownerId) rec.ownerId = ME.id;
       rec.closedAt = isOpen(rec) ? null : (isDate(f.closedAt) ? f.closedAt : today());
@@ -4276,6 +4294,7 @@ const IMPORT = {
     ['priceQuoted','Price quoted',['pricequoted','quotedprice','quote','price']],
     ['service','Service',['service']],
     ['serviceType','Service type',['servicetype']],
+    ['elecValue','Electronics annual projected amount',['electronicsannualprojectedamount','electronicsamount','electronicsvalue']],
     ['interval','Service interval',['serviceinterval','interval','frequency']],
     ['serviceDate','Service date',['servicedate']],
     ['source','Lead source',['leadsource','source']],
@@ -4402,7 +4421,7 @@ function spBuild(files, ppl){
     const close = spDate(r['Close Date']); const closed = CLOSED.includes(st);
     const fcc = spYN(r['First Call Close']);
     out.deals.push([id, {spiroId: sid, name: type, type, companyId: needCo(spTidy(r['Company (Spiro Company Id)']), r['Company (Spiro Company Id) (Read Only)'], r['Owner (User ID) (Read Only)']), stage: st,
-      value: num(r['Annual Projected Amount']), priceQuoted: pqVal(r['Price Quoted']), service: spTidy(r['Service'], SERVICES), serviceType: spTidy(r['Service Type'], SVC_TYPES), interval: spTidy(r['Service Interval'], INTERVALS), serviceDate: spDate(r['Service Date']),
+      value: num(r['Annual Projected Amount']), priceQuoted: pqVal(r['Price Quoted']), service: spTidy(r['Service'], SERVICES), serviceType: svcShow(spTidy(r['Service Type'], SVC_TYPES)), interval: spTidy(r['Service Interval'], INTERVALS), serviceDate: spDate(r['Service Date']),
       closeDate: closed ? close : '', closedAt: closed ? (close || spDate(r['Created'])) : '', closedBy: closed ? ppl.closer(r['Closed By']) : '',
       source: spTidy(r['Lead Source'], SOURCES), sourceOther: spTidy(r['Lead Source Other']), initialCall: spTidy(r['Initial Call'], INITIAL_CALL), firstCallClose: fcc, noCloseReason: spTidy(r['Did not Close on First Call'], NO_CLOSE), lostReason: st === 'lost' ? spTidy(r['Reason for Loss'], LOSS_REASONS) : '',
       notes: String(r['Description'] || '').trim(), ownerId: ppl.owner(r['Owner (User ID) (Read Only)']), createdAt: spTime(r['Created']) || now,
@@ -4557,7 +4576,7 @@ async function runImport(_, form){
       const cv = get(r,'contact').toLowerCase();
       const contactId = cv ? (ctByEmail[cv] || ctByName[companyId + '|' + norm(cv)] || ctAnyName[norm(cv)] || '') : '';
       const st = mapStage(get(r,'stage'));
-      const rec = {name, type: name, companyId, contactId, stage: st, value: num(get(r,'value')), priceQuoted: pqVal(get(r,'priceQuoted')), service: get(r,'service'), serviceType: get(r,'serviceType'), interval: get(r,'interval'), serviceDate: toYmd(get(r,'serviceDate')), closeDate: toYmd(get(r,'closeDate')), source: get(r,'source'), sourceOther: get(r,'sourceOther'), initialCall: get(r,'initialCall'), firstCallClose: get(r,'firstCallClose'), noCloseReason: get(r,'noCloseReason'), lostReason: get(r,'lostReason'), ownerId: ownerFrom(get(r,'owner'))};
+      const rec = {name, type: name, companyId, contactId, stage: st, value: num(get(r,'value')), priceQuoted: pqVal(get(r,'priceQuoted')), service: get(r,'service'), serviceType: svcShow(get(r,'serviceType')), elecValue: num(get(r,'elecValue')), interval: get(r,'interval'), serviceDate: toYmd(get(r,'serviceDate')), closeDate: toYmd(get(r,'closeDate')), source: get(r,'source'), sourceOther: get(r,'sourceOther'), initialCall: get(r,'initialCall'), firstCallClose: get(r,'firstCallClose'), noCloseReason: get(r,'noCloseReason'), lostReason: get(r,'lostReason'), ownerId: ownerFrom(get(r,'owner'))};
       if (CLOSED.includes(st)) rec.closedAt = rec.closeDate || today();
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
       const key = norm(name) + '|' + (companyId||'');
@@ -4596,7 +4615,7 @@ const mdy = v => { if (!v) return ''; const d = typeof v === 'number' ? new Date
 const ymdOf = v => !v ? '' : typeof v === 'number' ? ymd(new Date(v)) : String(v).slice(0, 10);
 const nm = id => id ? pname(id).replace(' (you)', '') : '';
 const inRange = (v, from, to) => { const d = ymdOf(v); if (!from && !to) return true; if (!d) return false; return (!from || d >= from) && (!to || d <= to); };
-const withData = (list, k) => { const seen = new Set(list); const n = {}; for (const d of L('deals')) { const raw = k === 'type' ? (d.type || d.name) : d[k]; for (const v of k === 'initialCall' || k === 'serviceType' ? String(raw || '').split(',').map(x => x.trim()) : [raw]) if (v && !seen.has(v)) n[v] = (n[v] || 0) + 1; } return [...list, ...Object.keys(n).filter(v => n[v] >= (k === 'initialCall' ? 1 : 10)).sort()]; };
+const withData = (list, k) => { const seen = new Set(list); const n = {}; for (const d of L('deals')) { const raw = k === 'type' ? (d.type || d.name) : d[k]; for (const v of k === 'serviceType' ? svcList(raw) : k === 'initialCall' ? String(raw || '').split(',').map(x => x.trim()) : [raw]) if (v && !seen.has(v)) n[v] = (n[v] || 0) + 1; } return [...list, ...Object.keys(n).filter(v => n[v] >= (k === 'initialCall' ? 1 : 10)).sort()]; };
 const anyOpt = (list, label) => [['', label || 'Any'], ...list.map(x => Array.isArray(x) ? x : [x, x])];
 const ownerOpts = () => people().map(i => [i, nm(i)]).sort((a, b) => a[1].localeCompare(b[1]));
 const mainContact = coId => gr(coId).contacts.slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0];
@@ -4610,10 +4629,10 @@ const EXP = {
       ['Opportunity Id', d => d.id], ['Company', d => cname(d.companyId)], ['Account Number', d => acctOf(d.companyId)], ['Opportunity', d => d.name || d.type],
       ['Contact', d => d.contactId && S.contacts[d.contactId] ? pname_(S.contacts[d.contactId]) : ''], ['Contact Email', d => d.contactId ? ctMail(S.contacts[d.contactId]) : ''],
       ['Sales Stage', d => stage(d).l], ['Closed Date', d => isOpen(d) ? '' : mdy(d.closedAt)], ['Created', d => mdy(d.createdAt)], ['Description', d => d.notes],
-      ['Owner', d => nm(d.ownerId)], ['Service', d => d.service], ['Service Interval', d => d.interval], ['Service Date', d => mdy(d.serviceDate)], ['Service Type', d => d.serviceType],
+      ['Owner', d => nm(d.ownerId)], ['Service', d => d.service], ['Service Interval', d => d.interval], ['Service Date', d => mdy(d.serviceDate)], ['Service Type', d => svcShow(d.serviceType)],
       ['Annual Projected Amount', d => d.value || ''], ['Lead Source', d => d.source], ['Lead Source Other', d => d.sourceOther], ['Initial Call', d => d.initialCall],
       ['First Call Close', d => d.firstCallClose], ['Reason for Loss', d => d.lostReason], ['Did not Close on First Call', d => d.noCloseReason],
-      ['Closed By', d => isOpen(d) ? '' : nm(d.closedBy)], ['Price Quoted', d => d.priceQuoted || ''], ['Amount of Shredding', d => d.shredAmount || '']],
+      ['Closed By', d => isOpen(d) ? '' : nm(d.closedBy)], ['Price Quoted', d => d.priceQuoted || ''], ['Amount of Shredding', d => d.shredAmount || ''], ['Electronics Annual Projected Amount', d => d.elecValue || '']],
     form: () => {
       const cur = ui.oppShow || 'open'; const on = k => cur === 'all' || (cur === 'open' ? isOpen({stage: k}) : cur === k);
       return `<div class="f"><span>Sales stage</span><div class="chips">${STAGES.map(st => `<label class="chk"><input type="checkbox" name="st_${st.k}" ${on(st.k) ? 'checked' : ''} data-change="expCount"> ${st.l}</label>`).join('')}</div></div>
@@ -7104,7 +7123,9 @@ const CHANGE = {
       const auto = s_.dataset.auto === '1';
       if (!s_.value || auto) { const v = fill[k] || ''; if (s_.tagName === 'SELECT') s_.value = [...s_.options].some(op => op.value === v) ? v : ''; else mselSet(s_.closest('.msel'), v); s_.dataset.auto = s_.value ? '1' : ''; } } },
   dfSvcPick: el => { el.dataset.auto = ''; },
-  mselPick: el => { const box = el.closest('.msel'), h = box && box.querySelector('input[type=hidden]'); if (!h) return; h.value = svcJoin([...box.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value)); h.dispatchEvent(new Event('change', {bubbles: true})); },
+  mselPick: el => { const box = el.closest('.msel'), h = box && box.querySelector('input[type=hidden]'); if (!h) return; h.value = svcJoin([...box.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value)); elecBox(box);
+    if (box.id === 'dfSvcType' && el.value === 'Electronics' && el.checked) setTimeout(() => $('#dfElec input')?.focus(), 30);   // ticking Electronics: straight to its amount
+    h.dispatchEvent(new Event('change', {bubbles: true})); },
   dfSource: el => { const w = $('#dfSrcOther'); if (w) w.hidden = el.value !== 'Other'; },
   dfFcc: el => { const w = $('#dfNoClose'); if (w) w.hidden = el.value !== 'No'; },
   dfCo: el => { const nc = $('#dfNewCo'); if (nc) { nc.hidden = el.value !== '__new'; if (!nc.hidden) nc.querySelector('input').focus(); } const ct = $('#dfCt'); if (!ct) return; const cur = ct.value; const opts = el.value === '__new' ? [['', '— None —']] : ctOpts(el.value); ct.innerHTML = opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); if (opts.some(o => o[0] === cur)) ct.value = cur; },
