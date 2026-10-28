@@ -1110,40 +1110,40 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
 .cmp-v{flex:1;min-width:0}
 .cmp .cmp-row select,.cmp .cmp-row input{border:0;border-radius:6px;background-color:transparent;color:var(--ink);font:500 .95rem/1.3 var(--body);padding:7px 6px;width:100%;box-shadow:none}
 .cmp .cmp-row select{cursor:pointer;text-overflow:ellipsis}
-.cmp .cmp-row select:hover{background-color:#F3F6F5}
+.cmp .cmp-row select:hover{background-color:color-mix(in srgb,var(--ink) 6%,transparent)}
 .cmp .cmp-row select:focus,.cmp .cmp-row input:focus{outline:none}
 .cmp .cmp-row input::placeholder{color:#A3AFAC}
 .cmp-av{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,#fff);color:color-mix(in srgb,var(--accent) 72%,#000);font:700 .7rem/1 var(--body);letter-spacing:.04em}
 .cmp-ccb{display:flex;gap:2px;flex:none}
 .cmp-lnk{border:0;background:none;color:var(--ink-2);font:600 .8rem/1 var(--body);padding:7px 9px;border-radius:6px;cursor:pointer}
-.cmp-lnk:hover{color:color-mix(in srgb,var(--accent) 80%,#000);background:#F1F5F4}
+.cmp-lnk:hover{color:var(--accent);background:color-mix(in srgb,var(--ink) 6%,transparent)}
 .cmp-lnk:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .cmp-lnk[hidden]{display:none}
 .cmp-none{margin:0;color:var(--ink-2);font-size:.88rem}
 .cmp .cmp-subj input{font:650 1.12rem/1.3 var(--body);letter-spacing:-.005em;padding:10px 6px}
 .cmp .cmp-subj .icon-btn{color:var(--ink-2);flex:none}
-.cmp .cmp-subj .icon-btn:hover{color:var(--ink);background:#F1F5F4}
+.cmp .cmp-subj .icon-btn:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
 .cmp-ai{display:flex;gap:10px;align-items:flex-end;padding:10px 18px;border-bottom:1px solid var(--rule);background:#FBFCFC}
 .cmp-ai[hidden]{display:none}.cmp-ai .f{flex:1;margin:0}.cmp-ai .f span{color:var(--ink-2)}
 .cmp .cmp-ai input{background:#fff;color:var(--ink);border-color:var(--rule)}
 /* writing tools: template first (it's usually the first thing picked), then formatting; they stay in view while you scroll */
 .cmp-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 10px;background:var(--tool);border-bottom:1px solid var(--rule);position:sticky;top:-16px;z-index:2}
-.cmp-tpl{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 2px 0 10px;border:1px solid var(--rule);border-radius:calc(var(--paper-r) * 1.5);background:#fff;color:var(--ink);flex:none}
+.cmp-tpl{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 2px 0 10px;border:1px solid var(--rule);border-radius:calc(var(--paper-r) * 1.5);background:var(--paper);color:var(--ink);flex:none}
 .cmp-tpl .ic{width:15px;height:15px;color:color-mix(in srgb,var(--accent) 80%,#000)}
 .cmp .cmp-tpl select{border:0;background-color:transparent;color:var(--ink);font:600 .84rem/1 var(--body);padding:0 24px 0 0;height:30px;max-width:230px;width:auto;cursor:pointer}
 .cmp .cmp-tpl:focus-within{border-color:var(--accent)}
 .cmp .cmp-tpl select,.cmp .cmp-tpl select:focus,.cmp .cmp-tpl select:focus-visible,.cmp .cmp-row select:focus-visible,.cmp .cmp-row input:focus-visible{outline:none;box-shadow:none;border-color:transparent}
 .cmp .rte-bar{flex:1;border:0;background:transparent;padding:0;border-radius:0;gap:1px}
 .cmp .rte-b{color:var(--ink);min-width:28px;height:28px}
-.cmp .rte-b:hover{background:#E8EEEC}
+.cmp .rte-b:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
 .cmp .rte-b.on{background:color-mix(in srgb,var(--accent) 16%,#fff);color:color-mix(in srgb,var(--accent) 75%,#000)}
 .cmp .rte-sep{background:var(--rule)}
 .cmp .rte-sel{background-color:transparent;border-color:transparent;color:var(--ink)}
-.cmp .rte-sel:hover{border-color:var(--rule);background-color:#fff}
-.cmp .cmp-body{border:0;border-radius:0;background:transparent;color:#222;min-height:260px;max-height:none;padding:20px 24px 14px;font-size:14.5px;line-height:1.5}
+.cmp .rte-sel:hover{border-color:var(--rule);background-color:var(--paper)}
+.cmp .cmp-body{border:0;border-radius:0;background:#fff;color:#222;min-height:260px;max-height:none;padding:20px 24px 14px;font-size:14.5px;line-height:1.5}
 .cmp .cmp-body:focus{outline:none}
 .cmp .cmp-body:empty::before{color:#A3AFAC}
-.cmp #draftOut{border:0;border-radius:0;background:transparent;color:#222;padding:20px 24px;font:14.5px/1.5 Calibri,Aptos,Arial,sans-serif;min-height:260px;resize:vertical}
+.cmp #draftOut{border:0;border-radius:0;background:#fff;color:#222;padding:20px 24px;font:14.5px/1.5 Calibri,Aptos,Arial,sans-serif;min-height:260px;resize:vertical}
 /* signature: folded to a preview until you want all of it */
 .cmp-sig{margin:0 24px;padding:10px 0 14px;border-top:1px dashed var(--rule)}
 .cmp-sigh{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
@@ -1180,6 +1180,140 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
   .cmp .rte-bar::-webkit-scrollbar{display:none}
   .cmp .rte-bar>*{flex:none}
 }
+
+/* ---------- the other email window layouts (Settings → Appearance → Email window) ----------
+   The message itself is always white with dark text, as the customer will see it. Everything else follows the look. */
+.vh-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cmp-form,.cmp-lib,.cmp-dock{--ink:var(--fg);--ink-2:var(--muted);--rule:var(--line);--paper:var(--surface);--tool:var(--surface-2)}
+.cmp-fsp{flex:1}
+.sf .cmp-kbd{align-self:center}
+.sheet.cmp-xl{width:min(1240px,calc(100% - 32px))}
+/* the layout switch in the title bar */
+.cmp-lay{display:inline-flex;align-items:center;gap:4px;margin-left:auto;margin-right:4px;color:var(--muted)}
+.cmp-lay .ic{width:16px;height:16px}
+.cmp-lay select{width:auto;height:32px;padding:0 24px 0 8px;border:1px solid transparent;background-color:transparent;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer}
+.cmp-lay select:hover{border-color:var(--line);color:var(--fg)}
+#mform > .sh{gap:6px}
+/* blanks: highlighted in the message, filled in from the bar */
+::highlight(pt-blank){background-color:#FFE680;color:#5A4100}
+.cmp-blanks{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
+.cmp-blanks[hidden]{display:none}
+.cmp-blt{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:.88rem}.cmp-blt .ic{width:16px;height:16px}
+.cmp-bl{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600}
+.cmp-blanks .cmp-bl input{width:190px;height:32px;padding:4px 10px;background:var(--surface);border-color:color-mix(in srgb,var(--warn) 45%,var(--line));color:var(--fg)}
+.cmp-blanks:not([hidden]) ~ #dHint{display:none}
+/* signature as one line (familiar form, library, docked): a preview opens under it */
+.cmp-sigrow{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px}
+.cmp-sigrow .cmp-sigh{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.cmp-sigrow .cmp-sw{min-width:0;flex:1;color:var(--fg)}
+.cmp-sigt{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:.9rem}
+.cmp-sigt small{color:var(--muted);font-weight:500;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-sigrow .cmp-sigp{display:none;margin-top:10px;background:#fff;color:#222;border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-height:none;-webkit-mask-image:none;mask-image:none}
+.cmp-sigrow.open .cmp-sigp{display:block}
+.cmp-sigrow.off .cmp-sigt small{opacity:.6;text-decoration:line-through}
+.cmp-sigrow .cmp-swt{background:var(--line)}
+.cmp-sigrow .cmp-sw input:checked+.cmp-swt{background:var(--accent)}
+/* 1. familiar form */
+.cmp-form{gap:14px}
+.cmp-tplbar{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-weight:700}
+.cmp-tplbar .ic{width:18px;height:18px;flex:none}
+.cmp-tplbar span{white-space:nowrap}
+.cmp-form .cmp-tplbar select{flex:1;min-width:0;height:38px;font-weight:600;color:var(--fg);background-color:var(--surface);border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.cmp-fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cmp-fld[hidden]{display:none}
+.cmp-fld > label,.cmp-lbl{font-size:.8rem;font-weight:700;color:var(--muted)}
+.cmp-tofld{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+.cmp-toline{display:flex;align-items:center;gap:10px}
+.cmp-toline select{flex:1;min-width:0;height:40px}
+.cmp-ccbtns{display:flex;gap:6px;padding-bottom:3px}
+.cmp-form .cmp-ccbtns .cmp-lnk{border:1px solid var(--line);background:var(--surface);height:34px;padding:0 12px}
+.cmp-form .cmp-v.acwrap input,.cmp-form #draftSubj{height:40px}
+.cmp-form #draftSubj{font-weight:600}
+.cmp-subjw{display:flex;gap:6px;align-items:center}.cmp-subjw input{flex:1;min-width:0}
+.cmp-box{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+.cmp-form .rte-bar{border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--surface-2);padding:5px 6px}
+.cmp-form .rte-b{color:var(--fg)}
+.cmp-form .cmp-body,.cmp-form #draftOut{min-height:240px;padding:16px 18px}
+.cmp-form .jsend{border:1px dashed var(--line);border-radius:10px;margin:0;padding:10px 14px}
+/* 2. Outlook-style: the actions in a bar across the top; the signature sits under the message as sent */
+.cmp-ol{gap:12px}
+.cmp-cmd{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:8px;border-radius:12px;background:var(--surface-2);position:sticky;top:-16px;z-index:3}
+.cmp-cmd .cmd-send{height:40px;padding:0 18px}
+.cmd-sep{width:1px;height:24px;background:var(--line);margin:0 6px}
+.cmd-b{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--fg);font:inherit;font-weight:600;cursor:pointer;position:relative}
+.cmd-b:hover{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+.cmd-b .ic{width:17px;height:17px}
+.cmd-tpl{padding:0 4px 0 12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.cmd-tpl select{width:auto;max-width:240px;height:38px;border:0;background-color:transparent;font-weight:600;padding:0 24px 0 0;color:var(--fg)}
+.cmd-tpl select:focus{box-shadow:none}
+.cmd-tog input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.cmd-tog:has(input:checked){background:var(--accent-soft);color:var(--accent)}
+.cmd-tog:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}
+.cmp-sheet-ol{background:#fff;color:var(--ink);border:1px solid var(--rule);border-radius:12px;overflow:visible}
+.cmp-sheet-ol .cmp-row{padding-left:16px}
+.cmp-sheet-ol .cmp-k{flex-basis:56px}
+.cmp-sheet-ol .cmp-subj input{font-size:1.05rem}
+.cmp-ol .cmp-tools{top:40px}
+.cmp-sigin{padding:2px 24px 16px}
+.cmp-sigin .cmp-sigp{margin:0;padding:0;border:0;background:transparent;max-height:none;-webkit-mask-image:none;mask-image:none}
+.cmp-sigin.off{display:none}
+.cmp-ol .jsend{margin:0}
+/* 3. template library beside the message */
+.cmp-lib{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+.cmp-libnav{display:flex;flex-direction:column;gap:10px;position:sticky;top:0;max-height:calc(88vh - 150px);min-height:0}
+.cmp-libq{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted)}
+.cmp-libq:focus-within{border-color:var(--accent)}
+.cmp-libq .ic{width:16px;height:16px;flex:none}
+.cmp .cmp-libq input{border:0;background:transparent;padding:0;height:38px;box-shadow:none}
+.cmp-libcats{display:flex;flex-wrap:wrap;gap:6px}
+.cmp-libcats button{height:30px;padding:0 12px;border:1px solid var(--line);border-radius:15px;background:var(--surface);color:var(--fg);font:inherit;font-size:.8rem;font-weight:600;cursor:pointer}
+.cmp-libcats button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.cmp-liblist{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:2px;padding-right:4px}
+.cmp-libg{display:flex;flex-direction:column;gap:2px}.cmp-libg[hidden]{display:none}
+.cmp-libh{padding:12px 8px 4px;font-size:.76rem;font-weight:700;color:var(--muted)}
+.cmp-libi{display:flex;flex-direction:column;gap:2px;text-align:left;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:var(--fg);font:inherit;cursor:pointer;min-width:0}
+.cmp-libi[hidden]{display:none}
+.cmp-libi b{display:flex;align-items:center;gap:6px;font-weight:600;font-size:.9rem}.cmp-libi b .ic{width:15px;height:15px;color:var(--accent)}
+.cmp-libi small{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-libi:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.cmp-libi.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
+.cmp-libi.on b{font-weight:700}
+.cmp-libedit{align-self:flex-start;display:inline-flex;align-items:center;gap:6px}.cmp-libedit .ic{width:14px;height:14px}
+.cmp-libmain{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cmp-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cmp-card .cmp-row:last-child{border-bottom:0}
+.cmp-edcard .cmp-tools{position:static;background:var(--surface-2)}
+.cmp-edcard .cmp-body,.cmp-edcard #draftOut{min-height:260px}
+.cmp-edcard .cmp-sigrow{border:0;border-top:1px dashed var(--line);border-radius:0}
+.cmp-edcard .cmp-files{padding:0 16px 14px;background:var(--surface)}
+.cmp-lib .jsend{margin:0}
+/* 4. docked beside the account: the page stays visible and usable */
+#modal.dock{pointer-events:none}
+#modal.dock .scrim{display:none}
+#modal.dock .sheet{pointer-events:auto;position:fixed;top:0;right:0;bottom:0;margin:0;width:min(520px,100vw);max-height:none;height:100%;border-radius:0;border-left:1px solid var(--line);box-shadow:-16px 0 40px -20px rgba(14,40,36,.4);transform:none}
+@media (prefers-reduced-motion:no-preference){#modal.dock .sheet{animation:cmpDock .18s ease-out}@keyframes cmpDock{from{transform:translateX(24px);opacity:.6}}}
+@media (min-width:1180px){html.cmp-docked #main{margin-right:520px}}
+#modal.dock .sh{cursor:default}
+#modal.dock .sb{padding:0;gap:0;flex:1}
+.cmp-dock{gap:0}
+.cmp-dock .cmp-row{padding-left:16px}.cmp-dock .cmp-k{flex-basis:52px}
+.cmp-dock .cmp-tools{top:0;background:var(--surface-2)}
+.cmp-dock .cmp-body,.cmp-dock #draftOut{min-height:280px}
+.cmp-dpad{display:flex;flex-direction:column;gap:12px;padding:14px 16px 18px}
+.cmp-dpad:empty{display:none}
+.cmp-dock .jsend{margin:0}
+.sf .icon-only{width:40px;padding:0;justify-content:center}
+@media (max-width:700px){
+  .cmp-lib{grid-template-columns:minmax(0,1fr)}
+  .cmp-libnav{position:static;max-height:300px}
+  .cmp-tofld{grid-template-columns:minmax(0,1fr)}.cmp-ccbtns{padding:0}
+  .cmp-tplbar{flex-wrap:wrap}.cmp-form .cmp-tplbar select{flex-basis:100%}
+  /* the layout picker shrinks to its icon; tapping it still opens the list */
+  .cmp-lay{position:relative;width:36px;height:36px;justify-content:center;margin-right:0}
+  .cmp-lay select{position:absolute;inset:0;width:100%;height:100%;padding:0;color:transparent;border-color:transparent;background:transparent}
+  .cmp-lay select option{color:var(--fg)}
+}
+#mform.cmp-sheet > .sh h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
@@ -2339,7 +2473,7 @@ window.addEventListener('popstate', e => {
 });
 
 // ---------- appearance: each person's own look, saved to their login ----------
-const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default'};
+const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form'};
 const LOOKS = {"inlet": {"name": "Inlet", "note": "Calm coastal colors, menu across the top", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700", "sw": ["#EDF3F4", "#0B3442", "#127C8C", "#A6DCCF", "#F6DFAE"], "dark": false}, "custody": {"name": "Chain of Custody", "note": "Certificate-style, serious and secure", "fonts": "Newsreader:opsz,wght@6..72,400..700&family=Source+Sans+3:wght@400..700", "sw": ["#F8FAF7", "#123A2B", "#1E5A43", "#9C7A33", "#9E2F27"], "dark": false}, "crosscut": {"name": "Cross-Cut", "note": "Bold, bright and fun", "fonts": "Unbounded:wght@500..800&family=Onest:wght@400..800", "sw": ["#FFFFFF", "#15172E", "#2F4BE8", "#FFE14D", "#FF8FC4"], "dark": false}, "dispatch": {"name": "Dispatch", "note": "Dispatch board with job tickets", "fonts": "Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", "sw": ["#ECEEEC", "#1F252B", "#F2661C", "#F5C232", "#2A68CF"], "dark": false}, "porch": {"name": "Front Porch", "note": "Warm, friendly and easy", "fonts": "Outfit:wght@400..800", "sw": ["#F4F2FB", "#5A47D6", "#261E3D", "#FFB48F", "#FFE6A1"], "dark": false}, "night": {"name": "Night Shift", "note": "Dark, compact and keyboard-friendly", "fonts": "Sora:wght@400..700&family=Inter:wght@400..700", "sw": ["#0E171D", "#1B2B35", "#5FD0B0", "#EDB25A", "#EF7C69"], "dark": true}};
 const ACCENTS = [['', 'Teal (default)', '#0D6B61'], ['#2563EB', 'Blue', '#2563EB'], ['#1E3A8A', 'Navy', '#1E3A8A'], ['#7C3AED', 'Purple', '#7C3AED'], ['#DB2777', 'Pink', '#DB2777'], ['#DC2626', 'Red', '#DC2626'], ['#EA580C', 'Orange', '#EA580C'], ['#15803D', 'Green', '#15803D'], ['#475569', 'Slate', '#475569'], ['#111827', 'Black', '#111827']];
 let LOOK = {...LOOK_DEFAULT};
@@ -2395,6 +2529,7 @@ function lookModal(){
       ${F('Text size', seg('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']]))}
       ${F('Spacing', seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
       ${F('Font', seg('font', [['default', (LOOK.look || 'default') === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
+      ${F('Email window', seg('compose', CMP_LAYOUTS))}
       ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
     </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
 }
@@ -3282,9 +3417,13 @@ const DETAIL = {
 // ---------- modals ----------
 function openModal(title, body, submitLabel, onSubmit, opts={}){
   const m = $('#modal'); const wasOpen = !m.hidden; if (m.hidden) ui.inSettings = false;   // a fresh window never belongs to Settings
+  // an email docked beside the page stays out of the way, so other buttons on the page still work: if one opens a window,
+  // the email is kept and comes back when that window closes
+  if (wasOpen && m.classList.contains('dock') && $('#draftHtml') && !ui.cmpRebuild && !title.startsWith('Email')) ui.cmpStash = cmpSnap();
+  m.classList.remove('dock'); document.documentElement.classList.remove('cmp-docked');
   const back = ui.inSettings && title !== 'Settings';
   m.hidden = false; modalStep(title);
-  m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh">${back ? `<div class="sh-t"><button type="button" class="icon-btn sh-back" data-act="setBack" aria-label="Back to Settings" title="Back to Settings">${ic('back')}</button><h3>${esc(title)}</h3></div>` : `<h3>${esc(title)}</h3>`}<button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
+  m.innerHTML = `<div class="scrim" data-act="closeModal"></div><form class="sheet ${opts.wide?'wide':''}${opts.cls ? ' ' + opts.cls : ''}" id="mform" role="dialog" aria-label="${esc(title)}"><div class="sh">${back ? `<div class="sh-t"><button type="button" class="icon-btn sh-back" data-act="setBack" aria-label="Back to Settings" title="Back to Settings">${ic('back')}</button><h3>${esc(title)}</h3></div>` : `<h3>${esc(title)}</h3>`}<button type="button" class="icon-btn" data-act="closeModal" aria-label="Close">${ic('x')}</button></div><div class="sb">${body}</div>${submitLabel || opts.foot ? `<div class="sf">${opts.foot || ''}${submitLabel ? `<button type="button" class="btn ghost" data-act="closeModal">Cancel</button><button class="btn ${opts.danger?'danger':'pri'}" type="submit">${submitLabel}</button>` : ''}</div>` : ''}</form>`;
   const f = $('#mform'); if (wasOpen) f.classList.add('still');   // switching screens inside an open window: no entrance animation
   if (wasOpen && ui.modalPos) sheetMove(f, ui.modalPos.x, ui.modalPos.y); else { ui.modalPos = null; m.classList.remove('moved'); }
   f.onsubmit = async e => { e.preventDefault(); if (!onSubmit) return; const b = f.querySelector('[type=submit]'); if (b) b.disabled = true; let r; try { r = await onSubmit(formData(f), f); } finally { if (b) b.disabled = false; } if (r !== false) closeModal(); };
@@ -3303,6 +3442,7 @@ document.addEventListener('pointerdown', e => {
   const head = e.target.closest && e.target.closest('#modal .sheet > .sh'); if (!head || e.button !== 0) return;
   if (e.target.closest('button, a, input, select, textarea, label, [data-act]')) return;   // the close and back buttons still work
   if (innerWidth < 700 || !matchMedia('(hover:hover)').matches) return;   // phones and tablets: windows fill the screen anyway
+  if ($('#modal').classList.contains('dock')) return;   // a docked email stays docked
   const sh = head.parentElement, start = ui.modalPos || {x: 0, y: 0}, sx = e.clientX, sy = e.clientY;
   let moved = false;
   const mv = ev => { const dx = ev.clientX - sx, dy = ev.clientY - sy; if (!moved && Math.abs(dx) + Math.abs(dy) < 4) return; moved = true; sh.classList.add('dragging'); sheetMove(sh, start.x + dx, start.y + dy); ev.preventDefault(); };
@@ -3311,7 +3451,8 @@ document.addEventListener('pointerdown', e => {
 });
 document.addEventListener('dblclick', e => { const head = e.target.closest && e.target.closest('#modal .sheet > .sh'); if (!head || e.target.closest('button, input, select, textarea')) return; ui.modalPos = null; sheetMove(head.parentElement, 0, 0); });
 addEventListener('resize', () => { const sh = $('#mform'); if (sh && ui.modalPos) sheetMove(sh, ui.modalPos.x, ui.modalPos.y); });
-function closeModal(){ imgPopClose(); const m = $('#modal'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved'); ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
+function closeModal(){ imgPopClose(); const m = $('#modal'); const wasCmp = !!m.querySelector('.cmp'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved', 'dock'); document.documentElement.classList.remove('cmp-docked');
+  if (wasCmp) ui.cmpStash = null; else if (ui.cmpStash) { const sn = ui.cmpStash; ui.cmpStash = null; setTimeout(() => cmpReopen(sn), 0); } ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
 const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
@@ -5307,6 +5448,188 @@ function emailPlain(){
   return String(EMV.text || '').trim();
 }
 
+// ---------- the email window: one set of parts, five arrangements (Settings → Appearance → Email window) ----------
+const CMP_LAYOUTS = [['form', 'Familiar form'], ['outlook', 'Outlook-style'], ['library', 'Template library'], ['dock', 'Beside the account'], ['letter', 'Letter']];
+// journey emails come from a journey, not a template, and show the account beside them, so they use the form or Outlook look
+function cmpLayout(jopt){ let l = LOOK.compose || 'form'; if (!CMP_LAYOUTS.some(([k]) => k === l)) l = 'form'; if (jopt && (l === 'dock' || l === 'library')) l = 'form'; return l; }
+// a one-line summary of the signature for the folded view: starts at the sign-off when there is one
+function sigSummary(html){ const d = document.createElement('div'); d.innerHTML = String(html || '').replace(/<(br|\/p|\/div|\/li|\/tr|\/h\d)[^>]*>/gi, '\n$&');
+  const lines = (d.textContent || '').split('\n').map(x => x.replace(/\s+/g, ' ').trim()).filter(x => x && !/^www\.|^https?:/i.test(x));
+  const at = lines.findIndex(x => /^(sincerely|best|thanks|thank you|regards|kind regards|warm regards|cheers)\b/i.test(x)); const pick = lines.slice(at > 0 ? at : 0, (at > 0 ? at : 0) + 4);
+  return pick.reduce((o, x, i) => o + (i === 0 ? '' : /,$/.test(pick[i - 1]) ? ' ' : ' · ') + x, ''); }   // "Sincerely, Jason · Client Excellence Lead"
+
+function cmpParts({contacts, tpls, pick, jopt, lay}){
+  const X = {};
+  X.toSel = contacts.length ? sel('contactId', contacts.flatMap(toOpts), ui.draft.contactId + '|' + (ui.draft.toAddr || '').toLowerCase(), 'id="dTo" data-change="draftTo" aria-label="To"') : '';
+  X.none = '<p class="cmp-none">No contacts on this account yet. Add one to send an email.</p>';
+  X.av = contacts.length ? '<span class="cmp-av" id="dAv" aria-hidden="true"></span>' : '';
+  X.ccB = (pre = '') => `<button type="button" class="cmp-lnk" data-act="dCcShow" data-k="Cc" id="dCcB">${pre}Cc</button><button type="button" class="cmp-lnk" data-act="dCcShow" data-k="Bcc" id="dBccB">${pre}Bcc</button>`;
+  X.cc = k => `<div class="cmp-v acwrap">${inp(k.toLowerCase(), '', 'text', `id="d${k}" placeholder="Name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"`)}<ul class="ac" id="acd${k}" role="listbox" hidden></ul></div>`;
+  X.subj = '<input id="draftSubj" placeholder="Subject" aria-label="Subject" autocomplete="off" data-input="cmpEd">';
+  X.copySubj = `<button type="button" class="icon-btn" data-act="copySubj" title="Copy the subject" aria-label="Copy the subject">${ic('copy')}</button>`;
+  X.tplSel = (first = 'Choose a template', extra = '') => sel('tpl', [['', first], ...tpls.map(t => [t.id, t.name]), ...(AI ? [['__ai', 'Write with Claude…']] : [])], pick, `id="dTpl" data-change="draftTpl" aria-label="Template"${extra}`);
+  X.ai = `<div id="dAi" class="cmp-ai" hidden>${F('What is it for?', inp('aiPurpose', '', 'text', 'id="dPurpose" placeholder="e.g. follow up on the purge quote, offer Thursday"'))}<button type="button" class="btn pri" data-act="draftGo" id="dGo">${ic('spark')}Write draft</button></div>`;
+  X.rte = rteBar('draftHtml');
+  X.editor = `<textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden aria-label="Claude's draft"></textarea><div id="draftHtml" class="mailprev rte cmp-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-input="cmpEd" data-ph="Write your message, or start from a template."></div>`;
+  const sigHtml = SIG.html ? sigClean(SIG.html).html : '', off = SIG.on ? '' : ' off';
+  const sw = label => `<label class="cmp-sw"><input type="checkbox" id="dSig" data-change="dSigT" ${SIG.on ? 'checked' : ''}><span class="cmp-swt" aria-hidden="true"></span>${label}</label>`;
+  const sigNone = '<p class="cmp-sig cmp-none">No email signature yet. Set one up in Settings → My email signature.</p>';
+  X.sigFold = !GRAPH ? '' : !SIG.html ? sigNone : `<div class="cmp-sig${off}" id="dSigBox"><div class="cmp-sigh">${sw('Signature')}<button type="button" class="cmp-lnk" data-act="dSigMore" id="dSigMore" data-l="Show all|Show less" aria-expanded="false">Show all</button></div><div class="mailprev sigprev cmp-sigp">${sigHtml}</div></div>`;
+  X.sigRow = !GRAPH ? '' : !SIG.html ? sigNone : `<div class="cmp-sigrow${off}" id="dSigBox"><div class="cmp-sigh">${sw(`<span class="cmp-sigt">Add my signature<small>${esc(sigSummary(sigHtml))}</small></span>`)}<button type="button" class="btn sm" data-act="dSigMore" id="dSigMore" data-l="Preview|Hide preview" aria-expanded="false">Preview</button></div><div class="mailprev sigprev cmp-sigp">${sigHtml}</div></div>`;
+  X.sigInline = !GRAPH ? '' : !SIG.html ? sigNone : `<div class="cmp-sigin${off}" id="dSigBox"><div class="mailprev sigprev cmp-sigp">${sigHtml}</div></div>`;
+  X.sigCmd = GRAPH && SIG.html ? `<label class="cmd-b cmd-tog" title="Add my signature to this email"><input type="checkbox" id="dSig" data-change="dSigT" ${SIG.on ? 'checked' : ''}>${ic('edit')}Signature</label>` : '';
+  X.files = GRAPH ? '<div id="dFiles" class="cmp-files"></div>' : '';
+  X.blanks = '<div class="cmp-blanks" id="dBlanks" role="group" aria-label="Blanks to fill in" hidden></div>';
+  X.hint = '<p class="sub" id="dHint"></p>';
+  X.journey = !jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk cmp-sw"><input type="checkbox" id="dJ" data-change="dJ"><span class="cmp-swt" aria-hidden="true"></span>Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : '';
+  X.note = '<div class="mailbar" id="dNote" hidden></div>';
+  X.attach = (cls = 'btn', label = 'Attach files') => GRAPH ? `<label class="${cls}" title="Attach files">${ic('clip')}${label}<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="${cls}" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`;
+  X.send = (cls = 'btn pri') => canWrite ? `<button type="button" class="${cls}" data-act="sendMail" id="dSend" title="Send (Ctrl+Enter)">${ic('mail')}Send</button>` : '';
+  X.editTpl = (cls = 'btn ghost') => `<button type="button" class="${cls}" data-act="tplManage">${ic('edit')}Edit templates</button>`;
+  X.copy = (cls = 'btn ghost', label = 'Copy message') => `<button type="button" class="${cls}" data-act="copyDraft" title="Copy the message">${ic('copy')}${label}</button>`;
+  X.tpls = tpls; X.pick = pick;
+  return X;
+}
+// template groups for the library, from the names (Spiro had no categories)
+const TPL_CATS = ['Purge', 'Recurring', 'Medical waste', 'Shred events', 'Spanish', 'Other'];
+const tplCat = n => /spanish|propuesta/i.test(n) ? 'Spanish' : /medical|\bmw\b|sharps|haz/i.test(n) ? 'Medical waste' : /recurring|^email \d/i.test(n) ? 'Recurring' : /event/i.test(n) ? 'Shred events' : /purge|jqp|follow ?up/i.test(n) ? 'Purge' : 'Other';
+function tplPreview(t){ const txt = String(t.body || '').replace(/<(br|\/p|\/div|\/li)[^>]*>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\{(\w+)\}/g, '…');
+  // the first real sentence: skip the greeting line ("Hello Brenda," or a fill-in greeting)
+  const line = txt.split('\n').map(x => x.replace(/…/g, '').replace(/\s+/g, ' ').trim()).find(x => x && !/^(hi|hello|hey|good (morning|afternoon|evening)|dear|greetings)\b/i.test(x) && !(/,$/.test(x) && x.split(' ').length <= 4) && /[a-z]{3}/i.test(x)) || ''; return line.length > 80 ? line.slice(0, 78) + '…' : line; }
+const CMP_BUILD = {
+  letter: X => `<div class="cmp">
+    <div class="cmp-paper">
+      <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
+      <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label>${X.cc('Cc')}</div>
+      <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
+      <div class="cmp-row cmp-subj">${X.subj}${X.copySubj}</div>
+      ${X.ai}
+      <div class="cmp-tools"><span class="cmp-tpl" title="Start from a template">${ic('doc')}${X.tplSel('Template')}</span>${X.rte}</div>
+      ${X.editor}${X.sigFold}${X.files}
+    </div>
+    ${X.blanks}${X.hint}${X.journey}${X.note}</div>`,
+  form: X => `<div class="cmp cmp-form">
+    <label class="cmp-tplbar">${ic('doc')}<span>Start from a template</span>${X.tplSel()}</label>
+    <div class="cmp-tofld"><div class="cmp-fld"><label for="dTo">To</label>${X.toSel ? `<div class="cmp-toline">${X.av}${X.toSel}</div>` : X.none}</div><div class="cmp-ccbtns">${X.ccB('+ ')}</div></div>
+    <div class="cmp-fld" id="dCcRow" hidden><label for="dCc">Cc</label>${X.cc('Cc')}</div>
+    <div class="cmp-fld" id="dBccRow" hidden><label for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
+    <div class="cmp-fld"><label for="draftSubj">Subject</label><div class="cmp-subjw">${X.subj}${X.copySubj}</div></div>
+    ${X.ai}
+    <div class="cmp-fld"><span class="cmp-lbl">Message</span><div class="cmp-box">${X.rte}${X.editor}</div></div>
+    ${X.blanks}${X.hint}${X.files}${X.sigRow}${X.journey}${X.note}</div>`,
+  outlook: X => `<div class="cmp cmp-ol">
+    <div class="cmp-cmd" role="toolbar" aria-label="Email">${X.send('btn pri cmd-send')}<span class="cmd-sep"></span>${X.attach('cmd-b', 'Attach')}<span class="cmd-b cmd-tpl" title="Start from a template">${ic('doc')}${X.tplSel('Template')}</span>${X.sigCmd}${X.copy('cmd-b', 'Copy')}</div>
+    ${X.blanks}
+    <div class="cmp-sheet-ol">
+      <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
+      <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label>${X.cc('Cc')}</div>
+      <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
+      <div class="cmp-row cmp-subj"><label class="cmp-k" for="draftSubj">Subject</label>${X.subj}${X.copySubj}</div>
+      ${X.ai}
+      <div class="cmp-tools">${X.rte}</div>
+      ${X.editor}${X.sigInline}${X.files}
+    </div>
+    ${X.hint}${X.journey}${X.note}</div>`,
+  library: X => {
+    const items = X.tpls.map(t => ({t, c: tplCat(t.name || '')}));
+    const cats = TPL_CATS.filter(c => items.some(i => i.c === c));
+    const nat = (a, b) => String(a.t.name).localeCompare(String(b.t.name), undefined, {numeric: true, sensitivity: 'base'});
+    return `<div class="cmp cmp-lib">
+    <nav class="cmp-libnav" aria-label="Templates">
+      <label class="cmp-libq">${ic('search')}<input id="dTplQ" placeholder="Search ${X.tpls.length} templates" aria-label="Search templates" autocomplete="off" data-input="cmpTplQ"></label>
+      <div class="cmp-libcats" role="group" aria-label="Kinds of template"><button type="button" class="on" data-act="cmpTplCat" data-c="">All</button>${cats.map(c => `<button type="button" data-act="cmpTplCat" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+      <div class="cmp-liblist" id="dTplList">${AI ? `<button type="button" class="cmp-libi" data-act="cmpTpl" data-id="__ai" data-c="" data-q="write with claude"><b>${ic('spark')}Write with Claude…</b><small>Describe the email and get a draft</small></button>` : ''}${cats.map(c => `<div class="cmp-libg" data-c="${esc(c)}"><div class="cmp-libh">${esc(c)}</div>${items.filter(i => i.c === c).sort(nat).map(({t}) => { const pv = tplPreview(t); return `<button type="button" class="cmp-libi${t.id === X.pick ? ' on' : ''}" data-act="cmpTpl" data-id="${esc(t.id)}" data-c="${esc(c)}" data-q="${esc((t.name + ' ' + pv).toLowerCase())}"${t.id === X.pick ? ' aria-current="true"' : ''}><b>${esc(t.name)}</b>${pv ? `<small>${esc(pv)}</small>` : ''}</button>`; }).join('')}</div>`).join('')}<p class="cmp-none" id="dTplNone" hidden>No templates match.</p></div>
+      ${X.editTpl('cmp-lnk cmp-libedit')}
+    </nav>
+    <div class="cmp-libmain">
+      <span hidden>${X.tplSel()}</span>
+      <div class="cmp-card">
+        <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
+        <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label>${X.cc('Cc')}</div>
+        <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
+        <div class="cmp-row cmp-subj"><label class="cmp-k" for="draftSubj">Subject</label>${X.subj}${X.copySubj}</div>
+      </div>
+      ${X.ai}${X.blanks}${X.hint}
+      <div class="cmp-card cmp-edcard"><div class="cmp-tools">${X.rte}</div>${X.editor}${X.sigRow}${X.files}</div>
+      ${X.journey}${X.note}
+    </div></div>`; },
+  dock: X => `<div class="cmp cmp-dock">
+    <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
+    <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label>${X.cc('Cc')}</div>
+    <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
+    <div class="cmp-row cmp-subj"><label class="cmp-k" for="draftSubj">Subject</label>${X.subj}${X.copySubj}</div>
+    <div class="cmp-tools"><span class="cmp-tpl" title="Start from a template">${ic('doc')}${X.tplSel('Template')}</span>${X.rte}</div>
+    ${X.ai}${X.editor}
+    <div class="cmp-dpad">${X.blanks}${X.hint}${X.files}${X.sigRow}${X.journey}${X.note}</div></div>`,
+};
+const CMP_FOOT = {
+  letter: X => `${X.editTpl('btn ghost')}<span class="cmp-fsp"></span>${X.copy('btn ghost')}${X.attach('btn')}${X.send()}`,
+  form: X => `${X.editTpl('btn ghost')}<span class="cmp-fsp"></span>${X.copy('btn')}${X.attach('btn')}${X.send()}`,
+  outlook: X => `${X.editTpl('btn ghost')}<span class="cmp-fsp"></span><span class="sub cmp-kbd">Ctrl+Enter sends</span>`,
+  library: X => `<span class="cmp-fsp"></span>${X.copy('btn')}${X.attach('btn')}${X.send()}`,
+  dock: X => `${X.attach('btn icon-only', '<span class="vh-sr">Attach files</span>')}${X.copy('btn icon-only', '<span class="vh-sr">Copy message</span>')}${X.editTpl('btn ghost')}<span class="cmp-fsp"></span>${X.send()}`,
+};
+// after the window is drawn: the layout switch in its title bar, docking, and the first look for blanks
+function cmpChrome(lay){
+  const m = $('#modal'), sh = $('#mform > .sh'); if (!m || !sh) return;
+  const close = sh.querySelector('[data-act="closeModal"]');
+  if (close && !sh.querySelector('.cmp-lay')) close.insertAdjacentHTML('beforebegin', `<label class="cmp-lay" title="Change how this window is laid out">${ic('cols')}<span class="vh-sr">Layout</span>${sel('cmpLay', CMP_LAYOUTS, lay, 'data-change="cmpLay" aria-label="Email window layout"')}</label>`);
+  const dock = lay === 'dock';
+  m.classList.toggle('dock', dock); document.documentElement.classList.toggle('cmp-docked', dock);
+  if (dock) { ui.modalPos = null; const f = $('#mform'); if (f) { f.style.transform = ''; f.classList.remove('moved'); } m.classList.remove('moved'); }
+  setTimeout(cmpBlanks, 0);
+  // reopened after a side trip (the window's Back step reopens it fresh): put back what was being written
+  if (ui.cmpStash && !ui.cmpRebuild) { const sn = ui.cmpStash; ui.cmpStash = null; setTimeout(() => cmpReopen(sn), 0); }
+}
+// everything typed so far, so the window can be redrawn (another layout, or brought back after a side trip)
+function cmpSnap(){ const v = id => { const el = document.getElementById(id); return el ? (el.type === 'checkbox' ? el.checked : el.value) : undefined; };
+  const ed = $('#draftHtml'), out = $('#draftOut');
+  return {args: ui.draftArgs, draft: {...ui.draft}, to: v('dTo'), cc: v('dCc'), bcc: v('dBcc'), subj: v('draftSubj'), html: ed ? ed.innerHTML : '', out: out ? out.value : '', aiMode: !ui.draftHtml, tpl: v('dTpl'), sig: v('dSig'), sigOpen: !!$('#dSigBox.open'), j: v('dJ'), jSel: v('dJSel'), jDays: v('dJDays'), files: ui.draftFiles || []}; }
+function cmpReopen(sn){ if (!sn || !sn.args) return; ui.cmpRebuild = true;
+  try { draftModal(...sn.args); } finally { ui.cmpRebuild = false; }
+  const set = (id, val) => { const el = document.getElementById(id); if (!el || val === undefined) return; if (el.type === 'checkbox') { if (el.checked !== val) { el.checked = val; el.dispatchEvent(new Event('change', {bubbles: true})); } } else el.value = val; };
+  set('dTo', sn.to); if (sn.to !== undefined && $('#dTo')) $('#dTo').dispatchEvent(new Event('change', {bubbles: true}));
+  ui.draft = {...ui.draft, ...sn.draft};
+  set('dTpl', sn.tpl); set('draftSubj', sn.subj);
+  for (const k of ['Cc', 'Bcc']) { set('d' + k, sn[k.toLowerCase()]); if (sn[k.toLowerCase()]) { const row = $(`#d${k}Row`), b = $(`#d${k}B`); if (row) row.hidden = false; if (b) b.hidden = true; } }
+  if (sn.aiMode) { applyTemplate('__ai'); set('draftOut', sn.out); } else setDraftBody(sn.html);
+  set('dSig', sn.sig); if (sn.sigOpen && !$('#dSigBox.open')) A.dSigMore();
+  set('dJ', sn.j); set('dJSel', sn.jSel); set('dJDays', sn.jDays);
+  ui.draftFiles = sn.files; paintDraftFiles(); cmpAvatar(); cmpBlanks(); cmpLibMark();
+}
+// ---------- blanks to fill in: [next date], [latest quote number]… are highlighted, and can be filled in from one place ----------
+const BLANK_RE = /\[([^\[\]\n]{1,40})\]/g;
+function cmpBlankNames(){ const ed = $('#draftHtml'), sj = $('#draftSubj'); if (!ed) return []; const txt = (ui.draftHtml ? elText(ed) : ($('#draftOut')?.value || '')) + '\n' + (sj ? sj.value : '');
+  return [...new Set([...txt.matchAll(BLANK_RE)].map(m => m[1].trim()).filter(x => x && !/^(x| )$/i.test(x)))]; }
+let cmpBlankT = 0;
+const cmpBlanksSoon = () => { clearTimeout(cmpBlankT); cmpBlankT = setTimeout(cmpBlanks, 250); };
+function cmpBlanks(){
+  const ed = $('#draftHtml'), bar = $('#dBlanks'); if (!ed || !bar) return;
+  if (window.CSS && CSS.highlights && window.Highlight) {   // highlight them in the message without changing what gets sent
+    const ranges = []; const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) for (const m of n.data.matchAll(BLANK_RE)) { const r = new Range(); r.setStart(n, m.index); r.setEnd(n, m.index + m[0].length); ranges.push(r); }
+    try { ranges.length ? CSS.highlights.set('pt-blank', new Highlight(...ranges)) : CSS.highlights.delete('pt-blank'); } catch {}
+  }
+  const names = cmpBlankNames(); const key = names.join('|');
+  if (!names.length) { bar.hidden = true; bar.innerHTML = ''; bar.dataset.k = ''; const h = $('#dHint'); if (h && /bracketed/.test(h.textContent)) h.textContent = ''; return; }
+  if (bar.dataset.k === key && !bar.hidden) return;   // don't redraw while someone is typing in one
+  bar.dataset.k = key; bar.hidden = false;
+  bar.innerHTML = `<span class="cmp-blt">${ic('bell')}${names.length === 1 ? '1 blank' : names.length + ' blanks'} to fill in</span>${names.slice(0, 4).map(n => `<label class="cmp-bl"><span>${esc(n.charAt(0).toUpperCase() + n.slice(1))}</span><input data-blank="${esc(n)}" data-change="cmpBlank" placeholder="Type it here" autocomplete="off"></label>`).join('')}`;
+}
+// put what was typed in place of every [blank] with that name, in the message and the subject
+function cmpFill(name, val){
+  const tok = '[' + name + ']', ed = $('#draftHtml');
+  if (ed && ui.draftHtml) { const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT); const hits = []; for (let n = w.nextNode(); n; n = w.nextNode()) if (n.data.includes(tok)) hits.push(n); for (const n of hits) n.data = n.data.split(tok).join(val); ed.dispatchEvent(new Event('input', {bubbles: true})); }
+  const out = $('#draftOut'); if (out && !ui.draftHtml) out.value = out.value.split(tok).join(val);
+  const sj = $('#draftSubj'); if (sj) sj.value = sj.value.split(tok).join(val);
+  const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.blank !== undefined && !(e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.dispatchEvent(new Event('change', {bubbles: true})); } });
+// the library's highlighted template follows the template in use
+function cmpLibMark(){ const id = $('#dTpl')?.value || ''; document.querySelectorAll('#dTplList .cmp-libi').forEach(b => { const on = b.dataset.id === id; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); }); }
+function cmpLibFilter(){ const q = ($('#dTplQ')?.value || '').trim().toLowerCase(), c = ui.tplCat || ''; let any = false;
+  document.querySelectorAll('#dTplList .cmp-libg').forEach(g => { let n = 0; g.querySelectorAll('.cmp-libi').forEach(b => { const ok = (!c || b.dataset.c === c) && (!q || b.dataset.q.includes(q)); b.hidden = !ok; if (ok) n++; }); g.hidden = !n; if (n) any = true; });
+  const none = $('#dTplNone'); if (none) none.hidden = any; }
 function draftModal(col, id, purpose, jopt, toAddr){
   const r = S[col][id]; if (!r) return;
   let companyId = col === 'companies' ? id : r.companyId, contact = null;
@@ -5323,29 +5646,14 @@ function draftModal(col, id, purpose, jopt, toAddr){
   else if (purpose && PURPOSE_TPL[purpose]) pick = PURPOSE_TPL[purpose];
   else if (col === 'deals') { const st = stage(r).k; pick = st === 'won' ? 't_thanks' : st === 'quoted' ? 't_quote_fu' : 't_inquiry'; }
   if (!tpls.some(t => t.id === pick)) pick = '';
-  openModal(jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : 'Email', `${jopt ? '<div class="jwin"><div class="jwin-main">' : ''}<div class="cmp">
-    <div class="cmp-paper">
-      <div class="cmp-row cmp-to">
-        <label class="cmp-k" for="dTo">To</label>
-        ${contacts.length ? `<span class="cmp-av" id="dAv" aria-hidden="true"></span><div class="cmp-v">${sel('contactId', contacts.flatMap(toOpts), ui.draft.contactId + '|' + (ui.draft.toAddr || '').toLowerCase(), 'id="dTo" data-change="draftTo"')}</div>` : '<p class="cmp-v cmp-none">No contacts on this account yet. Add one to send an email.</p>'}
-        <span class="cmp-ccb"><button type="button" class="cmp-lnk" data-act="dCcShow" data-k="Cc" id="dCcB">Cc</button><button type="button" class="cmp-lnk" data-act="dCcShow" data-k="Bcc" id="dBccB">Bcc</button></span>
-      </div>
-      <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label><div class="cmp-v acwrap">${inp('cc', '', 'text', 'id="dCc" placeholder="Name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdCc" role="listbox" hidden></ul></div></div>
-      <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label><div class="cmp-v acwrap">${inp('bcc', '', 'text', 'id="dBcc" placeholder="Name or email" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"')}<ul class="ac" id="acdBcc" role="listbox" hidden></ul></div></div>
-      <div class="cmp-row cmp-subj"><input id="draftSubj" placeholder="Subject" aria-label="Subject" autocomplete="off"><button type="button" class="icon-btn" data-act="copySubj" title="Copy the subject" aria-label="Copy the subject">${ic('copy')}</button></div>
-      <div id="dAi" class="cmp-ai" hidden>${F('What is it for?', inp('aiPurpose', '', 'text', 'id="dPurpose" placeholder="e.g. follow up on the purge quote, offer Thursday"'))}<button type="button" class="btn pri" data-act="draftGo" id="dGo">${ic('spark')}Write draft</button></div>
-      <div class="cmp-tools">
-        <span class="cmp-tpl" title="Start from a template">${ic('doc')}${sel('tpl', [['', 'Template'], ...tpls.map(t => [t.id, t.name]), ...(AI ? [['__ai', 'Write with Claude…']] : [])], pick, 'id="dTpl" data-change="draftTpl" aria-label="Template"')}</span>
-        ${rteBar('draftHtml')}
-      </div>
-      <textarea id="draftOut" rows="13" placeholder="Claude's draft appears here." hidden aria-label="Claude's draft"></textarea><div id="draftHtml" class="mailprev rte cmp-body" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-ph="Write your message, or start from a template."></div>
-      ${GRAPH ? (SIG.html ? `<div class="cmp-sig${SIG.on ? '' : ' off'}" id="dSigBox"><div class="cmp-sigh"><label class="cmp-sw"><input type="checkbox" id="dSig" data-change="dSigT" ${SIG.on ? 'checked' : ''}><span class="cmp-swt" aria-hidden="true"></span>Signature</label><button type="button" class="cmp-lnk" data-act="dSigMore" id="dSigMore" aria-expanded="false">Show all</button></div><div class="mailprev sigprev cmp-sigp">${sigClean(SIG.html).html}</div></div>` : `<p class="cmp-sig cmp-none">No email signature yet. Set one up in Settings → My email signature.</p>`) : ''}
-      ${GRAPH ? `<div id="dFiles" class="cmp-files"></div>` : ''}
-    </div>
-    <p class="sub" id="dHint"></p>
-    ${!jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk cmp-sw"><input type="checkbox" id="dJ" data-change="dJ"><span class="cmp-swt" aria-hidden="true"></span>Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : ''}
-    <div class="mailbar" id="dNote" hidden></div></div>${jopt ? `</div>${acctCard(companyId, contact && contact.id)}</div>` : ''}`, null, null,
-    {wide: true, foot: `<button type="button" class="btn ghost" data-act="tplManage" style="margin-right:auto">${ic('edit')}Edit templates</button><button type="button" class="btn ghost" data-act="copyDraft">${ic('copy')}Copy message</button>${GRAPH ? `<label class="btn">${ic('clip')}Attach files<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="btn" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`}${canWrite ? `<button type="button" class="btn pri" data-act="sendMail" id="dSend" title="Send (Ctrl+Enter)">${ic('mail')}Send</button>` : ''}`});
+  ui.draftArgs = [col, id, purpose, jopt, toAddr]; ui.blankOk = false;
+  const lay = cmpLayout(jopt);
+  const title = jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : (contact && ctMail(contact) ? 'Email ' + toName(contact) : 'Email');
+  const X = cmpParts({contacts, tpls, pick, jopt, lay});
+  const body = CMP_BUILD[lay](X);
+  openModal(title, `${jopt ? '<div class="jwin"><div class="jwin-main">' : ''}${body}${jopt ? `</div>${acctCard(companyId, contact && contact.id)}</div>` : ''}`, null, null,
+    {wide: true, cls: 'cmp-sheet cmp-s-' + lay + (lay === 'library' ? ' cmp-xl' : ''), foot: CMP_FOOT[lay](X)});
+  cmpChrome(lay);
   cmpAvatar();
   if (pick) applyTemplate(pick);
   if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); setDraftBody(jopt.html ? cleanHtml(fillTemplate(jopt.body, data, true)) : textToHtml(fillTemplate(jopt.body, data))); }
@@ -5407,6 +5715,7 @@ function applyTemplate(tid){
   setDraftBody(t.html ? cleanHtml(fillTemplate(t.body, data, true)) : textToHtml(fillTemplate(t.body, data)));
   const missing = [...new Set((t.subject + ' ' + t.body).match(/\{(\w+)\}/g) || [])].map(x => x.slice(1, -1).toLowerCase()).map(k => FIELD_ALIAS[k] || k).filter(k => k in data && !data[k] && k !== 'first_name');
   if (hint) hint.textContent = missing.length ? 'Fill in the bracketed parts before sending.' : '';
+  ui.blankOk = false; const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks(); cmpLibMark();
 }
 const elText = el => el ? (el.innerText ?? el.textContent ?? '') : '';
 const STAFF = [['Jason Quillen','jason@allpointsprotects.com'],['Kate Dillon','kate@allpointsprotects.com'],['Ann Ross','ann@allpointsprotects.com']];
@@ -5484,6 +5793,8 @@ async function sendMail(){
   if (f.bad) return draftNote(`“${esc(f.bad)}” isn't a valid email address.`, true);
   if (!f.subject) { $('#draftSubj').focus(); return draftNote('Add a subject.', true); }
   if (!f.hasBody) return draftNote('Write a message first.', true);
+  const left = cmpBlankNames();
+  if (left.length && !ui.blankOk) { ui.blankOk = true; const inp_ = document.querySelector('#dBlanks input'); if (inp_) inp_.focus(); return draftNote(`<span>“[${esc(left[0])}]”${left.length > 1 ? ` and ${left.length - 1} more` : ''} still ${left.length > 1 ? 'need' : 'needs'} filling in. Fill ${left.length > 1 ? 'them' : 'it'} in above, or click <b>Send</b> again to send it as is.</span>`, true); }
   if (!MCP) return draftNote(mcpMsg(), true);
   let {html, lost} = outlookHtml(); let track = null;
   if (lost && !ui.sendOk) { ui.sendOk = true; return draftNote('<span>Heads up: Outlook will remove the images and colored text in this message, including your signature logos. Click <b>Send</b> again to send it anyway, or use <b>Copy message</b> and paste it into Outlook to keep them.</span>', true); }
@@ -6581,7 +6892,9 @@ const A = {
   emailOpen: d => emailOpen(d),
   emailFull: () => { EMV.full = !EMV.full; emailPaint(); },
   dCcShow: d => { const row = $(`#d${d.k}Row`), b = $(`#d${d.k}B`); if (row) row.hidden = false; if (b) b.hidden = true; const f = $(`#d${d.k}`); if (f) f.focus(); },
-  dSigMore: () => { const box = $('#dSigBox'), b = $('#dSigMore'); if (!box) return; const open = box.classList.toggle('open'); if (b) { b.textContent = open ? 'Show less' : 'Show all'; b.setAttribute('aria-expanded', open); } },
+  dSigMore: () => { const box = $('#dSigBox'), b = $('#dSigMore'); if (!box) return; const open = box.classList.toggle('open'); if (b) { const [a, z] = (b.dataset.l || 'Show all|Show less').split('|'); b.textContent = open ? z : a; b.setAttribute('aria-expanded', open); } },
+  cmpTpl: d => { const s_ = $('#dTpl'); if (s_) s_.value = d.id; applyTemplate(d.id); cmpLibMark(); if (d.id !== '__ai') setTimeout(() => rteFocus('draftHtml'), 30); },
+  cmpTplCat: (d, el) => { ui.tplCat = d.c || ''; el.parentElement.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); cmpLibFilter(); },
   emailCopy: () => { const t = emailPlain(); if (t) copyText(t); else toast('Nothing to copy yet.', 'bad'); },
   emailReply: () => {
     const e = {...EMV}; const addr = (String(e.inbound ? e.from : (e.to || [])[0] || '').match(/<([^>]+)>/) || [])[1] || (String(e.inbound ? e.from : (e.to || [])[0] || '').includes('@') ? String(e.inbound ? e.from : e.to[0]).trim() : '');
@@ -6655,8 +6968,12 @@ const CHANGE = {
   jTplFill: el => { const t = templates().find(x => x.id === el.value); const box = el.closest('.jstep'); if (t && box) { box.querySelector('input[name="step_subject[]"]').value = t.subject; box.querySelector('textarea').value = t.body; } el.value = ''; },
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
   tplFmt: () => updTplPrev(),
+  cmpLay: el => { const sn = cmpSnap(); LOOK.compose = el.value; saveLook(); cmpReopen(sn); },
+  cmpEd: () => { ui.blankOk = false; cmpBlanksSoon(); },
+  cmpTplQ: () => cmpLibFilter(),
+  cmpBlank: el => { const v = el.value.trim(); if (v) cmpFill(el.dataset.blank, v); },
   dSigT: el => { const box = $('#dSigBox'); if (box) box.classList.toggle('off', !el.checked); },
-  draftTo: el => { setTimeout(cmpAvatar, 0); if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
+  draftTo: el => { setTimeout(() => { cmpAvatar(); const h = $('#mform > .sh h3'), ct = ui.draft && S.contacts[ui.draft.contactId]; if (h && /^Email\b/.test(h.textContent) && ct) h.textContent = 'Email ' + toName(ct); }, 0); if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
   dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = CLOSED.includes(el.value); const closed = CLOSED.includes(el.value); const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; ['#dfGap1','#dfGap2'].forEach(x => { const g = $(x); if (g) g.hidden = closed; }); const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
   // New opportunity: picking the opportunity type fills in its usual service fields. A field the person set themselves is never overwritten;
   // switching to another type clears only what was filled in automatically.
