@@ -1188,11 +1188,6 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
 .cmp-fsp{flex:1}
 .sf .cmp-kbd{align-self:center}
 .sheet.cmp-xl{width:min(1240px,calc(100% - 32px))}
-/* the layout switch in the title bar */
-.cmp-lay{display:inline-flex;align-items:center;gap:4px;margin-left:auto;margin-right:4px;color:var(--muted)}
-.cmp-lay .ic{width:16px;height:16px}
-.cmp-lay select{width:auto;height:32px;padding:0 24px 0 8px;border:1px solid transparent;background-color:transparent;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer}
-.cmp-lay select:hover{border-color:var(--line);color:var(--fg)}
 #mform > .sh{gap:6px}
 /* blanks: highlighted in the message, filled in from the bar */
 ::highlight(pt-blank){background-color:#FFE680;color:#5A4100}
@@ -1308,10 +1303,6 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
   .cmp-libnav{position:static;max-height:300px}
   .cmp-tofld{grid-template-columns:minmax(0,1fr)}.cmp-ccbtns{padding:0}
   .cmp-tplbar{flex-wrap:wrap}.cmp-form .cmp-tplbar select{flex-basis:100%}
-  /* the layout picker shrinks to its icon; tapping it still opens the list */
-  .cmp-lay{position:relative;width:36px;height:36px;justify-content:center;margin-right:0}
-  .cmp-lay select{position:absolute;inset:0;width:100%;height:100%;padding:0;color:transparent;border-color:transparent;background:transparent}
-  .cmp-lay select option{color:var(--fg)}
 }
 #mform.cmp-sheet > .sh h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -2543,7 +2534,7 @@ window.addEventListener('popstate', e => {
 });
 
 // ---------- appearance: each person's own look, saved to their login ----------
-const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form'};
+const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show'};
 const LOOKS = {"inlet": {"name": "Inlet", "note": "Calm coastal colors, menu across the top", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700", "sw": ["#EDF3F4", "#0B3442", "#127C8C", "#A6DCCF", "#F6DFAE"], "dark": false}, "custody": {"name": "Chain of Custody", "note": "Certificate-style, serious and secure", "fonts": "Newsreader:opsz,wght@6..72,400..700&family=Source+Sans+3:wght@400..700", "sw": ["#F8FAF7", "#123A2B", "#1E5A43", "#9C7A33", "#9E2F27"], "dark": false}, "crosscut": {"name": "Cross-Cut", "note": "Bold, bright and fun", "fonts": "Unbounded:wght@500..800&family=Onest:wght@400..800", "sw": ["#FFFFFF", "#15172E", "#2F4BE8", "#FFE14D", "#FF8FC4"], "dark": false}, "dispatch": {"name": "Dispatch", "note": "Dispatch board with job tickets", "fonts": "Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", "sw": ["#ECEEEC", "#1F252B", "#F2661C", "#F5C232", "#2A68CF"], "dark": false}, "porch": {"name": "Front Porch", "note": "Warm, friendly and easy", "fonts": "Outfit:wght@400..800", "sw": ["#F4F2FB", "#5A47D6", "#261E3D", "#FFB48F", "#FFE6A1"], "dark": false}, "night": {"name": "Night Shift", "note": "Dark, compact and keyboard-friendly", "fonts": "Sora:wght@400..700&family=Inter:wght@400..700", "sw": ["#0E171D", "#1B2B35", "#5FD0B0", "#EDB25A", "#EF7C69"], "dark": true}};
 const ACCENTS = [['', 'Teal (default)', '#0D6B61'], ['#2563EB', 'Blue', '#2563EB'], ['#1E3A8A', 'Navy', '#1E3A8A'], ['#7C3AED', 'Purple', '#7C3AED'], ['#DB2777', 'Pink', '#DB2777'], ['#DC2626', 'Red', '#DC2626'], ['#EA580C', 'Orange', '#EA580C'], ['#15803D', 'Green', '#15803D'], ['#475569', 'Slate', '#475569'], ['#111827', 'Black', '#111827']];
 let LOOK = {...LOOK_DEFAULT};
@@ -2600,6 +2591,7 @@ function lookModal(){
       ${F('Spacing', seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
       ${F('Font', seg('font', [['default', (LOOK.look || 'default') === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
       ${F('Email window', seg('compose', CMP_LAYOUTS))}
+      ${F('Sidebar calendar', seg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}
       ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
     </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
 }
@@ -2840,10 +2832,10 @@ function navHtml(){
 }
 
 
-// ---------- the month calendar in the sidebar (Settings → You → Calendar) ----------
+// ---------- the month calendar in the sidebar (Settings → Appearance → Sidebar calendar) ----------
 // Like the clock calendar in Windows, plus your own schedule: a dot for days with reminders, a dash for scheduled services.
 // Click a day for what's on it, to copy the date ("Thursday, November 13"), or to start a reminder on it.
-const calOn = () => prefGet('mcal', true);
+const calOn = () => LOOK.calendar !== 'hide';   // Settings → Appearance → Sidebar calendar
 const calLong = ds => { const d = parseYmd(ds); return d.toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', ...(d.getFullYear() !== new Date().getFullYear() ? {year: 'numeric'} : {})}); };
 const calMine = x => !ui.mine || x === ME.id;
 const calMarks = (() => { let key = '', val = {}; return (y, m) => { const k = DV + '|' + y + '|' + m + '|' + (ui.mine ? 1 : 0) + '|' + (ME.id || ''); if (k !== key) { key = k; val = {};
@@ -4690,7 +4682,6 @@ function settingsModal(){
       row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
       GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
       row('spark', 'Appearance', 'Colors, mode, text size, spacing, font and start page.', btn('look', 'Customize')),
-      row('clock', 'Calendar', 'A month calendar in the sidebar, above Settings, with your reminders and services.', btn('calToggle', calOn() ? 'Hide calendar' : 'Show calendar')),
       theoMe() ? row('spark', 'Theo', 'Your pixel cat in the sidebar, above Settings.', btn('theoToggle', prefGet('theo', true) ? 'Hide Theo' : 'Show Theo')) : '',
       adm ? '' : demo]],
     ['team', 'Team', 'users', 'Shared with everyone on the team.', [
@@ -5696,11 +5687,9 @@ const CMP_FOOT = {
   library: X => `<span class="cmp-fsp"></span>${X.copy('btn')}${X.attach('btn')}${X.send()}`,
   dock: X => `${X.attach('btn icon-only', '<span class="vh-sr">Attach files</span>')}${X.copy('btn icon-only', '<span class="vh-sr">Copy message</span>')}${X.editTpl('btn ghost')}<span class="cmp-fsp"></span>${X.send()}`,
 };
-// after the window is drawn: the layout switch in its title bar, docking, and the first look for blanks
+// after the window is drawn: docking, and the first look for blanks (the layout itself is chosen in Settings → Appearance)
 function cmpChrome(lay){
   const m = $('#modal'), sh = $('#mform > .sh'); if (!m || !sh) return;
-  const close = sh.querySelector('[data-act="closeModal"]');
-  if (close && !sh.querySelector('.cmp-lay')) close.insertAdjacentHTML('beforebegin', `<label class="cmp-lay" title="Change how this window is laid out">${ic('cols')}<span class="vh-sr">Layout</span>${sel('cmpLay', CMP_LAYOUTS, lay, 'data-change="cmpLay" aria-label="Email window layout"')}</label>`);
   const dock = lay === 'dock';
   m.classList.toggle('dock', dock); document.documentElement.classList.toggle('cmp-docked', dock);
   if (dock) { ui.modalPos = null; const f = $('#mform'); if (f) { f.style.transform = ''; f.classList.remove('moved'); } m.classList.remove('moved'); }
@@ -6826,7 +6815,6 @@ const A = {
   calClose: () => calClose(),
   calCopy: d => { copyText(calLong(d.d)); },
   calUse: d => { const ins = [...document.querySelectorAll('#dBlanks input')]; const inp_ = ins.find(i => /date|day|when/i.test(i.dataset.blank) && !i.value) || ins.find(i => !i.value) || ins[0]; if (inp_) { cmpFill(inp_.dataset.blank, calLong(d.d)); toast('Added to the email'); } },
-  calToggle: (d, el) => { const on = !calOn(); prefSet('mcal', on); el.textContent = on ? 'Hide calendar' : 'Show calendar'; render(); toast(on ? 'The calendar is back in the sidebar' : 'Calendar hidden. Show it again from Settings anytime.'); },
   theoToggle: (d, el) => { const on = !prefGet('theo', true); prefSet('theo', on); el.textContent = on ? 'Hide Theo' : 'Show Theo'; render(); toast(on ? 'Theo is back' : 'Theo is hidden. Show him again from Settings anytime.'); },
   go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
@@ -7103,7 +7091,6 @@ const CHANGE = {
   jTplFill: el => { const t = templates().find(x => x.id === el.value); const box = el.closest('.jstep'); if (t && box) { box.querySelector('input[name="step_subject[]"]').value = t.subject; box.querySelector('textarea').value = t.body; } el.value = ''; },
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
   tplFmt: () => updTplPrev(),
-  cmpLay: el => { const sn = cmpSnap(); LOOK.compose = el.value; saveLook(); cmpReopen(sn); },
   cmpEd: () => { ui.blankOk = false; cmpBlanksSoon(); },
   cmpTplQ: () => cmpLibFilter(),
   cmpBlank: el => { const v = el.value.trim(); if (v) cmpFill(el.dataset.blank, v); },
