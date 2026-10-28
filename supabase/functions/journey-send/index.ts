@@ -118,7 +118,9 @@ async function mergeData(e: Rec, ct: Rec, owner: Rec, needsDeal: boolean) {
   }
   const h = local().hour;
   const total = q ? (q.total != null ? +q.total : (q.items || []).reduce((t: number, i: Rec) => t + (+i.qty || 0) * (+i.price || 0), 0)) : 0;
-  const svc = deal ? (deal.serviceType && deal.serviceType !== "Chat - Unknown" ? deal.serviceType : deal.name || "") : "";
+  // several service types read as "shredding and hard drive/ media" (same as the app)
+  const types = String(deal?.serviceType || "").split(",").map((x: string) => x.trim()).filter((x: string) => x && x !== "Chat - Unknown").map((x: string) => x.toLowerCase());
+  const svc = deal ? (types.length ? (types.length < 2 ? types[0] : types.slice(0, -1).join(", ") + " and " + types[types.length - 1]) : deal.name || "") : "";
   return {
     greeting: h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening",
     first_name: ct.firstName || "", last_name: ct.lastName || "", contact_name: pname(ct), company: co.name || "",
