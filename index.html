@@ -3610,7 +3610,12 @@ function closeModal(){ imgPopClose(); const m = $('#modal'); const wasCmp = !!m.
   if (wasCmp) ui.cmpStash = null; else if (ui.cmpStash) { const sn = ui.cmpStash; ui.cmpStash = null; setTimeout(() => cmpReopen(sn), 0); } ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
-const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
+const inp = (name, val='', type='text', extra='') => `<input name="${name}" type="${type}" value="${esc(val)}"${/autocomplete=/.test(extra) ? '' : ` autocomplete="${AF_OFF}"`} ${extra}>`;
+/* Edge ignores autocomplete=off on plain boxes but honours new-password (a text box with it gets no saved-info list and no password offer). */
+const AF_OFF = /Edg\//.test(navigator.userAgent) ? 'new-password' : 'off';
+/* No browser "saved info" lists on our own boxes: before a box is clicked or focused, mark it autocomplete=off (sign-in boxes keep theirs). */
+const noAutofill = e => { const t = e.composedPath ? e.composedPath()[0] : e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') && (!t.hasAttribute('autocomplete') || t.getAttribute('autocomplete') === 'off')) { t.setAttribute('autocomplete', AF_OFF); if (t.form && !t.form.hasAttribute('autocomplete')) t.form.setAttribute('autocomplete', 'off'); } };
+document.addEventListener('pointerdown', noAutofill, true); document.addEventListener('focusin', noAutofill, true);
 const ta = (name, val='', rows=3) => `<textarea name="${name}" rows="${rows}">${esc(val)}</textarea>`;
 const sel = (name, opts, cur, extra='') => `<select name="${name}" ${extra}>${opts.map(o => { const [v,l] = Array.isArray(o) ? o : [o,o]; return `<option value="${esc(v)}" ${String(v) === String(cur ?? '') ? 'selected' : ''}>${esc(l)}</option>`; }).join('')}</select>`;
 const coOpts = (none='— None —') => [['', none], ...L('companies').sort(byName).map(c => [c.id, c.name])];
