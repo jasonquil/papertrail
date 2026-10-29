@@ -77,9 +77,9 @@ p{margin:0}
 .theo-room .th-hud:hover,.theo-room .th-hud[aria-expanded="true"]{background:var(--surface-2)}
 .theo-room .th-hearts{display:flex;gap:2px}
 .theo-room .th-hearts canvas{width:12px;height:11px;image-rendering:pixelated}
-.theo-room .th-cat{position:absolute;bottom:9px;left:0;width:88px;height:84px;image-rendering:pixelated;cursor:pointer;will-change:transform}
+.theo-room .th-cat{position:absolute;bottom:-12px;left:0;z-index:2;width:88px;height:96px;image-rendering:pixelated;cursor:pointer;will-change:transform}
 .theo-room .th-cat:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
-.theo-room .th-bub{position:absolute;bottom:102px;left:0;max-width:200px;background:var(--th-bub);color:var(--th-ink);font:500 .74rem/1.25 var(--th-font);padding:5px 8px;border:2px solid var(--th-ink);box-shadow:3px 3px 0 var(--th-ink);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:2}
+.theo-room .th-bub{position:absolute;bottom:60px;left:0;max-width:200px;background:var(--th-bub);color:var(--th-ink);font:500 .74rem/1.25 var(--th-font);padding:5px 8px;border:2px solid var(--th-ink);box-shadow:3px 3px 0 var(--th-ink);opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;z-index:2}
 .theo-room .th-bub.on{opacity:1;transform:none}
 .theo-room .th-bub::after{content:"";position:absolute;bottom:-8px;left:var(--tail,20px);width:8px;height:8px;background:var(--th-bub);border:2px solid var(--th-ink);border-top:0;border-left:0;transform:skewX(30deg)}
 .theo-room .th-card{position:absolute;left:6px;right:6px;top:22px;background:var(--th-bub);color:var(--th-ink);border:2px solid var(--th-ink);box-shadow:3px 3px 0 var(--th-ink);padding:8px 10px;font:500 .74rem/1.35 var(--th-font);z-index:3}
@@ -94,7 +94,10 @@ p{margin:0}
 @keyframes thFloat{0%{opacity:0}20%{opacity:1}to{transform:translate(14px,-30px);opacity:0}}
 @media (max-width:820px){.theo-room{display:none}}
 html[data-look="inlet"] .theo-room{display:none}
-@container (max-height:150px){.theo-room>*{display:none}}   /* not enough empty space in the sidebar: he stays out of the way */
+@container (max-height:92px){.theo-room .th-hud,.theo-room .th-card,.theo-room .th-bub{display:none}}   /* tight sidebar: just Theo, lying on the calendar */
+@container (max-height:30px){.theo-room>*{display:none}}
+.theo-room .th-floor{display:none}
+.theo-room{margin-bottom:-18px}   /* reach down to the calendar's top line: that's the ledge he lies on */
 @media (prefers-reduced-motion:reduce){.theo-room .th-fx{display:none}.theo-room .th-bub{transition:none}}
 
 main{overflow:auto;min-width:0}
@@ -2661,6 +2664,16 @@ function thFace(eyes, mouth, ears){
   if (ears === 'down') { r[0] = r[1] = '......................'; r[2] = 'oo..............oo....'; r[3] = 'obp' + 'o'.repeat(12) + 'pbo....'; }
   return r;
 }
+// Theo lying on top of the sidebar calendar, one front paw hanging over its edge (the ledge is between rows 20 and 21)
+const TH_LOUNGE = Array(10).fill('......................').concat(["............o....o....", "...........obo..obo...", "...ooooooo.obpoopbbo..", "..obdbbdbbobdbbdbbbbo.", ".obdbbdbbdbbbkbbbbkbo.", ".obbdbbdbbobbkbbbbkbo.", "odbbdbbdbbobbbbbbbbbbo", "obbbbbbbbbbobbbbnbbbo.", "obbbbbbbbbbollllllllo.", ".oddddddddddoollllloo.", "..ooooooooooolloooooo.", ".............olo......", ".............olo......", ".............ooo......"]);
+function thLounge(eyes){
+  const r = TH_LOUNGE.slice();
+  if (eyes === 'closed' || eyes === 'sad') { for (const x of [13, 18]) { thSet(r, 14, x, 'b'); thSet(r, 15, x, 'b'); }
+    if (eyes === 'closed') for (const x of [12, 13, 17, 18]) thSet(r, 15, x, 'k');
+    else { for (const x of [13, 18]) thSet(r, 15, x, 'k'); thSet(r, 14, 12, 'k'); thSet(r, 14, 19, 'k'); } }
+  return r;
+}
+const TH_PAD = rows => rows.concat(['......................', '......................', '......................']);   // standing sprites end on the ledge row
 const TH_HEART = [".oo.oo.", "ohhohho", "ohhhhho", ".ohhho.", "..oho..", "...o..."];
 const TH = {x: 40, dir: 1, state: 'sit', until: 0, target: 40, speed: 16, petUntil: 0, li: 0, H: null, M: null, st: null, drawn: '', el: null, raf: 0, statAt: 0, talkAt: 0, zAt: 0, logged: null};
 const thMood = h => h >= 75 ? 'happy' : h >= 45 ? 'fine' : h >= 20 ? 'sad' : 'sleepy';
@@ -2709,7 +2722,7 @@ function thHeart(fill){
 }
 function thMount(room){
   TH.el = room; TH.drawn = '';
-  room.innerHTML = `<button class="th-hud" type="button" aria-expanded="false">THEO <span class="th-hearts"></span></button><div class="th-card" hidden></div><div class="th-bub" role="status" aria-live="polite"></div><canvas class="th-cat" width="22" height="21" tabindex="0" role="img" aria-label="Theo the cat. Click to pet him"></canvas><div class="th-floor"></div>`;
+  room.innerHTML = `<button class="th-hud" type="button" aria-expanded="false">THEO <span class="th-hearts"></span></button><div class="th-card" hidden></div><div class="th-bub" role="status" aria-live="polite"></div><canvas class="th-cat" width="22" height="24" tabindex="0" role="img" aria-label="Theo the cat. Click to pet him"></canvas><div class="th-floor"></div>`;
   const q = s => room.querySelector(s);
   q('.th-cat').addEventListener('click', thPet);
   q('.th-cat').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); thPet(); } });
@@ -2741,14 +2754,14 @@ function thUpdate(force){
 function thSay(text, ms = 4200){
   const room = TH.el; if (!room) return; const b = room.querySelector('.th-bub'); if (!b) return;
   b.textContent = text; b.classList.add('on');
-  const rw = room.clientWidth, bw = b.offsetWidth, left = Math.max(4, Math.min(rw - bw - 4, TH.x + 44 - bw / 2));
-  b.style.left = left + 'px'; b.style.setProperty('--tail', Math.max(8, Math.min(bw - 18, TH.x + 38 - left)) + 'px');
+  const rw = room.clientWidth, bw = b.offsetWidth, left = Math.max(4, Math.min(rw - bw - 4, TH.x + 60 - bw / 2));
+  b.style.left = left + 'px'; b.style.setProperty('--tail', Math.max(8, Math.min(bw - 18, TH.x + 60 - left)) + 'px');
   clearTimeout(thSay.t); thSay.t = setTimeout(() => b.classList.remove('on'), ms); TH.talkAt = Date.now();
 }
 function thTalk(){ if (!TH.st) return; const L = thLines(TH.st); thSay(L[TH.li % L.length]); TH.li++; }
 function thFx(text, z){
   if (!TH.el) return; const e = document.createElement('span'); e.className = 'th-fx' + (z ? ' z' : ''); e.textContent = text;
-  e.style.left = (TH.x + (z ? 60 : 28 + Math.random() * 26)) + 'px'; e.style.bottom = (z ? 60 : 92) + 'px';
+  e.style.left = (TH.x + (z ? 66 : 44 + Math.random() * 26)) + 'px'; e.style.bottom = (z ? 40 : 46) + 'px';
   TH.el.appendChild(e); setTimeout(() => e.remove(), 2600);
 }
 function thPet(){
@@ -2772,21 +2785,21 @@ function thTick(now){
   if (now > TH.petUntil) {
     if (TH.state === 'walk') { TH.x += TH.dir * TH.speed * dt; if ((TH.dir > 0 && TH.x >= TH.target) || (TH.dir < 0 && TH.x <= TH.target)) { TH.x = TH.target; TH.state = 'sit'; TH.until = now + 2000 + Math.random() * 3000; } }
     else if (now > TH.until) {
-      if (TH.M === 'sad' || TH.M === 'sleepy' || thReduce()) { TH.state = TH.M === 'sleepy' ? 'sleep' : 'sit'; TH.until = now + 4000; }
-      else if (TH.state !== 'walk' && Math.random() < (TH.M === 'happy' ? .7 : .45)) { TH.state = 'walk'; TH.target = 4 + Math.random() * (maxX - 4); TH.dir = TH.target > TH.x ? 1 : -1; TH.speed = TH.M === 'happy' ? 16 : 10; }
-      else { TH.state = 'sit'; TH.until = now + (TH.M === 'happy' ? 2500 : 4500) + Math.random() * 3000; }
+      if (TH.M === 'sad' || TH.M === 'sleepy' || thReduce() || room.clientHeight < 46) { TH.state = 'sit'; TH.until = now + 4000; }   // no room to stand: he stays lying down
+      else if (TH.state !== 'walk' && Math.random() < (TH.M === 'happy' ? .35 : .15)) { TH.state = 'walk'; TH.target = 4 + Math.random() * (maxX - 4); TH.dir = TH.target > TH.x ? 1 : -1; TH.speed = TH.M === 'happy' ? 16 : 10; }
+      else { TH.state = 'sit'; TH.until = now + (TH.M === 'happy' ? 6000 : 9000) + Math.random() * 6000; }   // mostly lounging on the calendar
     }
   }
   TH.x = Math.max(4, Math.min(maxX, TH.x));
   const blink = now % 4200 < 160, step = Math.floor(now / 220) % 2;
   let key, rows, flip = false;
-  if (now < TH.petUntil) { key = 'pet'; rows = () => thFace('blink', 'smile'); }
-  else if (TH.state === 'walk') { key = 'w' + step + TH.dir; rows = () => TH_WALK[step]; flip = TH.dir < 0; }
-  else if (TH.state === 'sleep') { key = 'z'; rows = () => TH_SLEEP; }
-  else if (TH.M === 'sad') { key = 's' + blink; rows = () => thFace(blink ? 'blink' : 'sad', 'frown', 'down'); }
-  else { const mo = TH.M === 'happy' ? 'smile' : 'flat'; key = 'f' + blink + mo; rows = () => thFace(blink ? 'blink' : 'open', mo); }
+  if (now < TH.petUntil) { key = 'pet'; rows = () => thLounge('closed'); }
+  else if (TH.state === 'walk') { key = 'w' + step + TH.dir; rows = () => TH_PAD(TH_WALK[step]); flip = TH.dir < 0; }
+  else if (TH.M === 'sleepy') { key = 'z'; rows = () => thLounge('closed'); }
+  else if (TH.M === 'sad') { key = 's' + blink; rows = () => thLounge(blink ? 'closed' : 'sad'); }
+  else { key = 'f' + blink; rows = () => thLounge(blink ? 'closed' : 'open'); }
   const cv = room.querySelector('.th-cat'); if (!cv) return;
-  if (key !== TH.drawn) { TH.drawn = key; const g = cv.getContext('2d'); g.clearRect(0, 0, 22, 21);
+  if (key !== TH.drawn) { TH.drawn = key; const g = cv.getContext('2d'); g.clearRect(0, 0, 22, 24);
     rows().forEach((row, y) => { for (let x = 0; x < row.length; x++) { const c = TH_PAL[row[x]]; if (!c) continue; g.fillStyle = c; g.fillRect(flip ? 21 - x : x, y, 1, 1); } }); }
   const tf = `translate(${Math.round(TH.x)}px,${TH.state === 'walk' && step ? -3 : 0}px)`; if (tf !== TH.tf) { TH.tf = tf; cv.style.transform = tf; }   // only touch the page when he actually moved
   const t = Date.now();
@@ -4022,7 +4035,7 @@ function companyForm(id){
       const dup = findDupCompany(d.name, d.phone, id);
       if (dup) { dupWarn(`${esc(dup.name)} is already in the CRM${norm(dup.name) === norm(d.name) ? '' : ' with this phone number'}.`, 'companies', dup.id); return false; }
       const ok = await put('companies', nid, {...(id ? S.companies[id] : {}), ...d});
-      if (ok && !id) { ui.detail = {col:'companies', id:nid}; toast('Account added'); schedule(); setTimeout(() => contactForm(null, {co:nid, coName:d.name, flow:1}), 250); }
+      if (ok && !id) { toast('Account added'); afterModal(() => { A.coPage({id: nid}); setTimeout(() => contactForm(null, {co:nid, coName:d.name, flow:1}), 250); }); }   // land on the new account's page, with step 2 on top
       return ok;
     });
 }
@@ -4054,7 +4067,7 @@ function contactForm(id, pre={}){
       delete d.newCompany;
       const nid = id || uid();
       const ok = await put('contacts', nid, {...(id ? S.contacts[id] : {}), ...d});
-      if (ok && !id) { toast('Contact added'); if (!ui.detail) ui.detail = {col:'contacts', id:nid}; schedule(); if (pre.flow) setTimeout(() => dealForm(null, {co: d.companyId || pre.co, coName: d.companyId === pre.co ? pre.coName : '', ct: nid, ctName: [d.firstName, d.lastName].filter(Boolean).join(' '), flow:1}), 250); }
+      if (ok && !id) { toast('Contact added'); if (!pre.flow) ui.detail = {col:'contacts', id:nid}; /* open the new contact; in the new-account steps, step 3 comes next instead */ schedule(); if (pre.flow) setTimeout(() => dealForm(null, {co: d.companyId || pre.co, coName: d.companyId === pre.co ? pre.coName : '', ct: nid, ctName: [d.firstName, d.lastName].filter(Boolean).join(' '), flow:1}), 250); }
       return ok;
     }, {foot: pre.flow ? `<button type="button" class="btn ghost" data-act="flowSkip" data-co="${esc(pre.co)}" data-coname="${esc(pre.coName||'')}" style="margin-right:auto">Skip to opportunity</button>` : ''});
 }
