@@ -2407,7 +2407,7 @@ function attentionBuild(){
   // open opportunities aren't flagged by close date: Spiro's close dates were automatic (Jason, Oct 26)
   for (const q of L('quotes').filter(q => q.status === 'sent' && q.sentAt && mine(q))) {
     const n = daysSince(q.sentAt);
-    if (n >= 5) out.push({sev:'warn', o:3, kind:`Quote waiting ${n} days`, title:`${q.number} · ${cname(q.companyId)}`, sub:`${money2(qTotal(q))} · sent ${rel(q.sentAt)}`,
+    if (n >= 5) out.push({sev:'warn', o:3, kind:`Quote waiting ${n} days`, title:`${q.number} · ${qWho(q)}`, sub:`${money2(qTotal(q))} · sent ${rel(q.sentAt)}`,
       acts:[q.companyId ? {l:'Email', act:'draft', d:{col:'companies', id:q.companyId, purpose:'quote'}} : null, {l:'Open', act:'editQuote', d:{id:q.id}}].filter(Boolean)});
   }
   for (const c of L('contracts').filter(c => (c.status||'active') === 'active' && isDate(c.end) && mine(c))) {
@@ -3307,11 +3307,11 @@ V.contacts = () => {
 };
 
 V.quotes = () => {
-  const rows = L('quotes').filter(mine).filter(q => match(ui.q, q.number, cname(q.companyId), q.status)).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  const rows = L('quotes').filter(mine).filter(q => match(ui.q, q.number, qWho(q), q.status)).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
   const open = rows.filter(q => q.status === 'sent');
   return head('Quotes', `${open.length} awaiting an answer · ${money(sum(open, qTotal))}`, searchBox('Search quotes') + mineSeg() + addBtn('Quote','newQuote'))
   + (!rows.length && !ui.q ? `<section class="panel">${emptyState('No quotes yet', 'Build a quote with line items, download it to send, and track it until the customer accepts. Accepting a quote linked to an opportunity marks it won.', `<button class="btn pri" data-act="newQuote">${ic('plus')}New quote</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Quote</th><th>Account</th><th>Status</th><th class="r">Total</th><th>Created</th><th>Valid until</th></tr></thead><tbody>${rows.map(q => `<tr data-act="editQuote" data-id="${q.id}"><td class="mono">${esc(q.number)}</td><td>${link('companies', q.companyId) || '—'}${q.dealId ? `<span class="t2">${esc(nameOf('deals', q.dealId))}</span>` : ''}</td><td>${qChip(q)}</td><td class="r num">${money2(qTotal(q))}</td><td>${q.createdAt ? fmtDate(ymd(new Date(q.createdAt))) : '—'}</td><td>${q.status==='sent' || q.status==='draft' ? dueChip(q.validUntil) : fmtDate(q.validUntil)}</td></tr>`).join('') || `<tr><td colspan="6" class="sub">No quotes match.</td></tr>`}</tbody></table></div>`);
+  : `<div class="tbl"><table><thead><tr><th>Quote</th><th>Account</th><th>Status</th><th class="r">Total</th><th>Created</th><th>Valid until</th></tr></thead><tbody>${rows.map(q => `<tr data-act="editQuote" data-id="${q.id}"><td class="mono">${esc(q.number)}</td><td>${q.companyId ? link('companies', q.companyId) || '—' : `${esc(qWho(q))} <span class="chip">One-off</span>`}${q.dealId ? `<span class="t2">${esc(nameOf('deals', q.dealId))}</span>` : ''}</td><td>${qChip(q)}</td><td class="r num">${money2(qTotal(q))}</td><td>${q.createdAt ? fmtDate(ymd(new Date(q.createdAt))) : '—'}</td><td>${q.status==='sent' || q.status==='draft' ? dueChip(q.validUntil) : fmtDate(q.validUntil)}</td></tr>`).join('') || `<tr><td colspan="6" class="sub">No quotes match.</td></tr>`}</tbody></table></div>`);
 };
 
 V.contracts = () => {
@@ -3994,7 +3994,7 @@ function searchResults(q){
     ['Accounts', top8(rankSort(L('companies').filter(c => hit(c, 'g', () => HAYF.companies.g(c), 'companies')), q, c => c.name, af, null, 8), c => ({a:'open', col:'companies', id:c.id, t:c.name, s:[c.acctNo ? '#' + c.acctNo : '', [c.city, c.state].filter(Boolean).join(', '), c.phone].filter(Boolean).join(' · ')}))],
     ['Contacts', top8(rankSort(L('contacts').filter(c => hit(c, 'g', () => HAYF.contacts.g(c), 'contacts')), q, pname_, null, null, 8), c => ({a:'open', col:'contacts', id:c.id, t:pname_(c), s:[c.title, cname(c.companyId), c.email, c.phone].filter(Boolean).join(' · ')}))],
     ['Opportunities', top8(rankSort(L('deals').filter(d => hit(d, 'g', () => HAYF.deals.g(d), 'deals')), q, d => cname(d.companyId) + ' ' + (d.name || ''), null, (a, b) => (b.createdAt||0) - (a.createdAt||0), 8), d => ({a:'open', col:'deals', id:d.id, t:d.name, s:[stage(d).l, money(d.value), cname(d.companyId)].filter(Boolean).join(' · ')}))],
-    ['Quotes', top8(rankSort(L('quotes').filter(x => hit(x, 'g', () => [x.number, cname(x.companyId), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')), q, x => x.number + ' ' + cname(x.companyId), null, () => 0), x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + cname(x.companyId), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
+    ['Quotes', top8(rankSort(L('quotes').filter(x => hit(x, 'g', () => [x.number, qWho(x), x.notes, ...(x.items||[]).map(i => i.desc)], 'quotes')), q, x => x.number + ' ' + qWho(x), null, () => 0), x => ({a:'editQuote', id:x.id, t:x.number + ' · ' + qWho(x), s:[(QSTAT.find(s => s[0] === (x.status||'draft'))||QSTAT[0])[1], money2(qTotal(x))].join(' · ')}))],
     ['Contracts', top8(rankSort(L('contracts').filter(c => hit(c, 'g', () => [c.title, c.notes, cname(c.companyId)], 'contracts')), q, c => cname(c.companyId) + ' ' + (c.title || ''), null, () => 0), c => ({a:'editContract', id:c.id, t:cname(c.companyId) + ' · ' + (c.title||'Service agreement'), s:`${fmtDate(c.start)} – ${fmtDate(c.end)} · ${money(c.value)}/yr`}))],
     ['Notes and activity', X.acts.filter(a => a.type !== 'stage' && hit(a, 'g', () => [a.text], 'activities')).map(a => { const col = a.dealId && S.deals[a.dealId] ? 'deals' : a.companyId && S.companies[a.companyId] ? 'companies' : a.contactId && S.contacts[a.contactId] ? 'contacts' : null; if (!col) return null; const id = col === 'deals' ? a.dealId : col === 'companies' ? a.companyId : a.contactId; const txt = String(a.text||''); const i = txt.toLowerCase().indexOf(toks[0]); const snip = (i > 40 ? '…' : '') + txt.slice(Math.max(0, i - 40), i + 90) + (txt.length > i + 90 ? '…' : ''); return {a:'open', col, id, t:snip, s:`${ACT[a.type]||'Note'} · ${nameOf(col, id)} · ${rel(a.at)}`}; }).filter(Boolean)]
   ];
@@ -4929,8 +4929,9 @@ function pmPick(i){
   if (sel.value !== o.v) { sel.value = o.v; sel.dispatchEvent(new Event('input', {bubbles: true})); sel.dispatchEvent(new Event('change', {bubbles: true})); }
 }
 document.addEventListener('mousedown', e => {
-  if (PM.el && !PM.el.contains(e.target) && e.target !== PM.sel) pmClose();
-  const sel = e.target.closest && e.target.closest('select');
+  const tgt = (e.composedPath && e.composedPath()[0]) || e.target;   // the quote builder's lists sit inside their own little page
+  if (PM.el && !PM.el.contains(tgt) && tgt !== PM.sel) pmClose();
+  const sel = tgt.closest && tgt.closest('select');
   if (!sel || sel.multiple || sel.size > 1 || sel.disabled || pmTouch() || e.button !== 0) return;
   e.preventDefault();
   if (PM.sel === sel) { pmClose(true); return; }
@@ -7252,21 +7253,24 @@ function dpClick(e){
   if (a === 'clear') return dpSet(''); if (a === 'today') return dpSet(today());
   if (isDate(a)) dpSet(a);
 }
+// the quote builder's boxes sit inside their own little page: look through it to the real element
+const dpT = e => (e.composedPath && e.composedPath()[0]) || e.target;
+const dpActive = () => { let a = document.activeElement; while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement; return a; };
 document.addEventListener('mousedown', e => {
-  const t = e.target;
+  const t = dpT(e);
   if (DP.el && DP.el.isConnected && !DP.el.contains(t) && t !== DP.input) dpClose();
-  if (t && t.type === 'date' && t !== DP.input && dpFine()) setTimeout(() => { if (document.activeElement === t) dpOpen(t); }, 0);
+  if (t && t.type === 'date' && t !== DP.input && dpFine()) setTimeout(() => { if (dpActive() === t) dpOpen(t); }, 0);
 }, true);
-document.addEventListener('focusin', e => { const t = e.target; if (t && t.type === 'date' && t !== DP.input && dpFine() && t.matches(':focus-visible')) dpOpen(t); });
-document.addEventListener('focusout', e => { if (e.target === DP.input) setTimeout(() => { if (DP.input && document.activeElement !== DP.input) dpClose(); }, 0); });
+document.addEventListener('focusin', e => { const t = dpT(e); if (t && t.type === 'date' && t !== DP.input && dpFine() && t.matches(':focus-visible')) dpOpen(t); });
+document.addEventListener('focusout', e => { if (dpT(e) === DP.input) setTimeout(() => { if (DP.input && dpActive() !== DP.input) dpClose(); }, 0); });
 document.addEventListener('keydown', e => {
-  const t = e.target;
+  const t = dpT(e);
   if (t && t.type === 'date' && dpFine() && ((e.altKey && e.key === 'ArrowDown') || e.key === 'F4')) { e.preventDefault(); if (DP.input === t) dpClose(); else dpOpen(t); return; }
   if (!DP.input || t !== DP.input) return;
   if (e.key === 'Escape') dpClose();   // Esc closes the calendar and, as before, cancels the edit
   if (e.key === 'Tab') dpClose();
 }, true);
-document.addEventListener('input', e => { if (e.target === DP.input && isDate(DP.input.value)) { const d = parseYmd(DP.input.value); DP.cur = DP.input.value; DP.y = d.getFullYear(); DP.m = d.getMonth(); dpPaint(); } }, true);
+document.addEventListener('input', e => { if (dpT(e) === DP.input && isDate(DP.input.value)) { const d = parseYmd(DP.input.value); DP.cur = DP.input.value; DP.y = d.getFullYear(); DP.m = d.getMonth(); dpPaint(); } }, true);
 addEventListener('scroll', e => { if (DP.el && DP.el.isConnected && !DP.el.contains(e.target)) dpPlace(); }, true);
 addEventListener('resize', () => dpPlace());
 document.addEventListener('focusout', e => { const t = e.target; if (t && t.classList && t.classList.contains('oe')) { const k = t.dataset.k;
@@ -7773,7 +7777,7 @@ async function onDownload(){
   saveCur();
   const st = $("status"); st.className = "status"; st.textContent = "";
   const S = shared();
-  if(!$("co").value){ st.className="status err"; st.textContent = "Choose the company this quote is for."; $("co").focus(); return; }
+  if(!$("co").value){ st.className="status err"; st.textContent = "Choose the company this quote is for, or pick No company (one-off quote)."; $("co").focus(); return; }
   if(!S.cust){ st.className="status err"; st.textContent = "Add the customer's name first."; $("cust").focus(); return; }
   const pages = locs.map((L,i) => pageData(L, i, S));
   const emptyIdx = pages.findIndex(p => !p.lines.length);
@@ -7818,7 +7822,7 @@ async function onDownload(){
       const msg = st.textContent;
       if($("qstatus").value === "draft") $("qstatus").value = "sent";
       const ok = await persist($("qstatus").value, S, pages);
-      st.textContent = msg + (ok ? " The quote is saved on " + api.cname($("co").value) + "." : " It couldn't be saved to the CRM, so try Save quote.");
+      st.textContent = msg + (ok ? " The quote is saved" + savedOn(oneOff() ? "" : $("co").value) + "." : " It couldn't be saved to the CRM, so try Save quote.");
     }
   }catch(e){
     if(e && e.code === "declined") st.textContent = "Download canceled.";
@@ -8035,19 +8039,20 @@ function startHistory(){
     if(!L.siteDiff){ L.site = ""; $("site").value = ""; } else $("site").focus();
     renderTabs(); renderPreview();
   };
-  $("co").onchange = () => { fillDeals($("co").value, ""); fillCust(); };
+  $("co").onchange = () => { fillDeals($("co").value, ""); $("deal").disabled = oneOff(); if (oneOff()) { $("cust").focus(); renderPreview(); } else fillCust(); };
   $("deal").onchange = () => fillCust();
   $("qnum").addEventListener("input", setTitle);
   $("closeQb").onclick = close;
   $("saveQ").onclick = async () => {
     saveCur();
     const st = $("status"); st.className = "status"; st.textContent = "";
-    if(!$("co").value){ st.className = "status err"; st.textContent = "Choose the company this quote is for."; $("co").focus(); return; }
+    if(!$("co").value){ st.className = "status err"; st.textContent = "Choose the company this quote is for, or pick No company (one-off quote)."; $("co").focus(); return; }
     const S = shared(); const pages = locs.map((L,i) => pageData(L, i, S));
+    if(oneOff() && !S.cust){ st.className = "status err"; st.textContent = "Type the name and address to print on the quote."; $("cust").focus(); return; }
     $("saveQ").disabled = true;
     const ok = await persist($("qstatus").value, S, pages);
     $("saveQ").disabled = false;
-    if(ok) st.textContent = "Saved on " + api.cname($("co").value) + ".";
+    if(ok) st.textContent = "Saved" + savedOn(oneOff() ? "" : $("co").value) + ".";
     else { st.className = "status err"; st.textContent = "Couldn't save. Try again."; }
   };
   let delArmed = false, delTimer = null;
@@ -8078,9 +8083,12 @@ function startHistory(){
 const ctx = {quoteId: null};
 function fillCompanies(cur){
   const cos = api.L("companies").sort((a,b) => (a.name||"").localeCompare(b.name||""));
-  $("co").innerHTML = '<option value="">— Choose a company —</option>' + cos.map(c => `<option value="${esc(c.id)}">${esc(c.name||"")}</option>`).join("");
+  $("co").innerHTML = '<option value="">— Choose a company —</option><option value="__none">No company (one-off quote)</option>' + cos.map(c => `<option value="${esc(c.id)}">${esc(c.name||"")}</option>`).join("");
   $("co").value = cur || "";
+  $("deal").disabled = $("co").value === "__none";
 }
+const oneOff = () => $("co").value === "__none";   // a custom quote that isn't tied to any account
+const savedOn = coId => coId ? " on " + api.cname(coId) : "";
 function fillDeals(coId, cur){
   const ds = api.L("deals").filter(d => d.companyId === coId && (api.isOpen(d) || d.id === cur));
   $("deal").innerHTML = '<option value="">— None —</option>' + ds.map(d => `<option value="${esc(d.id)}">${esc(oppTypeName(d.name) || "Opportunity")}</option>`).join("");
@@ -8104,13 +8112,13 @@ function open(o){
   doReset();
   ctx.quoteId = o.quoteId || null;
   const q = ctx.quoteId ? api.S.quotes[ctx.quoteId] : null;
-  fillCompanies(q ? q.companyId : o.co);
+  fillCompanies(q ? (q.companyId || "__none") : o.co);
   $("status").textContent = ""; $("status").className = "status";
   if(q && q.state){
     restoreState(q.state);
-    fillCompanies(q.companyId); fillDeals(q.companyId, q.dealId);
+    fillCompanies(q.companyId || "__none"); fillDeals(q.companyId, q.dealId);
     $("qstatus").value = q.status || "draft"; $("qnum").value = q.number || "";
-    setEditing(ctx.quoteId, api.cname(q.companyId));
+    setEditing(ctx.quoteId, q.companyId ? api.cname(q.companyId) : (q.custName || ""));
   } else {
     fillDeals(o.co || "", o.deal || "");
     $("qstatus").value = "draft"; $("qnum").value = api.nextQuoteNo();
@@ -8123,13 +8131,13 @@ function open(o){
 function close(){ host.hidden = true; api.onClose(); }
 function isOpenNow(){ return !host.hidden; }
 async function persist(status, S, pages){
-  const coId = $("co").value; if(!coId) return null;
+  const coRaw = $("co").value; if(!coRaw) return null; const coId = coRaw === "__none" ? "" : coRaw;
   if(!$("qnum").value.trim()) $("qnum").value = api.nextQuoteNo();
   const items = pages.flatMap(p => p.lines.map(l => ({desc: (pages.length > 1 ? "Location " + p.pageNo + ": " : "") + l.desc, qty: l.qty, price: l.price})));
   const total = Math.round(pages.reduce((s,p) => s + p.total, 0) * 100) / 100;
-  const id = await api.saveQuote(ctx.quoteId, {companyId: coId, dealId: $("deal").value, number: $("qnum").value.trim(), status,
+  const id = await api.saveQuote(ctx.quoteId, {companyId: coId, custName: coId ? "" : (S.cust || "").split("\n")[0].trim(), dealId: coId ? $("deal").value : "", number: $("qnum").value.trim(), status,
     quoteDate: S.date, validUntil: S.valid, preparedBy: S.rep, items, total, serviceLine: isMW() ? "mw" : "shred", pricing: mode, locations: pages.length, state: snapshotState()});
-  if(id){ ctx.quoteId = id; setEditing(id, api.cname(coId)); setTitle(); }
+  if(id){ ctx.quoteId = id; setEditing(id, coId ? api.cname(coId) : (S.cust || "").split("\n")[0].trim()); setTitle(); }
   return id;
 }
 
@@ -8143,6 +8151,7 @@ function quoteBuilder(){
   const host = $('#qbHost');
   const root = host.attachShadow({mode: 'open'});
   root.append($('#qbTpl').content.cloneNode(true));
+  { const st = document.createElement('style'); st.textContent = `@media (pointer:fine){input[type=date]::-webkit-calendar-picker-indicator{display:none}input[type=date]{background-image:var(--dp-ic);background-repeat:no-repeat;background-position:right 9px center;background-size:16px;padding-right:34px}}`; root.append(st); }   // Paper Trail's calendar opens instead
   const sync = () => { const t = document.documentElement.getAttribute('data-theme'); host.classList.toggle('dark', t === 'dark'); host.classList.toggle('light', t === 'light'); };
   sync(); try { new MutationObserver(sync).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']}); } catch {}
   QB = makeQuoteBuilder(root, host, {S, L, isOpen, cname, pname: pname_, nextQuoteNo, canWrite: () => canWrite, saveQuote: saveBuiltQuote,
@@ -8176,6 +8185,8 @@ async function deleteQuoteNow(id){
 }
 
 // ---------- hosted mode: Supabase logins, users and shared data ----------
+// who a quote is for: its account, or the name typed on a one-off quote
+const qWho = q => q && q.companyId && S.companies[q.companyId] ? cname(q.companyId) : (q && q.custName) || 'One-off quote';
 const isAdmin = () => !SUPA || ME.role === 'admin';
 // Saved copy of records in this browser (IndexedDB), so each visit only downloads what changed
 const IDB = (() => {
