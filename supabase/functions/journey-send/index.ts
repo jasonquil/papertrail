@@ -204,7 +204,9 @@ async function replySince(owner: string, addrs: string[], since: number) {
 
 // ---------- one run ----------
 type Result = { who: string; journey: string; step: number; result: "sent" | "would send" | "paused" | "ended" | "skipped"; note?: string };
-export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: string; runId?: string; slots?: number }) {
+// now: a person picked this journey and clicked "Send now": send its next email today, even if it isn't due yet or
+// the journey asks first (still checks for a reply, missing fields and the claim first)
+export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: string; runId?: string; slots?: number; now?: boolean }) {
   const runId = opts.runId || "run:" + uid();
   const today = opts.today || local().ymd;
   const journeys = await journeyMap();
@@ -217,8 +219,9 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
   for (const { id, data: e } of enrollments) {
     const j = journeys[e.journeyId];
     const s = (e.schedule || []).find((x: Rec) => x.status === "pending");
-    if (!s || !isDate(s.due) || s.due > today) continue;
-    if (modeOf(e, j) !== "auto") continue;
+    const now = !!(opts.now && opts.onlyId);
+    if (!s || !isDate(s.due) || (!now && s.due > today)) continue;
+    if (!now && modeOf(e, j) !== "auto") continue;
     const st = stepsOf(e, j)[s.step];
     if (!st || st.type === "call") continue;   // calls always wait for a person
     // already held back today (missing a field, no address...): the morning's later checks leave it for a person
@@ -308,7 +311,7 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
       if (claimed) await releaseStep(id, runId);
     }
   }
-  return { today, sent, more, due: order.length, results: out };
+  return { v: 2, today, sent, more, due: order.length, results: out };
 }
 
 Deno.serve(async (req) => {
@@ -346,12 +349,14 @@ Deno.serve(async (req) => {
     if (lock.data !== true) return json({ skipped: "Another send is already running. Try again in a minute.", busy: true });
   }
   try {
-    const r = await run({ dryRun: dry, onlyId: body.enrollmentId ? String(body.enrollmentId) : undefined, runId, slots: by === "schedule" ? slotsLeft(t.hm) : undefined });
+    const r = await run({ dryRun: dry, onlyId: body.enrollmentId ? String(body.enrollmentId) : undefined, runId, slots: by === "schedule" ? slotsLeft(t.hm) : undefined, now: by === "app" && body.now === true });
     if (!dry) {
       const meta = (await one("meta", "autosend")) || {};
       // the day's run is finished once nothing is left over; otherwise the next check carries on
       const finished = by === "schedule" && !r.more ? { lastRunDate: t.ymd } : {};
-      await save("meta", "autosend", { ...meta, ...finished, runningSince: null, runningBy: null, lastRunAt: Date.now(), lastRunBy: by, lastSent: r.sent, lastResults: r.results.slice(0, 50), lastError: "" });
+      // a person's "Send now" on picked journeys doesn't replace the morning run's summary in the banner
+      if (body.enrollmentId && body.now === true) await save("meta", "autosend", { ...meta, runningSince: null, runningBy: null });
+      else await save("meta", "autosend", { ...meta, ...finished, runningSince: null, runningBy: null, lastRunAt: Date.now(), lastRunBy: by, lastSent: r.sent, lastResults: r.results.slice(0, 50), lastError: "" });
     }
     return json(r);
   } catch (err) {

@@ -562,6 +562,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .jprev li{display:grid;grid-template-columns:110px 70px minmax(0,1fr);gap:10px;align-items:baseline;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:.88rem}
 .jprev li span:last-child{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .jrow-a{white-space:nowrap;text-align:right}.jrow-a>*{vertical-align:middle}
+.jsel{width:34px;padding-right:0!important;cursor:pointer}.jsel input{width:16px;height:16px;cursor:pointer;accent-color:var(--accent);vertical-align:middle}
+tr.sel>td{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.jbulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:8px 10px 8px 14px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--accent) 6%,var(--surface));position:sticky;top:8px;z-index:3}
+.jbulk>b{margin-right:4px}.jbulk .jb-del{color:var(--bad)}
 tr:hover .fi-del{opacity:1}
 .jst-undo{margin-left:6px}
 .jsteps li{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;flex-wrap:wrap}
@@ -6304,6 +6308,47 @@ function journeyDueBuild(){
   return L('enrollments').filter(e => e.status === 'active' && (!ui.mine || e.ownerId === ME.id)).map(e => ({e, s: nextStep(e)})).filter(x => x.s && x.s.due <= t);
 }
 
+// ---------- picking several journeys at once (Send now, Pause, Resume, Remove) ----------
+const jSel = () => ui.jSel || (ui.jSel = new Set());
+const jPicked = () => [...jSel()].map(id => S.enrollments[id] && {...S.enrollments[id], id}).filter(Boolean);
+const jSendable = e => { if (e.status !== 'active') return false; const n = nextStep(e); return !!(n && !isCallStep(eSteps(e)[n.step])); };
+function jBulkBar(rows){
+  if (!canWrite) return '';
+  const vis = new Set(rows.map(e => e.id)); for (const id of [...jSel()]) if (!vis.has(id) || !S.enrollments[id]) jSel().delete(id);   // only what's on screen stays picked
+  const p = jPicked(); if (!p.length) return '';
+  const send = p.filter(jSendable).length, pause = p.filter(e => e.status === 'active').length, resume = p.filter(e => e.status === 'paused').length;
+  const n = k => k === p.length ? '' : ` (${k})`;
+  return `<div class="jbulk" role="toolbar" aria-label="Picked journeys"><b>${p.length} picked</b>`
+    + (send && AUTO_OK() ? `<button class="btn sm pri" data-act="jBulk" data-k="send"${ui.jBulkBusy ? ' disabled' : ''}>${ic('mail')}${ui.jBulkBusy ? esc(ui.jBulkBusy) : 'Send now' + n(send)}</button>` : '')
+    + (pause ? `<button class="btn sm" data-act="jBulk" data-k="pause">Pause${n(pause)}</button>` : '')
+    + (resume ? `<button class="btn sm" data-act="jBulk" data-k="resume">Resume${n(resume)}</button>` : '')
+    + `<button class="btn sm jb-del" data-act="jBulk" data-k="remove">${ic('trash')}Remove</button><span style="flex:1"></span><button class="btn sm ghost" data-act="jSelNone">Clear</button></div>`;
+}
+async function jBulkSend(list){
+  ui.jBulkBusy = 'Sending…'; schedule();
+  let sent = 0, old = false; const held = [];
+  try {
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i]; const who = nameOf('contacts', e.contactId);
+      ui.jBulkBusy = `Sending ${i + 1} of ${list.length}…`; schedule();
+      let data = null, msg = '';
+      for (let t = 0; t < 4; t++) {   // another send running (the morning run, a teammate): wait a moment and try again
+        const r = await SUPA.sb.functions.invoke('journey-send', {body: {enrollmentId: e.id, now: true}});
+        if (r.error) { msg = r.error.message || 'It did not send.'; try { const j = await r.error.context.json(); if (j && j.error) msg = j.error; } catch {} break; }
+        data = r.data; if (!(data && data.busy)) break; data = null; msg = 'Another send was running.'; await new Promise(ok => setTimeout(ok, 2500 * (t + 1)));
+      }
+      if (data && data.v !== 2) { old = true; break; }   // the sender on Supabase is the older version: it can't send early
+      const res = data && (data.results || [])[0];
+      if (data && data.sent) sent++;
+      else held.push(`${who}: ${res ? (res.result === 'paused' || res.result === 'ended' ? `they replied, so the journey was ${res.result}` : res.note || res.result) : msg || 'nothing was due to send'}`);
+    }
+  } finally { ui.jBulkBusy = null; autoAt = 0; autoLoad(true); }
+  if (old) { toast('Sending picked journeys needs the newest journey-send on Supabase. Paste the new index.ts into Edge Functions → journey-send and deploy, then try again.', 'bad'); return; }
+  jSel().clear(); schedule();
+  if (!held.length) toast(`${sent} email${sent === 1 ? '' : 's'} sent`);
+  else openModal(`${sent} sent, ${held.length} not sent`, `<p>These weren't sent:</p><ul class="small">${held.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`, null, null);
+}
+
 V.journeys = () => {
   setTimeout(() => checkReplies(), 0);
   const show = ui.jShow || 'active';
@@ -6319,7 +6364,7 @@ V.journeys = () => {
   + `<div class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">${autoBanner()}${MCP && canWrite ? '<button class="btn sm" data-act="jCheck">Check for replies</button>' : ''}</div>`
   + (due.length ? `<section class="panel"><div class="ph"><h3>Due now</h3><span class="chip warn">${due.length}</span></div><ul class="attl">${due.map(({e, s}) => { const st = eSteps(e)[s.step]; const call = isCallStep(st); const auto = !call && eMode(e) === 'auto'; const errNow = auto && e.lastSendError && e.lastSendError.step === s.step ? e.lastSendError.msg : ''; return `<li class="att ${errNow || s.due < today() ? 'bad' : 'warn'}"><div class="att-main"><span class="att-kind">${esc(jName(e.journeyId))} · ${call ? 'call' : 'email'} · step ${s.step + 1} of ${(e.schedule || []).length} · ${s.due < today() ? 'was due ' + fmtDate(s.due) : 'due today'}${auto ? ` · <b style="color:var(--accent)">${errNow ? 'held for you' : 'sends automatically 8–9 AM'}</b>` : ''}</span><b>${esc(nameOf('contacts', e.contactId))} · ${esc(cname(e.companyId))}</b><span class="att-sub">${esc(st ? (call ? fillTemplate(st.note || 'Call reminder', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span>${errNow ? `<span class="att-sub" style="color:var(--bad)">${esc(errNow)}</span>` : ''}</div><div class="att-act">${canWrite ? `<button class="btn sm pri" data-act="jSend" data-id="${e.id}">${call ? 'Call &amp; log it' : auto ? 'Send it now' : 'Review & send'}</button>${auto ? `<button class="btn sm" data-act="jMode" data-id="${e.id}" data-m="approve">Ask me first</button>` : ''}<button class="btn sm" data-act="jSkip" data-id="${e.id}">Skip</button>` : ''}</div></li>`; }).join('')}</ul></section>` : '')
   + (!all.length ? `<section class="panel">${emptyState('No one is on a journey yet', 'Start a journey to follow up with a contact automatically. The Shredding Journey sends 4 follow-ups a week apart, and pauses as soon as they reply.', `<button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Contact</th><th>Journey</th><th>Progress</th><th>Next email</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(e => { const n = nextStep(e); const total = (e.schedule || []).length; return `<tr data-act="jOpen" data-id="${e.id}"><td><b>${esc(nameOf('contacts', e.contactId))}</b><span class="t2">${esc(cname(e.companyId))}</span></td><td>${esc(jName(e.journeyId))}</td><td class="num">${sentCount(e)} of ${total} sent</td><td>${e.status === 'active' && n ? dueChip(n.due) : '—'}</td><td>${jStatusChip(e)}${e.status === 'paused' && e.replySubject ? `<span class="t2">“${esc(e.replySubject)}”</span>` : ''}</td><td class="jrow-a">${canWrite ? (e.status === 'paused' ? `<button class="btn sm" data-act="jResume" data-id="${e.id}">Resume</button>` : e.status === 'active' ? `<button class="btn sm ghost" data-act="jPause" data-id="${e.id}">Pause</button>` : '') + `<button type="button" class="icon-btn fi-del" data-act="jRowDel" data-id="${e.id}" aria-label="Remove this journey" title="Remove">${ic('trash')}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="6" class="sub">${ui.q ? 'No journeys match.' : 'None here.'}</td></tr>`}</tbody></table></div>`)
+  : jBulkBar(rows) + `<div class="tbl"><table><thead><tr>${canWrite ? `<th class="jsel" data-act="jSelAll" title="Select all shown"><input type="checkbox" aria-label="Select all shown"${rows.length && rows.every(e => jSel().has(e.id)) ? ' checked' : ''}></th>` : ''}<th>Contact</th><th>Journey</th><th>Progress</th><th>Next email</th><th>Status</th><th></th></tr></thead><tbody>${rows.map(e => { const n = nextStep(e); const total = (e.schedule || []).length; return `<tr data-act="jOpen" data-id="${e.id}"${jSel().has(e.id) ? ' class="sel"' : ''}>${canWrite ? `<td class="jsel" data-act="jSel" data-id="${e.id}"><input type="checkbox" aria-label="Select ${esc(nameOf('contacts', e.contactId))}"${jSel().has(e.id) ? ' checked' : ''}></td>` : ''}<td><b>${esc(nameOf('contacts', e.contactId))}</b><span class="t2">${esc(cname(e.companyId))}</span></td><td>${esc(jName(e.journeyId))}</td><td class="num">${sentCount(e)} of ${total} sent</td><td>${e.status === 'active' && n ? dueChip(n.due) : '—'}</td><td>${jStatusChip(e)}${e.status === 'paused' && e.replySubject ? `<span class="t2">“${esc(e.replySubject)}”</span>` : ''}</td><td class="jrow-a">${canWrite ? (e.status === 'paused' ? `<button class="btn sm" data-act="jResume" data-id="${e.id}">Resume</button>` : e.status === 'active' ? `<button class="btn sm ghost" data-act="jPause" data-id="${e.id}">Pause</button>` : '') + `<button type="button" class="icon-btn fi-del" data-act="jRowDel" data-id="${e.id}" aria-label="Remove this journey" title="Remove">${ic('trash')}</button>` : ''}</td></tr>`; }).join('') || `<tr><td colspan="${canWrite ? 7 : 6}" class="sub">${ui.q ? 'No journeys match.' : 'None here.'}</td></tr>`}</tbody></table></div>`)
   + `<section class="panel"><div class="ph"><h3>Your journeys</h3>${canWrite ? `<button class="btn sm" data-act="jEdit">${ic('plus')}New journey</button>` : ''}</div><div class="jlib">${lib.map(j => `<button class="jcard" data-act="jEdit" data-id="${j.id}"><b>${esc(j.name)}</b><span>${jCountTxt(jSteps(j))} · ${jSpanTxt(jSpanDays(jSteps(j)))} · ${esc(jCat(j.category)[1])}</span><span>${j.onReply === 'stop' ? 'Ends when they reply' : 'Pauses when they reply'}</span></button>`).join('')}</div></section>`;
 };
 
@@ -6521,7 +6566,7 @@ async function autoRun(){
     if (data && data.busy) { toast('Another send is already running. Check back in a minute.'); return; }
     if (data && data.error) throw new Error(data.error);
     const held = (data.results || []).filter(r => r.result === 'skipped').length;
-    toast(`${data.sent || 0} email${data.sent === 1 ? '' : 's'} sent${held ? `, ${held} held for you` : ''}${data.more ? '. The rest go out at the next check (every 15 minutes in the morning)' : ''}`);
+    toast(`${data.sent || 0} email${data.sent === 1 ? '' : 's'} sent${held ? `, ${held} held for you` : ''}${data.more ? '. The rest go out at the next check (every 5 minutes, 8 to 9 AM)' : ''}`);
   } catch (e) { toast(String(e.message || e), 'bad'); }
   finally { autoBusy = false; autoAt = 0; await autoLoad(true); schedule(); }
 }
@@ -6919,6 +6964,21 @@ const A = {
   syncMail: d => syncNow(d.co),
   jCheck: async () => { toast('Checking Outlook for replies…'); await checkReplies(true); toast('Replies checked'); },
   jShow: d => { ui.jShow = d.s; render(); },
+  jSel: d => { const s = jSel(); s.has(d.id) ? s.delete(d.id) : s.add(d.id); render(); },
+  jSelAll: () => { const rows = [...document.querySelectorAll('#main tr[data-act="jOpen"]')].map(r => r.dataset.id); const s = jSel(); const all = rows.length && rows.every(id => s.has(id)); rows.forEach(id => all ? s.delete(id) : s.add(id)); render(); },
+  jSelNone: () => { jSel().clear(); render(); },
+  jBulk: async d => {
+    const p = jPicked(); if (!p.length || ui.jBulkBusy) return;
+    const many = (k, w) => `${k} ${w}${k === 1 ? '' : 's'}`;
+    if (d.k === 'pause') { const l = p.filter(e => e.status === 'active'); let n = 0; for (const e of l) if (await patch('enrollments', e.id, {status: 'paused', stopReason: 'manual', pausedAt: Date.now()})) n++; jSel().clear(); toast(`${many(n, 'journey')} paused`); render(); return; }
+    if (d.k === 'resume') { const l = p.filter(e => e.status === 'paused'); for (const e of l) await jResume(e.id); jSel().clear(); toast(`${many(l.length, 'journey')} resumed`); render(); return; }
+    if (d.k === 'remove') return confirmModal(`Remove ${many(p.length, 'journey')}?`, `This removes ${p.length === 1 ? 'the journey' : 'these journeys'} and ${p.length === 1 ? 'its' : 'their'} schedule. Emails already sent stay on the accounts, and ${p.length === 1 ? 'it goes' : 'they go'} to Settings → Trash if you need ${p.length === 1 ? 'it' : 'them'} back.`, 'Remove', async () => { let n = 0; for (const e of p) if (await del('enrollments', e.id)) n++; jSel().clear(); toast(`${many(n, 'journey')} removed`); return true; });
+    if (d.k === 'send') {
+      const l = p.filter(jSendable); const calls = p.filter(e => e.status === 'active' && !jSendable(e)).length, off = p.filter(e => e.status !== 'active').length;
+      const note = [calls ? `${many(calls, 'journey')} with a call next ${calls === 1 ? 'is' : 'are'} left for you` : '', off ? `${many(off, 'paused or finished journey')} ${off === 1 ? 'is' : 'are'} left alone` : ''].filter(Boolean).join('; ');
+      openModal(`Send ${many(l.length, 'email')} now?`, `<p>Each picked journey's next email goes out now from the journey owner's Outlook, even if it isn't due yet. Paper Trail checks for a reply first, and holds any email that's missing a fill-in field.</p>${note ? `<p class="sub small">${esc(note[0].toUpperCase() + note.slice(1))}.</p>` : ''}`, 'Send now', () => { afterModal(() => jBulkSend(l)); return true; });
+    }
+  },
   jStart: d => journeyStartModal({co: d.co, ct: d.ct, deal: d.deal}),
   jLibrary: () => journeyLibraryModal(),
   jEdit: d => journeyEditModal(d.id),
