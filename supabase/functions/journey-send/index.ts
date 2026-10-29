@@ -1,13 +1,14 @@
 // Paper Trail automatic journey sending.
-// Every morning at 8:45 (New York time) this sends the journey emails that are due, for journeys set to
-// "Send automatically", from each owner's own Outlook mailbox. Before each email it checks whether the
+// Every morning between 8 and 9 (New York time) this sends the journey emails that are due, for journeys set to
+// "Send automatically", from each owner's own Outlook mailbox. They trickle out a few at each 5-minute check instead of
+// all at once, so replies don't all land together. Before each email it checks whether the
 // contact has written back since the journey started; if so it pauses (or ends) the journey instead of sending.
 //
 // Deploy in Supabase → Edge Functions → name it "journey-send" → turn OFF "Verify JWT"
 // (the morning schedule calls it with a secret instead; people in the app call it with their own sign-in).
 // Secrets it needs (Edge Functions → Secrets): MS_TENANT_ID, MS_CLIENT_ID, MS_CLIENT_SECRET, CRON_SECRET.
-// Optional: SEND_AT (default "08:45"), SEND_TZ (default "America/New_York"), TRACKING ("off" to skip open tracking).
-// Needs supabase-update-8.sql: each email is claimed in the database before it's sent, so the 8:45 run, "Send due emails
+// Optional: SEND_AT (default "08:00"), SEND_UNTIL (default "09:00"), SEND_EVERY (minutes between checks, default 5), SEND_TZ (default "America/New_York"), TRACKING ("off" to skip open tracking).
+// Needs supabase-update-8.sql: each email is claimed in the database before it's sent, so the morning run, "Send due emails
 // now" and a person sending from the app can never send the same email twice. Without update 8 it refuses to send.
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
@@ -18,13 +19,21 @@ const URL_ = env("SUPABASE_URL");
 let sb = createClient(URL_, String(KEY));
 export function __setClient(c: any) { sb = c; }   // for tests
 const TZ = env("SEND_TZ") || "America/New_York";
-const SEND_AT = env("SEND_AT") || "08:45";
+const SEND_AT = env("SEND_AT") || "08:00";
+const SEND_UNTIL = env("SEND_UNTIL") || "09:00";
+const SEND_EVERY = Math.max(1, +env("SEND_EVERY") || 5);
+const mins = (hm: string) => { const [h, m] = hm.split(":").map(Number); return h * 60 + (m || 0); };
+// how many checks are left before the window closes (this one included); after it closes, everything left goes now
+export const slotsLeft = (hm: string, from = SEND_AT, until = SEND_UNTIL, every = SEND_EVERY) => {
+  const left = mins(until) - Math.max(mins(hm), mins(from));
+  return left > 0 ? Math.ceil(left / every) : 1;
+};
 const TRACK_URL = URL_.replace(/\/$/, "") + "/functions/v1/track";
 const MAX_PER_RUN = 200;
-const TRIES_PER_DAY = 4;
+const TRIES_PER_DAY = 12;   // checks are 5 minutes apart, so about an hour of retries
 // Supabase stops a function after about 150 seconds, so a run stops starting new emails after this long and leaves the
-// rest for the next 15-minute check (instead of being cut off between sending an email and recording it)
-const TIME_BUDGET_MS = 100_000;   // a run that fails partway is tried again at the next 15-minute check, up to this many times a day
+// rest for the next check (instead of being cut off between sending an email and recording it)
+const TIME_BUDGET_MS = 100_000;   // a run that fails partway is tried again at the next check, up to this many times a day
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, apikey, x-client-info", "access-control-allow-methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json", ...CORS } });
@@ -165,7 +174,7 @@ async function graphToken() {
   if (!env("MS_TENANT_ID") || !env("MS_CLIENT_ID") || !env("MS_CLIENT_SECRET")) throw new Error("Outlook isn't connected for automatic sending yet (MS_TENANT_ID, MS_CLIENT_ID and MS_CLIENT_SECRET secrets are missing).");
   const r = await fetch(`https://login.microsoftonline.com/${env("MS_TENANT_ID")}/oauth2/v2.0/token`, { method: "POST", body: new URLSearchParams({ client_id: env("MS_CLIENT_ID"), client_secret: env("MS_CLIENT_SECRET"), grant_type: "client_credentials", scope: "https://graph.microsoft.com/.default" }) });
   const j = await r.json().catch(() => ({}));
-  // a sign-in problem affects every email, so it stops the run (and the next 15-minute check tries again) instead of
+  // a sign-in problem affects every email, so it stops the run (and the next check tries again) instead of
   // marking each journey as held
   if (!r.ok) throw Object.assign(new Error("Microsoft sign-in for automatic sending failed: " + String(j.error_description || j.error || r.status).split("\r\n")[0].replace(/^AADSTS\d+:\s*/, "")), { fatal: true });
   tok = { v: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 };
@@ -195,7 +204,7 @@ async function replySince(owner: string, addrs: string[], since: number) {
 
 // ---------- one run ----------
 type Result = { who: string; journey: string; step: number; result: "sent" | "would send" | "paused" | "ended" | "skipped"; note?: string };
-export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: string; runId?: string }) {
+export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: string; runId?: string; slots?: number }) {
   const runId = opts.runId || "run:" + uid();
   const today = opts.today || local().ymd;
   const journeys = await journeyMap();
@@ -203,15 +212,30 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
   const profiles: Record<string, Rec> = {};
   { const { data, error } = await sb.from("profiles").select("id,name,email,active"); if (error) throw new Error("Reading people: " + error.message); for (const p of data || []) profiles[p.id] = p; }
   const out: Result[] = [];
-  let sent = 0, more = false; const t0 = Date.now();
+  // the emails due today (or overdue) that this run may send
+  const due: { id: string; e: Rec; j: Rec | undefined; s: Rec; st: Rec }[] = [];
   for (const { id, data: e } of enrollments) {
-    if (sent >= MAX_PER_RUN || Date.now() - t0 > TIME_BUDGET_MS) { more = true; break; }   // the rest go at the next 15-minute check
     const j = journeys[e.journeyId];
     const s = (e.schedule || []).find((x: Rec) => x.status === "pending");
     if (!s || !isDate(s.due) || s.due > today) continue;
     if (modeOf(e, j) !== "auto") continue;
     const st = stepsOf(e, j)[s.step];
     if (!st || st.type === "call") continue;   // calls always wait for a person
+    // already held back today (missing a field, no address...): the morning's later checks leave it for a person
+    const le = e.lastSendError;
+    if (opts.slots && le && le.step === s.step && le.at && local(new Date(le.at)).ymd === today) continue;
+    due.push({ id, e, j, s, st });
+  }
+  // take turns between owners, so one person's mailbox doesn't send everything first
+  const byOwner: Record<string, typeof due> = {};
+  for (const d of due) (byOwner[d.e.ownerId || ""] ||= []).push(d);
+  const queues = Object.values(byOwner); const order: typeof due = [];
+  for (let i = 0; order.length < due.length; i++) for (const q of queues) if (q[i]) order.push(q[i]);
+  // the morning run sends its share at each check (e.g. 25 due with 12 checks left: 3 now); "Send due emails now" sends all
+  const quota = opts.slots ? Math.ceil(order.length / Math.max(1, opts.slots)) : Infinity;
+  let sent = 0, more = false; const t0 = Date.now();
+  for (const { id, e, j, s, st } of order) {
+    if (sent >= MAX_PER_RUN || sent >= quota || Date.now() - t0 > TIME_BUDGET_MS) { more = true; break; }   // the rest go at the next check
     const ct = (await one("contacts", e.contactId)) || {};
     const who = pname(ct) || "(contact)";
     const jname = (j && j.name) || "Journey";
@@ -284,7 +308,7 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
       if (claimed) await releaseStep(id, runId);
     }
   }
-  return { today, sent, more, results: out };
+  return { today, sent, more, due: order.length, results: out };
 }
 
 Deno.serve(async (req) => {
@@ -322,10 +346,10 @@ Deno.serve(async (req) => {
     if (lock.data !== true) return json({ skipped: "Another send is already running. Try again in a minute.", busy: true });
   }
   try {
-    const r = await run({ dryRun: dry, onlyId: body.enrollmentId ? String(body.enrollmentId) : undefined, runId });
+    const r = await run({ dryRun: dry, onlyId: body.enrollmentId ? String(body.enrollmentId) : undefined, runId, slots: by === "schedule" ? slotsLeft(t.hm) : undefined });
     if (!dry) {
       const meta = (await one("meta", "autosend")) || {};
-      // the day's run is finished once nothing is left over; otherwise the next 15-minute check carries on
+      // the day's run is finished once nothing is left over; otherwise the next check carries on
       const finished = by === "schedule" && !r.more ? { lastRunDate: t.ymd } : {};
       await save("meta", "autosend", { ...meta, ...finished, runningSince: null, runningBy: null, lastRunAt: Date.now(), lastRunBy: by, lastSent: r.sent, lastResults: r.results.slice(0, 50), lastError: "" });
     }
@@ -333,7 +357,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     const msg = String((err as Error).message || err);
     const meta = (await one("meta", "autosend").catch(() => null)) || {};
-    // not marked as done for today, so the next 15-minute check tries again (a few times at most)
+    // not marked as done for today, so the next check tries again (a few times at most)
     const tries = by === "schedule" ? { tryDate: t.ymd, tries: meta.tryDate === t.ymd ? (meta.tries || 0) + 1 : 1 } : {};
     await save("meta", "autosend", { ...meta, ...tries, runningSince: null, runningBy: null, lastRunAt: Date.now(), lastRunBy: by, lastError: msg }).catch(() => {});
     return json({ error: msg }, 500);

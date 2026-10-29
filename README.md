@@ -11,7 +11,7 @@ Add `?demo` to the address (or click **Open the demo** on the sign-in page) for 
 | `index.html` | The whole app. GitHub Pages serves it; every push to `main` is live in a minute or two. |
 | `config.js` | The Supabase project and Microsoft app IDs the app connects to. None of these are secrets. |
 | `spiro-templates.json` | The 101 email templates from Spiro (Settings → Email templates → Add Spiro templates). |
-| `supabase/functions/journey-send/` | Sends journey emails at 8:45 AM and for **Send due emails now**. |
+| `supabase/functions/journey-send/` | Sends journey emails between 8 and 9 AM and for **Send due emails now**. |
 | `supabase/functions/track/` | Records email opens and link clicks. |
 | `supabase-setup.sql` | The complete database, for rebuilding Paper Trail in a **new, empty** Supabase project. |
 | `supabase-update-4.sql` … `-8.sql` | Changes to run once on the existing database (see below). |
@@ -26,8 +26,8 @@ Add `?demo` to the address (or click **Open the demo** on the sign-in page) for 
   Changes from teammates arrive live; if the connection drops (sleep, Wi-Fi), the app catches up when it's back.
 - **Outlook:** each person connects Outlook once (Settings → Outlook → Manage) and signs in with Microsoft. Paper Trail
   then sends from their own mailbox, shows customer emails on each account, and logs them on the timeline.
-- **Journeys:** emails either wait on the Journeys page for a person (**Ask me first**) or go out at 8:45 AM New York
-  time (**Send automatically**). Before each automatic email, Paper Trail checks for a reply and pauses instead.
+- **Journeys:** emails either wait on the Journeys page for a person (**Ask me first**) or go out between 8 and 9 AM New York
+  time, a few at a time (**Send automatically**). Before each automatic email, Paper Trail checks for a reply and pauses instead.
   Each email is claimed in the database before it's sent, so nothing can send the same email twice.
 
 ## Database updates
@@ -38,12 +38,13 @@ Not sure what's installed? Run `supabase-check.sql`; it lists each piece with �
 | Update | What it does |
 |---|---|
 | 4 | Email open and click tracking (also deploy the `track` function, below). |
-| 5 | The 8:45 AM schedule for automatic journey sending (see that section first). |
+| 5 | The morning schedule for automatic journey sending (see that section first). |
 | 6 | Hosted signature pictures, so emails link to logos instead of attaching them. |
 | 7 | Faster loading with 80,000+ records. |
 | 8 | **Required for automatic sending.** No journey email can go out twice; "last changed" times come from the database clock; faster lookups. Without it, automatic sending refuses to send (people can still send by hand). |
+| 9 | Checks every 5 minutes instead of 15, so automatic emails trickle out between 8 and 9 AM. |
 
-## Automatic journey sending (8:45 AM)
+## Automatic journey sending (8–9 AM)
 
 One-time setup, about 15 minutes:
 
@@ -64,8 +65,10 @@ One-time setup, about 15 minutes:
 6. **Try it.** Set a journey to **Send automatically**, start it on yourself, and click **Send due emails now** on the
    Journeys page. The banner there shows the last run, how many went out, and any problem.
 
-How it behaves: the schedule checks every 15 minutes through the morning and does the day's sending at the first check
-after 8:45. If Outlook is down or the Microsoft sign-in fails, it tries again at the next check (up to 4 times a day).
+How it behaves: the schedule checks every 5 minutes through the morning. Between 8:00 and 9:00 each check sends its share
+of the day's emails (25 due means 2 or 3 per check), taking turns between owners, so replies don't all arrive at once.
+Anything left at 9:00 goes then. If Outlook is down or the Microsoft sign-in fails, it tries again at the next check
+(up to 12 times a day).
 A run sends for about 100 seconds at most and leaves the rest for the next check. Emails missing a fill-in field, or
 to a contact without an email address, are held on the Journeys page with the reason; calls always wait for a person.
 Each person's Paper Trail login email must be their Outlook mailbox, since that's where their journeys send from.
@@ -85,7 +88,7 @@ The **Paper Trail** app registration has a **Single-page application** redirect 
 ## Backups
 
 **Settings → Backup → Back up** downloads everything: all records, plus everyone's signatures and appearance
-settings, the journey copies the 8:45 run uses, and a list of the people (for reference). On the website it's a
+settings, the journey copies the morning run uses, and a list of the people (for reference). On the website it's a
 compressed `.json.gz` file. **Restore** puts back anything missing or different and never deletes. Not included:
 files attached to accounts (they stay in Supabase storage), logins and passwords.
 
