@@ -6965,7 +6965,12 @@ const A = {
   pgMore: d => { ui.lim = ui.lim || {}; ui.lim[d.k] = ((ui.lim[d.k]) || PAGE) + PAGE * 5; schedule(); },
   look: () => lookModal(),
   setTab: d => { ui.setTab = d.v; settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
-  lookSet: d => { LOOK[d.k] = d.v; saveLook(); schedule(); lookModal(); },
+  // picking an option: just move the highlight, so the window doesn't redraw and jump back to the top.
+  // (picking a whole look changes which rows show, so that one redraws, keeping your place)
+  lookSet: d => { LOOK[d.k] = d.v; saveLook(); schedule();
+    const sb = $('#mform .sb'), top = sb ? sb.scrollTop : 0;
+    if (d.k === 'look' || !sb) { lookModal(); const nb = $('#mform .sb'); if (nb) nb.scrollTop = top; return; }
+    document.querySelectorAll(`#mform [data-act="lookSet"][data-k="${d.k}"]`).forEach(b => b.classList.toggle('on', b.dataset.v === String(d.v))); },
   lookReset: () => { LOOK = {...LOOK_DEFAULT}; saveLook(); schedule(); lookModal(); toast('Back to the default look'); },
   trash: () => trashModal(),
   trashRestore: d => trashRestore(d.id),
