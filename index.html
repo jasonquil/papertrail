@@ -1972,6 +1972,9 @@ function fmtPhone(v){
   if (d.length > 6) out += '-' + d.slice(6);
   return out + (ext ? ' x' + ext : '');
 }
+// phone numbers inside any text shown as (123) 456-7890, leaving the rest of the text alone ("ask for Bob 5615551234" → "ask for Bob (561) 555-1234")
+const PH_RE = /(?:\+?1[\s.-]?)?\(?\b(\d{3})\)?[\s.-]?(\d{3})[\s.-]?(\d{4})\b/g;
+const phonePretty = v => String(v ?? '').replace(PH_RE, (m, a, b, c) => `(${a}) ${b}-${c}`);
 const phoneNorm = v => { v = String(v||'').trim(); const d = v.replace(/\D/g, ''); return d.length >= 10 && !/^\+(?!1)/.test(v) ? fmtPhone(v) : v; };
 function phoneInput(el){
   const pos = el.selectionStart ?? el.value.length;
@@ -2047,7 +2050,7 @@ function ndpAuto(dealId){
   const cts = (d.companyId ? gr(d.companyId).contacts : []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0) || (+b.spiroId || 0) - (+a.spiroId || 0) || String(b.id).localeCompare(String(a.id)));
   const ct = cts[0] || (d.contactId && S.contacts[d.contactId]) || {};
   const em = (cts.find(x => x.email) || {}).email || '';
-  const ph = ct.phone || ct.mobile || ''; const phone = String(ph).replace(/\D/g, '').length >= 10 ? fmtPhone(ph) : String(ph).replace(/^\s*\+?1[\s.-]+/, '');
+  const ph = ct.phone || ct.mobile || ''; const phone = String(ph).replace(/\D/g, '').length >= 10 ? phonePretty(ph) : String(ph).replace(/^\s*\+?1[\s.-]+/, '');
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', ') + (c.zip ? ' ' + c.zip : '')].map(x => String(x || '').trim()).filter(Boolean).join(', ');
   const src = d.source === 'Other' && d.sourceOther ? d.sourceOther : (d.source || '');
   return {'Business Name/Client': c.name || '', 'Sales Rep': String(ME.name || '').trim().split(/\s+/)[0] || '', 'Lead Source': src, 'Service Address': addr, 'Office Hours': c.hours || '',
@@ -2061,7 +2064,8 @@ const NDP_FROM = NDP_COLS.indexOf('Business Name/Client');
 const NDP_PAY = ['Credit card', 'Check', 'Cash', 'Invoice', 'Card on file'];
 const ndpCell = v => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
 // one row in the sheet's column order, tab-separated so Excel spreads it across
-function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.slice(NDP_FROM).map(k => ndpCell(v[k])).join('\t'); }
+const NDP_PHONES = new Set(['Contact Phone', 'Alternate phone number/onsite contact']);
+function ndpRow(dealId, vals){ const v = vals || ndpAuto(dealId); if (!v) return null; return NDP_COLS.slice(NDP_FROM).map(k => ndpCell(NDP_PHONES.has(k) ? phonePretty(v[k]) : v[k])).join('\t'); }
 
 // ---------- store ----------
 let bootDone; const bootReady = new Promise(r => bootDone = r);
@@ -3107,7 +3111,7 @@ function oppSide(id){
   const acts = L('activities').filter(a => !isSysAct(a) && (a.dealId === id || (d.companyId && a.companyId === d.companyId))).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 6);
   const ct = d.contactId && S.contacts[d.contactId];
   return `<aside class="oppside" aria-label="Opportunity details">${DETAIL.deals(id)}
-    ${ct ? `<div class="sec"><div class="sech"><h3>Contact</h3></div><p style="margin:0">${link('contacts', d.contactId)}${ct.phone ? ` · <a class="lnk" href="tel:${esc(ct.phone)}">${esc(ct.phone)}</a>` : ''}${ctMail(ct) ? `<br><span class="sub">${esc(ctMail(ct))}</span>` : ''}</p></div>` : ''}
+    ${ct ? `<div class="sec"><div class="sech"><h3>Contact</h3></div><p style="margin:0">${link('contacts', d.contactId)}${ct.phone ? ` · <a class="lnk" href="tel:${esc(phonePretty(ct.phone))}">${esc(phonePretty(ct.phone))}</a>` : ''}${ctMail(ct) ? `<br><span class="sub">${esc(ctMail(ct))}</span>` : ''}</p></div>` : ''}
     <div class="sec"><div class="sech"><h3>Recent activity</h3>${canWrite ? `<button class="btn sm" data-act="addActivity" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('plus')}Log activity</button>` : ''}</div>${acts.length ? `<ul class="feed">${acts.map(a => feedItem(a, 'nodeal')).join('')}</ul>` : '<p class="sub">No activity yet.</p>'}</div>
   </aside>`;
 }
@@ -3189,7 +3193,7 @@ function coEditor(c, k){
     case 'ownerId': return ownerSel('oe', c.ownerId || ME.id).replace('<select ', `<select ${at} `);
     case 'state': return sel('oe', [['', '—'], ...[...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES].map(x => [x, x])], c.state || '', at);
     case 'notes': return `<textarea ${at} rows="2" placeholder="Add notes">${esc(c.notes || '')}</textarea>`;
-    case 'phone': return `<input ${at} type="tel" placeholder="—" value="${esc(c.phone || '')}">`;
+    case 'phone': return `<input ${at} type="tel" placeholder="—" value="${esc(phonePretty(c.phone || ''))}">`;
     case 'zip': return `<input ${at} type="text" inputmode="numeric" placeholder="—" value="${esc(c.zip || '')}">`;
     case 'hours': return `<input ${at} type="text" placeholder="e.g. Mon–Fri 8am–5pm" value="${esc(c.hours || '')}">`;
     default: return `<input ${at} type="text" placeholder="—" value="${esc(c[k] || '')}">`;
@@ -3276,7 +3280,7 @@ V.company = () => {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
     body = `
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
-      <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
+      <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(phonePretty(c.phone))}<button class="copy" data-act="copy" data-t="${esc(phonePretty(c.phone))}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
       ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
       ${cf('Hours of operation', esc(c.hours), 'hours')}${cpField('Contacts', String(g.contacts.length))}
@@ -3288,7 +3292,7 @@ V.company = () => {
   } else if (tab === 'activity') body = `<section class="panel">${coActivity(id)}</section>`;
   else if (tab === 'reminders') { const open = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1); const done = g.tasks.filter(k => k.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
     body = `<section class="panel"><div class="ph"><h3>Open</h3>${W ? `<button class="btn sm pri" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}</div>${tasksList(open)}</section><section class="panel"><h3>Completed</h3>${done.length ? `<ul class="tasks">${done.map(taskRow).join('')}</ul>` : '<p class="empty-s">Nothing completed yet.</p>'}</section>`; }
-  else if (tab === 'contacts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>Mobile</th></tr></thead><tbody>${g.contacts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(ct => `<tr data-act="open" data-col="contacts" data-id="${ct.id}"><td><b>${esc(pname_(ct))}</b></td><td>${esc(ct.title || '—')}</td><td>${ctMailLink(ct) || '—'}</td><td class="num">${esc(ct.phone || '—')}</td><td class="num">${esc(ct.mobile || '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No contacts yet.</td></tr>'}</tbody></table></div>`;
+  else if (tab === 'contacts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>Mobile</th></tr></thead><tbody>${g.contacts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(ct => `<tr data-act="open" data-col="contacts" data-id="${ct.id}"><td><b>${esc(pname_(ct))}</b></td><td>${esc(ct.title || '—')}</td><td>${ctMailLink(ct) || '—'}</td><td class="num">${esc(phonePretty(ct.phone || '—'))}</td><td class="num">${esc(phonePretty(ct.mobile || '—'))}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No contacts yet.</td></tr>'}</tbody></table></div>`;
   else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
   else if (tab === 'quotes') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newQuote" data-co="${id}">${ic('plus')}New quote</button>` : ''}</div><section class="panel">${rowsOr(g.quotes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), quoteRow, 'No quotes yet.')}</section>`;
   else if (tab === 'contracts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContract" data-co="${id}">${ic('plus')}Contract</button>` : ''}</div><section class="panel">${rowsOr(g.contracts, contractRow, 'No contracts yet.')}</section>`;
@@ -3309,7 +3313,7 @@ V.companies = () => {
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
-      return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(c.phone)}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
+      return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
     }).join('') || `<tr><td colspan="6" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
@@ -3321,7 +3325,7 @@ V.contacts = () => {
   ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
   return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${pg('contacts', rows).map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(c.phone||c.mobile||'—')}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>${pgFoot('contacts', rows.length)}`);
+  : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${pg('contacts', rows).map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(phonePretty(c.phone||c.mobile||'—'))}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>${pgFoot('contacts', rows.length)}`);
 };
 
 V.quotes = () => {
@@ -3535,7 +3539,7 @@ const DETAIL = {
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
-    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${fact('Hours', esc(c.hours || ''))}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${fact('Hours', esc(c.hours || ''))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({companyid:id})}
     ${sec('Contacts', g.contacts.length, rowsOr(g.contacts.sort((a,b)=>pname_(a).localeCompare(pname_(b))), contactRow, 'No contacts yet.'), 'newContact', {co:id})}
@@ -3552,7 +3556,7 @@ const DETAIL = {
     const deals = L('deals').filter(d => d.contactId === id);
     return `<div class="dh"><div><p class="eyebrow">Contact</p><h2>${esc(pname_(c))}</h2><p class="sub">${esc(c.title||'')}${c.companyId ? (c.title ? ' at ' : '') : ''}</p>${c.companyId ? `<div>${link('companies', c.companyId)}</div>` : ''}</div>${closeBtn}</div>
     <div class="dacts">${canWrite ? `<button class="btn sm pri" data-act="newDeal" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${esc(c.companyId||'')}">${ic('bell')}Reminder</button><button class="btn sm" data-act="jStart" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('route')}Journey</button><button class="btn sm" data-act="editContact" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="contacts" data-id="${id}" title="Fold a duplicate contact into this one">Merge</button>` : ''}<button class="btn sm" data-act="draft" data-col="contacts" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delContact" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
-    <dl class="facts">${fact('Email', ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(ctMail(c))}</button>` : '', ctMail(c))}${c.email && c.email2 ? fact('Other email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(c.phone), c.phone)}${fact('Mobile', esc(c.mobile), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Email', ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(ctMail(c))}</button>` : '', ctMail(c))}${c.email && c.email2 ? fact('Other email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Mobile', esc(phonePretty(c.mobile)), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({contactid:id, companyid:c.companyId})}
     ${sec('Opportunities', deals.filter(isReal).length, rowsOr(deals, dealRow, 'No opportunities with this contact.'), 'newDeal', {co:c.companyId, ct:id})}
@@ -6467,8 +6471,8 @@ function acctCard(coId, ctId){
   const ct = ctId && S.contacts[ctId];
   const deals = L('deals').filter(d => d.companyId === coId && isOpen(d)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 3);
   return `<aside class="acard"><p class="eyebrow">Account</p><h4>${esc(c.name)}</h4>
-    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Address', esc(addr), addr)}${fact('Phone', esc(c.phone), c.phone)}${fact('Owner', who(c.ownerId))}</dl>
-    ${ct ? `<p class="eyebrow">Contact</p><dl class="facts">${fact('Name', esc(pname_(ct)))}${fact('Email', esc(ctMail(ct) || ''), ctMail(ct))}${fact('Phone', esc(ct.phone || ct.mobile || ''), ct.phone || ct.mobile)}</dl>` : ''}
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Address', esc(addr), addr)}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Owner', who(c.ownerId))}</dl>
+    ${ct ? `<p class="eyebrow">Contact</p><dl class="facts">${fact('Name', esc(pname_(ct)))}${fact('Email', esc(ctMail(ct) || ''), ctMail(ct))}${fact('Phone', esc(phonePretty(ct.phone || ct.mobile || '')), ct.phone || ct.mobile)}</dl>` : ''}
     ${deals.length ? `<p class="eyebrow">Open opportunities</p><ul class="acard-d">${deals.map(d => `<li><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b><small>${esc([stage(d).l, d.value ? money(d.value) : '', isDate(d.serviceDate) ? 'service ' + fmtDate(d.serviceDate) : ''].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>` : ''}
     <button type="button" class="btn sm" data-act="acardOpen" data-id="${esc(coId)}">${ic('building')}Open account</button></aside>`;
 }
@@ -6922,7 +6926,7 @@ const A = {
         return `<div class="f wide" role="radiogroup" aria-label="${esc(col)}"><span>${esc(col)}</span><div class="msel ndp-pay">${[...NDP_PAY, 'Other…'].map(o => { const val = o === 'Other…' ? '__other' : o, on = o === 'Other…' ? other : v === o;
           return `<label class="msel-o msel-r"><input type="radio" name="n${i}" value="${esc(val)}"${on ? ' checked' : ''} data-change="ndpPay"><span>${esc(o)}</span></label>`; }).join('')}
           <input class="ndp-other" name="n${i}_o" value="${esc(other ? v : '')}" placeholder="How?" aria-label="Other way of paying" autocomplete="off"${other ? '' : ' hidden'}></div></div>`; }
-      const box = k === 'ta' ? ta('n' + i, v, 2) : inp('n' + i, v, 'text', `autocomplete="off"${k === 'date' ? ' placeholder="e.g. 10/28"' : ''}`);
+      const box = k === 'ta' ? ta('n' + i, v, 2) : inp('n' + i, NDP_PHONES.has(col) ? phonePretty(v) : v, 'text', `autocomplete="off"${k === 'date' ? ' placeholder="e.g. 10/28"' : ''}${NDP_PHONES.has(col) ? ' data-phtext="1" inputmode="tel"' : ''}`);
       return F(esc(col) + (col in auto && v ? ' <small class="ndp-auto">from Paper Trail</small>' : ''), box, k === 'ta' ? 'wide' : ''); };
     openModal('Copy to NDP', `<p class="sub">Everything Paper Trail knows is already filled in. Check it, change anything you need, add the rest, then copy. Empty boxes stay blank in the sheet.</p>
       <div class="grid3 ndp">${NDP_COLS.map(field).join('')}</div>`, 'Copy row', f => {
@@ -7410,6 +7414,7 @@ document.addEventListener('drop', e => { const box = e.target.closest && e.targe
 document.addEventListener('change', e => {
   const el = e.target;
   if (el.type === 'tel') el.value = phoneNorm(el.value);
+  if (el.dataset.phtext) el.value = phonePretty(el.value);
   if (el.dataset.tagadd) { const v = el.value; el.value = ''; if (cleanTag(v)) tagAdd(el.dataset.tagadd, v); return; }
   if (el.dataset.change) { CHANGE[el.dataset.change]?.(el); return; }
   if (el.dataset.map) { imp.map[el.dataset.map] = el.value === '' ? undefined : +el.value; if (el.value === '') delete imp.map[el.dataset.map]; }
@@ -7418,6 +7423,8 @@ let teamTimer = 0;
 document.addEventListener('input', e => {
   const el = e.target;
   if (el.type === 'tel' && !(e.inputType || '').startsWith('delete')) { phoneInput(el); }
+  // Copy to NDP's phone boxes: format as you type while it's only a number; a name or note typed in is left alone (and its number formatted when you leave the box)
+  else if (el.dataset && el.dataset.phtext && /^[\d\s().+-]*$/.test(el.value) && !(e.inputType || '').startsWith('delete')) { phoneInput(el); }
   if (el.dataset.input) { CHANGE[el.dataset.input]?.(el); return; }
   if (el.id === 'tplBody') { updTplPrev(); return; }
   if (el.id === 'dCc' || el.id === 'dBcc') { acShow(el); return; }
