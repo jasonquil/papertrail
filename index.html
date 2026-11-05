@@ -2050,7 +2050,7 @@ function ndpAuto(dealId){
   const ph = ct.phone || ct.mobile || ''; const phone = String(ph).replace(/\D/g, '').length >= 10 ? fmtPhone(ph) : String(ph).replace(/^\s*\+?1[\s.-]+/, '');
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', ') + (c.zip ? ' ' + c.zip : '')].map(x => String(x || '').trim()).filter(Boolean).join(', ');
   const src = d.source === 'Other' && d.sourceOther ? d.sourceOther : (d.source || '');
-  return {'Business Name/Client': c.name || '', 'Sales Rep': String(ME.name || '').trim().split(/\s+/)[0] || '', 'Lead Source': src, 'Service Address': addr,
+  return {'Business Name/Client': c.name || '', 'Sales Rep': String(ME.name || '').trim().split(/\s+/)[0] || '', 'Lead Source': src, 'Service Address': addr, 'Office Hours': c.hours || '',
     'Amount of Shredding': d.shredAmount || '', 'Quote/Pricing': d.priceQuoted === 0 || d.priceQuoted == null ? '' : String(d.priceQuoted),
     'Email': em, 'Contact Name': String(ct.firstName || '').trim(), 'Contact Phone': phone};
 }
@@ -3191,6 +3191,7 @@ function coEditor(c, k){
     case 'notes': return `<textarea ${at} rows="2" placeholder="Add notes">${esc(c.notes || '')}</textarea>`;
     case 'phone': return `<input ${at} type="tel" placeholder="—" value="${esc(c.phone || '')}">`;
     case 'zip': return `<input ${at} type="text" inputmode="numeric" placeholder="—" value="${esc(c.zip || '')}">`;
+    case 'hours': return `<input ${at} type="text" placeholder="e.g. Mon–Fri 8am–5pm" value="${esc(c.hours || '')}">`;
     default: return `<input ${at} type="text" placeholder="—" value="${esc(c[k] || '')}">`;
   }
 }
@@ -3278,7 +3279,7 @@ V.company = () => {
       <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(c.phone)}<button class="copy" data-act="copy" data-t="${esc(c.phone)}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
       ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
-      ${cpField('Contacts', String(g.contacts.length))}
+      ${cf('Hours of operation', esc(c.hours), 'hours')}${cpField('Contacts', String(g.contacts.length))}
       ${TAGS_ON ? `<div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>` : ''}
       ${cf('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', 'notes', true)}</div></section>
     ${spiroPanel(c)}
@@ -3534,7 +3535,7 @@ const DETAIL = {
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
-    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(c.phone), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${fact('Hours', esc(c.hours || ''))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({companyid:id})}
     ${sec('Contacts', g.contacts.length, rowsOr(g.contacts.sort((a,b)=>pname_(a).localeCompare(pname_(b))), contactRow, 'No contacts yet.'), 'newContact', {co:id})}
@@ -4052,6 +4053,7 @@ function companyForm(id){
     ${F('Owner', ownerSel('ownerId', c.ownerId))}
     ${F('Street address', inp('address', c.address), 'wide')}
     <div class="grid3 wide">${F('City', inp('city', c.city))}${F('State', sel('state', [...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES], c.state || 'FL'))}${F('ZIP', inp('zip', c.zip, 'text', 'inputmode="numeric"'))}</div>
+    ${F('Hours of operation', inp('hours', c.hours, 'text', 'placeholder="e.g. Mon–Fri 8am–5pm"'), 'wide')}
     ${F('Notes', ta('notes', c.notes), 'wide')}</div>`, id ? 'Save' : 'Add account', async d => {
       const nid = id || uid();
       const dup = findDupCompany(d.name, d.phone, id);
@@ -4324,6 +4326,7 @@ const IMPORT = {
     ['city','City',['city','billingcity','mailingcity']],
     ['state','State',['state','province','region','billingstate','mailingstate']],
     ['zip','ZIP',['zip','zipcode','postalcode','postcode','billingzip','billingpostalcode']],
+    ['hours','Hours of operation',['hoursofoperation','hours','businesshours','openhours','operatinghours']],
     ['owner','Owner (name or email)',['owner','accountowner','ownername','assignedto','salesrep','rep','user']],
     ['notes','Notes',['notes','description','note','comments']]]},
   contacts: {label:'Contacts', fields:[
@@ -4592,7 +4595,7 @@ async function runImport(_, form){
     if (i % 100 === 0) { if (btn) btn.textContent = `Importing ${i + 1} of ${imp.rows.length}…`; await new Promise(r => setTimeout(r, 0)); }
     if (imp.type === 'accounts') {
       const name = get(r, 'name'); if (!name) { skipped++; continue; }
-      const rec = {name, phone: phoneNorm(get(r,'phone')), address: get(r,'address'), city: get(r,'city'), state: get(r,'state') || (S.companies[coByName[norm(name)]]?.state ? '' : 'FL'), zip: get(r,'zip'), notes: get(r,'notes'), ownerId: ownerFrom(get(r,'owner'))};
+      const rec = {name, phone: phoneNorm(get(r,'phone')), address: get(r,'address'), city: get(r,'city'), state: get(r,'state') || (S.companies[coByName[norm(name)]]?.state ? '' : 'FL'), zip: get(r,'zip'), hours: get(r,'hours'), notes: get(r,'notes'), ownerId: ownerFrom(get(r,'owner'))};
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
       const ex = coByName[norm(name)];
       if (ex) { if (await write('companies', ex, {...S.companies[ex], ...rec})) updated++; else break; }
@@ -4704,7 +4707,7 @@ const EXP = {
   companies: {
     title: 'accounts', file: 'accounts',
     cols: [
-      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ...(TAGS_ON ? [['Tags', c => coTags(c).join('; ')]] : []), ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip],
+      ['Account Number', c => c.acctNo || ''], ['Company Id', c => c.id], ['Name', c => c.name], ...(TAGS_ON ? [['Tags', c => coTags(c).join('; ')]] : []), ['Phone', c => c.phone], ['Address', c => c.address], ['City', c => c.city], ['State', c => c.state], ['Zipcode', c => c.zip], ['Hours of Operation', c => c.hours || ''],
       ['Owner', c => nm(c.ownerId)], ['Created', c => mdy(c.createdAt)], ['Open Opportunities', c => coStats(c.id).open], ['Won Jobs', c => coStats(c.id).won], ['Last Job Date', c => mdy(coStats(c.id).last)], ['Notes', c => c.notes]],
     form: () => locForm('Account owner'),
     rows: f => L('companies').filter(c => locMatch(c, f) && (!f.ownerId || c.ownerId === f.ownerId) && coStatus(c.id, f.status) && inRange(c.createdAt, f.from, f.to)).sort(byName)
@@ -8683,7 +8686,7 @@ function raRows(from){
 
 // ---------- merge duplicates ----------
 const MRG_FIELDS = {
-  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['ownerId', 'Owner'], ['notes', 'Notes']],
+  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['hours', 'Hours of operation'], ['ownerId', 'Owner'], ['notes', 'Notes']],
   contacts: [['firstName', 'First name'], ['lastName', 'Last name'], ['title', 'Title'], ['companyId', 'Account'], ['email', 'Email'], ['email2', 'Other email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['ownerId', 'Owner'], ['notes', 'Notes']]};
 const coKey = n => norm(String(n || '').toLowerCase().replace(/\s*-\s*copy\b.*$/, '').replace(/[.,'’&()]/g, ' ').replace(/\b(the|llc|l\.?l\.?c|inc|incorporated|pa|p\.?a|pllc|pc|co|corp|corporation|company|ltd|group)\b/g, ' '));
 const mVal = (col, k, r) => { const v = r && r[k]; if (!v) return ''; if (k === 'ownerId') return nm(v); if (k === 'companyId') return cname(v); return String(v); };
