@@ -396,6 +396,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .itemh{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .qtot{display:flex;justify-content:flex-end;gap:14px;font:800 1.15rem var(--display);font-variant-numeric:tabular-nums}
 .map{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px 12px;align-items:center}
+.impchk section{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line)}.impchk h4{margin:0 0 4px;font-size:.98rem}
+.impsum{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.impsum .chip.warn{background:color-mix(in srgb,var(--warn,#B7791F) 16%,transparent);color:var(--warn,#B7791F)}
+.impnear{display:grid;gap:8px;margin-top:8px}.impn{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.impn small{display:block;color:var(--muted);font-size:.8rem}.impn select{width:100%}
+.impkeep{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.impkeep label{display:flex;gap:6px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.impl{margin:6px 0 0;padding-left:18px;max-height:220px;overflow:auto;font-size:.88rem}
+@media(max-width:640px){.impn{grid-template-columns:1fr}}
 .map>span{font-size:.86rem;font-weight:600}
 .prev{overflow-x:auto;border:1px solid var(--line);border-radius:8px;max-height:200px}
 .prev table{font-size:.8rem}
@@ -4538,9 +4545,9 @@ async function spImport(form){
   return true;
 }
 
-const imp = {type:'accounts', headers:[], rows:[], map:{}, name:'', spiro:null};
+const imp = {type:'accounts', headers:[], rows:[], map:{}, name:'', spiro:null, plan:null};
 function importModal(){
-  imp.headers = []; imp.rows = []; imp.map = {}; imp.name = ''; imp.spiro = null;
+  imp.headers = []; imp.rows = []; imp.map = {}; imp.name = ''; imp.spiro = null; imp.plan = null;
   openModal('Import from current CRM or a spreadsheet', `<p class="sub"><b>From your current CRM:</b> export Companies, Contacts and Opportunities as CSV files and choose all three at once. Paper Trail recognizes them and links everything for you.</p><p class="sub"><b>Another spreadsheet:</b> choose one file at a time. Import accounts first, then contacts, then opportunities. Every contact and opportunity needs an account name, so rows without one are skipped. Matching accounts and contacts are updated instead of duplicated.</p><p class="sub"><b>Reminders:</b> pick Reminders below. Each one goes on the account (or the contact's account) named in the file, assigned to you unless the file says otherwise.</p>
     <div class="grid2">${F('What is in this file?', `<select id="impType" data-change="impType">${Object.entries(IMPORT).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')}</select>`)}
     ${F('CSV file(s)', `<input type="file" id="impFile" accept=".csv,text/csv" multiple data-change="impFile">`)}</div>
@@ -4553,6 +4560,74 @@ function renderImpBody(){
   el.innerHTML = `<p><b>${imp.rows.length}</b> rows in ${esc(imp.name)}. Check how the columns line up:</p>
   <div class="map">${IMPORT[imp.type].fields.map(([k, l]) => `<span>${l}</span><select data-map="${k}" aria-label="${esc(l)}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(imp.map[k] ?? '') === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`).join('')}</div>
   <div class="prev"><table><thead><tr>${imp.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${imp.rows.slice(0,5).map(r => `<tr>${imp.headers.map((_, i) => `<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  impUnchecked();
+}
+// ---------- before importing: what's already in Paper Trail, what might be the same customer, and what's new ----------
+function impUnchecked(){ imp.plan = null; const b = $('#mform [type=submit]'); if (b && imp.rows.length && !imp.spiro) b.textContent = imp.type === 'tasks' ? 'Import' : 'Next: check for existing'; }
+function impPlan(){
+  const get = (r, k) => imp.map[k] != null ? String(r[imp.map[k]] ?? '').trim() : '';
+  const coByName = {}; for (const c of L('companies')) coByName[norm(c.name)] = c.id;
+  // close names: the same name once "Inc", "LLC", "The", "Co", punctuation… are set aside, one name starting with the other, or the same phone number
+  const byKey = new Map(), byPhone = new Map();
+  for (const c of L('companies')) { const k = coKey(c.name); if (k) { if (!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(c.id); } const ph = digits(c.phone); if (ph.length >= 10) { if (!byPhone.has(ph)) byPhone.set(ph, []); byPhone.get(ph).push(c.id); } }
+  const keys = [...byKey.keys()].sort();
+  const startsWith = k => { let lo = 0, hi = keys.length; while (lo < hi) { const m = (lo + hi) >> 1; if (keys[m] < k) lo = m + 1; else hi = m; } const out = []; for (let i = lo; i < keys.length && keys[i].startsWith(k) && out.length < 4; i++) if (keys[i] !== k) out.push(...byKey.get(keys[i])); return out; };
+  const nearOf = (name, phone) => {
+    const k = coKey(name), found = new Set();
+    for (const id of byKey.get(k) || []) found.add(id);
+    if (k.length >= 6) { for (const id of startsWith(k)) found.add(id); for (let n = k.length - 1; n >= 6; n--) for (const id of byKey.get(k.slice(0, n)) || []) found.add(id); }
+    const ph = digits(phone); if (ph.length >= 10) for (const id of byPhone.get(ph) || []) found.add(id);
+    return [...found].filter(id => S.companies[id]).slice(0, 4);
+  };
+  const coCol = imp.type === 'accounts' ? 'name' : 'company';
+  const names = new Map();   // file name → {name, phone, rows}
+  for (const r of imp.rows) { const n = get(r, coCol); if (!n) continue; const k = norm(n); if (!k) continue; const x = names.get(k) || {name: n, phone: get(r, 'phone'), rows: 0}; x.rows++; names.set(k, x); }
+  const exact = [], near = [], fresh = [];
+  for (const [k, x] of names) { if (coByName[k]) exact.push({...x, id: coByName[k]}); else { const c = nearOf(x.name, imp.type === 'accounts' ? x.phone : ''); if (c.length) near.push({...x, k, cands: c}); else fresh.push(x); } }
+  const pick = {}; for (const n of near) pick[n.k] = (imp.plan && imp.plan.pick[n.k]) || n.cands[0];   // default: the closest account (that's usually right)
+  // records (not just accounts) that already exist, using the matches above
+  const coId = n => coByName[norm(n)] || (pick[norm(n)] && pick[norm(n)] !== 'new' ? pick[norm(n)] : '');
+  const ctByEmail = {}; for (const c of L('contacts')) for (const e of ctAddrs(c)) ctByEmail[e] = c.id;
+  const ctByName = {}; for (const c of L('contacts')) ctByName[(c.companyId || '') + '|' + norm(pname_(c))] = c.id;
+  const dealByKey = {}; for (const d of L('deals')) dealByKey[norm(d.name) + '|' + (d.companyId || '')] = d.id;
+  const have = []; let add = 0;
+  if (imp.type === 'accounts') { for (const x of exact) have.push(cname(x.id)); add = fresh.length; }
+  else for (const r of imp.rows) {
+    if (imp.type === 'contacts') {
+      let first = get(r, 'firstName'), last = get(r, 'lastName'); if (!first && !last && get(r, 'fullName')) { const q = get(r, 'fullName').split(/\s+/); first = q.shift(); last = q.join(' '); }
+      const email = get(r, 'email').toLowerCase(); if (!first && !last && !email) continue;
+      const cid = coId(get(r, 'company')); const ex = (email && ctByEmail[email]) || (cid && ctByName[cid + '|' + norm(first + ' ' + last)]);
+      if (ex) have.push(`${pname_(S.contacts[ex])} · ${cname(S.contacts[ex].companyId)}`); else add++;
+    } else if (imp.type === 'deals') {
+      const nm_ = get(r, 'name'); if (!nm_) continue; const cid = coId(get(r, 'company')); const ex = cid && dealByKey[norm(nm_) + '|' + cid];
+      if (ex) have.push(`${S.deals[ex].name} · ${cname(cid)}`); else add++;
+    }
+  }
+  return {exact, near, fresh, have, add, pick, skip: imp.plan ? imp.plan.skip : false};
+}
+function renderImpCheck(){
+  const el = $('#impBody'); if (!el) return; const P_ = imp.plan = impPlan();
+  const what = {accounts: ['account', 'accounts'], contacts: ['contact', 'contacts'], deals: ['opportunity', 'opportunities']}[imp.type];
+  const pl = (n, w) => `${n.toLocaleString()} ${n === 1 ? w[0] : w[1]}`;
+  const coLine = id => { const c = S.companies[id]; return c ? [c.name, c.city, c.phone && phonePretty(c.phone), `Acct #${c.acctNo || '—'}`].filter(Boolean).join(' · ') : ''; };
+  const list = (arr, max = 60) => `<ul class="impl">${arr.slice(0, max).map(t => `<li>${esc(t)}</li>`).join('')}${arr.length > max ? `<li class="sub">…and ${(arr.length - max).toLocaleString()} more</li>` : ''}</ul>`;
+  const newCos = imp.type === 'accounts' ? [] : P_.fresh;
+  el.innerHTML = `<div class="impchk">
+    <p><button type="button" class="lnk" data-act="impBack">← Back to the columns</button></p>
+    <div class="impsum"><span class="chip good">${P_.add.toLocaleString()} new ${P_.add === 1 ? what[0] : what[1]}</span><span class="chip">${pl(P_.have.length, what)} already in Paper Trail</span>${P_.near.length ? `<span class="chip warn">${P_.near.length} possible match${P_.near.length === 1 ? '' : 'es'}</span>` : ''}</div>
+    ${P_.near.length ? `<section><h4>Possible matches</h4><p class="sub">These names in your file are close to accounts you already have. Pick what each one is${imp.type === 'accounts' ? '' : ` (it decides which account the ${what[1]} go on)`}.</p>
+      <div class="impnear">${P_.near.map(n => `<div class="impn"><div><b>${esc(n.name)}</b><small>in your file${n.rows > 1 ? ` · ${n.rows} rows` : ''}</small></div>
+        <select data-change="impNear" data-k="${esc(n.k)}" aria-label="What is ${esc(n.name)}?">${n.cands.map(id => `<option value="${id}"${P_.pick[n.k] === id ? ' selected' : ''}>Same customer as ${esc(coLine(id))}</option>`).join('')}<option value="new"${P_.pick[n.k] === 'new' ? ' selected' : ''}>Different customer: add as a new account</option></select></div>`).join('')}</div></section>` : ''}
+    ${P_.have.length ? `<section><h4>Already in Paper Trail (${P_.have.length.toLocaleString()})</h4>
+      <div class="seg impkeep" role="radiogroup" aria-label="What to do with these">
+        <label><input type="radio" name="impKeep" value="update" data-change="impKeep"${P_.skip ? '' : ' checked'}><span>Update them with the file's info</span></label>
+        <label><input type="radio" name="impKeep" value="skip" data-change="impKeep"${P_.skip ? ' checked' : ''}><span>Skip them, leave as they are</span></label></div>
+      <p class="sub small">Updating fills in what's in your file; blank cells never erase anything, and the owner only changes if your file has an owner column.</p>
+      <details><summary>See which ones</summary>${list(P_.have)}</details></section>` : ''}
+    ${newCos.length ? `<section><h4>New accounts (${newCos.length.toLocaleString()})</h4><p class="sub">These aren't in Paper Trail yet, so they'll be added as new accounts.</p><details><summary>See which ones</summary>${list(newCos.map(x => x.name))}</details></section>` : ''}
+    ${imp.type === 'accounts' && P_.fresh.length ? `<details><summary>See the ${pl(P_.fresh.length, what)} that will be added</summary>${list(P_.fresh.map(x => x.name))}</details>` : ''}
+  </div>`;
+  const b = $('#mform [type=submit]'); if (b) b.textContent = 'Import';
 }
 function ownerFrom(v){
   v = String(v||'').trim().toLowerCase(); if (!v) return ME.id;
@@ -4562,8 +4637,12 @@ function ownerFrom(v){
 async function runImport(_, form){
   if (imp.spiro) return spImport(form);
   if (!imp.rows.length) { toast('Choose a CSV file first.', 'bad'); return false; }
+  if (imp.type !== 'tasks' && !imp.plan) { renderImpCheck(); return false; }   // first click: show what's already in Paper Trail
+  const plan = imp.type !== 'tasks' ? imp.plan : null, skipHave = !!(plan && plan.skip), keepOwner = imp.map.owner == null;
+  let left = 0;
   const get = (r, k) => imp.map[k] != null ? String(r[imp.map[k]] ?? '').trim() : '';
   const coByName = {}; for (const c of L('companies')) coByName[norm(c.name)] = c.id;
+  if (plan) for (const n of plan.near) { const v = plan.pick[n.k]; if (v && v !== 'new' && S.companies[v]) coByName[n.k] = v; }   // "same customer": use that account
   const ctByEmail = {}; for (const c of L('contacts')) for (const e of ctAddrs(c)) ctByEmail[e] = c.id;
   const ctByName = {}; for (const c of L('contacts')) ctByName[(c.companyId || '') + '|' + norm(pname_(c))] = c.id;
   const ctAnyName = {}; for (const c of L('contacts')) ctAnyName[norm(pname_(c))] = c.id;
@@ -4602,7 +4681,9 @@ async function runImport(_, form){
       const rec = {name, phone: phoneNorm(get(r,'phone')), address: get(r,'address'), city: get(r,'city'), state: get(r,'state') || (S.companies[coByName[norm(name)]]?.state ? '' : 'FL'), zip: get(r,'zip'), hours: get(r,'hours'), notes: get(r,'notes'), ownerId: ownerFrom(get(r,'owner'))};
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
       const ex = coByName[norm(name)];
-      if (ex) { if (await write('companies', ex, {...S.companies[ex], ...rec})) updated++; else break; }
+      if (ex && skipHave) { left++; continue; }
+      if (ex && keepOwner) delete rec.ownerId;   // no owner column: an account that's already here keeps its owner
+      if (ex) { const keepName = S.companies[ex].name; if (await write('companies', ex, {...S.companies[ex], ...rec, name: keepName})) updated++; else break; }
       else { const id = uid(); if (await write('companies', id, rec)) { coByName[norm(name)] = id; created++; } else break; }
     } else if (imp.type === 'contacts') {
       let first = get(r,'firstName'), last = get(r,'lastName');
@@ -4617,6 +4698,8 @@ async function runImport(_, form){
       if (companyId && get(r,'address')) { const co = S.companies[companyId]; if (co && !co.address) await write('companies', companyId, {...co, address: get(r,'address'), city: get(r,'city'), state: get(r,'state'), zip: get(r,'zip')}); }
       const byNm = ctByName[companyId + '|' + norm(first + ' ' + last)];
       const ex = (email && ctByEmail[email.toLowerCase()]) || (byNm && (!email || !ctAddrs(S.contacts[byNm]).length) ? byNm : '');
+      if (ex && skipHave) { left++; continue; }
+      if (ex && keepOwner) delete rec.ownerId;
       if (ex) { if (await write('contacts', ex, {...S.contacts[ex], ...rec})) updated++; else break; }
       else { const id = uid(); if (await write('contacts', id, rec)) { if (email) ctByEmail[email.toLowerCase()] = id; ctByName[companyId + '|' + norm(first + ' ' + last)] = id; ctAnyName[norm(first + ' ' + last)] = id; created++; } else break; }
     } else if (imp.type === 'tasks') {
@@ -4643,6 +4726,8 @@ async function runImport(_, form){
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
       const key = norm(name) + '|' + (companyId||'');
       const ex = dealByKey[key];
+      if (ex && skipHave) { left++; continue; }
+      if (ex && keepOwner) delete rec.ownerId;
       if (ex) { if (await write('deals', ex, {...S.deals[ex], ...rec})) updated++; else break; }
       else { const id = uid(); if (await write('deals', id, rec)) { dealByKey[key] = id; created++; } else break; }
     }
@@ -4657,7 +4742,7 @@ async function runImport(_, form){
     if (noMatch.length) { const el = $('#impBody'); if (el) el.innerHTML = `<p><b>${esc(msg)}</b></p><p class="sub">Add those accounts or contacts (or fix the spelling in the file) and import the same file again. Reminders that already went in won't be added twice.</p>`; const b = form.querySelector('[type=submit]'); if (b) b.textContent = 'Import again'; return false; }
     return true;
   }
-  toast(`Import done: ${created} added, ${updated} updated${skipped ? `, ${skipped} empty rows skipped` : ''}${noCo ? `, ${noCo} skipped because they had no account name` : ''}.`);
+  toast(`Import done: ${created} added, ${updated} updated${left ? `, ${left} already in Paper Trail left as they were` : ''}${skipped ? `, ${skipped} empty rows skipped` : ''}${noCo ? `, ${noCo} skipped because they had no account name` : ''}.`);
   return true;
 }
 
@@ -7283,7 +7368,10 @@ const CHANGE = {
   lookColor: el => { LOOK.accent = el.value; saveLook(); document.querySelectorAll('.swatches .sw').forEach(b => b.classList.remove('on')); const c = el.closest('.sw'); if (c) { c.classList.add('on'); c.style.background = el.value; } },
   raFrom: el => { const l = $('#raList'); if (l) l.innerHTML = raRows(el.value); const to = $('#raTo'); if (to) { const cur = to.value; to.innerHTML = [['', '— Choose who takes over —'], ...(SUPA && !DEMO ? USERS.filter(u => u.active).map(u => u.id) : people()).filter(i => i && i !== el.value).map(i => [i, nm(i) || pname(i)]).sort((a, b) => a[1].localeCompare(b[1]))].map(([v, l2]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l2)}</option>`).join(''); } },
   uRole: el => { if (el.dataset.id) uPatch(el.dataset.id, {role: el.value}); },
-  impType: el => { imp.type = el.value; if (imp.headers.length) imp.map = guessMap(imp.type, imp.headers); renderImpBody(); },
+  impType: el => { imp.type = el.value; if (imp.headers.length) imp.map = guessMap(imp.type, imp.headers); imp.plan = null; renderImpBody(); },
+  impBack: () => { imp.plan = null; renderImpBody(); },
+  impNear: el => { if (imp.plan) imp.plan.pick[el.dataset.k] = el.value; },
+  impKeep: el => { if (imp.plan) imp.plan.skip = el.value === 'skip'; },
   impFile: el => { const file = el.files && el.files[0]; if (!file) return;
     { const all = [...el.files]; const b = $('#impBody'); if (b) b.innerHTML = '<p class="sub">Reading…</p>';
       file.slice(0, 4000).text().then(head => { const isSp = SP_KIND(parseCSV(head.split(/\r?\n/)[0] || '')[0] || []);
@@ -7291,7 +7379,7 @@ const CHANGE = {
         imp.spiro = null; const ts = $('#impType'); if (ts) ts.closest('.f').hidden = false; readOne(); }); }
     function readOne(){ const r = new FileReader(); r.onload = () => { const rows = parseCSV(String(r.result)); imp.name = file.name; imp.headers = rows[0] || []; imp.rows = rows.slice(1);
     const n = file.name.toLowerCase(); const t = /opportunit|deal/.test(n) ? 'deals' : /contact|people|person/.test(n) ? 'contacts' : /compan|account|organi/.test(n) ? 'accounts' : imp.type; imp.type = t; const ts = $('#impType'); if (ts) ts.value = t;
-    imp.map = guessMap(imp.type, imp.headers); renderImpBody(); }; r.onerror = () => toast("Couldn't read that file.", 'bad'); r.readAsText(file); } }
+    imp.map = guessMap(imp.type, imp.headers); imp.plan = null; renderImpBody(); }; r.onerror = () => toast("Couldn't read that file.", 'bad'); r.readAsText(file); } }
 };
 const FORMS = {
   quickTask: async () => { const t = $('#quickTask'), d = $('#quickDue'); const title = t.value.trim(); if (!title) return; t.value = ''; if (await put('tasks', uid(), {title, due: d.value || today(), assigneeId: ME.id})) toast('Reminder set'); else t.value = title; },
@@ -7422,7 +7510,7 @@ document.addEventListener('change', e => {
   if (el.dataset.phtext) el.value = phonePretty(el.value);
   if (el.dataset.tagadd) { const v = el.value; el.value = ''; if (cleanTag(v)) tagAdd(el.dataset.tagadd, v); return; }
   if (el.dataset.change) { CHANGE[el.dataset.change]?.(el); return; }
-  if (el.dataset.map) { imp.map[el.dataset.map] = el.value === '' ? undefined : +el.value; if (el.value === '') delete imp.map[el.dataset.map]; }
+  if (el.dataset.map) { imp.map[el.dataset.map] = el.value === '' ? undefined : +el.value; if (el.value === '') delete imp.map[el.dataset.map]; impUnchecked(); }
 });
 let teamTimer = 0;
 document.addEventListener('input', e => {
