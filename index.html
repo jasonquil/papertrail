@@ -396,6 +396,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .itemh{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .qtot{display:flex;justify-content:flex-end;gap:14px;font:800 1.15rem var(--display);font-variant-numeric:tabular-nums}
 .map{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:8px 12px;align-items:center}
+.hd10{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}.hd10 .btn[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:var(--accent);color:var(--accent)}
 .impchk section{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line)}.impchk h4{margin:0 0 4px;font-size:.98rem}
 .impsum{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.impsum .chip.warn{background:color-mix(in srgb,var(--warn,#B7791F) 16%,transparent);color:var(--warn,#B7791F)}
 .impnear{display:grid;gap:8px;margin-top:8px}.impn{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
@@ -1767,10 +1768,11 @@ const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID'
 const SOURCES = ['Chat GPT','Print Ad','Local and Organic','AdWords','Bing','Shred Nations','Click2Sell','Previous Client','Existing Client','Truck','Pink Truck','Newsletter','Facebook','Postcard','Next Door','In-House Post Card','Sell Sheet','Other','Outbound Lead','A3','A4','YouTube','TJ Baral'];
 const QSTAT = [['draft','Draft'],['sent','Sent'],['accepted','Accepted'],['declined','Declined']];
 const STALE_DAYS = 14;
-const NAVKEY = {today: 'T', reminders: 'R', journeys: 'J', pipeline: 'O', companies: 'A', contacts: 'C', quotes: 'Q', contracts: 'K'};
-const VIEWS = [['today','Today','cal'],['reminders','Reminders','bell'],['journeys','Journeys','route'],['pipeline','Opportunities','cols'],['companies','Accounts','building'],['contacts','Contacts','users'],['quotes','Quotes','tag'],['contracts','Contracts','doc']];
+const NAVKEY = {today: 'T', reminders: 'R', journeys: 'J', hdwd: 'H', pipeline: 'O', companies: 'A', contacts: 'C', quotes: 'Q', contracts: 'K'};
+const VIEWS = [['today','Today','cal'],['reminders','Reminders','bell'],['journeys','Journeys','route'],['hdwd','HDWD','star'],['pipeline','Opportunities','cols'],['companies','Accounts','building'],['contacts','Contacts','users'],['quotes','Quotes','tag'],['contracts','Contracts','doc']];
 
 const ICON = {
+  star:'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
   phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   chevup:'<path d="M6 15l6-6 6 6"/>', chevdown:'<path d="M6 9l6 6 6-6"/>',
@@ -2875,7 +2877,7 @@ function render(){
 }
 
 function navHtml(){
-  const badge = {journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? attention().length : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
+  const badge = {hdwd: booted ? hdwdDue().length : 0, journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? attention().length : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
   const MT = ['today', 'reminders', 'pipeline', 'companies'];
   const curK = ui.view === 'company' ? 'companies' : ui.view === 'opp' ? 'pipeline' : ui.view;
   const curL = (VIEWS.find(v => v[0] === curK) || [0, 'Paper Trail'])[1];
@@ -5571,7 +5573,7 @@ function templates(){
   const saved = S.templates || {};
   const list = DEFAULT_TEMPLATES.map(t => saved[t.id] ? {...t, ...saved[t.id], id:t.id} : t);
   for (const [id, t] of Object.entries(saved)) if (!DEFAULT_TEMPLATES.some(x => x.id === id)) list.push({...t, id});
-  return list.filter(t => !t.deleted).sort((a,b) => (a.order ?? 50) - (b.order ?? 50) || 0);
+  return list.filter(t => !t.deleted && t.kind !== 'hdwd').sort((a,b) => (a.order ?? 50) - (b.order ?? 50) || 0);
 }
 function mergeData(dr){
   const co = S.companies[dr.companyId] || {}; const ct = S.contacts[dr.contactId] || null;
@@ -5927,7 +5929,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (jopt && jopt.companyId) companyId = jopt.companyId;
   ui.draftFiles = [];
   ui.draftHtml = true;
-  ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey}; ui.sendOk = false;   // (the editor is the message box from the start, so writing from scratch counts)
+  ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey, hdwd: jopt && jopt.hdwd}; ui.sendOk = false;   // (the editor is the message box from the start, so writing from scratch counts)
   const contacts = companyId ? gr(companyId).contacts : (contact ? [contact] : []);
   const tpls = templates();
   let pick = '';
@@ -5937,7 +5939,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (!tpls.some(t => t.id === pick)) pick = '';
   ui.draftArgs = [col, id, purpose, jopt, toAddr]; ui.blankOk = false;
   const lay = cmpLayout(jopt);
-  const title = jopt ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : (contact && ctMail(contact) ? 'Email ' + toName(contact) : 'Email');
+  const title = jopt && jopt.title ? jopt.title : jopt && jopt.journey ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : (contact && ctMail(contact) ? 'Email ' + toName(contact) : 'Email');
   const X = cmpParts({contacts, tpls, pick, jopt, lay});
   const body = CMP_BUILD[lay](X);
   openModal(title, `${jopt ? '<div class="jwin"><div class="jwin-main">' : ''}${body}${jopt ? `</div>${acctCard(companyId, contact && contact.id)}</div>` : ''}`, null, null,
@@ -5946,6 +5948,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   cmpAvatar();
   if (pick) applyTemplate(pick);
   if (jopt) { const data = mergeData(ui.draft); $('#draftSubj').value = fillTemplate(jopt.subject, data); setDraftBody(jopt.html ? cleanHtml(fillTemplate(jopt.body, data, true)) : textToHtml(fillTemplate(jopt.body, data))); }
+  if (jopt && jopt.hdwd) { const bar = $('.rte-bar[data-for="draftHtml"]'); if (bar) bar.insertAdjacentHTML('beforebegin', `<div class="hd10"><button type="button" class="btn sm" id="hd10Btn" data-act="hd10" aria-pressed="false">Add 10%?</button><span class="sub small">Adds the 10% off next purge offer (code THANKYOU10) to the end of the email.</span></div>`); }
 }
 // the recipient's initials beside the To line
 function cmpAvatar(){ const av = $('#dAv'); if (!av) return; const ct = ui.draft && S.contacts[ui.draft.contactId];
@@ -5975,7 +5978,7 @@ function rteBar(target, opt = {}){
     ${b('justifyLeft', '<svg viewBox="0 0 24 24" class="ic"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg>', 'Align left')}${b('justifyCenter', '<svg viewBox="0 0 24 24" class="ic"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg>', 'Center')}
     ${b('link', '<svg viewBox="0 0 24 24" class="ic"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>', 'Add a link')}
     ${b('removeFormat', '<svg viewBox="0 0 24 24" class="ic"><path d="M6 5h12M12 5l-3 14M4 20l16-16"/></svg>', 'Clear formatting')}
-    ${opt.fields ? `<span class="rte-sep"></span><select class="rte-sel" data-change="rteField" data-t="${target}" aria-label="Insert a fill-in field"><option value="">+ Field</option>${MERGE_FIELDS.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>` : ''}
+    ${opt.fields ? `<span class="rte-sep"></span><select class="rte-sel" data-change="rteField" data-t="${target}" aria-label="Insert a fill-in field"><option value="">+ Field</option>${(opt.extraFields || []).concat(MERGE_FIELDS).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join('')}</select>` : ''}
     ${opt.src ? `<button type="button" class="rte-b rte-src" data-act="rteSrc" data-t="${target}" title="Edit the HTML source" aria-pressed="false">HTML</button>` : ''}
   </div>`;
 }
@@ -6114,6 +6117,7 @@ async function sendMail(){
     const fnames = (ui.draftFiles || []).map(x => x.name);
     logAct({type: 'email', text: f.subject + '\n' + body + (fnames.length ? `\n\nAttached: ${fnames.join(', ')}` : ''), companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId, ...(track && track.token ? {track: track.token, links: track.links} : {})});
     if (ui.draft.journey) { await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); ui.jClaimBy = null; }
+    if (ui.draft.hdwd) await hdwdMark(ui.draft.hdwd.dealId, 'sent', !!$('#hd10Btn[aria-pressed="true"]'));
     await emailJourneyAfterSend();
     closeModal(); toast('Email sent');
   } catch(e){
@@ -6423,6 +6427,113 @@ function journeyDueBuild(){
   const t = today();
   return L('enrollments').filter(e => e.status === 'active' && (!ui.mine || e.ownerId === ME.id)).map(e => ({e, s: nextStep(e)})).filter(x => x.s && x.s.due <= t);
 }
+
+// ---------- HDWD (How Did We Do): a Google review email the day after a purge ----------
+// Every Closed Won Purge with a service date shows up here the day after the service. Nothing sends by itself: each one is
+// reviewed and sent by a person, from their own Outlook. The email comes from the HDWD template whose ZIP list has the
+// account's ZIP (each template carries the Google review link for that office). An account is asked at most once a year.
+const HDWD_FROM = '2026-11-02';   // services from here on (older purges aren't asked now)
+const hdwdTpls = () => Object.entries(S.templates || {}).filter(([, t]) => t && t.kind === 'hdwd' && !t.deleted).map(([id, t]) => ({...t, id})).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+const zipOf = co => { const z = String((co && co.zip) || '').match(/\b\d{5}\b/) || String((co && co.address) || '').match(/\b(\d{5})(?:-\d{4})?\s*$/); return z ? z[1] || z[0] : ''; };
+const zipList = v => [...new Set(String(v || '').match(/\d{5}/g) || [])];
+// the template whose ZIP list has the account's ZIP; a ZIP that isn't in any list waits for someone to pick the region (saved on the opportunity)
+function hdwdTplFor(co, d){ const t = hdwdTpls(); const pick = d && d.hdwdTpl && t.find(x => x.id === d.hdwdTpl); if (pick) return pick; const z = zipOf(co); return (z && t.find(x => zipList(x.zips).includes(z))) || null; }
+const hdwdBuild = memoD(() => {
+  const out = [], yearAgo = Date.now() - 365 * 864e5;
+  for (const d of L('deals')) {
+    if (stage(d).k !== 'won' || d.service !== 'Purge' || !isDate(d.serviceDate) || d.serviceDate < HDWD_FROM) continue;
+    const co = S.companies[d.companyId]; if (!co) continue;
+    const due = addDays(d.serviceDate, 1), done = d.hdwd && d.hdwd.status;
+    const asked = !done && co.hdwdAt && co.hdwdAt > yearAgo ? co.hdwdAt : 0;   // this account was already asked in the last year
+    out.push({d, co, due, done, asked, tpl: hdwdTplFor(co, d), zip: zipOf(co), picked: !!(d.hdwdTpl && hdwdTpls().some(x => x.id === d.hdwdTpl))});
+  }
+  return out.sort((a, b) => a.due.localeCompare(b.due));
+});
+const hdwdMine = x => !ui.mine || x.d.ownerId === ME.id;
+const hdwdDue = () => hdwdBuild().filter(x => !x.done && !x.asked && x.due <= today() && hdwdMine(x));
+async function hdwdMark(dealId, status, ten){
+  const d = S.deals[dealId]; if (!d) return false;
+  const ok = await patch('deals', dealId, {hdwd: status ? {status, at: Date.now(), by: ME.id, ...(ten ? {ten: true} : {})} : null});
+  if (ok && status === 'sent' && d.companyId) await patch('companies', d.companyId, {hdwdAt: Date.now()});
+  return ok;
+}
+function hdwdOpen(dealId){
+  const d = S.deals[dealId]; if (!d) return; const co = S.companies[d.companyId] || {}; const t = hdwdTplFor(co, d);
+  if (!hdwdTpls().length) { toast('Set up the HDWD templates first (HDWD → Templates).', 'bad'); ui.hdTab = 'templates'; render(); return; }
+  if (!t) { toast(`${zipOf(co) ? 'ZIP ' + zipOf(co) + " isn't in any region" : "This account has no ZIP"}. Pick its region on the HDWD list first.`, 'bad'); return; }
+  if (!t.link) { toast(`Add the Google review link to the “${t.name}” template first.`, 'bad'); hdwdTplModal(t.id); return; }
+  const a = `<a href="${esc(t.link)}">${esc(t.linkText || 'Leave us a Google review')}</a>`;
+  const body = String(t.body || '').replace(/\{review_link\}/g, a).replace(/\{review_url\}/g, esc(t.link));
+  draftModal('deals', dealId, null, {subject: t.subject || 'How did we do?', body, html: true, hdwd: {dealId}, companyId: d.companyId, dealId, title: `How did we do: ${co.name || 'customer'}`});
+}
+// your How Did We Do emails from the old CRM, one per region; the review address in each becomes {review_link}
+const HDWD_REGIONS = [['sp_031', 'East Coast'], ['sp_032', 'South'], ['sp_033', 'West Coast']];
+// the service-area ZIP list (Nov 9): "Local" is the East Coast template. A ZIP in none of them waits for a person to pick the region.
+const HDWD_ZIPS = {'East Coast': '32901, 32904, 32905, 32907, 32960, 32962, 32963, 32964, 32966, 32967, 32968, 33401, 33402, 33403, 33404, 33405, 33406, 33407, 33408, 33409, 33410, 33411, 33412, 33413, 33414, 33415, 33417, 33418, 33419, 33420, 33421, 33424, 33425, 33426, 33430, 33435, 33436, 33437, 33449, 33454, 33455, 33458, 33460, 33461, 33462, 33463, 33464, 33465, 33467, 33468, 33469, 33470, 33472, 33473, 33475, 33477, 33478, 33480, 33483, 34945, 34946, 34947, 34949, 34950, 34952, 34953, 34954, 34956, 34957, 34958, 34972, 34974, 34981, 34982, 34983, 34984, 34985, 34986, 34987, 34988, 34990, 34991, 34994, 34995, 34996, 34997',
+  'South': '33001, 33004, 33009, 33010, 33012, 33013, 33014, 33015, 33016, 33018, 33019, 33020, 33021, 33022, 33023, 33024, 33025, 33026, 33027, 33028, 33029, 33030, 33031, 33032, 33033, 33034, 33035, 33036, 33037, 33040, 33042, 33043, 33050, 33051, 33054, 33055, 33056, 33060, 33062, 33063, 33064, 33065, 33066, 33067, 33069, 33070, 33071, 33073, 33076, 33097, 33101, 33109, 33122, 33124, 33125, 33126, 33127, 33128, 33129, 33130, 33131, 33132, 33134, 33135, 33136, 33137, 33138, 33139, 33140, 33142, 33143, 33144, 33145, 33146, 33149, 33150, 33152, 33154, 33155, 33156, 33157, 33158, 33160, 33161, 33162, 33165, 33166, 33167, 33168, 33169, 33170, 33172, 33173, 33174, 33175, 33176, 33177, 33178, 33179, 33180, 33181, 33183, 33185, 33186, 33187, 33189, 33190, 33191, 33192, 33193, 33194, 33198, 33206, 33231, 33256, 33266, 33269, 33283, 33296, 33301, 33304, 33305, 33306, 33308, 33309, 33311, 33312, 33313, 33314, 33315, 33316, 33317, 33319, 33321, 33322, 33323, 33324, 33325, 33326, 33327, 33328, 33330, 33331, 33332, 33334, 33344, 33351, 33394, 33427, 33428, 33429, 33431, 33432, 33433, 33434, 33441, 33442, 33443, 33445, 33446, 33481, 33486, 33487, 33496, 33498, 33499',
+  'West Coast': '33288, 33901, 33902, 33903, 33904, 33905, 33907, 33908, 33909, 33910, 33912, 33913, 33914, 33915, 33916, 33917, 33918, 33919, 33922, 33928, 33929, 33931, 33935, 33936, 33938, 33947, 33948, 33949, 33950, 33951, 33952, 33953, 33954, 33955, 33956, 33957, 33966, 33967, 33971, 33980, 33983, 33990, 33991, 33993, 34102, 34103, 34104, 34105, 34108, 34109, 34110, 34112, 34113, 34116, 34117, 34119, 34120, 34133, 34134, 34135, 34136, 34142, 34143, 34145, 34146, 34223, 34224, 34238, 34265, 34266, 34269, 34275, 34284, 34285, 34286, 34287, 34288, 34289, 34290, 34291, 34292, 34923'};
+// "Add 10%?" in the email window adds this, word for word from the 10% Discount review emails
+const HDWD_10 = '<p data-hd10="1">As a thank you, we’d like to offer you 10% off your next shredding purge. Just mention code THANKYOU10 when booking. This applies to any future purge booked at full price and must be completed within 90 days of the date of this email.</p>';
+async function hdwdFromSpiro(){
+  let src = templates();
+  if (!HDWD_REGIONS.every(([id]) => src.some(t => t.id === id))) { try { const r = await fetch('spiro-templates.json', {cache: 'no-store'}); if (r.ok) src = src.concat((await r.json()).filter(t => !src.some(x => x.id === t.id))); } catch {} }
+  let made = 0;
+  for (const [id, name] of HDWD_REGIONS) {
+    const t = src.find(x => x.id === id); if (!t || hdwdTpls().some(x => norm(x.name) === norm(name))) continue;
+    const body = t.html ? String(t.body || '') : textToHtml(t.body || ''); const m = body.match(/https?:\/\/[^\s<"']+/); const link = m ? m[0] : '';
+    if (await put('templates', 'hd_' + uid(), {kind: 'hdwd', name, link, linkText: link || 'Leave us a Google review', zips: HDWD_ZIPS[name] || '', isDefault: false,
+      subject: String(t.subject || 'How did we do?').replace(/\s+\?/g, '?').replace(/\s+/g, ' ').trim(), body: link ? body.replace(link, '{review_link}') : body, html: true})) made++;
+  }
+  toast(made ? `Added ${made} HDWD template${made === 1 ? '' : 's'}, with their ZIP codes.` : "Couldn't find your How Did We Do emails.", made ? '' : 'bad'); render();
+}
+const HDWD_START = {name: 'New region', zips: '', link: '', linkText: 'Leave us a Google review', subject: 'How did we do, {first_name}?',
+  body: '<p>{greeting} {first_name},</p><p>Thank you for choosing All Points Mobile Shredding for your shredding on {service_date}! We hope everything went smoothly.</p><p>If you have a minute, would you mind leaving us a quick Google review? It means a lot to a local business like ours.</p><p>{review_link}</p><p>Thank you,<br>{my_name}</p>'};
+function hdwdTplModal(id){
+  const t = id ? hdwdTpls().find(x => x.id === id) : {...HDWD_START, name: ''};
+  if (!t) return;
+  const others = new Map(); for (const x of hdwdTpls()) if (x.id !== id) for (const z of zipList(x.zips)) others.set(z, x.name);
+  openModal(id ? 'Edit HDWD template' : 'New HDWD template', `<div class="grid2">${F('Template name', inp('name', t.name, 'text', 'required placeholder="e.g. Palm Beach"'))}${F('Google review link', inp('link', t.link || '', 'url', 'placeholder="https://g.page/r/…/review"'))}</div>
+    ${F('Link text in the email', inp('linkText', t.linkText || 'Leave us a Google review'), 'wide')}
+    ${F('ZIP codes for this template', ta('zips', zipList(t.zips).join(', '), 3), 'wide')}
+    <p class="sub small" id="hdZipNote">${zipList(t.zips).length} ZIP code${zipList(t.zips).length === 1 ? '' : 's'}. Paste them any way: one per line, with commas or spaces.</p>
+    ${F('Subject', inp('subject', t.subject || ''), 'wide')}
+    <div class="f"><span>Message</span>${rteBar('hdEd', {fields: true, src: true, extraFields: [['review_link', 'Google review link'], ['review_url', 'Google review link (just the address)']]})}<div id="hdEd" class="mailprev rte tpl-ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message">${cleanHtml(t.body || '')}</div><textarea id="hdEdSrc" rows="14" spellcheck="false" hidden aria-label="HTML source"></textarea></div>
+    <p class="sub">{review_link} becomes a clickable “${esc(t.linkText || 'Leave us a Google review')}” link to this template's Google review page. The other words in curly braces fill in for each customer.</p>`, 'Save template', async f => {
+      const zips = zipList(f.zips), clash = zips.filter(z => others.has(z));
+      if (clash.length) { dupWarn(`${clash.length === 1 ? 'ZIP ' + clash[0] + ' is' : clash.length + ' of these ZIPs are'} already in another template (${esc([...new Set(clash.map(z => others.get(z)))].join(', '))}): ${clash.slice(0, 12).join(', ')}${clash.length > 12 ? '…' : ''}. Each ZIP can only be in one template.`); return false; }
+      if (f.link && !/^https?:\/\//i.test(f.link)) { toast('The Google review link should start with https://', 'bad'); return false; }
+      const ed = $('#hdEd'), src = $('#hdEdSrc'); const body = cleanHtml(src && !src.hidden ? src.value : ed.innerHTML);
+      const tid = id || 'hd_' + uid();
+      const ok = await put('templates', tid, {kind: 'hdwd', name: f.name, link: f.link.trim(), linkText: f.linkText.trim() || 'Leave us a Google review', zips: zips.join(', '), subject: f.subject, body, html: true});
+      if (ok) { toast('HDWD template saved'); ui.hdTab = 'templates'; render(); }
+      return ok;
+    }, {wide: true, foot: id ? `<button type="button" class="btn ghost" data-act="hdTplDel" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
+}
+V.hdwd = () => {
+  const tab = ui.hdTab || 'send', all = hdwdBuild().filter(hdwdMine).filter(x => match(ui.q, x.co.name, nameOf('contacts', x.d.contactId), x.zip, x.tpl?.name || ''));
+  const due = all.filter(x => !x.done && !x.asked && x.due <= today()), soon = all.filter(x => !x.done && !x.asked && x.due > today());
+  const hist = all.filter(x => x.done || x.asked).sort((a, b) => b.due.localeCompare(a.due)), tpls = hdwdTpls();
+  const segs = `<div class="segs" role="group" aria-label="Show">${[['send', `To send${due.length ? ' ' + due.length : ''}`], ['sent', 'Sent & skipped'], ['templates', `Templates${tpls.length ? ' ' + tpls.length : ''}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="hdTab" data-t="${k}">${l}</button>`).join('')}</div>`;
+  const pickSel = x => canWrite && tpls.length && !x.done ? `<select class="hdpick" data-change="hdPick" data-id="${x.d.id}" aria-label="Region for ${esc(x.co.name)}"><option value="">${x.tpl ? 'Change region…' : 'Pick a region…'}</option>${tpls.map(t => `<option value="${t.id}"${x.picked && x.tpl && x.tpl.id === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}${x.picked ? '<option value="-">Go by the ZIP again</option>' : ''}</select>` : '';
+  const tplCell = x => x.tpl ? `${esc(x.tpl.name)}${x.picked ? ' <span class="sub small">(picked)</span>' : ''}${x.tpl.link ? '' : ' <span class="chip warn">no review link</span>'}${x.picked ? '<div>' + pickSel(x) + '</div>' : ''}`
+    : `<span class="chip warn">${x.zip ? "ZIP isn't in a region" : 'No ZIP on the account'}</span><div>${pickSel(x)}</div>`;
+  const row = (x, acts) => `<tr><td><button class="lnk" data-act="open" data-col="companies" data-id="${x.co.id}"><b>${esc(x.co.name)}</b></button><div class="sub small">${x.d.contactId && S.contacts[x.d.contactId] ? esc(pname_(S.contacts[x.d.contactId])) : '<span class="chip warn">no contact on the opportunity</span>'}</div></td>
+    <td>${fmtDate(x.d.serviceDate)}</td><td>${tplCell(x)}${x.tpl || x.zip ? `<div class="sub small">${x.zip ? 'ZIP ' + esc(x.zip) : 'No ZIP on the account'}</div>` : ''}</td><td>${esc(pname(x.d.ownerId))}</td><td class="jrow-a">${acts(x)}</td></tr>`;
+  const table = (list, acts, cols = ['Account', 'Service', 'Template', 'Owner', '']) => `<div class="tbl"><table><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${list.map(x => row(x, acts)).join('')}</tbody></table></div>`;
+  const sendActs = x => canWrite ? `<button class="btn sm pri" data-act="hdSend" data-id="${x.d.id}"${!x.tpl ? ' disabled title="Pick a region first"' : x.d.ownerId && x.d.ownerId !== ME.id ? ` title="${esc(pname(x.d.ownerId))}'s customer: it goes out from your Outlook"` : ''}>${ic('mail')}Review &amp; send</button><button class="btn sm ghost" data-act="hdSkip" data-id="${x.d.id}">Skip</button>` : '';
+  let bodyHtml;
+  if (tab === 'templates') bodyHtml = `<section class="panel"><div class="ph"><h3>HDWD templates</h3>${canWrite ? `<button class="btn sm" data-act="hdTplEdit">${ic('plus')}New template</button>` : ''}</div>
+    <p class="sub">One template per region. Each has its Google review link and the ZIP codes it covers; an account gets the template that lists its ZIP. If a ZIP isn't in any of them, you pick the region on the list before sending.</p>
+    ${tpls.length ? `<div class="jlib">${tpls.map(t => `<button class="jcard" data-act="hdTplEdit" data-id="${t.id}"><b>${esc(t.name)}</b><span>${zipList(t.zips).length} ZIP code${zipList(t.zips).length === 1 ? '' : 's'}</span><span>${t.link ? 'Review link set' : '<span class="chip warn">No review link yet</span>'}</span></button>`).join('')}</div>`
+      : emptyState('No templates yet', 'Use your three How Did We Do emails (East Coast, South and West Coast), with their review links and service-area ZIP codes already filled in.', `<button class="btn pri" data-act="hdTplSpiro">${ic('star')}Use my How Did We Do emails</button><button class="btn" data-act="hdTplStart">${ic('plus')}Start from scratch</button>`)}</section>`;
+  else if (tab === 'sent') bodyHtml = hist.length ? table(hist, x => `${x.done === 'sent' ? `<span class="chip good">Sent ${fmtDate(ymd(new Date(x.d.hdwd.at)))}${x.d.hdwd.ten ? ' · 10% off' : ''}</span>` : x.done === 'skipped' ? `<span class="chip">Skipped</span>${canWrite ? ` <button class="btn sm ghost" data-act="hdUnskip" data-id="${x.d.id}">Undo</button>` : ''}` : `<span class="chip" title="Asked for a review on ${fmtDate(ymd(new Date(x.asked)))}; an account is asked at most once a year">Asked ${fmtDate(ymd(new Date(x.asked)))}</span>`}`) : `<section class="panel"><p class="sub">Nothing sent or skipped yet.</p></section>`;
+  const noReg = due.filter(x => !x.tpl).length;
+  if (tab === 'send') bodyHtml = noReg && tpls.length ? `<div class="mailbar warn"><span>${noReg === 1 ? "1 customer's ZIP isn't" : noReg + " customers' ZIPs aren't"} in any region. Pick the region for ${noReg === 1 ? 'it' : 'each'} below before sending.</span></div>` : '';
+  if (tab === 'send') bodyHtml += (due.length ? `<section class="panel"><div class="ph"><h3>Ready to send</h3><span class="chip warn">${due.length}</span></div>${table(due, sendActs)}</section>` : `<section class="panel">${emptyState('All caught up', 'Customers show up here the day after a purge is marked Closed Won with a service date.')}</section>`)
+    + (soon.length ? `<section class="panel"><div class="ph"><h3>Coming up</h3><span class="sub">the day after their service</span></div>${table(soon, x => `<span class="chip">${fmtDate(x.due)}</span>`)}</section>` : '')
+    + (!tpls.length && canWrite ? `<div class="mailbar warn"><span>Add your HDWD templates (with each office's Google review link and ZIP codes) before sending.</span><button class="btn sm" data-act="hdTab" data-t="templates">Set up templates</button></div>` : '');
+  return head('HDWD: How Did We Do', 'Google review emails, the day after each purge. Every one waits for you to review and send.', searchBox('Search') + segs + mineSeg()) + bodyHtml;
+};
 
 // ---------- picking several journeys at once (Send now, Pause, Resume, Remove) ----------
 const jSel = () => ui.jSel || (ui.jSel = new Set());
@@ -7117,6 +7228,18 @@ const A = {
   syncMail: d => syncNow(d.co),
   jCheck: async () => { toast('Checking Outlook for replies…'); await checkReplies(true); toast('Replies checked'); },
   jShow: d => { ui.jShow = d.s; render(); },
+  hdTab: d => { ui.hdTab = d.t; render(); },
+  hdSend: d => hdwdOpen(d.id),
+  hd10: () => { const b = $('#hd10Btn'), ed = $('#draftHtml'); if (!b || !ed) return; const on = b.getAttribute('aria-pressed') === 'true';
+    if (on) { ed.querySelectorAll('[data-hd10]').forEach(x => x.remove()); b.setAttribute('aria-pressed', 'false'); b.textContent = 'Add 10%?'; }
+    else { ed.insertAdjacentHTML('beforeend', HDWD_10); b.setAttribute('aria-pressed', 'true'); b.innerHTML = `${ic('check')}10% added · remove`; }
+    ed.dispatchEvent(new Event('input', {bubbles: true})); },
+  hdSkip: async d => { if (await hdwdMark(d.id, 'skipped')) toast('Skipped. It\'s under Sent & skipped if you change your mind.'); },
+  hdUnskip: async d => { if (await hdwdMark(d.id, null)) toast('Back on the list'); },
+  hdTplEdit: d => hdwdTplModal(d.id),
+  hdTplSpiro: () => hdwdFromSpiro(),
+  hdTplStart: async () => { if (await put('templates', 'hd_' + uid(), {kind: 'hdwd', ...HDWD_START, html: true})) { toast('Starter template added. Open it to add the review link.'); render(); } },
+  hdTplDel: d => confirmModal('Delete this HDWD template?', "Accounts in its ZIP codes will need their region picked by hand until another template lists them.", 'Delete', async () => { const ok = await del('templates', d.id); if (ok) { ui.hdTab = 'templates'; render(); } return ok; }),
   jSel: d => { const s = jSel(); s.has(d.id) ? s.delete(d.id) : s.add(d.id); render(); },
   jSelAll: () => { const rows = [...document.querySelectorAll('#main tr[data-act="jOpen"]')].map(r => r.dataset.id); const s = jSel(); const all = rows.length && rows.every(id => s.has(id)); rows.forEach(id => all ? s.delete(id) : s.add(id)); render(); },
   jSelNone: () => { jSel().clear(); render(); },
@@ -7381,6 +7504,7 @@ const CHANGE = {
       if (!s_.value || auto) { const v = fill[k] || ''; if (s_.tagName === 'SELECT') s_.value = [...s_.options].some(op => op.value === v) ? v : ''; else mselSet(s_.closest('.msel'), v); s_.dataset.auto = s_.value ? '1' : ''; } } feeWrap(); },
   dfSvcPick: el => { el.dataset.auto = ''; if (el.name === 'service') feeWrap(); },
   ndpPay: el => { const box = el.closest('.ndp-pay'), o = box && box.querySelector('.ndp-other'); if (!o) return; const other = el.value === '__other' && el.checked; o.hidden = !other; if (other) o.focus(); },
+  hdPick: async el => { const v = el.value; if (!v) return; if (await patch('deals', el.dataset.id, {hdwdTpl: v === '-' ? '' : v})) toast(v === '-' ? 'Going by the ZIP again' : `Region set: ${hdwdTpls().find(t => t.id === v)?.name || ''}`); },
   mselPick: el => { const box = el.closest('.msel'), h = box && box.querySelector('input[type=hidden]'); if (!h) return; const picked = [...box.querySelectorAll('input[type=checkbox]:checked')].map(c => c.value); h.value = box.dataset.fees ? feeJoin(picked) : svcJoin(picked); elecBox(box); feeBox(box);
     if (box.id === 'dfSvcType' && el.value === 'Electronics' && el.checked) setTimeout(() => $('#dfElec input')?.focus(), 30);   // ticking Electronics: straight to its amount
     if (box.id === 'dfFees' && el.checked) { const k = (FEES.find(f => f[0] === el.value) || [])[1]; setTimeout(() => $('#dfFee_' + k + ' input')?.focus(), 30); }   // ticking a fee: straight to its amount
