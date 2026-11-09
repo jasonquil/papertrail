@@ -45,6 +45,26 @@ function local(d = new Date()) {
   return { ymd: `${p.year}-${p.month}-${p.day}`, hm: `${hour}:${p.minute}`, hour: +hour };
 }
 const parseYmd = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d, 12)); };
+// An email that goes out late keeps the journey's spacing: the steps after it move back by the same amount, so a late
+// email 1 isn't followed by email 2 the same day. On time or early, nothing moves. (The app does the same.)
+export function reflow(schedule: Rec[], step: number, onYmd: string, skipWeekends = false): Rec[] {
+  const dayN = (v: string) => Math.floor(parseYmd(v).getTime() / 86400000);
+  const ymdN = (n: number) => new Date(n * 86400000).toISOString().slice(0, 10);
+  const wk = (n: number) => { if (!skipWeekends) return n; const d = new Date(n * 86400000 + 43200000).getUTCDay(); return d === 6 ? n + 2 : d === 0 ? n + 1 : n; };
+  // spacing is measured from each step's original date (movedFrom), so doing this again gives the same dates
+  const orig = (x: Rec) => (isDate(x.movedFrom) ? x.movedFrom : x.due);
+  const cur = schedule.find((x) => x.step === step); if (!cur || !isDate(orig(cur)) || !isDate(onYmd)) return schedule;
+  let prevOrig = dayN(orig(cur)), prevNew = Math.max(prevOrig, dayN(onYmd));
+  let changed = false;
+  const out = [...schedule].sort((a, b) => a.step - b.step).map((x) => {
+    if (x.step <= step || x.status !== "pending" || !isDate(x.due)) return x;
+    const o = dayN(orig(x)), n = wk(Math.max(o, prevNew + (o - prevOrig))); prevOrig = o; prevNew = n;
+    const due = ymdN(n); if (due === x.due) return x; changed = true;
+    if (due === orig(x)) { const { movedFrom: _m, ...r } = x; return { ...r, due }; }
+    return { ...x, due, movedFrom: orig(x) };
+  });
+  return changed ? out : schedule;
+}
 const longDate = (s: string, withYear = false) => parseYmd(s).toLocaleDateString("en-US", { timeZone: "UTC", ...(withYear ? {} : { weekday: "long" }), month: "long", day: "numeric", ...(withYear ? { year: "numeric" } : {}) });
 const isDate = (s: unknown) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -290,7 +310,7 @@ export async function run(opts: { dryRun?: boolean; onlyId?: string; today?: str
       const now = Date.now();
       // it's gone out: record that (a few tries, since a lost record would let a later run send it again)
       const mark = () => patchEnrollment(id, (x) => {
-        const schedule = (x.schedule || []).map((y: Rec) => (y.step === s.step ? { ...y, status: "sent", sentAt: now, sentBy: "auto" } : y));
+        const schedule = reflow((x.schedule || []).map((y: Rec) => (y.step === s.step ? { ...y, status: "sent", sentAt: now, sentBy: "auto" } : y)), s.step, today, !!(j && j.skipWeekends));
         const done = !schedule.some((y: Rec) => y.status === "pending");
         const { lastSendError: _drop, sendClaim: _claim, ...rest } = x;
         return { ...rest, schedule, ...(done ? { status: "completed", completedAt: now } : {}) };

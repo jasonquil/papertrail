@@ -2858,6 +2858,7 @@ function render(){
   if (ui.remKeep && ui.view !== 'reminders') ui.remKeep = null;   // crossed-out reminders clear once you leave the Reminders page
   if (!(ui.qOnly && X)) X = idx(); ui.qOnly = false;
   if ((ptlOn || ptlT) && dataReady()) ptlDone();
+  if (!jRepaired && canWrite && dataReady()) { jRepaired = true; setTimeout(jRepairPiles, 1500); }
   if (navWant && dataReady()) { const w = navWant; navWant = null; if (w.d && S[w.d.col] && S[w.d.col][w.d.id]) ui.detail = w.d; if (w.s && S.deals[w.s]) ui.side = w.s; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
   if (ui.detail && !S[ui.detail.col][ui.detail.id] && (booted && (!live || COLS.every(c => loaded[c])))) ui.detail = null;
   preserve(() => {
@@ -6584,9 +6585,41 @@ function jStepEditModal(eid, idx){
       toast(`Saved for ${who}`); A.closeModal(); return false;   // back to the journey's list of steps
     }, {wide: true});
 }
+// A step done late (sent, or skipped) keeps the journey's spacing: the steps after it move back by the same amount, so a
+// late email 1 isn't followed by email 2 the same day. On time or early, nothing moves. (The morning run does the same.)
+function jReflow(schedule, step, onYmd, skipWeekends){
+  const dayN = v => { const [y, m, d] = v.split('-').map(Number); return Math.floor(Date.UTC(y, m - 1, d) / 86400000); };
+  const ymdN = n => new Date(n * 86400000).toISOString().slice(0, 10);
+  const wk = n => { if (!skipWeekends) return n; const d = new Date(n * 86400000).getUTCDay(); return d === 6 ? n + 2 : d === 0 ? n + 1 : n; };
+  const ok = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+  // spacing is measured from each step's original date (movedFrom), so running this again gives the same dates
+  const orig = x => ok(x.movedFrom) ? x.movedFrom : x.due;
+  const cur = schedule.find(x => x.step === step); if (!cur || !ok(orig(cur)) || !ok(onYmd)) return schedule;
+  let prevOrig = dayN(orig(cur)), prevNew = Math.max(prevOrig, dayN(onYmd));
+  let changed = false;
+  const out = [...schedule].sort((a, b) => a.step - b.step).map(x => {
+    if (x.step <= step || x.status !== 'pending' || !ok(x.due)) return x;
+    const o = dayN(orig(x)), n = wk(Math.max(o, prevNew + (o - prevOrig))); prevOrig = o; prevNew = n;
+    const due = ymdN(n); if (due === x.due) return x; changed = true;
+    return due === orig(x) ? (({movedFrom, ...r}) => ({...r, due}))(x) : {...x, due, movedFrom: orig(x)};
+  });
+  return changed ? out : schedule;
+}
+// Once per visit: journeys that already piled up (an email sent late before this fix, with the next one now due right after)
+// get the same spacing, measured from the day the last email actually went out.
+let jRepaired = false;
+async function jRepairPiles(){
+  for (const e of L('enrollments')) {
+    if (!['active', 'paused'].includes(e.status)) continue;
+    const done = (e.schedule || []).filter(x => (x.status === 'sent' || x.status === 'skipped') && (x.sentAt || x.skippedAt)).sort((a, b) => b.step - a.step)[0];
+    if (!done) continue;
+    const at = ymd(new Date(done.sentAt || done.skippedAt)), sched = jReflow(e.schedule || [], done.step, at, !!journeyOf(e.journeyId)?.skipWeekends);
+    if (sched !== e.schedule) await patch('enrollments', e.id, {schedule: sched});
+  }
+}
 async function jSetStep(eid, idx, status){
   const e = S.enrollments[eid]; if (!e) return false;
-  const schedule = (e.schedule || []).map(s => s.step === idx ? {...s, status, [status === 'sent' ? 'sentAt' : 'skippedAt']: Date.now()} : s);
+  const schedule = jReflow((e.schedule || []).map(s => s.step === idx ? {...s, status, [status === 'sent' ? 'sentAt' : 'skippedAt']: Date.now()} : s), idx, today(), !!journeyOf(e.journeyId)?.skipWeekends);
   const done = !schedule.some(s => s.status === 'pending');
   // whoever just sent it clears the claim; a skip leaves a claim that's in use this minute alone
   return patch('enrollments', eid, {schedule, ...(status === 'sent' ? {sendClaim: null} : claimFree(e)), ...(done ? {status: 'completed', completedAt: Date.now()} : {})});
