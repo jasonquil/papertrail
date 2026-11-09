@@ -6438,6 +6438,12 @@ const zipOf = co => { const z = String((co && co.zip) || '').match(/\b\d{5}\b/) 
 const zipList = v => [...new Set(String(v || '').match(/\d{5}/g) || [])];
 // the template whose ZIP list has the account's ZIP; a ZIP that isn't in any list waits for someone to pick the region (saved on the opportunity)
 function hdwdTplFor(co, d){ const t = hdwdTpls(); const pick = d && d.hdwdTpl && t.find(x => x.id === d.hdwdTpl); if (pick) return pick; const z = zipOf(co); return (z && t.find(x => zipList(x.zips).includes(z))) || null; }
+// who gets it: the opportunity's contact if it has one; otherwise the account's most recently added contact (one with an email first)
+function hdwdContact(d){
+  if (d.contactId && S.contacts[d.contactId]) return d.contactId;
+  const cs = L('contacts').filter(c => c.companyId === d.companyId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return (cs.find(c => ctMail(c)) || cs[0] || {}).id || '';
+}
 const hdwdBuild = memoD(() => {
   const out = [], yearAgo = Date.now() - 365 * 864e5;
   for (const d of L('deals')) {
@@ -6445,7 +6451,7 @@ const hdwdBuild = memoD(() => {
     const co = S.companies[d.companyId]; if (!co) continue;
     const due = addDays(d.serviceDate, 1), done = d.hdwd && d.hdwd.status;
     const asked = !done && co.hdwdAt && co.hdwdAt > yearAgo ? co.hdwdAt : 0;   // this account was already asked in the last year
-    out.push({d, co, due, done, asked, tpl: hdwdTplFor(co, d), zip: zipOf(co), picked: !!(d.hdwdTpl && hdwdTpls().some(x => x.id === d.hdwdTpl))});
+    out.push({d, co, due, done, asked, ct: hdwdContact(d), tpl: hdwdTplFor(co, d), zip: zipOf(co), picked: !!(d.hdwdTpl && hdwdTpls().some(x => x.id === d.hdwdTpl))});
   }
   return out.sort((a, b) => a.due.localeCompare(b.due));
 });
@@ -6464,7 +6470,8 @@ function hdwdOpen(dealId){
   if (!t.link) { toast(`Add the Google review link to the “${t.name}” template first.`, 'bad'); hdwdTplModal(t.id); return; }
   const a = `<a href="${esc(t.link)}">${esc(t.linkText || 'Leave us a Google review')}</a>`;
   const body = String(t.body || '').replace(/\{review_link\}/g, a).replace(/\{review_url\}/g, esc(t.link));
-  draftModal('deals', dealId, null, {subject: t.subject || 'How did we do?', body, html: true, hdwd: {dealId}, companyId: d.companyId, dealId, title: `How did we do: ${co.name || 'customer'}`});
+  const ct = hdwdContact(d); if (!ct) { toast(`${co.name || 'This account'} has no contacts yet. Add one first.`, 'bad'); return; }
+  draftModal('contacts', ct, null, {subject: t.subject || 'How did we do?', body, html: true, hdwd: {dealId}, companyId: d.companyId, dealId, title: `How did we do: ${co.name || 'customer'}`});
 }
 // your How Did We Do emails from the old CRM, one per region; the review address in each becomes {review_link}
 const HDWD_REGIONS = [['sp_031', 'East Coast'], ['sp_032', 'South'], ['sp_033', 'West Coast']];
@@ -6510,17 +6517,17 @@ function hdwdTplModal(id){
     }, {wide: true, foot: id ? `<button type="button" class="btn ghost" data-act="hdTplDel" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
 }
 V.hdwd = () => {
-  const tab = ui.hdTab || 'send', all = hdwdBuild().filter(hdwdMine).filter(x => match(ui.q, x.co.name, nameOf('contacts', x.d.contactId), x.zip, x.tpl?.name || ''));
+  const tab = ui.hdTab || 'send', all = hdwdBuild().filter(hdwdMine).filter(x => match(ui.q, x.co.name, x.ct ? pname_(S.contacts[x.ct]) : '', x.zip, x.tpl?.name || ''));
   const due = all.filter(x => !x.done && !x.asked && x.due <= today()), soon = all.filter(x => !x.done && !x.asked && x.due > today());
   const hist = all.filter(x => x.done || x.asked).sort((a, b) => b.due.localeCompare(a.due)), tpls = hdwdTpls();
   const segs = `<div class="segs" role="group" aria-label="Show">${[['send', `To send${due.length ? ' ' + due.length : ''}`], ['sent', 'Sent & skipped'], ['templates', `Templates${tpls.length ? ' ' + tpls.length : ''}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="hdTab" data-t="${k}">${l}</button>`).join('')}</div>`;
   const pickSel = x => canWrite && tpls.length && !x.done ? `<select class="hdpick" data-change="hdPick" data-id="${x.d.id}" aria-label="Region for ${esc(x.co.name)}"><option value="">${x.tpl ? 'Change region…' : 'Pick a region…'}</option>${tpls.map(t => `<option value="${t.id}"${x.picked && x.tpl && x.tpl.id === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}${x.picked ? '<option value="-">Go by the ZIP again</option>' : ''}</select>` : '';
   const tplCell = x => x.tpl ? `${esc(x.tpl.name)}${x.picked ? ' <span class="sub small">(picked)</span>' : ''}${x.tpl.link ? '' : ' <span class="chip warn">no review link</span>'}${x.picked ? '<div>' + pickSel(x) + '</div>' : ''}`
     : `<span class="chip warn">${x.zip ? "ZIP isn't in a region" : 'No ZIP on the account'}</span><div>${pickSel(x)}</div>`;
-  const row = (x, acts) => `<tr><td><button class="lnk" data-act="open" data-col="companies" data-id="${x.co.id}"><b>${esc(x.co.name)}</b></button><div class="sub small">${x.d.contactId && S.contacts[x.d.contactId] ? esc(pname_(S.contacts[x.d.contactId])) : '<span class="chip warn">no contact on the opportunity</span>'}</div></td>
+  const row = (x, acts) => `<tr><td><button class="lnk" data-act="open" data-col="companies" data-id="${x.co.id}"><b>${esc(x.co.name)}</b></button><div class="sub small">${x.ct ? esc(pname_(S.contacts[x.ct])) + (ctMail(S.contacts[x.ct]) ? '' : ' <span class="chip warn">no email</span>') : '<span class="chip warn">no contact on the account</span>'}</div></td>
     <td>${fmtDate(x.d.serviceDate)}</td><td>${tplCell(x)}${x.tpl || x.zip ? `<div class="sub small">${x.zip ? 'ZIP ' + esc(x.zip) : 'No ZIP on the account'}</div>` : ''}</td><td>${esc(pname(x.d.ownerId))}</td><td class="jrow-a">${acts(x)}</td></tr>`;
   const table = (list, acts, cols = ['Account', 'Service', 'Template', 'Owner', '']) => `<div class="tbl"><table><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${list.map(x => row(x, acts)).join('')}</tbody></table></div>`;
-  const sendActs = x => canWrite ? `<button class="btn sm pri" data-act="hdSend" data-id="${x.d.id}"${!x.tpl ? ' disabled title="Pick a region first"' : x.d.ownerId && x.d.ownerId !== ME.id ? ` title="${esc(pname(x.d.ownerId))}'s customer: it goes out from your Outlook"` : ''}>${ic('mail')}Review &amp; send</button><button class="btn sm ghost" data-act="hdSkip" data-id="${x.d.id}">Skip</button>` : '';
+  const sendActs = x => canWrite ? `<button class="btn sm pri" data-act="hdSend" data-id="${x.d.id}"${!x.tpl ? ' disabled title="Pick a region first"' : !x.ct ? ' disabled title="Add a contact to the account first"' : x.d.ownerId && x.d.ownerId !== ME.id ? ` title="${esc(pname(x.d.ownerId))}'s customer: it goes out from your Outlook"` : ''}>${ic('mail')}Review &amp; send</button><button class="btn sm ghost" data-act="hdSkip" data-id="${x.d.id}">Skip</button>` : '';
   let bodyHtml;
   if (tab === 'templates') bodyHtml = `<section class="panel"><div class="ph"><h3>HDWD templates</h3>${canWrite ? `<button class="btn sm" data-act="hdTplEdit">${ic('plus')}New template</button>` : ''}</div>
     <p class="sub">One template per region. Each has its Google review link and the ZIP codes it covers; an account gets the template that lists its ZIP. If a ZIP isn't in any of them, you pick the region on the list before sending.</p>
