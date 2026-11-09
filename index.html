@@ -5955,11 +5955,16 @@ function cmpAvatar(){ const av = $('#dAv'); if (!av) return; const ct = ui.draft
 document.addEventListener('keydown', e => { if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return; const b = $('#dSend'); if (!b || b.disabled || !e.target.closest || !e.target.closest('#mform')) return; e.preventDefault(); b.click(); });
 // ---------- formatting toolbar for email messages and templates ----------
 const textToHtml = t => String(t || '').replace(/\r/g, '').trim().split(/\n{2,}/).map(par => '<p>' + esc(par).replace(/\n/g, '<br>') + '</p>').join('');
+// fonts that look the same in Outlook and on phones (each has a fallback in case the reader doesn't have it)
+const RTE_FONTS = [['Calibri', 'Calibri, Aptos, Arial, sans-serif'], ['Aptos', 'Aptos, Calibri, Arial, sans-serif'], ['Arial', 'Arial, Helvetica, sans-serif'], ['Verdana', 'Verdana, Geneva, sans-serif'],
+  ['Tahoma', 'Tahoma, Verdana, sans-serif'], ['Trebuchet MS', '"Trebuchet MS", Arial, sans-serif'], ['Segoe UI', '"Segoe UI", Arial, sans-serif'], ['Georgia', 'Georgia, serif'],
+  ['Times New Roman', '"Times New Roman", Times, serif'], ['Garamond', 'Garamond, Georgia, serif'], ['Courier New', '"Courier New", Courier, monospace']];
 function rteBar(target, opt = {}){
   const b = (cmd, icon, label, extra = '') => `<button type="button" class="rte-b" data-act="rte" data-cmd="${cmd}" data-t="${target}" title="${label}" aria-label="${label}"${extra}>${icon}</button>`;
   return `<div class="rte-bar" role="toolbar" aria-label="Formatting" data-for="${target}">
     ${b('bold', '<b>B</b>', 'Bold (Ctrl+B)')}${b('italic', '<i>I</i>', 'Italic (Ctrl+I)')}${b('underline', '<u>U</u>', 'Underline (Ctrl+U)')}${b('strikeThrough', '<s>S</s>', 'Strikethrough')}
     <span class="rte-sep"></span>
+    <select class="rte-sel rte-font" data-change="rteFont" data-t="${target}" aria-label="Font" title="Font"><option value="">Font</option>${RTE_FONTS.map(([l, f]) => `<option value="${esc(f)}" style="font-family:${esc(f)}">${esc(l)}</option>`).join('')}</select>
     <select class="rte-sel" data-change="rteSize" data-t="${target}" aria-label="Text size" title="Text size"><option value="">Size</option><option value="2">Small</option><option value="3">Normal</option><option value="5">Large</option><option value="6">Huge</option></select>
     <label class="rte-b rte-col" title="Text color"><span>A</span><input type="color" value="#C0392B" data-change="rteColor" data-t="${target}" data-k="foreColor" aria-label="Text color"></label>
     <label class="rte-b rte-col hl" title="Highlight"><span>H</span><input type="color" value="#FFF176" data-change="rteColor" data-t="${target}" data-k="hiliteColor" aria-label="Highlight color"></label>
@@ -5981,7 +5986,7 @@ function rteExec(id, cmd, val){
   const ed = rteFocus(id); if (!ed) return;
   if (cmd === 'link') { const sl = document.getSelection(); const had = sl && !sl.isCollapsed; let u = window.prompt('Link address (for example allpointsprotects.com):', 'https://'); if (!u || u === 'https://') return; u = u.trim(); if (!/^(https?:|mailto:)/i.test(u)) u = (/@/.test(u) && !/\//.test(u) ? 'mailto:' : 'https://') + u; rteFocus(id); if (had) document.execCommand('createLink', false, u); else document.execCommand('insertHTML', false, `<a href="${esc(u)}">${esc(u.replace(/^mailto:/, ''))}</a>`); }
   else if (/List$/.test(cmd)) { const at = rteCaret(ed); document.execCommand(cmd, false, val); if (at) rteCaret(ed, at); }   // Chrome drops the cursor at the start of the line after making a list
-  else { document.execCommand('styleWithCSS', false, cmd === 'foreColor' || cmd === 'hiliteColor' || cmd === 'fontSize'); document.execCommand(cmd, false, val); }
+  else { document.execCommand('styleWithCSS', false, cmd === 'foreColor' || cmd === 'hiliteColor' || cmd === 'fontSize' || cmd === 'fontName'); document.execCommand(cmd, false, val); }
   ed.dispatchEvent(new Event('input', {bubbles: true}));
 }
 // save / put back the selection as character positions, which survive the editor rearranging its tags
@@ -7291,6 +7296,7 @@ const CHANGE = {
   jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
   ncPh: el => { prefSet('namePh', el.checked); nameCleanModal(); },
   rteSize: el => { const v = el.value; el.value = ''; if (v) rteExec(el.dataset.t, 'fontSize', v); },
+  rteFont: el => { const v = el.value; el.value = ''; if (v) rteExec(el.dataset.t, 'fontName', v); },
   rteColor: el => rteExec(el.dataset.t, el.dataset.k, el.value),
   rteField: el => { const k = el.value; el.value = ''; if (!k) return; rteFocus(el.dataset.t); document.execCommand('insertText', false, '{' + k + '}'); },
   tplQ: el => { const q = norm(el.value); document.querySelectorAll('#tplList li').forEach(li => { li.hidden = !!q && !li.dataset.q.includes(q); }); },
