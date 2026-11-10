@@ -1206,7 +1206,14 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
 #mform > .sh{gap:6px}
 /* blanks: highlighted in the message, filled in from the bar */
 ::highlight(pt-blank){background-color:#FFE680;color:#5A4100}
-.cmp-blanks{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn)}
+.cmp-blanks{display:flex;flex-direction:column;gap:8px;padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);transition:background .2s,color .2s}
+.cmp-blanks.ok{background:color-mix(in srgb,var(--good,#1E7F4F) 12%,transparent);color:var(--good,#1E7F4F)}
+.cmp-bltop{display:flex;align-items:center;gap:12px}.cmp-blprog{flex:1;max-width:260px;height:8px;border-radius:99px;background:color-mix(in srgb,currentColor 18%,transparent);overflow:hidden}
+.cmp-blprog i{display:block;height:100%;width:0;border-radius:inherit;background:currentColor;transition:width .2s}
+.cmp-blrow{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
+.cmp-blin{position:relative;display:inline-flex}.cmp-blok{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:none;color:var(--good,#1E7F4F)}.cmp-blok .ic{width:15px;height:15px}
+.cmp-bl.done .cmp-blok{display:inline-flex}.cmp-blanks .cmp-bl.done input{border-color:color-mix(in srgb,var(--good,#1E7F4F) 55%,var(--line));padding-right:28px}
+#draftHtml [data-bk]{background:color-mix(in srgb,var(--warn,#B7791F) 18%,transparent);border-radius:3px}#draftHtml [data-bk].bk-on{background:color-mix(in srgb,var(--good,#1E7F4F) 14%,transparent)}
 .cmp-blanks[hidden]{display:none}
 .cmp-blt{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:.88rem}.cmp-blt .ic{width:16px;height:16px}
 .cmp-bl{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600}
@@ -5892,6 +5899,15 @@ function cmpReopen(sn){ if (!sn || !sn.args) return; ui.cmpRebuild = true;
 const BLANK_RE = /\[([^\[\]\n]{1,40})\]/g;
 function cmpBlankNames(){ const ed = $('#draftHtml'), sj = $('#draftSubj'); if (!ed) return []; const txt = (ui.draftHtml ? elText(ed) : ($('#draftOut')?.value || '')) + '\n' + (sj ? sj.value : '');
   return [...new Set([...txt.matchAll(BLANK_RE)].map(m => m[1].trim()).filter(x => x && !/^(x| )$/i.test(x)))]; }
+// every blank this email has had, filled or not, in order: the boxes stay put while you fill them in
+function cmpBlankAll(){
+  const ed = $('#draftHtml'); const seen = (ui.blankList || []).slice(); const add = n => { if (n && !seen.includes(n)) seen.push(n); };
+  cmpBlankNames().forEach(add); if (ed) ed.querySelectorAll('[data-bk]').forEach(x => add(x.dataset.bk));
+  if (ui.blankSubj) for (const m of ui.blankSubj.matchAll(BLANK_RE)) add(m[1].trim());
+  const live = new Set(cmpBlankNames()); if (ed) ed.querySelectorAll('[data-bk]').forEach(x => live.add(x.dataset.bk)); if (ui.blankSubj) for (const m of ui.blankSubj.matchAll(BLANK_RE)) live.add(m[1].trim());
+  return (ui.blankList = seen.filter(n => live.has(n)));
+}
+const cmpBlankVal = n => (ui.blankVals || {})[n] || '';
 let cmpBlankT = 0;
 const cmpBlanksSoon = () => { clearTimeout(cmpBlankT); cmpBlankT = setTimeout(cmpBlanks, 250); };
 function cmpBlanks(){
@@ -5901,11 +5917,38 @@ function cmpBlanks(){
     for (let n = w.nextNode(); n; n = w.nextNode()) for (const m of n.data.matchAll(BLANK_RE)) { const r = new Range(); r.setStart(n, m.index); r.setEnd(n, m.index + m[0].length); ranges.push(r); }
     try { ranges.length ? CSS.highlights.set('pt-blank', new Highlight(...ranges)) : CSS.highlights.delete('pt-blank'); } catch {}
   }
-  const names = cmpBlankNames(); const key = names.join('|');
+  const names = cmpBlankAll(); const key = names.join('|');
   if (!names.length) { bar.hidden = true; bar.innerHTML = ''; bar.dataset.k = ''; const h = $('#dHint'); if (h && /bracketed/.test(h.textContent)) h.textContent = ''; return; }
-  if (bar.dataset.k === key && !bar.hidden) return;   // don't redraw while someone is typing in one
+  if (bar.dataset.k === key && !bar.hidden) return cmpBlankProg();   // same blanks: just update the progress, never redraw under your cursor
   bar.dataset.k = key; bar.hidden = false;
-  bar.innerHTML = `<span class="cmp-blt">${ic('bell')}${names.length === 1 ? '1 blank' : names.length + ' blanks'} to fill in</span>${names.slice(0, 4).map(n => `<label class="cmp-bl"><span>${esc(n.charAt(0).toUpperCase() + n.slice(1))}</span><input data-blank="${esc(n)}" data-change="cmpBlank" placeholder="Type it here" autocomplete="off"></label>`).join('')}`;
+  bar.innerHTML = `<div class="cmp-bltop"><span class="cmp-blt">${ic('bell')}<span id="dBlCount"></span></span><span class="cmp-blprog" role="progressbar" aria-label="Blanks filled in" aria-valuemin="0" aria-valuemax="${names.length}"><i></i></span></div>
+    <div class="cmp-blrow">${names.map((n, i) => `<label class="cmp-bl"><span>${esc(n.charAt(0).toUpperCase() + n.slice(1))}</span><span class="cmp-blin"><input data-blank="${esc(n)}" data-i="${i}" value="${esc(cmpBlankVal(n))}" placeholder="Type it here" autocomplete="off"><i class="cmp-blok" aria-hidden="true">${ic('check')}</i></span></label>`).join('')}</div>`;
+  cmpBlankProg();
+}
+function cmpBlankProg(){
+  const bar = $('#dBlanks'); if (!bar || bar.hidden) return; const names = ui.blankList || [];
+  const done = names.filter(n => cmpBlankVal(n).trim()).length, all = names.length, ok = done === all;
+  bar.classList.toggle('ok', ok);
+  const c = $('#dBlCount'); if (c) c.innerHTML = ok ? `All ${all === 1 ? '' : all + ' '}blank${all === 1 ? '' : 's'} filled in` : `${done} of ${all} blank${all === 1 ? '' : 's'} filled in`;
+  const pr = bar.querySelector('.cmp-blprog'); if (pr) { pr.setAttribute('aria-valuenow', done); pr.querySelector('i').style.width = (all ? 100 * done / all : 0) + '%'; }
+  bar.querySelectorAll('input[data-blank]').forEach(x => x.closest('.cmp-bl').classList.toggle('done', !!x.value.trim()));
+}
+// as you type in a box, the email changes with it: each [blank] in the message is kept in a marked span, so it can
+// change again (or go back to [blank] if you clear the box); the subject is rebuilt from its version with the blanks in it
+function cmpLive(name, val){
+  ui.blankVals = {...(ui.blankVals || {}), [name]: val}; const tok = '[' + name + ']', ed = $('#draftHtml'), show = val.trim() ? val : tok;
+  if (ed && ui.draftHtml) {
+    const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT), hits = [];
+    for (let n = w.nextNode(); n; n = w.nextNode()) if (n.data.includes(tok) && !n.parentElement.closest('[data-bk]')) hits.push(n);
+    for (const n of hits) { const parts = n.data.split(tok); const frag = document.createDocumentFragment();
+      parts.forEach((t, i) => { if (t) frag.appendChild(document.createTextNode(t)); if (i < parts.length - 1) { const sp = document.createElement('span'); sp.dataset.bk = name; sp.textContent = tok; frag.appendChild(sp); } });
+      n.replaceWith(frag); }
+    ed.querySelectorAll('[data-bk]').forEach(x => { if (x.dataset.bk === name) { x.textContent = show; if (val.trim()) x.className = 'bk-on'; else x.removeAttribute('class'); } });
+    ed.dispatchEvent(new Event('input', {bubbles: true}));
+  } else { const out = $('#draftOut'); if (out && val.trim()) out.value = out.value.split(tok).join(val); }
+  const sj = $('#draftSubj'); if (sj) { if (!ui.blankSubj && BLANK_RE.test(sj.value)) ui.blankSubj = sj.value; BLANK_RE.lastIndex = 0;
+    if (ui.blankSubj) sj.value = ui.blankSubj.replace(BLANK_RE, (m, k) => cmpBlankVal(k.trim()).trim() || m); }
+  cmpBlankProg();
 }
 // put what was typed in place of every [blank] with that name, in the message and the subject
 function cmpFill(name, val){
@@ -5915,7 +5958,11 @@ function cmpFill(name, val){
   const sj = $('#draftSubj'); if (sj) sj.value = sj.value.split(tok).join(val);
   const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks();
 }
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.blank !== undefined && !(e.ctrlKey || e.metaKey)) { e.preventDefault(); e.target.dispatchEvent(new Event('change', {bubbles: true})); } });
+document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.blank !== undefined) cmpLive(t.dataset.blank, t.value); });
+document.addEventListener('keydown', e => { const t = e.target; if (e.key !== 'Enter' || !t.dataset || t.dataset.blank === undefined || e.ctrlKey || e.metaKey) return;
+  e.preventDefault(); const all = [...document.querySelectorAll('#dBlanks input[data-blank]')], i = all.indexOf(t);
+  const next = all.slice(i + 1).find(x => !x.value.trim()) || all.find(x => !x.value.trim() && x !== t);
+  if (next) next.focus(); else { const ed = $('#draftHtml'); if (ed) { ed.focus(); const sp = ed.querySelector('[data-bk]:last-of-type') || ed.lastChild; const r = document.createRange(); if (sp) { r.setStartAfter(sp); r.collapse(true); const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r); } } } });
 // the library's highlighted template follows the template in use
 function cmpLibMark(){ const id = $('#dTpl')?.value || ''; document.querySelectorAll('#dTplList .cmp-libi').forEach(b => { const on = b.dataset.id === id; b.classList.toggle('on', on); if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); }); }
 function cmpLibFilter(){ const q = ($('#dTplQ')?.value || '').trim().toLowerCase(), c = ui.tplCat || ''; let any = false;
@@ -6012,7 +6059,7 @@ function applyTemplate(tid){
   setDraftBody(t.html ? cleanHtml(fillTemplate(t.body, data, true)) : textToHtml(fillTemplate(t.body, data)));
   const missing = [...new Set((t.subject + ' ' + t.body).match(/\{(\w+)\}/g) || [])].map(x => x.slice(1, -1).toLowerCase()).map(k => FIELD_ALIAS[k] || k).filter(k => k in data && !data[k] && k !== 'first_name');
   if (hint) hint.textContent = missing.length ? 'Fill in the bracketed parts before sending.' : '';
-  ui.blankOk = false; const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks(); cmpLibMark();
+  ui.blankOk = false; ui.blankList = []; ui.blankVals = {}; ui.blankSubj = null; const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks(); cmpLibMark();
 }
 const elText = el => el ? (el.innerText ?? el.textContent ?? '') : '';
 const STAFF = [['Jason Quillen','jason@allpointsprotects.com'],['Kate Dillon','kate@allpointsprotects.com'],['Ann Ross','ann@allpointsprotects.com']];
@@ -6047,7 +6094,7 @@ const EMAIL_RE = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
 const splitEmails = v => String(v || '').split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
 const OUT_TAGS = new Set(['P','BR','A','B','STRONG','I','EM','U','STRIKE','S','CODE','PRE','DIV','HR','UL','OL','LI','H1','H2','H3','H4','H5','H6','TABLE','THEAD','TBODY','TR','TD','TH']);
 function outlookHtml(){
-  if (GRAPH && ui.draftHtml && $('#draftHtml')) return {html: $('#draftHtml').innerHTML, lost: false};   // Microsoft Graph keeps images and styling
+  if (GRAPH && ui.draftHtml && $('#draftHtml')) return {html: $('#draftHtml').innerHTML.replace(/ data-bk="[^"]*"| class="(bk-on)?"/g, ''), lost: false};   // Microsoft Graph keeps images and styling (the blanks' markers aren't sent)
   // Outlook's connector only accepts a narrow set of tags: keep text and links, drop images and inline styling
   if (!ui.draftHtml) {
     const t = $('#draftOut').value.trim();
@@ -7497,9 +7544,9 @@ const CHANGE = {
   jTplFill: el => { const t = templates().find(x => x.id === el.value); const box = el.closest('.jstep'); if (t && box) { box.querySelector('input[name="step_subject[]"]').value = t.subject; box.querySelector('textarea').value = t.body; } el.value = ''; },
   draftTpl: el => { ui.sendOk = false; draftNote(''); applyTemplate(el.value); },
   tplFmt: () => updTplPrev(),
-  cmpEd: () => { ui.blankOk = false; cmpBlanksSoon(); },
+  cmpEd: el => { ui.blankOk = false; if (el && el.id === 'draftSubj') ui.blankSubj = null; cmpBlanksSoon(); },
   cmpTplQ: () => cmpLibFilter(),
-  cmpBlank: el => { const v = el.value.trim(); if (v) cmpFill(el.dataset.blank, v); },
+  cmpBlank: el => {},
   dSigT: el => { const box = $('#dSigBox'); if (box) box.classList.toggle('off', !el.checked); },
   draftTo: el => { setTimeout(() => { cmpAvatar(); const h = $('#mform > .sh h3'), ct = ui.draft && S.contacts[ui.draft.contactId]; if (h && /^Email\b/.test(h.textContent) && ct) h.textContent = 'Email ' + toName(ct); }, 0); if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
   dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = CLOSED.includes(el.value); const closed = CLOSED.includes(el.value); const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; const g1 = $('#dfGap1'); if (g1) g1.hidden = !closed; /* closed: Closed date | Closed by | (space), so Lead source starts a new row */ const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
