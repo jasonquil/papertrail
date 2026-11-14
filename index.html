@@ -5908,6 +5908,25 @@ function cmpBlankAll(){
   return (ui.blankList = seen.filter(n => live.has(n)));
 }
 const cmpBlankVal = n => (ui.blankVals || {})[n] || '';
+// a blank can come with a starting value, written [initial bin: 185] in a template; it's filled in already and can be retyped.
+// [initial bin] and [additional bin] start from the opportunity's Price quoted (175/85 → 175 and 85), or 185 and 95.
+const BLANK_DEF_RE = /\[([^\[\]\n:=]{1,40}?)\s*[:=]\s*([^\[\]\n]{0,60})\]/g;
+function cmpBlankNormalize(){
+  const ed = $('#draftHtml'), sj = $('#draftSubj'), out = $('#draftOut'), defs = ui.blankDefs || (ui.blankDefs = {});
+  const fix = t => t.replace(BLANK_DEF_RE, (m, n, d) => { n = n.trim(); if (!(n in defs)) defs[n] = d.trim(); return '[' + n + ']'; });
+  const has = t => { BLANK_DEF_RE.lastIndex = 0; const r = BLANK_DEF_RE.test(t); BLANK_DEF_RE.lastIndex = 0; return r; };
+  if (ed) { const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT), hits = []; for (let n = w.nextNode(); n; n = w.nextNode()) if (has(n.data)) hits.push(n); for (const n of hits) n.data = fix(n.data); }
+  if (sj && has(sj.value)) sj.value = fix(sj.value);
+  if (out && has(out.value)) out.value = fix(out.value);
+}
+function cmpBlankDefault(n){
+  const defs = ui.blankDefs || {}; if (defs[n]) return defs[n];
+  const k = n.toLowerCase().replace(/\s+/g, ' ').trim(), d = ui.draft && S.deals[ui.draft.dealId];
+  const pq = String(d && d.priceQuoted != null ? d.priceQuoted : '').replace(/\$/g, '').split('/').map(x => x.trim()).filter(x => /^\d/.test(x));
+  if (/^initial bins?$/.test(k)) return pq[0] || '185';
+  if (/^additional bins?$/.test(k)) return pq[1] || '95';
+  return '';
+}
 let cmpBlankT = 0;
 const cmpBlanksSoon = () => { clearTimeout(cmpBlankT); cmpBlankT = setTimeout(cmpBlanks, 250); };
 function cmpBlanks(){
@@ -5917,12 +5936,16 @@ function cmpBlanks(){
     for (let n = w.nextNode(); n; n = w.nextNode()) for (const m of n.data.matchAll(BLANK_RE)) { const r = new Range(); r.setStart(n, m.index); r.setEnd(n, m.index + m[0].length); ranges.push(r); }
     try { ranges.length ? CSS.highlights.set('pt-blank', new Highlight(...ranges)) : CSS.highlights.delete('pt-blank'); } catch {}
   }
+  cmpBlankNormalize();
   const names = cmpBlankAll(); const key = names.join('|');
+  const fresh = names.filter(n => !(n in (ui.blankVals || {})) && cmpBlankDefault(n));   // starting values, filled in once
+  if (fresh.length) ui.blankVals = {...(ui.blankVals || {}), ...Object.fromEntries(fresh.map(n => [n, cmpBlankDefault(n)]))};
   if (!names.length) { bar.hidden = true; bar.innerHTML = ''; bar.dataset.k = ''; const h = $('#dHint'); if (h && /bracketed/.test(h.textContent)) h.textContent = ''; return; }
   if (bar.dataset.k === key && !bar.hidden) return cmpBlankProg();   // same blanks: just update the progress, never redraw under your cursor
   bar.dataset.k = key; bar.hidden = false;
   bar.innerHTML = `<div class="cmp-bltop"><span class="cmp-blt">${ic('bell')}<span id="dBlCount"></span></span><span class="cmp-blprog" role="progressbar" aria-label="Blanks filled in" aria-valuemin="0" aria-valuemax="${names.length}"><i></i></span></div>
-    <div class="cmp-blrow">${names.map((n, i) => `<label class="cmp-bl"><span>${esc(n.charAt(0).toUpperCase() + n.slice(1))}</span><span class="cmp-blin"><input data-blank="${esc(n)}" data-i="${i}" value="${esc(cmpBlankVal(n))}" placeholder="Type it here" autocomplete="off"><i class="cmp-blok" aria-hidden="true">${ic('check')}</i></span></label>`).join('')}</div>`;
+    <div class="cmp-blrow">${names.map((n, i) => `<label class="cmp-bl"><span>${esc(n.charAt(0).toUpperCase() + n.slice(1))}</span><span class="cmp-blin"><input data-blank="${esc(n)}" data-i="${i}" value="${esc(cmpBlankVal(n))}" placeholder="Type it here" autocomplete="off"${cmpBlankDefault(n) ? ` title="Filled in with ${esc(cmpBlankDefault(n))}; type over it to change"` : ''}><i class="cmp-blok" aria-hidden="true">${ic('check')}</i></span></label>`).join('')}</div>`;
+  for (const n of fresh) cmpLive(n, cmpBlankVal(n));   // put the starting values into the email
   cmpBlankProg();
 }
 function cmpBlankProg(){
@@ -5974,7 +5997,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (col === 'contacts') contact = {id, ...r}; else if (col === 'deals' && r.contactId && S.contacts[r.contactId]) contact = {id: r.contactId, ...S.contacts[r.contactId]};
   else if (companyId) contact = gr(companyId).contacts.find(c => c.email) || gr(companyId).contacts.find(c => ctMail(c)) || gr(companyId).contacts[0] || null;
   if (jopt && jopt.companyId) companyId = jopt.companyId;
-  ui.draftFiles = [];
+  ui.draftFiles = []; ui.blankList = []; ui.blankVals = {}; ui.blankDefs = {}; ui.blankSubj = null;   // a new email starts with no blanks filled
   ui.draftHtml = true;
   ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey, hdwd: jopt && jopt.hdwd}; ui.sendOk = false;   // (the editor is the message box from the start, so writing from scratch counts)
   const contacts = companyId ? gr(companyId).contacts : (contact ? [contact] : []);
@@ -6059,7 +6082,7 @@ function applyTemplate(tid){
   setDraftBody(t.html ? cleanHtml(fillTemplate(t.body, data, true)) : textToHtml(fillTemplate(t.body, data)));
   const missing = [...new Set((t.subject + ' ' + t.body).match(/\{(\w+)\}/g) || [])].map(x => x.slice(1, -1).toLowerCase()).map(k => FIELD_ALIAS[k] || k).filter(k => k in data && !data[k] && k !== 'first_name');
   if (hint) hint.textContent = missing.length ? 'Fill in the bracketed parts before sending.' : '';
-  ui.blankOk = false; ui.blankList = []; ui.blankVals = {}; ui.blankSubj = null; const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks(); cmpLibMark();
+  ui.blankOk = false; ui.blankList = []; ui.blankVals = {}; ui.blankDefs = {}; ui.blankSubj = null; const bar = $('#dBlanks'); if (bar) bar.dataset.k = ''; cmpBlanks(); cmpLibMark();
 }
 const elText = el => el ? (el.innerText ?? el.textContent ?? '') : '';
 const STAFF = [['Jason Quillen','jason@allpointsprotects.com'],['Kate Dillon','kate@allpointsprotects.com'],['Ann Ross','ann@allpointsprotects.com']];
