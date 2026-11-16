@@ -210,9 +210,11 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .task:last-child{border-bottom:0}
 .rems{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .rem{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
-.rem.past{background:var(--past-bg);border-color:var(--past-line)}
-.rem.today{background:var(--today-bg);border-color:var(--today-line)}
-.rem.future{background:var(--future-bg);border-color:var(--future-line)}
+/* reminders: white cards with a colored edge (red past due, yellow today, green upcoming) */
+.rem.past,.rem.today,.rem.future{border-left-width:4px}
+.rem.past{border-left-color:var(--bad)}
+.rem.today{border-left-color:#E0B21B}
+.rem.future{border-left-color:var(--good)}
 .rem.done b{text-decoration:line-through;color:var(--muted)}
 .rem.done{opacity:.72}.rem.done .rem-n{text-decoration:line-through}
 .rem-b{display:flex;flex-direction:column;min-width:0}
@@ -222,8 +224,8 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .rem-d b{font-variant-numeric:tabular-nums;font-size:.9rem}
 .rem-d small{color:var(--muted);font-size:.78rem}
 .rem .tick{margin-top:0}
-.task.past,.task.today,.task.future{border-radius:8px;padding:8px 10px;border-bottom:0;margin-bottom:4px}
-.task.past{background:var(--past-bg)}.task.today{background:var(--today-bg)}.task.future{background:var(--future-bg)}
+.task.past,.task.today,.task.future{border-radius:8px;padding:8px 10px;border:1px solid var(--line);border-left-width:4px;margin-bottom:6px;align-items:center;background:var(--surface)}
+.task.past{border-left-color:var(--bad)}.task.today{border-left-color:#E0B21B}.task.future{border-left-color:var(--good)}
 @media (max-width:560px){.rem{grid-template-columns:auto minmax(0,1fr) auto}.rem-d{grid-column:2;align-items:flex-start;text-align:left;flex-direction:row;gap:8px}}
 .tick{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--muted);background:none;cursor:pointer;flex:none;margin-top:2px;display:grid;place-items:center;padding:0;color:var(--accent-fg)}
 .tick:hover{border-color:var(--accent);background:var(--accent-soft)}
@@ -509,10 +511,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .cp-ic .ic{width:24px;height:24px}
 .cp-name{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 220px}
 .cptabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
-.cptabs button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:10px 14px;font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.cptabs button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:10px 10px;font-weight:700;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .cptabs button:hover{color:var(--fg)}
 .cptabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
 .cptabs .ic{width:16px;height:16px}
+@media (max-width:1400px){.cptabs .ic{display:none}}   /* smaller laptops: drop the tab icons so every tab fits */
 .cptabs em{font-style:normal;font-size:.7rem;background:var(--surface-2);border-radius:999px;padding:0 6px;color:var(--muted)}
 .cp-body{display:flex;flex-direction:column;gap:16px}
 .cpgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 20px}
@@ -626,6 +629,29 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 #toasts{z-index:60;position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px)}
 .toast{background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:.88rem;font-weight:600;box-shadow:var(--shadow);max-width:480px}
 .toast.bad{background:var(--bad);color:var(--surface)}
+.toast{display:flex;align-items:center;gap:14px}
+.toast .tbtn{pointer-events:auto;border:0;background:none;color:inherit;font:inherit;font-weight:800;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:2px 0;opacity:.9}
+.toast .tbtn:hover{opacity:1}
+/* snooze: a small dropdown on each open reminder */
+.snz{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;border-radius:6px;padding:4px 22px 4px 9px;cursor:pointer;width:92px;flex:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
+.snz:hover,.snz:focus-visible{color:var(--fg);border-color:var(--muted)}
+.rem-x{display:flex;align-items:center;gap:6px}
+.task .icon-btn{flex:none}
+/* the ⋯ menu */
+.popm{position:absolute;z-index:70;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+.popm button{display:flex;align-items:center;gap:8px;border:0;background:none;padding:8px 10px;border-radius:6px;font:inherit;font-size:.88rem;font-weight:600;color:var(--fg);cursor:pointer;text-align:left}
+.popm button:hover,.popm button:focus-visible{background:var(--surface-2);outline:none}
+.popm button.danger{color:var(--bad)}
+.popm hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.popm .ic{width:16px;height:16px}
+/* Today: services this week */
+.svcw{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.svcw li{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.svcw li:last-child{border-bottom:0}
+.svcw .sd b{display:block;font-size:.88rem}.svcw .sd small{color:var(--muted);font-size:.76rem}
+.svcw li.is-today .sd b{color:var(--accent)}
+.svcw .sv{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.svcw .sv small{color:var(--muted);font-size:.8rem}
 
 @media (max-width:1000px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cols2,.rgrid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){
@@ -1779,6 +1805,7 @@ const NAVKEY = {today: 'T', reminders: 'R', journeys: 'J', hdwd: 'H', pipeline: 
 const VIEWS = [['today','Today','cal'],['reminders','Reminders','bell'],['journeys','Journeys','route'],['hdwd','HDWD','star'],['pipeline','Opportunities','cols'],['companies','Accounts','building'],['contacts','Contacts','users'],['quotes','Quotes','tag'],['contracts','Contracts','doc']];
 
 const ICON = {
+  dots:'<circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/>',
   star:'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
   phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -2050,7 +2077,20 @@ const people = (() => { let key = null, val; return () => { const k = DV + '|' +
 function peopleBuild(){ const s = new Set([ME.id, ...(team.ids||[])]); for (const c of ['companies','deals','tasks','contracts']) for (const r of Object.values(S[c])) { if (r.ownerId) s.add(r.ownerId); if (r.assigneeId) s.add(r.assigneeId); } return [...s].filter(Boolean); }
 
 // toast + copy
-function toast(msg, kind=''){ const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg; $('#toasts').append(t); setTimeout(() => t.remove(), 3400); }
+function toast(msg, kind='', act=null){ const t = document.createElement('div'); t.className = 'toast ' + kind; const m = document.createElement('span'); m.textContent = msg; t.append(m);
+  if (act && act.fn) { const b = document.createElement('button'); b.type = 'button'; b.className = 'tbtn'; b.textContent = act.label || 'Undo'; b.addEventListener('click', e => { e.stopPropagation(); t.remove(); act.fn(); }); t.append(b); }   // e.g. Undo after checking off or deleting
+  $('#toasts').append(t); setTimeout(() => t.remove(), act ? 8000 : 3400); }
+// Undo for a delete: the record went to Trash, so put it (and anything deleted with it) back
+const undoDel = (col, id) => ({label: 'Undo', fn: async () => { const tid = col + '~' + id; for (let i = 0; i < 10 && !S.trash[tid]; i++) await new Promise(r => setTimeout(r, 300)); if (S.trash[tid]) trashRestore(tid); else toast("Couldn't undo that. It's in Settings → Trash.", 'bad'); }});
+// a small ⋯ menu; its items are ordinary data-act buttons
+let POPA = null;
+function popMenu(anchor, html){ popClose(); const m = document.createElement('div'); m.id = 'popm'; m.className = 'popm'; m.setAttribute('role', 'menu'); m.innerHTML = html; document.body.append(m);
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth; m.style.top = (r.bottom + 6 + scrollY) + 'px'; m.style.left = (Math.max(8, Math.min(r.right - w, innerWidth - w - 8)) + scrollX) + 'px';
+  POPA = anchor; anchor.setAttribute('aria-expanded', 'true'); }
+function popClose(){ const m = document.getElementById('popm'); if (m) m.remove(); if (POPA) POPA.setAttribute('aria-expanded', 'false'); POPA = null; }
+document.addEventListener('click', e => { if (!document.getElementById('popm')) return; if (POPA && e.target.closest('[data-act="moreMenu"]') === POPA) return; setTimeout(popClose, 0); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('popm')) { e.stopPropagation(); popClose(); } }, true);
+addEventListener('resize', () => popClose());
 function copyText(text){
   const done = () => toast('Copied');
   try { navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text)); } catch { fallbackCopy(text); }
@@ -2435,7 +2475,7 @@ const attention = memoD(() => attentionBuild());
 function attentionBuild(){
   const t = today(); const out = [];
   for (const k of L('tasks')) if (!k.done && isDate(k.due) && k.due < t && (!ui.mine || k.assigneeId === ME.id)) {
-    out.push({sev:'bad', o:0, kind:'Past-due reminder', title:k.title, sub:`Due ${fmtDate(k.due)} · ${esc(pname(k.assigneeId))}${k.companyId?' · '+esc(cname(k.companyId)):''}`,
+    out.push({sev:'bad', o:0, rem:1, kind:'Past-due reminder', title:k.title, sub:`Due ${fmtDate(k.due)} · ${esc(pname(k.assigneeId))}${k.companyId?' · '+esc(cname(k.companyId)):''}`,
       acts:[{l:'Done', act:'taskDone', d:{id:k.id}, pri:1}, {l:'Edit', act:'editTask', d:{id:k.id}}]});
   }
   // open opportunities aren't flagged by close date: Spiro's close dates were automatic (Jason, Oct 26)
@@ -2884,7 +2924,8 @@ function render(){
 }
 
 function navHtml(){
-  const badge = {hdwd: booted ? hdwdDue().length : 0, journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? attention().length : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
+  const badge = {hdwd: booted ? hdwdDue().length : 0, journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? asToday(() => todayAtt().length) : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
+  { const n = booted && ME.id ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && k.assigneeId === ME.id).length : 0; const tt = (n ? `(${n}) ` : '') + 'Paper Trail'; if (document.title !== tt) document.title = tt; }   // your due reminders, in the browser tab
   const MT = ['today', 'reminders', 'pipeline', 'companies'];
   const curK = ui.view === 'company' ? 'companies' : ui.view === 'opp' ? 'pipeline' : ui.view;
   const curL = (VIEWS.find(v => v[0] === curK) || [0, 'Paper Trail'])[1];
@@ -2987,7 +3028,20 @@ function emptyState(title, text, buttons=''){ return `<div class="empty"><b>${ti
 
 const V = {};
 
-V.today = () => {
+// Today shows your own things unless you switch it to Everyone; past-due reminders live in the Reminders panel only
+function asToday(f){ const was = ui.mine; if (ui.todayAll == null) ui.todayAll = !!prefGet('todayAll', false); ui.mine = !ui.todayAll && !!ME.id; try { return f(); } finally { ui.mine = was; } }
+const todayAtt = () => attention().filter(i => !i.rem);
+const todaySeg = () => `<div class="segs" role="group" aria-label="Whose things"><button class="${!ui.todayAll?'on':''}" data-act="todayWho" data-m="0">Mine</button><button class="${ui.todayAll?'on':''}" data-act="todayWho" data-m="1">Everyone</button></div>`;
+function weekPanel(){
+  const t = today(), end = addDays(t, 6);
+  const rows = L('deals').filter(d => isDate(d.serviceDate) && d.serviceDate >= t && d.serviceDate <= end && d.stage !== 'lost' && isReal(d) && mine(d))
+    .sort((a, b) => a.serviceDate.localeCompare(b.serviceDate) || cname(a.companyId).localeCompare(cname(b.companyId)));
+  const day = s => { const n = dayDiff(t, s); return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : parseYmd(s).toLocaleDateString('en-US', {weekday: 'long'}); };
+  return `<section class="panel"><div class="ph"><h3>Services this week</h3><span class="sub">${rows.length ? `${rows.length} in the next 7 days` : 'next 7 days'}</span></div>
+    ${rows.length ? `<ul class="svcw">${rows.slice(0, 40).map(d => `<li class="${d.serviceDate === t ? 'is-today' : ''}"><div class="sd"><b>${day(d.serviceDate)}</b><small>${fmtDate(d.serviceDate)}</small></div><div class="sv"><button class="lnk" data-act="oppPage" data-id="${d.id}">${esc(cname(d.companyId) || nameOf('deals', d.id))}</button><small>${[esc(oppType(d)), d.shredAmount ? esc(d.shredAmount) : '', ui.mine ? '' : esc(pname(d.ownerId))].filter(Boolean).join(' · ')}</small></div>${isWon(d) ? '' : stageChip(d)}</li>`).join('')}</ul>` : `<p class="empty-s">Nothing on the schedule for the next 7 days. Opportunities with a service date show up here.</p>`}</section>`;
+}
+V.today = () => asToday(todayBody);
+function todayBody(){
   const t = today(), h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const first = (ME.name||'').split(' ')[0];
@@ -2997,7 +3051,7 @@ V.today = () => {
   const won = L('deals').filter(d => isWon(d) && (d.closedAt||'') >= mStart && mine(d));
   const activeC = L('contracts').filter(c => (c.status||'active') === 'active' && mine(c));
   const renewSoon = activeC.filter(c => isDate(c.end) && dayDiff(t, c.end) <= 60);
-  const items = attention();
+  const items = todayAtt();
   const tasks = L('tasks').filter(k => !k.done && (!ui.mine || k.assigneeId === ME.id)).sort((a,b) => (a.due||'9999') < (b.due||'9999') ? -1 : 1);
   const groups = coActivityGroups();
   const nothing = !Object.values(S.companies).length && !Object.values(S.deals).length;
@@ -3006,13 +3060,13 @@ V.today = () => {
   const route = LOOK.look === 'dispatch';
   const rstat = route ? (() => { const g = k => tasks.filter(x => remGrp(x) === k).length; return `<div class="routestat"><div class="late"><b>${g('past')}</b><span>late</span></div><div class="due"><b>${g('today')}</b><span>due today</span></div><div><b>${deals.length}</b><span>open deals</span></div></div>`; })() : '';
   const fresh = FISH ? L('deals').filter(d => (d.createdAt || 0) >= Date.now() - 7 * 864e5).length : 0;
-  return nudge + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), mineSeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
+  return nudge + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), todaySeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your data over from your current CRM in Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + rstat + `<div class="cols2">
-    <div class="stack">${readyPanel()}
+    <div class="stack">${weekPanel()}${readyPanel()}
     <section class="panel"><div class="ph"><h3>Needs attention</h3><span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span></div>
       ${items.length ? `<ul class="attl">${items.slice(0,25).map(i => `<li class="att ${i.sev}"><div class="att-main"><span class="att-kind">${esc(i.kind)}</span><b>${esc(i.title)}</b><span class="att-sub">${i.sub}</span></div><div class="att-act">${i.acts.map(a => `<button class="btn sm ${a.pri?'pri':''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join('')}</div></li>`).join('')}</ul>`
-      : `<p class="empty-s">Nothing needs you right now. Past-due reminders, quotes waiting on an answer, journey calls and contracts coming up for renewal will show up here.</p>`}
+      : `<p class="empty-s">Nothing needs you right now. Quotes waiting on an answer, journey calls, replies and contracts coming up for renewal show up here. Past-due reminders are in Reminders.</p>`}
     </section></div>
     <div class="stack">
       <section class="panel"><div class="ph"><h3>${route ? "Today's route" : 'Reminders'}</h3><button class="lnk" data-act="go" data-v="reminders">${tasks.length} open · see all</button></div>
@@ -3022,7 +3076,7 @@ V.today = () => {
       <section class="panel"><div class="ph"><h3>Recent activity</h3><span class="sub">last 30 days, by company</span></div>${groups.length ? `<ul class="cogs">${groups.map(coGroupHtml).join('')}</ul>` : `<p class="empty-s">Calls, emails, meetings and notes on your accounts show up here, grouped by company.</p>`}</section>
     </div>
   </div>`;
-};
+}
 
 // journey emails waiting for someone to review and send (auto-send ones aren't listed)
 function readyPanel(){
@@ -3037,10 +3091,17 @@ function readyPanel(){
     ${due.length ? `<ul class="rtsl">${due.slice(0, 8).map(row).join('')}</ul>${due.length > 8 ? `<p class="sub" style="margin:8px 0 0"><button class="lnk" data-act="go" data-v="journeys">See all ${due.length}</button></p>` : ''}`
     : `<p class="empty-s">No journey emails are waiting. When one is due, it shows up here ready to review and send.</p>`}</section>`;
 }
+// snooze choices, counted from today: the next weekday, next Monday, a week, two weeks, a month
+function snzOpts(){ const t = today(), dow = parseYmd(t).getDay(), out = [], seen = new Set();
+  const add = (v, l) => { if (!seen.has(v)) { seen.add(v); out.push([v, l + ' · ' + fmtDate(v)]); } };
+  const nw = addDays(t, dow === 5 ? 3 : dow === 6 ? 2 : 1); add(nw, dayDiff(t, nw) === 1 ? 'Tomorrow' : 'Monday');
+  add(addDays(t, ((8 - dow) % 7) || 7), 'Next Monday'); add(addDays(t, 7), 'In 1 week'); add(addDays(t, 14), 'In 2 weeks'); add(addDays(t, 28), 'In 4 weeks');
+  return out; }
+const snzSel = k => canWrite && !k.done ? `<select class="snz" data-change="snooze" data-id="${k.id}" aria-label="Snooze this reminder" title="Move this reminder to a later day"><option value="">Snooze</option>${snzOpts().map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}<option value="pick">Pick a date…</option></select>` : '';
 function taskRow(k){
   const rel_ = [k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : ''].filter(Boolean).join(' · ');
   return `<li class="task ${remGrp(k)}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="Mark done" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
-  <div class="task-b"><span>${esc(k.title)}</span><small>${dueChip(k.due)}${k.assigneeId && k.assigneeId !== ME.id ? `<span>${esc(pname(k.assigneeId))}</span>` : ''}${rel_}<button class="lnk" data-act="editTask" data-id="${k.id}" style="font-weight:500">Edit</button></small></div></li>`;
+  <div class="task-b"><span>${esc(k.title)}</span><small>${dueChip(k.due)}${k.assigneeId && k.assigneeId !== ME.id ? `<span>${esc(pname(k.assigneeId))}</span>` : ''}${rel_}</small></div>${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</li>`;
 }
 function feedItem(a, withCo){
   const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
@@ -3077,7 +3138,7 @@ V.reminders = () => {
     return `<li class="rem ${g}${k.done ? ' done' : ''}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="${k.done?'Mark not done':'Mark done'}" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
     <div class="rem-b"><b>${esc(k.title)}</b><small>${[k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : '', k.assigneeId && k.assigneeId !== ME.id ? esc(pname(k.assigneeId)) : ''].filter(Boolean).join(' · ')}</small>${k.notes ? `<p class="rem-n">${esc(k.notes)}</p>` : ''}</div>
     <div class="rem-d"><b>${isDate(k.due) ? fmtDate(k.due) : '—'}</b><small>${k.done ? 'Done' + (k.doneAt ? ' ' + rel(k.doneAt) : '') : when}</small></div>
-    ${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder">${ic('edit')}</button>` : ''}</li>`; };
+    <div class="rem-x">${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</div></li>`; };
   let body;
   if (!all.length) body = `<section class="panel">${emptyState('No reminders yet', 'Set a reminder on any account so a follow-up never slips. Past-due reminders show in red, today\'s in yellow and upcoming ones in green.', `<button class="btn pri" data-act="newTask">${ic('bell')}Set a reminder</button>`)}</section>`;
   else if (!list.length) body = `<p class="empty-s">${ui.q ? 'No reminders match.' : show === 'open' ? 'Nothing open. You are all caught up.' : 'No completed reminders yet.'}</p>`;
@@ -3259,7 +3320,7 @@ V.opp = () => {
   const f = (label, val, wide, k) => k && W ? (k === 'serviceType' || k === 'fees' ? `<div class="cpf ed${wc(wide)}" role="group" aria-label="${label}"><span>${label}${just(k)}</span><div>${oppEditor({...d, id}, k)}</div></div>` : `<label class="cpf ed${wc(wide)}"><span>${label}${just(k)}</span><div>${oppEditor({...d, id}, k)}</div></label>`)
     : `<div class="cpf${wc(wide)}"><span>${label}</span><div>${val || '<span class="sub">—</span>'}</div></div>`;
   const closed = !isOpen(d);
-  const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
+  const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="moreMenu" data-k="deal" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}`;
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="pipeline">← Opportunities</button>
     <div class="cp-head"><span class="cp-ic">${ic('cols')}</span><div class="cp-name"><h1>${esc(oppTypeName(d.name) || 'Opportunity')}</h1><p class="sub">${d.companyId ? `<button class="lnk" data-act="coPage" data-id="${d.companyId}">${esc(cname(d.companyId))}</button>` : 'No account'}</p></div>
       <div class="vh-act">${W ? stageSel(d, 'rowStage') : stageChip(d)}${headBtns}</div></div>
@@ -3291,7 +3352,7 @@ V.company = () => {
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
   const W = canWrite;
   const cf = (label, val, k, wide) => W ? `<label class="cpf ed${wide ? ' wide' : ''}"><span>${label}</span><div>${coEditor({...c, id}, k)}</div></label>` : cpField(label, val, wide);
-  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="companies" data-id="${id}" title="Fold a duplicate account into this one">Merge</button><button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}`;
+  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm ghost" data-act="moreMenu" data-k="company" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}`;
   let body = '';
   if (tab === 'details') {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
@@ -3553,7 +3614,7 @@ const DETAIL = {
     const openTasks = g.tasks.filter(k => !k.done).sort((a,b) => (a.due||'9') < (b.due||'9') ? -1 : 1);
     const web = c.website ? (/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website) : '';
     return `<div class="dh"><div><p class="eyebrow">Account</p><h2>${esc(c.name)}</h2><p class="sub">${esc([c.city, c.state].filter(Boolean).join(', '))}</p>${tagChips(c) ? `<div style="margin-top:6px">${tagChips(c).replace('class="tags"', 'class="tags" style="margin-left:0"')}</div>` : ''}</div>${closeBtn}</div>
-    <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="delCompany" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
+    <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="moreMenu" data-k="company" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
     <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${fact('Hours', esc(c.hours || ''))}${spiroFacts(c)}</dl>
@@ -3585,7 +3646,7 @@ const DETAIL = {
     const tasks = L('tasks').filter(k => k.dealId === id && !k.done);
     const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
     return `<div class="dh"><div><p class="eyebrow">Opportunity</p><h2>${esc(oppTypeName(d.name))}</h2>${d.companyId ? `<div>${link('companies', d.companyId)}</div>` : ''}</div>${closeBtn}</div>
-    <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button><button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delDeal" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
+    <div class="dacts"><button class="btn sm pri" data-act="oppPage" data-id="${id}">${ic('cols')}Details</button><button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button>${canWrite ? `<button class="btn sm" data-act="editDeal" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Start journey</button>` : ''}<button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="moreMenu" data-k="deal" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}</div>
     <dl class="facts">
       <dt>Stage</dt><dd>${canWrite ? `<select id="dealStage" data-change="dealStage" data-id="${id}" aria-label="Stage" style="width:auto">${STAGES.map(s => `<option value="${s.k}" ${stage(d).k===s.k?'selected':''}>${s.l}</option>`).join('')}</select>` : stageChip(d)}</dd>
       ${fact('Annual projected', d.value ? `<b class="num">${money(d.value)}</b>` : '')}
@@ -7413,25 +7474,30 @@ const A = {
   attSave: d => attSave(d.k),
   attRemove: d => { attPending.splice(+d.i, 1); attRender(); },
   fileOpen: async d => { try { await FILES.open(d.path, d.name); if (FILES.remote()) useAdd('file', +d.size || 0); } catch (e) { toast((e && e.message) || "Couldn't open that file.", 'bad'); } },
-  delContractFile: d => { closeModal(); confirmModal('Delete this contract?', 'It moves to Trash, where an admin can restore it for 30 days. The entry in Activities stays.', 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted'); }); },
+  delContractFile: d => { closeModal(); confirmModal('Delete this contract?', 'It moves to Trash, where an admin can restore it for 30 days. The entry in Activities stays.', 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted', '', undoDel('contracts', d.id)); }); },
   newQuote: d => { if (!canWrite) return; quoteBuilder().open({co: d.co, deal: d.deal}); },
   editQuote: d => { const q = S.quotes[d.id]; if (q && q.state) quoteBuilder().open({quoteId: d.id}); else quoteForm(d.id); },
   renew: d => renewModal(d.id),
+  moreMenu: (d, t) => { if (POPA === t) { popClose(); return; }
+    const it = (act, label, icon, extra = '', cls = '') => `<button type="button" role="menuitem" class="${cls}" data-act="${act}" data-id="${esc(d.id)}"${extra}>${icon ? ic(icon) : ''}${label}</button>`;
+    popMenu(t, d.k === 'company' ? it('merge', 'Merge a duplicate into this one', 'users', ' data-col="companies"') + '<hr>' + it('delCompany', 'Delete account', 'trash', '', 'danger')
+      : it('delDeal', 'Delete opportunity', 'trash', '', 'danger')); },
+  todayWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); render(); },
   taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
-    if (done && ui.view === 'reminders' && (ui.remShow || 'open') === 'open') (ui.remKeep = ui.remKeep || new Set()).add(d.id); if (!await patch('tasks', d.id, {done, doneAt: done ? Date.now() : null})) return; if (done) { logAct({type: 'done', text: `Completed: ${k.title}${k.notes ? '\n' + k.notes : ''}`, companyId: k.companyId || '', taskId: d.id}); toast('Reminder done'); } else { for (const a of L('activities').filter(a => a.taskId === d.id)) await del('activities', a.id); } },
-  delTask: d => confirmModal('Delete reminder?', esc(S.tasks[d.id]?.title || ''), 'Delete', async () => { await del('tasks', d.id); toast('Reminder deleted'); }),
-  delContract: d => confirmModal('Delete contract?', `This removes the ${esc(S.contracts[d.id]?.title || 'contract')} for ${esc(cname(S.contracts[d.id]?.companyId))}.`, 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted'); }),
-  delQuote: d => confirmModal('Delete quote?', `Quote ${esc(S.quotes[d.id]?.number)} will be removed.`, 'Delete', async () => { const q = S.quotes[d.id]; const pre = q ? `Quote ${q.number} marked ` : null; for (const a of L('activities')) if (a.quoteId === d.id || (pre && a.companyId === q.companyId && String(a.text||'').startsWith(pre))) await del('activities', a.id); await del('quotes', d.id); toast('Quote deleted'); }),
+    if (done && ui.view === 'reminders' && (ui.remShow || 'open') === 'open') (ui.remKeep = ui.remKeep || new Set()).add(d.id); if (!await patch('tasks', d.id, {done, doneAt: done ? Date.now() : null})) return; if (done) { logAct({type: 'done', text: `Completed: ${k.title}${k.notes ? '\n' + k.notes : ''}`, companyId: k.companyId || '', taskId: d.id}); toast('Reminder done', '', {label: 'Undo', fn: () => A.taskDone({id: d.id})}); } else { for (const a of L('activities').filter(a => a.taskId === d.id)) await del('activities', a.id); } },
+  delTask: d => confirmModal('Delete reminder?', esc(S.tasks[d.id]?.title || ''), 'Delete', async () => { await del('tasks', d.id); toast('Reminder deleted', '', undoDel('tasks', d.id)); }),
+  delContract: d => confirmModal('Delete contract?', `This removes the ${esc(S.contracts[d.id]?.title || 'contract')} for ${esc(cname(S.contracts[d.id]?.companyId))}.`, 'Delete', async () => { await del('contracts', d.id); toast('Contract deleted', '', undoDel('contracts', d.id)); }),
+  delQuote: d => confirmModal('Delete quote?', `Quote ${esc(S.quotes[d.id]?.number)} will be removed.`, 'Delete', async () => { const q = S.quotes[d.id]; const pre = q ? `Quote ${q.number} marked ` : null; for (const a of L('activities')) if (a.quoteId === d.id || (pre && a.companyId === q.companyId && String(a.text||'').startsWith(pre))) await del('activities', a.id); await del('quotes', d.id); toast('Quote deleted', '', undoDel('quotes', d.id)); }),
   delContact: d => { const js = jOfContacts([d.id]); const live_ = js.filter(e => ['active', 'paused'].includes(e.status)).length;
     confirmModal('Delete contact?', `${esc(nameOf('contacts', d.id))} will be removed${live_ ? ` and taken off ${live_ === 1 ? 'their journey' : `${live_} journeys`}` : ''}. Logged activity stays on the account. You can restore them from Settings → Trash for 30 days.`, 'Delete', async () => {
       await delBatch(async () => { for (const e of js) await del('enrollments', e.id);   // a deleted contact's journeys go to Trash with them (and come back with them)
-        await del('contacts', d.id); }); ui.detail = null; toast('Contact deleted'); }); },
-  delDeal: d => confirmModal('Delete opportunity?', `${esc(nameOf('deals', d.id))} will be removed. Logged activity stays on the account.`, 'Delete', async () => { await del('deals', d.id); ui.detail = null; if (ui.view === 'opp' && ui.pageOpp === d.id) ui.view = 'pipeline'; toast('Opportunity deleted'); }),
+        await del('contacts', d.id); }); ui.detail = null; toast('Contact deleted', '', undoDel('contacts', d.id)); }); },
+  delDeal: d => confirmModal('Delete opportunity?', `${esc(nameOf('deals', d.id))} will be removed. Logged activity stays on the account.`, 'Delete', async () => { await del('deals', d.id); ui.detail = null; if (ui.view === 'opp' && ui.pageOpp === d.id) ui.view = 'pipeline'; toast('Opportunity deleted', '', undoDel('deals', d.id)); }),
   delCompany: d => { const g = gr(d.id); const n = g.contacts.length + g.deals.length + g.quotes.length + g.contracts.length + g.tasks.length;
     const js = jOfContacts(g.contacts.map(c => c.id), d.id); const live_ = js.filter(e => ['active', 'paused'].includes(e.status)).length;
     confirmModal('Delete account?', `${esc(cname(d.id))} will be deleted${n ? `, along with its ${[[g.contacts.length, 'contact'], [g.deals.length, 'opportunit|y|ies'], [g.quotes.length, 'quote'], [g.contracts.length, 'contract'], [g.tasks.length, 'reminder'], [live_, 'journe|y|ys']].filter(([k]) => k).map(([k, w]) => { const [b, one, many] = w.split('|'); return `${k} ${b}${k === 1 ? (one || '') : (many || 's')}`; }).join(', ').replace(/, ([^,]*)$/, ' and $1')}` : ''}. You can restore it from Settings → Trash for 30 days.`, 'Delete account', async () => {
       await delBatch(async () => { for (const [c, arr] of [['enrollments', js], ['contacts', g.contacts], ['deals', g.deals], ['quotes', g.quotes], ['contracts', g.contracts], ['tasks', g.tasks]]) for (const r of arr) await del(c, r.id);
-        await del('companies', d.id); }); ui.detail = null; if (ui.view === 'company' && ui.pageCo === d.id) { ui.view = 'companies'; pushNav(); } toast('Account deleted'); schedule(); }); },
+        await del('companies', d.id); }); ui.detail = null; if (ui.view === 'company' && ui.pageCo === d.id) { ui.view = 'companies'; pushNav(); } toast('Account deleted', '', undoDel('companies', d.id)); schedule(); }); },
   qAddRow: () => { $('#qItems').insertAdjacentHTML('beforeend', itemRow({qty:1})); $('#qItems').lastElementChild.querySelector('input').focus(); },
   qDelRow: (d, el) => { const rows = $('#qItems').children; if (rows.length > 1) el.closest('.item').remove(); else el.closest('.item').querySelectorAll('input').forEach(i => i.value = ''); updQuoteTotal(); },
   dlQuote: d => { const q = S.quotes[d.id]; if (q) saveFile(`${q.number}.html`, quoteDoc(q), 'Quote'); },
@@ -7523,6 +7589,8 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  snooze: async el => { const id = el.dataset.id, k = S.tasks[id], v = el.value; el.value = ''; if (!k || !v || !canWrite) return; if (v === 'pick') { A.editTask({id}); return; }
+    const prev = k.due; if (await patch('tasks', id, {due: v})) toast(`Snoozed to ${fmtDate(v)}`, '', {label: 'Undo', fn: () => patch('tasks', id, {due: prev})}); },
   ctEmailChk: el => { const n = document.getElementById('ctEmailNote'); if (!n) return; const hits = emailHits(el.value, el.dataset.id || null);
     n.hidden = !hits.length; n.innerHTML = hits.length ? `Woah, that email appears under: ${emailHitsText(hits)}. Are you sure you'd like to continue?` : ''; },
   autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
@@ -8609,7 +8677,7 @@ async function deleteQuoteNow(id){
   const q = S.quotes[id]; if (!q) return true;
   const pre = `Quote ${q.number} marked `;
   for (const a of L('activities')) if (a.quoteId === id || (a.companyId === q.companyId && String(a.text||'').startsWith(pre))) await del('activities', a.id);
-  const ok = await del('quotes', id); if (ok) toast('Quote deleted');
+  const ok = await del('quotes', id); if (ok) toast('Quote deleted', '', undoDel('quotes', id));
   return ok;
 }
 
