@@ -877,6 +877,79 @@ html[data-look="porch"] .oppside{border:0;border-radius:26px}
 html[data-look="porch"] tr.sel td{background:#ECE9FC!important}
 html[data-look="porch"] .av{border-radius:10px}
 
+/* ---------- look: Ops Board (navy sidebar, orange, numbers in a typewriter font) ---------- */
+:root[data-look="opsboard"][data-theme]{--bg:#EEF0EC;--surface:#FFFFFF;--surface-2:#F2F4F5;--fg:#15212B;--muted:#5B6B76;--line:#D5DADD;--accent:#C2410C;--accent-fg:#FFFFFF;--accent-soft:#FFF1E8;--bad:#B42318;--bad-soft:#FBE3E0;--yel:#8A6412;--yel-soft:#FBF0D6;--info:#2F5D8A;--info-soft:#E0EAF4;--good:#22743A;--good-soft:#DDF0E1}
+html[data-look="opsboard"][data-font="default"]{--display:"IBM Plex Sans",system-ui,sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif}
+html[data-look="opsboard"] .nav{background:#12202B;border-right:0;--fg:#E6ECF0;--muted:#A9B7C1;--line:#2B4153;--surface:#1A2C3A;--surface-2:#1E3242;--bg:#12202B;--accent:#F08A4B;--accent-soft:#1E3242;color:#C9D3DA}
+html[data-look="opsboard"] .brand b{color:#fff}
+html[data-look="opsboard"] .brand .mark{background:#E8590C;color:#fff;border-radius:6px}
+html[data-look="opsboard"] .navi{color:#C9D3DA;border-radius:6px}
+html[data-look="opsboard"] .navi:hover:not(.on){background:#1A2C3A;color:#fff}
+html[data-look="opsboard"] .navi.on{background:#1E3242;color:#fff}
+html[data-look="opsboard"] .navi em{background:#E8590C;color:#fff;border-radius:4px}
+html[data-look="opsboard"] h1{font-weight:700;font-size:1.6rem;letter-spacing:0}
+html[data-look="opsboard"] .ph h3,html[data-look="opsboard"] .sech h3{text-transform:uppercase;letter-spacing:.08em;font-size:.84rem;font-weight:700}
+html[data-look="opsboard"] .panel,html[data-look="opsboard"] .tbl{border-radius:8px;box-shadow:none}
+html[data-look="opsboard"] .btn,html[data-look="opsboard"] .segs,html[data-look="opsboard"] .segs button,html[data-look="opsboard"] .search,html[data-look="opsboard"] .stagesel{border-radius:6px}
+html[data-look="opsboard"] .segs button.on{background:#12202B;color:#fff}
+html[data-look="opsboard"] th{font-size:.72rem;letter-spacing:.07em}
+html[data-look="opsboard"] td{padding-top:8px;padding-bottom:8px}
+html[data-look="opsboard"] .num,html[data-look="opsboard"] .rem-d b,html[data-look="opsboard"] .navi em,html[data-look="opsboard"] .kpi b,html[data-look="opsboard"] .svcw .sd small,html[data-look="opsboard"] .task .chip{font-family:"IBM Plex Mono",ui-monospace,monospace}
+html[data-look="opsboard"] .svcw .sd b{font-family:"IBM Plex Mono",ui-monospace,monospace;text-transform:uppercase;font-size:.8rem;letter-spacing:.02em}
+html[data-look="opsboard"] .rem,html[data-look="opsboard"] .task.past,html[data-look="opsboard"] .task.today,html[data-look="opsboard"] .task.future{border-radius:6px}
+@media (max-width:820px){html[data-look="opsboard"] .mbar{background:#12202B;color:#fff}html[data-look="opsboard"] .mbar .icon-btn{color:#C9D3DA}html[data-look="opsboard"] .mbar .mark{background:#E8590C;color:#fff}}
+/* ---------- look: Ledger (quiet, menu across the top, built for the keyboard) ---------- */
+:root[data-look="ledger"][data-theme]{--bg:#FBFBFA;--surface:#FFFFFF;--surface-2:#F1F1EF;--fg:#1C1D1F;--muted:#66676B;--line:#E7E7E4;--accent:#1F6F5C;--accent-fg:#FFFFFF;--accent-soft:#E3F0EC;--bad:#B42318;--bad-soft:#FBE3E0;--yel:#7A5B00;--yel-soft:#FBF0B8;--info:#2F5D8A;--info-soft:#E0EAF4;--good:#22743A;--good-soft:#DDF0E1}
+html[data-look="ledger"][data-font="default"]{--display:"Inter",system-ui,sans-serif;--body:"Inter",system-ui,sans-serif}
+@media (min-width:821px){
+html[data-look="ledger"] .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+html[data-look="ledger"] .nav{flex-direction:row;align-items:center;gap:14px;padding:10px 24px;border-right:0;border-bottom:1px solid var(--line);overflow:visible}
+html[data-look="ledger"] .navlist{flex-direction:row;gap:2px}
+html[data-look="ledger"] .navfoot{flex-direction:row;align-items:center;margin:0 0 0 auto;border:0;padding:0}
+html[data-look="ledger"] .navi{border-radius:999px;padding:7px 12px;font-weight:500}
+html[data-look="ledger"] .navlist .navi>.ic{display:none}
+html[data-look="ledger"] .navfoot .navi span{display:none}
+html[data-look="ledger"] .brand b{white-space:nowrap}
+html[data-look="ledger"] .navi.on{font-weight:700}
+html[data-look="ledger"] .navi em{margin-left:2px}
+html[data-look="ledger"] .gsearch{order:3;width:210px;border-radius:999px;border-color:transparent;background:var(--bg)}
+html[data-look="ledger"] .navfoot{order:4}
+html[data-look="ledger"] .meline span{display:none}
+html[data-look="ledger"] .brand{margin-right:10px}
+}
+@media (min-width:821px) and (max-width:1500px){html[data-look="ledger"] .gsearch{width:auto}html[data-look="ledger"] .gsearch span,html[data-look="ledger"] .gsearch kbd{display:none}}
+@media (min-width:821px) and (max-width:1180px){html[data-look="ledger"] .navi{padding:7px 8px;font-size:.86rem}html[data-look="ledger"] .brand>span:last-child{display:none}}
+html[data-look="ledger"] .nav{background:var(--surface)}
+html[data-look="ledger"] .navi{border-radius:6px;padding:6px 10px;font-weight:500}
+html[data-look="ledger"] .navi.on{background:var(--surface-2);color:var(--fg);font-weight:600}
+html[data-look="ledger"] .brand .mark{border-radius:6px}
+html[data-look="ledger"] .gsearch{order:3;width:240px;border-radius:8px;background:var(--bg)}
+html[data-look="ledger"] .mcal,html[data-look="ledger"] .theo-room{display:none}
+html[data-look="ledger"] h1{font-weight:600;letter-spacing:-.02em;font-size:1.9rem}
+html[data-look="ledger"] .ph h3,html[data-look="ledger"] .sech h3{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+html[data-look="ledger"] .panel,html[data-look="ledger"] .tbl{border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+html[data-look="ledger"] .btn,html[data-look="ledger"] .search,html[data-look="ledger"] .stagesel{border-radius:8px}
+html[data-look="ledger"] th{text-transform:none;letter-spacing:0;font-size:.8rem;font-weight:500}
+html[data-look="ledger"] .rem{border-color:var(--line);box-shadow:none}
+/* ---------- look: Field Kit (warm, bold headings, rounded and friendly) ---------- */
+:root[data-look="fieldkit"][data-theme]{--bg:#F6F3EE;--surface:#FFFFFF;--surface-2:#EFEAE2;--fg:#1E1B16;--muted:#6F675B;--line:#E6DFD3;--accent:#1D4ED8;--accent-fg:#FFFFFF;--accent-soft:#DBE6FE;--bad:#B42318;--bad-soft:#FBE3E0;--yel:#8A5A00;--yel-soft:#FDF0D3;--info:#1E3A8A;--info-soft:#DBE6FE;--good:#1F7A4D;--good-soft:#DDF2E6}
+html[data-look="fieldkit"][data-font="default"]{--display:"Bricolage Grotesque",system-ui,sans-serif;--body:"Inter",system-ui,sans-serif}
+html[data-look="fieldkit"] .nav{background:transparent;border-right:0}
+html[data-look="fieldkit"] .navi{border-radius:12px;padding:10px 12px;font-size:.97rem;font-weight:500;color:#4A453D}
+html[data-look="fieldkit"] .navi.on{background:#1E1B16;color:#F6F3EE;font-weight:600}
+html[data-look="fieldkit"] .brand b{font-family:var(--display);font-weight:800;letter-spacing:-.02em;text-transform:lowercase;font-size:1.35rem}
+html[data-look="fieldkit"] .brand .mark{border-radius:12px;background:#1E1B16;color:#F6F3EE}
+html[data-look="fieldkit"] .gsearch{border-radius:999px}
+html[data-look="fieldkit"] h1{font-weight:800;letter-spacing:-.03em;font-size:2.6rem;line-height:1.05}
+html[data-look="fieldkit"] h2,html[data-look="fieldkit"] h3{font-weight:800;letter-spacing:-.01em}
+html[data-look="fieldkit"] .panel,html[data-look="fieldkit"] .tbl{border:0;border-radius:20px;box-shadow:0 1px 0 var(--line)}
+html[data-look="fieldkit"] .btn,html[data-look="fieldkit"] .segs,html[data-look="fieldkit"] .segs button,html[data-look="fieldkit"] .search,html[data-look="fieldkit"] .stagesel{border-radius:999px}
+html[data-look="fieldkit"] .btn{padding:8px 16px}
+html[data-look="fieldkit"] .segs button.on{background:#1E1B16;color:#F6F3EE}
+html[data-look="fieldkit"] th{text-transform:none;letter-spacing:0;font-weight:600;font-size:.82rem}
+html[data-look="fieldkit"] .rem,html[data-look="fieldkit"] .task.past,html[data-look="fieldkit"] .task.today,html[data-look="fieldkit"] .task.future,html[data-look="fieldkit"] .att{border-radius:14px}
+html[data-look="fieldkit"] .sheet{border-radius:22px}
+html[data-look="fieldkit"] .oppside{border:0;border-radius:24px}
 :root[data-look="night"][data-theme]{--bg:#0E171D;--surface:#14212A;--surface-2:#1B2B35;--fg:#E3ECEE;--muted:#8DA3AB;--line:#22343F;--accent:#5FD0B0;--accent-fg:#082119;--accent-soft:#173A35;--bad:#EF7C69;--bad-soft:#3A1D1A;--warn:#EDB25A;--warn-soft:#3A2C14;--yel:#EDB25A;--yel-soft:#33280F;--info:#6EB1F0;--info-soft:#162A3E;--good:#5FD0B0;--good-soft:#133129;--pur:#B39DF2;--pur-soft:#2A2140;--past-bg:#3A1A17;--past-line:#6B2F28;--today-bg:#353014;--today-line:#6A5E1F;--future-bg:#16301B;--future-line:#2D5A35;--scrim:rgba(0,0,0,.55);--shadow:0 18px 50px rgba(0,0,0,.55)}
 html[data-look="night"][data-font="default"]{--display:"Sora",system-ui,sans-serif;--body:"Inter",system-ui,sans-serif}
 
@@ -2637,7 +2710,7 @@ window.addEventListener('popstate', e => {
 
 // ---------- appearance: each person's own look, saved to their login ----------
 const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show'};
-const LOOKS = {"inlet": {"name": "Inlet", "note": "Calm coastal colors, menu across the top", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700", "sw": ["#EDF3F4", "#0B3442", "#127C8C", "#A6DCCF", "#F6DFAE"], "dark": false}, "custody": {"name": "Chain of Custody", "note": "Certificate-style, serious and secure", "fonts": "Newsreader:opsz,wght@6..72,400..700&family=Source+Sans+3:wght@400..700", "sw": ["#F8FAF7", "#123A2B", "#1E5A43", "#9C7A33", "#9E2F27"], "dark": false}, "crosscut": {"name": "Cross-Cut", "note": "Bold, bright and fun", "fonts": "Unbounded:wght@500..800&family=Onest:wght@400..800", "sw": ["#FFFFFF", "#15172E", "#2F4BE8", "#FFE14D", "#FF8FC4"], "dark": false}, "dispatch": {"name": "Dispatch", "note": "Dispatch board with job tickets", "fonts": "Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", "sw": ["#ECEEEC", "#1F252B", "#F2661C", "#F5C232", "#2A68CF"], "dark": false}, "porch": {"name": "Front Porch", "note": "Warm, friendly and easy", "fonts": "Outfit:wght@400..800", "sw": ["#F4F2FB", "#5A47D6", "#261E3D", "#FFB48F", "#FFE6A1"], "dark": false}, "night": {"name": "Night Shift", "note": "Dark, compact and keyboard-friendly", "fonts": "Sora:wght@400..700&family=Inter:wght@400..700", "sw": ["#0E171D", "#1B2B35", "#5FD0B0", "#EDB25A", "#EF7C69"], "dark": true}};
+const LOOKS = {"inlet": {"name": "Inlet", "note": "Calm coastal colors, menu across the top", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700", "sw": ["#EDF3F4", "#0B3442", "#127C8C", "#A6DCCF", "#F6DFAE"], "dark": false}, "custody": {"name": "Chain of Custody", "note": "Certificate-style, serious and secure", "fonts": "Newsreader:opsz,wght@6..72,400..700&family=Source+Sans+3:wght@400..700", "sw": ["#F8FAF7", "#123A2B", "#1E5A43", "#9C7A33", "#9E2F27"], "dark": false}, "crosscut": {"name": "Cross-Cut", "note": "Bold, bright and fun", "fonts": "Unbounded:wght@500..800&family=Onest:wght@400..800", "sw": ["#FFFFFF", "#15172E", "#2F4BE8", "#FFE14D", "#FF8FC4"], "dark": false}, "dispatch": {"name": "Dispatch", "note": "Dispatch board with job tickets", "fonts": "Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", "sw": ["#ECEEEC", "#1F252B", "#F2661C", "#F5C232", "#2A68CF"], "dark": false}, "porch": {"name": "Front Porch", "note": "Warm, friendly and easy", "fonts": "Outfit:wght@400..800", "sw": ["#F4F2FB", "#5A47D6", "#261E3D", "#FFB48F", "#FFE6A1"], "dark": false}, "night": {"name": "Night Shift", "note": "Dark, compact and keyboard-friendly", "fonts": "Sora:wght@400..700&family=Inter:wght@400..700", "sw": ["#0E171D", "#1B2B35", "#5FD0B0", "#EDB25A", "#EF7C69"], "dark": true}, "opsboard": {"name": "Ops Board", "note": "Navy sidebar, orange, built for the schedule", "fonts": "IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600", "sw": ["#EEF0EC", "#12202B", "#E8590C", "#FFF1E8", "#B42318"], "dark": false}, "ledger": {"name": "Ledger", "note": "Quiet and minimal, menu across the top", "fonts": "Inter:wght@400..700", "sw": ["#FBFBFA", "#1C1D1F", "#1F6F5C", "#E3F0EC", "#ECECEA"], "dark": false}, "fieldkit": {"name": "Field Kit", "note": "Warm, bold and friendly", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400..700", "sw": ["#F6F3EE", "#1E1B16", "#1D4ED8", "#FDE7D3", "#E9E1F8"], "dark": false}};
 const ACCENTS = [['', 'Teal (default)', '#0D6B61'], ['#2563EB', 'Blue', '#2563EB'], ['#1E3A8A', 'Navy', '#1E3A8A'], ['#7C3AED', 'Purple', '#7C3AED'], ['#DB2777', 'Pink', '#DB2777'], ['#DC2626', 'Red', '#DC2626'], ['#EA580C', 'Orange', '#EA580C'], ['#15803D', 'Green', '#15803D'], ['#475569', 'Slate', '#475569'], ['#111827', 'Black', '#111827']];
 let LOOK = {...LOOK_DEFAULT};
 const lookKey = () => 'apcrm-look-' + (ME.id || 'me');
