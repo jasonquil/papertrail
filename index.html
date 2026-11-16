@@ -3094,7 +3094,7 @@ function render(){
 }
 
 function navHtml(){
-  const badge = {hdwd: booted ? hdwdDue().length : 0, journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? asToday(() => todayAtt().length) : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (!ui.mine || k.assigneeId === ME.id)).length : 0};
+  const badge = {hdwd: booted ? hdwdDue().length : 0, journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? asToday(() => todayAtt().length) : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (ME.id ? k.assigneeId === ME.id : true)).length : 0};   // always just yours, whatever Mine/Everyone is set to
   { const n = booted && ME.id ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && k.assigneeId === ME.id).length : 0; const tt = (n ? `(${n}) ` : '') + 'Paper Trail'; if (document.title !== tt) document.title = tt; }   // your due reminders, in the browser tab
   const MT = ['today', 'reminders', 'pipeline', 'companies'];
   const curK = ui.view === 'company' ? 'companies' : ui.view === 'opp' ? 'pipeline' : ui.view;
@@ -3103,7 +3103,7 @@ function navHtml(){
   const mobile = `<div class="mbar"><span class="mark">${FISH ? BOBBER : 'PT'}</span><b class="mtitle">${esc(curL)}</b><button class="icon-btn" data-act="search" aria-label="Search">${ic('search')}</button><button class="icon-btn" data-act="settings" aria-label="Settings">${ic('gear')}</button></div>
   <div class="mtabs" role="navigation" aria-label="Main">${MT.map(k => { const v = VIEWS.find(x => x[0] === k); return `<button class="${curK === k ? 'on' : ''}" data-act="go" data-v="${k}">${ic(v[2])}<span>${k === 'pipeline' ? 'Opps' : v[1]}</span>${badge[k] ? `<em>${badge[k]}</em>` : ''}</button>`; }).join('')}<button class="${MT.includes(curK) ? '' : 'on'}" data-act="mMore">${ic('more')}<span>More</span>${moreBadge ? `<em>${moreBadge}</em>` : ''}</button></div>`;
   return mobile + `<div class="brand">${FISH ? `<span class="mark">${BOBBER}</span><span><b>Paper Trail</b><small>Bait &amp; Tackle Co.</small></span>` : '<span class="mark">PT</span><span><b>Paper Trail</b></span>'}</div>
-  ${booted && ME.id && !setupDone() ? `<button class="newhere" type="button" data-act="setupOpen">${ic('spark')}<span>New here? Set up</span></button>` : ''}<button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
+  <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
   <div class="navlist">${VIEWS.map(([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`).join('')}</div>
   ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
   ${theoOn() ? '<div class="theo-room" id="theoRoom" data-own></div>' : ''}
