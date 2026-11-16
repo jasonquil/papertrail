@@ -231,7 +231,8 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .tick:hover{border-color:var(--accent);background:var(--accent-soft)}
 .tick.done{background:var(--accent);border-color:var(--accent)}
 .tick .ic{width:14px;height:14px;stroke-width:2.6}
-.task-b{display:flex;flex-direction:column;min-width:0;flex:1}
+.task-b{display:flex;flex-direction:column;min-width:0;flex:1 1 150px}
+.task{flex-wrap:wrap}   /* in a narrow column, Snooze and Edit drop below instead of squeezing the text */
 .task-b small{color:var(--muted);font-size:.8rem;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .qt{display:flex;gap:8px}
 .qt input{flex:1;min-width:0}
@@ -727,6 +728,13 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.cth{position:relative;display:block;height:88px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-bottom:4px}
+.cth i{position:absolute;border-radius:3px;box-sizing:border-box}
+.cth .bx{background:var(--surface);border:1px solid var(--line)}
+.cth .ln{background:color-mix(in srgb,var(--muted) 38%,transparent);border-radius:2px}
+.cth .ac{background:var(--accent)}.cth .acs{background:var(--accent-soft)}
+.cth .tool{background:color-mix(in srgb,var(--muted) 16%,var(--surface))}.cth .pg{background:var(--bg)}
+.su-pick button.on .cth{border-color:var(--accent)}
 .su-sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:0}
 .su-sum div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .su-sum dt{color:var(--muted)}.su-sum dd{margin:0;font-weight:600}
@@ -2816,7 +2824,7 @@ function lookModal(){
       ${F('Text size', seg('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']]))}
       ${F('Spacing', seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
       ${F('Font', seg('font', [['default', (LOOK.look || 'default') === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
-      ${F('Email window', seg('compose', CMP_LAYOUTS))}
+      <div class="f"><span>Email window</span>${cmpPickHtml()}</div>
       ${F('Sidebar calendar', seg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}
       ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
     </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
@@ -2824,6 +2832,16 @@ function lookModal(){
 
 // ---------- New here? setup: a walkthrough of every personal setting ----------
 const SETUP_STEPS = ['Welcome', 'Email', 'Your look', 'Easy on the eyes', 'Email window', 'Home base', 'All set'];
+// a small sketch of each email window, drawn in the current look's colors
+const CMP_THUMBS = {
+  form: [[4,6,92,12,'acs'],[4,24,92,10,'bx'],[4,39,92,10,'bx'],[4,54,92,40,'bx'],[8,62,56,3,'ln'],[8,70,70,3,'ln'],[8,78,48,3,'ln']],
+  outlook: [[0,0,100,17,'tool'],[4,4,17,9,'ac'],[25,6,14,5,'ln'],[4,23,92,9,'bx'],[4,35,92,9,'bx'],[4,48,92,7,'tool'],[4,57,92,39,'bx'],[8,64,56,3,'ln'],[8,72,66,3,'ln'],[8,80,44,3,'ln']],
+  library: [[3,5,30,90,'bx'],[5,10,26,13,'acs'],[7,30,20,3,'ln'],[7,40,22,3,'ln'],[7,50,17,3,'ln'],[7,60,22,3,'ln'],[7,70,19,3,'ln'],[37,5,60,20,'bx'],[37,29,60,66,'bx'],[41,38,40,3,'ln'],[41,46,48,3,'ln'],[41,54,34,3,'ln']],
+  dock: [[0,0,58,100,'pg'],[5,10,32,5,'ln'],[5,22,44,24,'bx'],[5,52,44,24,'bx'],[60,0,40,100,'bx'],[63,7,30,5,'ln'],[63,17,30,5,'ln'],[63,28,32,52,'tool'],[83,86,14,8,'ac']],
+  letter: [[24,5,52,90,'bx'],[30,14,22,4,'ln'],[30,26,40,3,'ln'],[30,34,36,3,'ln'],[30,42,40,3,'ln'],[30,50,28,3,'ln'],[30,62,18,3,'ln']]
+};
+const cmpThumb = v => `<span class="cth" aria-hidden="true">${(CMP_THUMBS[v] || []).map(([l, t, w, h, k]) => `<i class="${k}" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%"></i>`).join('')}</span>`;
+const cmpPickHtml = () => `<div class="su-pick" role="group" aria-label="Email window">${CMP_LAYOUTS.map(([v, l]) => { const on = (LOOK.compose || LOOK_DEFAULT.compose) === v; return `<button type="button" class="${on ? 'on' : ''}" data-act="lookSet" data-k="compose" data-v="${v}" aria-pressed="${on}">${cmpThumb(v)}<b>${esc(l)}</b><small>${esc(CMP_NOTES[v] || '')}</small></button>`; }).join('')}</div>`;
 const CMP_NOTES = {form: 'To, subject and message stacked', outlook: 'Looks like a new Outlook message', library: 'Templates listed on the left', dock: 'Write beside the account', letter: 'A clean page, nothing else'};
 function setupModal(step){
   step = Math.max(1, Math.min(SETUP_STEPS.length, step || 1)); ui.setup = step;
@@ -2850,12 +2868,11 @@ function setupModal(step){
       ${F('Font', lookSeg('font', [['default', lk === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
       <p class="sub">Text size and spacing change the whole app right away; look behind this window.</p></div>`,
     5: `<h2>How should writing an email look?</h2><p class="su-lead">Same templates and fill-in blanks either way. This only changes the layout of the email window.</p>
-      <div class="su-pick">${CMP_LAYOUTS.map(([v, l]) => `<button type="button" class="${(LOOK.compose || LOOK_DEFAULT.compose) === v ? 'on' : ''}" data-act="lookSet" data-k="compose" data-v="${v}" aria-pressed="${(LOOK.compose || LOOK_DEFAULT.compose) === v}"><b>${esc(l)}</b><small>${esc(CMP_NOTES[v] || '')}</small></button>`).join('')}</div>`,
+      ${cmpPickHtml()}`,
     6: `<h2>Your home base</h2>
       ${item('Open Paper Trail to', 'The page you land on each morning.', lookSeg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
       ${item('Today shows', 'Just your reminders and services, or the whole team\'s.', `<div class="segs lookseg" role="group"><button type="button" class="${prefGet('todayAll', false) ? '' : 'on'}" data-act="setupWho" data-m="0">Mine</button><button type="button" class="${prefGet('todayAll', false) ? 'on' : ''}" data-act="setupWho" data-m="1">Everyone</button></div>`)}
-      ${item('Calendar in the sidebar', 'A small month view under the menu.', lookSeg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}
-      ${theoMe() ? item('Theo', 'Your pixel cat above Settings.', `<div class="segs lookseg" role="group"><button type="button" class="${prefGet('theo', true) ? 'on' : ''}" data-act="setupTheo" data-m="1">Show</button><button type="button" class="${prefGet('theo', true) ? '' : 'on'}" data-act="setupTheo" data-m="0">Hide</button></div>`) : ''}`,
+      ${item('Calendar in the sidebar', 'A small month view under the menu.', lookSeg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}`,
     7: `<h2>You're all set${first ? ', ' + esc(first) : ''}.</h2><p class="su-lead">Here's what you picked. Change any of it in Settings → You → Appearance, or run this setup again from Settings.</p>
       <dl class="su-sum">${[['Outlook', ms ? 'Connected' : 'Not connected'], ['Signature', SIG.html ? 'Saved' : 'Not set up'], ['Look', lkName], ['Text size', optL('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']])], ['Spacing', optL('density', [['comfy', 'Comfortable'], ['compact', 'Compact']])], ['Email window', optL('compose', CMP_LAYOUTS)], ['Opens to', optL('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']])], ['Today shows', prefGet('todayAll', false) ? 'Everyone' : 'Mine']].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
       <div class="su-tips"><b>Three things worth knowing</b><span>Snooze pushes a reminder to tomorrow or next week in one click.</span><span>Checked something off by mistake? Hit Undo at the bottom of the screen.</span><span>Press / anywhere to search every account and contact.</span></div>`
@@ -2888,7 +2905,7 @@ function preserve(fn){
 // update an element to match new HTML by changing only what differs (keeps hover, focus and scroll steady)
 // ---------- Theo: Jason's pixel tabby (brown, male, 2, small for his age). Only Jason sees him. ----------
 // Health: half from what Jason logged today (6 fills it; before 11am yesterday still counts), half from his overdue reminders.
-const theoMe = () => /^jason@allpointsprotects\.com$/i.test(ME.email || '') || /^jason quillen$/i.test(ME.name || '') || (!live && ME.id === 'jason');
+const theoMe = () => live ? /^jason@allpointsprotects\.com$/i.test(ME.email || '') : ME.id === 'jason';   // Theo is Jason's alone: his sign-in email, not a display name anyone could match
 const theoOn = () => theoMe() && prefGet('theo', true);   // he can be hidden from Settings → You
 const TH_PAL = {o: '#2A1E16', b: '#926C48', d: '#4E3624', l: '#DEC8A4', k: '#140E0A', n: '#D68080', p: '#E29696'};
 const TH_SIT = ["..oo..........oo......", "..obo........obo......", "..obpo......opbo......", "..obppooooooppbo......", ".obbbbbdbbdbbbbbo.....", ".obbbbbbddbbbbbbo.....", ".odbbbbbddbbbbbdo.....", ".obbkwbbbbbbkwbbo.....", ".odbkkbbbbbbkkbdo.....", ".obbbbllnnllbbbbo.....", ".obbbllllllllbbbo.....", "..obbbllllllbbbo......", "...oobbllllbboo.......", "...odbbllllbbdo.......", "..obdbblllllbbdbo.....", "..odbbbllllllbbdo..oo.", "..obdbbllllllbdbo.obbo", "..odbbbllllllbbdoodbo.", "..obobllllllblobobbo..", "..obllollllollloobo...", "...oooooooooooooo....."];
@@ -6015,7 +6032,7 @@ function cmpParts({contacts, tpls, pick, jopt, lay}){
   X.hint = '<p class="sub" id="dHint"></p>';
   X.journey = !jopt && canWrite && journeys().length ? `<div class="jsend"><label class="chk cmp-sw"><input type="checkbox" id="dJ" data-change="dJ"><span class="cmp-swt" aria-hidden="true"></span>Send on a Journey</label><span id="dJBox" hidden>${sel('dj', journeys().map(j => [j.id, j.name]), journeys()[0].id, 'id="dJSel" aria-label="Journey" data-change="dJSel"')}<span class="sub">first follow-up in</span><input id="dJDays" type="number" min="1" max="90" value="7" aria-label="Days until the first follow-up" data-input="dJDays"><span class="sub">days</span><button type="button" class="lnk" data-act="dJEdit">${ic('edit')}Review &amp; edit the emails</button></span><div id="dJSteps" class="dj-steps" hidden></div></div>` : '';
   X.note = '<div class="mailbar" id="dNote" hidden></div>';
-  X.attach = (cls = 'btn', label = 'Attach files') => GRAPH ? `<label class="${cls}" title="Attach files">${ic('clip')}${label}<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="${cls}" data-act="outlookDraft" id="dDraftBtn">${ic('up')}Attach files in Outlook</button>`;
+  X.attach = (cls = 'btn', label = 'Attach files') => GRAPH ? `<label class="${cls}" title="Attach files">${ic('clip')}${label}<input type="file" id="dFileIn" multiple hidden data-change="dFiles"></label>` : `<button type="button" class="${cls}" data-act="outlookDraft" id="dDraftBtn">${ic('up')}${/vh-sr/.test(label) ? '<span class="vh-sr">Attach files in Outlook</span>' : 'Attach files in Outlook'}</button>`;
   X.send = (cls = 'btn pri') => canWrite ? `<button type="button" class="${cls}" data-act="sendMail" id="dSend" title="Send (Ctrl+Enter)">${ic('mail')}Send</button>` : '';
   X.editTpl = (cls = 'btn ghost') => `<button type="button" class="${cls}" data-act="tplManage">${ic('edit')}Edit templates</button>`;
   X.copy = (cls = 'btn ghost', label = 'Copy message') => `<button type="button" class="${cls}" data-act="copyDraft" title="Copy the message">${ic('copy')}${label}</button>`;
@@ -7516,7 +7533,6 @@ const A = {
   setupLater: () => { closeModal(); setupMark({laterAt: Date.now()}); toast('No problem. Start it anytime from Settings → You.'); },
   setupFinish: () => { closeModal(); ui.setupResume = null; setupMark({doneAt: Date.now()}); toast("You're all set."); schedule(); },
   setupWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); schedule(); setupModal(ui.setup); },
-  setupTheo: d => { prefSet('theo', d.m === '1'); schedule(); setupModal(ui.setup); },
   setTab: d => { ui.setTab = d.v; settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   // picking an option: just move the highlight, so the window doesn't redraw and jump back to the top.
   // (picking a whole look changes which rows show, so that one redraws, keeping your place)
@@ -7524,7 +7540,7 @@ const A = {
     if (ui.setup && $('#mform.setup')) { const sb0 = $('#mform .sb'), t0 = sb0 ? sb0.scrollTop : 0; setupModal(ui.setup); const nb = $('#mform .sb'); if (nb) nb.scrollTop = t0; return; }
     const sb = $('#mform .sb'), top = sb ? sb.scrollTop : 0;
     if (d.k === 'look' || !sb) { lookModal(); const nb = $('#mform .sb'); if (nb) nb.scrollTop = top; return; }
-    document.querySelectorAll(`#mform [data-act="lookSet"][data-k="${d.k}"]`).forEach(b => b.classList.toggle('on', b.dataset.v === String(d.v))); },
+    document.querySelectorAll(`#mform [data-act="lookSet"][data-k="${d.k}"]`).forEach(b => { b.classList.toggle('on', b.dataset.v === String(d.v)); if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', String(b.dataset.v === String(d.v))); }); },
   lookReset: () => { LOOK = {...LOOK_DEFAULT}; saveLook(); schedule(); lookModal(); toast('Back to the default look'); },
   trash: () => trashModal(),
   trashRestore: d => trashRestore(d.id),
