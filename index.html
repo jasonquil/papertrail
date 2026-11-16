@@ -1343,7 +1343,7 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
 /* blanks: highlighted in the message, filled in from the bar */
 ::highlight(pt-blank){background-color:#FFE680;color:#5A4100}
 .cmp-blanks{display:flex;flex-direction:column;gap:8px;padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--warn);transition:background .2s,color .2s}
-.cmp-blanks.ok{background:color-mix(in srgb,var(--good,#1E7F4F) 12%,transparent);color:var(--good,#1E7F4F)}
+.cmp-blanks.ok{background:color-mix(in srgb,var(--good,#1E7F4F) 12%,var(--surface));color:var(--good,#1E7F4F)}
 .cmp-bltop{display:flex;align-items:center;gap:12px}.cmp-blprog{flex:1;max-width:260px;height:8px;border-radius:99px;background:color-mix(in srgb,currentColor 18%,transparent);overflow:hidden}
 .cmp-blprog i{display:block;height:100%;width:0;border-radius:inherit;background:currentColor;transition:width .2s}
 .cmp-blrow{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
@@ -1354,7 +1354,8 @@ html[data-look="crosscut"] .cmp,html[data-look="porch"] .cmp,html[data-look="inl
 .cmp-blt{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:.88rem}.cmp-blt .ic{width:16px;height:16px}
 .cmp-bl{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;font-weight:600}
 .cmp-blanks .cmp-bl input{width:190px;height:32px;padding:4px 10px;background:var(--surface);border-color:color-mix(in srgb,var(--warn) 45%,var(--line));color:var(--fg)}
-.cmp-blanks:not([hidden]) ~ #dHint{display:none}
+.cmp-blanks:not([hidden]) ~ #dHint,.cmp:has(.cmp-blanks:not([hidden])) #dHint{display:none}
+.cmp-blanks{position:sticky;top:0;z-index:4;box-shadow:0 2px 6px rgba(0,0,0,.06)}   /* fill-in boxes sit at the top of the email and stay in view */
 /* signature as one line (familiar form, library, docked): a preview opens under it */
 .cmp-sigrow{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 14px}
 .cmp-sigrow .cmp-sigh{display:flex;align-items:center;gap:12px;justify-content:space-between}
@@ -6029,6 +6030,7 @@ function tplPreview(t){ const txt = String(t.body || '').replace(/<(br|\/p|\/div
   const line = txt.split('\n').map(x => x.replace(/…/g, '').replace(/\s+/g, ' ').trim()).find(x => x && !/^(hi|hello|hey|good (morning|afternoon|evening)|dear|greetings)\b/i.test(x) && !(/,$/.test(x) && x.split(' ').length <= 4) && /[a-z]{3}/i.test(x)) || ''; return line.length > 80 ? line.slice(0, 78) + '…' : line; }
 const CMP_BUILD = {
   letter: X => `<div class="cmp">
+    ${X.blanks}
     <div class="cmp-paper">
       <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
       <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label>${X.cc('Cc')}</div>
@@ -6038,8 +6040,9 @@ const CMP_BUILD = {
       <div class="cmp-tools"><span class="cmp-tpl" title="Start from a template">${ic('doc')}${X.tplSel('Template')}</span>${X.rte}</div>
       ${X.editor}${X.sigFold}${X.files}
     </div>
-    ${X.blanks}${X.hint}${X.journey}${X.note}</div>`,
+    ${X.hint}${X.journey}${X.note}</div>`,
   form: X => `<div class="cmp cmp-form">
+    ${X.blanks}
     <label class="cmp-tplbar">${ic('doc')}<span>Start from a template</span>${X.tplSel()}</label>
     <div class="cmp-tofld"><div class="cmp-fld"><label for="dTo">To</label>${X.toSel ? `<div class="cmp-toline">${X.av}${X.toSel}</div>` : X.none}</div><div class="cmp-ccbtns">${X.ccB('+ ')}</div></div>
     <div class="cmp-fld" id="dCcRow" hidden><label for="dCc">Cc</label>${X.cc('Cc')}</div>
@@ -6047,7 +6050,7 @@ const CMP_BUILD = {
     <div class="cmp-fld"><label for="draftSubj">Subject</label><div class="cmp-subjw">${X.subj}${X.copySubj}</div></div>
     ${X.ai}
     <div class="cmp-fld"><span class="cmp-lbl">Message</span><div class="cmp-box">${X.rte}${X.editor}</div></div>
-    ${X.blanks}${X.hint}${X.files}${X.sigRow}${X.journey}${X.note}</div>`,
+    ${X.hint}${X.files}${X.sigRow}${X.journey}${X.note}</div>`,
   outlook: X => `<div class="cmp cmp-ol">
     <div class="cmp-cmd" role="toolbar" aria-label="Email">${X.send('btn pri cmd-send')}<span class="cmd-sep"></span>${X.attach('cmd-b', 'Attach')}<span class="cmd-b cmd-tpl" title="Start from a template">${ic('doc')}${X.tplSel('Template')}</span>${X.sigCmd}${X.copy('cmd-b', 'Copy')}</div>
     ${X.blanks}
@@ -6073,6 +6076,7 @@ const CMP_BUILD = {
       ${X.editTpl('cmp-lnk cmp-libedit')}
     </nav>
     <div class="cmp-libmain">
+      ${X.blanks}
       <span hidden>${X.tplSel()}</span>
       <div class="cmp-card">
         <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
@@ -6080,18 +6084,19 @@ const CMP_BUILD = {
         <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
         <div class="cmp-row cmp-subj"><label class="cmp-k" for="draftSubj">Subject</label>${X.subj}${X.copySubj}</div>
       </div>
-      ${X.ai}${X.blanks}${X.hint}
+      ${X.ai}${X.hint}
       <div class="cmp-card cmp-edcard"><div class="cmp-tools">${X.rte}</div>${X.editor}${X.sigRow}${X.files}</div>
       ${X.journey}${X.note}
     </div></div>`; },
   dock: X => `<div class="cmp cmp-dock">
+    ${X.blanks}
     <div class="cmp-row cmp-to"><label class="cmp-k" for="dTo">To</label>${X.toSel ? `${X.av}<div class="cmp-v">${X.toSel}</div>` : `<div class="cmp-v">${X.none}</div>`}<span class="cmp-ccb">${X.ccB()}</span></div>
     <div class="cmp-row" id="dCcRow" hidden><label class="cmp-k" for="dCc">Cc</label>${X.cc('Cc')}</div>
     <div class="cmp-row" id="dBccRow" hidden><label class="cmp-k" for="dBcc">Bcc</label>${X.cc('Bcc')}</div>
     <div class="cmp-row cmp-subj"><label class="cmp-k" for="draftSubj">Subject</label>${X.subj}${X.copySubj}</div>
     <div class="cmp-tools"><span class="cmp-tpl" title="Start from a template">${ic('doc')}${X.tplSel('Template')}</span>${X.rte}</div>
     ${X.ai}${X.editor}
-    <div class="cmp-dpad">${X.blanks}${X.hint}${X.files}${X.sigRow}${X.journey}${X.note}</div></div>`,
+    <div class="cmp-dpad">${X.hint}${X.files}${X.sigRow}${X.journey}${X.note}</div></div>`,
 };
 const CMP_FOOT = {
   letter: X => `${X.editTpl('btn ghost')}<span class="cmp-fsp"></span>${X.copy('btn ghost')}${X.attach('btn')}${X.send()}`,
