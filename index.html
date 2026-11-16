@@ -704,6 +704,43 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 
 .stagebar{display:none;gap:2px;height:28px;border-radius:8px;overflow:hidden}
 .stagebar span{display:flex;align-items:center;padding:0 10px;font-size:.78rem;font-weight:600;color:#0E171D;white-space:nowrap;overflow:hidden;min-width:0}
+/* New here? setup */
+.sheet.setup{width:min(900px,calc(100% - 32px))}
+.su{display:grid;grid-template-columns:190px minmax(0,1fr);gap:28px;min-height:420px}
+.su-rail{list-style:none;margin:0;padding:0 0 0 0;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);padding-right:14px}
+.su-rail button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:7px 6px;border-radius:8px;font:inherit;font-size:.9rem;color:var(--muted);cursor:pointer;text-align:left}
+.su-rail button:hover{background:var(--surface-2);color:var(--fg)}
+.su-rail button>span{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:.75rem;font-weight:700}
+.su-rail button>span .ic{width:13px;height:13px}
+.su-rail li.done button{color:var(--accent)}.su-rail li.done button>span{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.su-rail li.on button{color:var(--fg);font-weight:700}.su-rail li.on button>span{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.su-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.su-main h2{font-size:1.6rem;letter-spacing:-.02em;line-height:1.15}
+.su-step{font-size:.8rem;font-weight:600;color:var(--muted)}
+.su-lead{margin:0;color:var(--muted);line-height:1.5}
+.su-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.su-cards div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;background:var(--surface)}
+.su-cards small,.su-item small{color:var(--muted);font-size:.84rem}
+.su-item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);flex-wrap:wrap}
+.su-item>div:first-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.su-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
+.su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.su-pick small{color:var(--muted);font-size:.8rem}
+.su-sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:0}
+.su-sum div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.su-sum dt{color:var(--muted)}.su-sum dd{margin:0;font-weight:600}
+.su-tips{display:flex;flex-direction:column;gap:5px;background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:.9rem}
+.su-ban{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--accent);color:var(--accent-fg);border-radius:14px;padding:18px 22px;margin:0 0 18px}
+.su-ban>div:first-child{display:flex;flex-direction:column;gap:3px;max-width:640px}
+.su-ban-k{font-size:.74rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+.su-ban b{font-size:1.25rem}.su-ban small{opacity:.88;font-size:.9rem}
+.su-ban-b{display:flex;gap:8px}
+.su-ban .btn:not(.ghost){background:var(--surface);color:var(--fg);border-color:transparent}
+.su-ban .btn.ghost{color:inherit;border-color:currentColor;opacity:.9}
+.newhere{display:flex;align-items:center;gap:8px;width:100%;border:0;border-radius:10px;padding:9px 12px;margin:0 0 10px;background:var(--accent);color:var(--accent-fg);font:inherit;font-weight:700;font-size:.9rem;cursor:pointer;text-align:left}
+.newhere .ic{width:17px;height:17px}
+@media (max-width:700px){.su{grid-template-columns:minmax(0,1fr)}.su-rail{display:none}.su-cards,.su-sum{grid-template-columns:minmax(0,1fr)}}
 .lookpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .lookpick button{display:flex;flex-direction:column;gap:6px;align-items:stretch;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:8px;cursor:pointer;color:var(--fg);font:inherit}
 .lookpick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
@@ -2747,21 +2784,34 @@ function saveLook(){
   applyLook(); try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); localStorage.setItem(lookKey() + '-ts', String(ts)); } catch {}
   clearTimeout(lookT); lookT = setTimeout(async () => { if (!live || !db || !ME.id) return; try { await db.doc('prefs/' + ME.id).set({look: LOOK, updatedAt: lookTs}); } catch {} }, 600);
 }
+// New here? setup: who has finished it (one record per person, so admins can see who's done)
+let SETUP = {};
+const setupRec = () => (ME.id && SETUP[ME.id]) || {};
+const setupDone = () => !!(setupRec().doneAt || prefGet('setupDone', 0));
+const setupLater = () => !!(setupRec().laterAt || prefGet('setupLater', 0));
+async function setupMark(patch){ if (patch.doneAt) prefSet('setupDone', patch.doneAt); if (patch.laterAt) prefSet('setupLater', patch.laterAt);
+  if (!ME.id) return; const rec = {...setupRec(), ...patch, name: ME.name || ''}; SETUP = {...SETUP, [ME.id]: rec}; schedule();
+  if (live && db && !DEMO) { try { await db.doc('setup/' + ME.id).set(rec); } catch {} } }
 function syncLookFromDb(){
   if (!live || !db || !ME.id) return;
+  try { db.collection('setup').onSnapshot(s => { SETUP = Object.fromEntries(s.docs.map(d => [d.id, d.data()])); schedule(); }, () => {}); } catch {}
   try { db.doc('prefs/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data();
     if (!v || !v.look || (v.updatedAt || 0) <= lookTs || JSON.stringify(v.look) === JSON.stringify(LOOK)) return;   // older than what's on screen: ignore
     LOOK = {...LOOK_DEFAULT, ...v.look}; lookTs = v.updatedAt || 0; try { localStorage.setItem(lookKey(), JSON.stringify(LOOK)); localStorage.setItem(lookKey() + '-ts', String(lookTs)); } catch {} applyLook(); schedule(); }, () => {}); } catch {}
 }
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (LOOK.mode === 'system') applyLook(); }); } catch {}
+// pieces of the Appearance window, shared with the New here? setup
+function lookPickHtml(){ return `<div class="f"><span>Look</span><div class="lookpick" role="group" aria-label="Look">${[['default', {name: 'Original', note: 'The Paper Trail you know', sw: ['#F3F6F5', '#12201E', '#0D6B61', '#D8EDE9', '#FBF0B8']}], ...Object.entries(LOOKS)].map(([k, l]) => `<button type="button" class="${(LOOK.look || 'default') === k ? 'on' : ''}" data-act="lookSet" data-k="look" data-v="${k}" aria-pressed="${(LOOK.look || 'default') === k}"><span class="lp-sw">${l.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${esc(l.name)}</b><small>${esc(l.note)}</small></button>`).join('')}</div></div>`; }
+function accentHtml(){ const cur = LOOK.accent || ''; return (LOOK.look || 'default') !== 'default' ? '' : `<div class="f"><span>Accent color</span><div class="swatches">${ACCENTS.map(([v, l, h]) => `<button type="button" class="sw${cur === v ? ' on' : ''}" data-act="lookSet" data-k="accent" data-v="${v}" title="${l}" aria-label="${l}" style="background:${h}"></button>`).join('')}<label class="sw custom${cur && !ACCENTS.some(x => x[0] === cur) ? ' on' : ''}" title="Pick any color" style="background:${cur && !ACCENTS.some(x => x[0] === cur) ? cur : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)'}"><input type="color" id="lookColor" value="${cur || '#0D6B61'}" data-input="lookColor" aria-label="Pick any color"></label></div></div>`; }
+const lookSeg = (k, opts) => `<div class="segs lookseg" role="group">${opts.map(([v, l]) => `<button type="button" class="${(LOOK[k] || LOOK_DEFAULT[k]) === v ? 'on' : ''}" data-act="lookSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
 function lookModal(){
   const seg = (k, opts) => `<div class="segs lookseg" role="group">${opts.map(([v, l]) => `<button type="button" class="${(LOOK[k] || LOOK_DEFAULT[k]) === v ? 'on' : ''}" data-act="lookSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
   const cur = LOOK.accent || '';
   openModal('Appearance', `<p class="sub" style="margin-bottom:12px">Just for you. Changes show right away and follow your login to any device.</p>
     <div class="lookgrid">
-      <div class="f"><span>Look</span><div class="lookpick" role="group" aria-label="Look">${[['default', {name: 'Original', note: 'The Paper Trail you know', sw: ['#F3F6F5', '#12201E', '#0D6B61', '#D8EDE9', '#FBF0B8']}], ...Object.entries(LOOKS)].map(([k, l]) => `<button type="button" class="${(LOOK.look || 'default') === k ? 'on' : ''}" data-act="lookSet" data-k="look" data-v="${k}" aria-pressed="${(LOOK.look || 'default') === k}"><span class="lp-sw">${l.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${esc(l.name)}</b><small>${esc(l.note)}</small></button>`).join('')}</div></div>
+      ${lookPickHtml()}
       ${(LOOK.look || 'default') === 'default' ? F('Mode', seg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']])) : `<p class="sub" style="margin:-4px 0 0">Each look has its own colors, so Mode and Accent color apply to the Original look. Night Shift is the dark one.</p>`}
-      ${(LOOK.look || 'default') !== 'default' ? '' : `<div class="f"><span>Accent color</span><div class="swatches">${ACCENTS.map(([v, l, h]) => `<button type="button" class="sw${cur === v ? ' on' : ''}" data-act="lookSet" data-k="accent" data-v="${v}" title="${l}" aria-label="${l}" style="background:${h}"></button>`).join('')}<label class="sw custom${cur && !ACCENTS.some(x => x[0] === cur) ? ' on' : ''}" title="Pick any color" style="background:${cur && !ACCENTS.some(x => x[0] === cur) ? cur : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)'}"><input type="color" id="lookColor" value="${cur || '#0D6B61'}" data-input="lookColor" aria-label="Pick any color"></label></div></div>`}
+      ${accentHtml()}
       ${F('Text size', seg('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']]))}
       ${F('Spacing', seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
       ${F('Font', seg('font', [['default', (LOOK.look || 'default') === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
@@ -2770,6 +2820,52 @@ function lookModal(){
       ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
     </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
 }
+
+// ---------- New here? setup: a walkthrough of every personal setting ----------
+const SETUP_STEPS = ['Welcome', 'Email', 'Your look', 'Easy on the eyes', 'Email window', 'Home base', 'All set'];
+const CMP_NOTES = {form: 'To, subject and message stacked', outlook: 'Looks like a new Outlook message', library: 'Templates listed on the left', dock: 'Write beside the account', letter: 'A clean page, nothing else'};
+function setupModal(step){
+  step = Math.max(1, Math.min(SETUP_STEPS.length, step || 1)); ui.setup = step;
+  const first = (ME.name || '').split(' ')[0];
+  const ms = typeof conn !== 'undefined' && conn.status === 'connected';
+  const lk = LOOK.look || 'default';
+  const lkName = lk === 'default' ? 'Original' : (LOOKS[lk] || {}).name || lk;
+  const optL = (k, opts) => (opts.find(o => o[0] === (LOOK[k] || LOOK_DEFAULT[k])) || [0, ''])[1];
+  const item = (t, s, act) => `<div class="su-item"><div><b>${t}</b><small>${s}</small></div>${act}</div>`;
+  const rail = `<ol class="su-rail" aria-label="Setup steps">${SETUP_STEPS.map((n, i) => `<li class="${i + 1 < step ? 'done' : i + 1 === step ? 'on' : ''}"><button type="button" data-act="setupGo" data-s="${i + 1}"${i + 1 === step ? ' aria-current="step"' : ''}><span>${i + 1 < step ? ic('check') : i + 1}</span>${n}</button></li>`).join('')}</ol>`;
+  const body = {
+    1: `<h2>Hi${first ? ' ' + esc(first) : ''}. Let's set Paper Trail up the way you like it.</h2>
+      <p class="su-lead">A quick walk through your personal settings: about 3 minutes. They're just for you, your teammates won't see them, and they follow you to any computer you sign in on. Anything you pick here can be changed later in Settings.</p>
+      <div class="su-cards"><div><b>Send from your Outlook</b><small>Emails go out as you, with your signature.</small></div><div><b>Pick a look</b><small>${Object.keys(LOOKS).length + 1} styles to choose from.</small></div><div><b>Easy to read</b><small>Text size, spacing and font.</small></div><div><b>Where you land</b><small>Your start page and what Today shows.</small></div></div>`,
+    2: `<h2>Send email as you</h2><p class="su-lead">Connect your work Outlook so emails go out from your address and customer replies show up on each account.</p>
+      ${item('Outlook', ms ? '<span class="chip good">Connected</span>' : 'Not connected yet', `<button type="button" class="btn${ms ? '' : ' pri'}" data-act="connections">${ms ? 'Manage' : 'Connect Outlook'}</button>`)}
+      ${GRAPH || SUPA ? item('Email signature', SIG.html ? '<span class="chip good">Saved</span> Goes at the bottom of emails you send.' : 'Paste your Outlook signature, logos and all.', `<button type="button" class="btn" data-act="sigEdit">${SIG.html ? 'Edit' : 'Set up'}</button>`) : ''}
+      <p class="sub">These open in their own window. Close it to come back here.</p>`,
+    3: `<h2>Pick a look</h2><p class="su-lead">Click one and Paper Trail changes behind this window, so you can see it for real.</p><div class="lookgrid">${lookPickHtml()}${accentHtml()}</div>`,
+    4: `<h2>Easy on the eyes</h2><div class="lookgrid">
+      ${lk === 'default' ? F('Light or dark', lookSeg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']])) : `<p class="sub">Your look (${esc(lkName)}) brings its own colors. Night Shift is the dark one.</p>`}
+      ${F('Text size', lookSeg('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']]))}
+      ${F('Spacing', lookSeg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]))}
+      ${F('Font', lookSeg('font', [['default', lk === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
+      <p class="sub">Text size and spacing change the whole app right away; look behind this window.</p></div>`,
+    5: `<h2>How should writing an email look?</h2><p class="su-lead">Same templates and fill-in blanks either way. This only changes the layout of the email window.</p>
+      <div class="su-pick">${CMP_LAYOUTS.map(([v, l]) => `<button type="button" class="${(LOOK.compose || LOOK_DEFAULT.compose) === v ? 'on' : ''}" data-act="lookSet" data-k="compose" data-v="${v}" aria-pressed="${(LOOK.compose || LOOK_DEFAULT.compose) === v}"><b>${esc(l)}</b><small>${esc(CMP_NOTES[v] || '')}</small></button>`).join('')}</div>`,
+    6: `<h2>Your home base</h2>
+      ${item('Open Paper Trail to', 'The page you land on each morning.', lookSeg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
+      ${item('Today shows', 'Just your reminders and services, or the whole team\'s.', `<div class="segs lookseg" role="group"><button type="button" class="${prefGet('todayAll', false) ? '' : 'on'}" data-act="setupWho" data-m="0">Mine</button><button type="button" class="${prefGet('todayAll', false) ? 'on' : ''}" data-act="setupWho" data-m="1">Everyone</button></div>`)}
+      ${item('Calendar in the sidebar', 'A small month view under the menu.', lookSeg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}
+      ${theoMe() ? item('Theo', 'Your pixel cat above Settings.', `<div class="segs lookseg" role="group"><button type="button" class="${prefGet('theo', true) ? 'on' : ''}" data-act="setupTheo" data-m="1">Show</button><button type="button" class="${prefGet('theo', true) ? '' : 'on'}" data-act="setupTheo" data-m="0">Hide</button></div>`) : ''}`,
+    7: `<h2>You're all set${first ? ', ' + esc(first) : ''}.</h2><p class="su-lead">Here's what you picked. Change any of it in Settings → You → Appearance, or run this setup again from Settings.</p>
+      <dl class="su-sum">${[['Outlook', ms ? 'Connected' : 'Not connected'], ['Signature', SIG.html ? 'Saved' : 'Not set up'], ['Look', lkName], ['Text size', optL('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']])], ['Spacing', optL('density', [['comfy', 'Comfortable'], ['compact', 'Compact']])], ['Email window', optL('compose', CMP_LAYOUTS)], ['Opens to', optL('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']])], ['Today shows', prefGet('todayAll', false) ? 'Everyone' : 'Mine']].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+      <div class="su-tips"><b>Three things worth knowing</b><span>Snooze pushes a reminder to tomorrow or next week in one click.</span><span>Checked something off by mistake? Hit Undo at the bottom of the screen.</span><span>Press / anywhere to search every account and contact.</span></div>`
+  }[step];
+  const last = step === SETUP_STEPS.length;
+  openModal('Set up Paper Trail', `<div class="su">${rail}<div class="su-main"><span class="su-step">Step ${step} of ${SETUP_STEPS.length}</span>${body}</div></div>`, null, null, {wide: true, cls: 'setup',
+    foot: `${step > 1 ? `<button type="button" class="btn ghost" data-act="setupGo" data-s="${step - 1}" style="margin-right:auto">Back</button>` : `<button type="button" class="btn ghost" data-act="setupLater" style="margin-right:auto">Not now</button>`}${step === 2 ? `<button type="button" class="btn ghost" data-act="setupGo" data-s="3">Skip for now</button>` : ''}${last ? `<button type="button" class="btn pri" data-act="setupFinish">Start using Paper Trail</button>` : `<button type="button" class="btn pri" data-act="setupGo" data-s="${step + 1}">${step === 1 ? "Let's go" : 'Next'}</button>`}`});
+  const sb = $('#mform .sb'); if (sb) sb.scrollTop = 0;
+}
+// the prompt on Today, until someone finishes setup or says "Later"
+const setupBanner = () => ME.id && !setupDone() && !setupLater() ? `<section class="su-ban" aria-label="Set up Paper Trail"><div><span class="su-ban-k">Welcome to Paper Trail${ME.name ? ', ' + esc(ME.name.split(' ')[0]) : ''}</span><b>Make it yours in about 3 minutes.</b><small>Connect your Outlook, pick a look, set your text size and choose where you land each morning.</small></div><div class="su-ban-b"><button type="button" class="btn" data-act="setupOpen">Start setup</button><button type="button" class="btn ghost" data-act="setupLater">Later</button></div></section>` : '';
 
 // ---------- rendering ----------
 let raf = 0;
@@ -3006,7 +3102,7 @@ function navHtml(){
   const mobile = `<div class="mbar"><span class="mark">${FISH ? BOBBER : 'PT'}</span><b class="mtitle">${esc(curL)}</b><button class="icon-btn" data-act="search" aria-label="Search">${ic('search')}</button><button class="icon-btn" data-act="settings" aria-label="Settings">${ic('gear')}</button></div>
   <div class="mtabs" role="navigation" aria-label="Main">${MT.map(k => { const v = VIEWS.find(x => x[0] === k); return `<button class="${curK === k ? 'on' : ''}" data-act="go" data-v="${k}">${ic(v[2])}<span>${k === 'pipeline' ? 'Opps' : v[1]}</span>${badge[k] ? `<em>${badge[k]}</em>` : ''}</button>`; }).join('')}<button class="${MT.includes(curK) ? '' : 'on'}" data-act="mMore">${ic('more')}<span>More</span>${moreBadge ? `<em>${moreBadge}</em>` : ''}</button></div>`;
   return mobile + `<div class="brand">${FISH ? `<span class="mark">${BOBBER}</span><span><b>Paper Trail</b><small>Bait &amp; Tackle Co.</small></span>` : '<span class="mark">PT</span><span><b>Paper Trail</b></span>'}</div>
-  <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
+  ${booted && ME.id && !setupDone() ? `<button class="newhere" type="button" data-act="setupOpen">${ic('spark')}<span>New here? Set up</span></button>` : ''}<button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
   <div class="navlist">${VIEWS.map(([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`).join('')}</div>
   ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
   ${theoOn() ? '<div class="theo-room" id="theoRoom" data-own></div>' : ''}
@@ -3133,7 +3229,7 @@ function todayBody(){
   const route = LOOK.look === 'dispatch';
   const rstat = route ? (() => { const g = k => tasks.filter(x => remGrp(x) === k).length; return `<div class="routestat"><div class="late"><b>${g('past')}</b><span>late</span></div><div class="due"><b>${g('today')}</b><span>due today</span></div><div><b>${deals.length}</b><span>open deals</span></div></div>`; })() : '';
   const fresh = FISH ? L('deals').filter(d => (d.createdAt || 0) >= Date.now() - 7 * 864e5).length : 0;
-  return nudge + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), todaySeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
+  return nudge + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), todaySeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your data over from your current CRM in Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + rstat + `<div class="cols2">
     <div class="stack">${weekPanel()}${readyPanel()}
@@ -3779,7 +3875,7 @@ document.addEventListener('pointerdown', e => {
 });
 document.addEventListener('dblclick', e => { const head = e.target.closest && e.target.closest('#modal .sheet > .sh'); if (!head || e.target.closest('button, input, select, textarea')) return; ui.modalPos = null; sheetMove(head.parentElement, 0, 0); });
 addEventListener('resize', () => { const sh = $('#mform'); if (sh && ui.modalPos) sheetMove(sh, ui.modalPos.x, ui.modalPos.y); });
-function closeModal(){ imgPopClose(); const m = $('#modal'); const wasCmp = !!m.querySelector('.cmp'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved', 'dock'); document.documentElement.classList.remove('cmp-docked');
+function closeModal(){ imgPopClose(); const m = $('#modal'); if (ui.setup) { ui.setupResume = ui.setup; ui.setup = null; } const wasCmp = !!m.querySelector('.cmp'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved', 'dock'); document.documentElement.classList.remove('cmp-docked');
   if (wasCmp) ui.cmpStash = null; else if (ui.cmpStash) { const sn = ui.cmpStash; ui.cmpStash = null; setTimeout(() => cmpReopen(sn), 0); } ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
@@ -4988,6 +5084,7 @@ function settingsModal(){
   const demo = row('spark', 'Demo mode', DEMO ? 'On. Showing sample data; your real records are untouched.' : 'Show realistic sample data for a demo. Nothing is saved, and real records stay hidden.', btn(DEMO ? 'demoOff' : 'demoOn', DEMO ? 'Turn off' : 'Turn on'));
   const secs = [
     ['you', 'You', 'users', 'Just for you. Follows your login to any device.', [
+      row('spark', 'Set up Paper Trail', setupDone() ? 'Walk through your personal settings again: Outlook, signature, look, text size, email window and start page.' : 'A quick walk through your personal settings: Outlook, signature, look, text size, email window and start page.', btn('setupOpen', setupDone() ? 'Run again' : 'Start', setupDone() ? '' : 'pri')),
       SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, btn('account', 'Open')) : '',
       row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
       GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
@@ -7409,10 +7506,17 @@ const A = {
   dupReview: d => { ui.dupReturn = true; mergeModal(d.c, d.keep, d.other); },
   pgMore: d => { ui.lim = ui.lim || {}; ui.lim[d.k] = ((ui.lim[d.k]) || PAGE) + PAGE * 5; schedule(); },
   look: () => lookModal(),
+  setupOpen: () => { setupModal(ui.setup || ui.setupResume || 1); },
+  setupGo: d => { setupModal(+d.s); },
+  setupLater: () => { closeModal(); setupMark({laterAt: Date.now()}); toast('No problem. Start it anytime from Settings → You.'); },
+  setupFinish: () => { closeModal(); ui.setupResume = null; setupMark({doneAt: Date.now()}); toast("You're all set."); schedule(); },
+  setupWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); schedule(); setupModal(ui.setup); },
+  setupTheo: d => { prefSet('theo', d.m === '1'); schedule(); setupModal(ui.setup); },
   setTab: d => { ui.setTab = d.v; settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   // picking an option: just move the highlight, so the window doesn't redraw and jump back to the top.
   // (picking a whole look changes which rows show, so that one redraws, keeping your place)
   lookSet: d => { LOOK[d.k] = d.v; saveLook(); schedule();
+    if (ui.setup && $('#mform.setup')) { const sb0 = $('#mform .sb'), t0 = sb0 ? sb0.scrollTop : 0; setupModal(ui.setup); const nb = $('#mform .sb'); if (nb) nb.scrollTop = t0; return; }
     const sb = $('#mform .sb'), top = sb ? sb.scrollTop : 0;
     if (d.k === 'look' || !sb) { lookModal(); const nb = $('#mform .sb'); if (nb) nb.scrollTop = top; return; }
     document.querySelectorAll(`#mform [data-act="lookSet"][data-k="${d.k}"]`).forEach(b => b.classList.toggle('on', b.dataset.v === String(d.v))); },
@@ -9084,7 +9188,8 @@ const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o =
 function usersModal(){
   const admin = isAdmin();
   const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm" data-act="uMakeReal" data-id="${u.id}" title="They work here: give them a login and keep everything they own">Make a user</button><button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
-    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former user' : esc(u.email)}</small></div>
+    const su = SETUP[u.id] || (u.user_id && SETUP[u.user_id]) || null;
+    return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former user' : esc(u.email)}${admin && u.active ? ` · ${su && su.doneAt ? 'finished setup ' + esc(new Date(su.doneAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})) : 'hasn\'t done setup yet'}` : ''}</small></div>
       <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>`}
       ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button><button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}"${/\.invalid$/.test(u.email || '') ? ' hidden' : ''}>${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
