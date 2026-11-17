@@ -7934,7 +7934,7 @@ const A = {
   usage: () => usageModal(),
   usageMonth: d => usageModal(d.m),
   account: () => accountModal(),
-  signOut: async () => { closeModal(); try { localStorage.removeItem(MS_KEY); } catch {} await IDB.clear(); await SUPA.sb.auth.signOut(); location.reload(); },
+  signOut: async () => { closeModal(); try { localStorage.removeItem(MS_KEY); } catch {} await IDB.clear(); await SUPA.sb.auth.signOut({scope: 'local'}); location.reload(); },   // just this browser: your other computers stay signed in
   uActive: async d => { const u = USERS.find(x => x.id === d.id); if (!u) return; const off = u.active; await uPatch(d.id, {active: !u.active});
     if (off && raTotal(d.id)) reassignModal(d.id, {title: `Reassign ${u.name}'s records?`, intro: `${esc(u.name)} is deactivated and owns ${raTotal(d.id)} record${raTotal(d.id) === 1 ? '' : 's'}. Choose who takes them over, or skip and do it later from Settings.`, skip: 'Not now'}); },
   reassign: d => reassignModal(d.id || ''),
@@ -9315,12 +9315,12 @@ function supaLogin(sb, startMode, startMsg){
           if (!r.data.session) throw new Error('Email confirmation is turned on in Supabase. Turn it off (see the setup guide), then try again.');
           const c = await sb.rpc('claim_profile', {p_code: code});
           if (c.error) throw c.error;
-          if (!c.data) { await sb.auth.signOut(); throw new Error("That invite code doesn't match this email, or it has expired. Ask your admin for a new code."); }
+          if (!c.data) { await sb.auth.signOut({scope: 'local'}); throw new Error("That invite code doesn't match this email, or it has expired. Ask your admin for a new code."); }
         } else {
           const r = await sb.auth.signInWithPassword({email, password}); if (r.error) throw new Error('Wrong email or password.');
         }
         const ok = await sb.rpc('is_member'); if (ok.error) throw ok.error;
-        if (!ok.data) { await sb.auth.signOut(); throw new Error("This account isn't active in Paper Trail. Ask your admin to add you."); }
+        if (!ok.data) { await sb.auth.signOut({scope: 'local'}); throw new Error("This account isn't active in Paper Trail. Ask your admin to add you."); }
         el.remove(); resolve();
       } catch (err) { show(mode, (err && err.message) || 'Something went wrong. Try again.'); const i = el.querySelector('[name=email]'); if (i) i.value = email; }
     });
@@ -9356,7 +9356,13 @@ async function supaStart(){
   AUTH_RET = null;
   const {data} = await sb.auth.getSession();
   let ok = false;
-  if (data && data.session) { const m = await sb.rpc('is_member'); ok = !m.error && !!m.data; if (!ok) await sb.auth.signOut(); }
+  if (data && data.session) {
+    // are you still on the team? A network hiccup (waking from sleep, Wi-Fi reconnecting) is not a "no": try again, and if the check
+    // still can't get through, stay signed in. The server refuses anyone who isn't a member either way, so this is only about not
+    // signing people out for nothing. Only a clear "not a member" signs this browser out.
+    let m = null; for (let i = 0; i < 4; i++) { try { m = await sb.rpc('is_member'); } catch (e) { m = {error: e}; } if (!m.error) break; await new Promise(r => setTimeout(r, 1200 * (i + 1))); }
+    if (m.error) ok = true; else { ok = !!m.data; if (!ok) await sb.auth.signOut({scope: 'local'}); }
+  }
   if (!ok) await supaLogin(sb, loginMode, loginMsg);
   const u = await sb.auth.getUser(); SUPA.uid = u.data && u.data.user ? u.data.user.id : null;
   await loadProfiles();
