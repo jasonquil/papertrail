@@ -1906,7 +1906,7 @@ function feeBox(box){ if (!box || box.id !== 'dfFees') return; const cur = feeLi
 function feeWrap(){ const w = $('#dfFeesWrap'); if (!w) return; const svc = document.querySelector('#mform [name="service"]')?.value, any = feeList($('#dfFees input[type=hidden]')?.value).length; w.hidden = svc !== 'Purge' && !any; }
 const INTERVALS = ['As Needed','Weekly','Bi-Weekly','Every 2 weeks','Every 4 weeks','Monthly','Bi-Monthly','Every 8 weeks','Quarterly','Twice a year','Yearly','On call','One-time'];
 const INITIAL_CALL = ['Jason','Kate','Ann','Austin','Sarah','House'];
-const NO_CLOSE = ['Not Decision Maker','Readiness','Gathering Quotes','Schedule','Unknown','Other'];
+const NO_CLOSE = ['Not Decision Maker','Readiness','Gathering Quotes','Price','Schedule','Unknown','Other'];
 const LOSS_REASONS = ['Price','Went with competitor','Unresponsive','No longer needed','Timing','Other'];
 const ACT = {file:'Attachment',contract:'Contract',voicemail:'Left Voicemail',noconnect:"Didn't Connect",inbound:'Inbound Call',call:'Outbound Call',email:'Email',meeting:'Meeting',note:'Note',job:'Job done',done:'Reminder',stage:'Update'};
 const LOG_TYPES = ['voicemail','noconnect','inbound','call','email','meeting','note','job'];
@@ -3310,7 +3310,11 @@ function coGroupHtml([coId, acts]){
 }
 
 const remGrp = k => k.done ? 'done' : !isDate(k.due) ? 'none' : k.due < today() ? 'past' : k.due === today() ? 'today' : 'future';
-V.reminders = () => {
+// Reminders shows your own unless you switch it to Everyone (remembered), like Today
+function asRem(f){ const was = ui.mine; if (ui.remAll == null) ui.remAll = !!prefGet('remAll', false); ui.mine = !ui.remAll && !!ME.id; try { return f(); } finally { ui.mine = was; } }
+const remSeg = () => `<div class="segs" role="group" aria-label="Whose reminders"><button class="${ui.mine ? 'on' : ''}" data-act="remWho" data-m="0">Mine</button><button class="${ui.mine ? '' : 'on'}" data-act="remWho" data-m="1">Everyone</button></div>`;
+V.reminders = () => asRem(remBody);
+function remBody(){
   const t = today(); const show = ui.remShow || 'open';
   const all = L('tasks').filter(k => !ui.mine || k.assigneeId === ME.id);
   const open = all.filter(k => !k.done);
@@ -3332,9 +3336,9 @@ V.reminders = () => {
   else if (show === 'done') body = `<ul class="rems">${list.sort((a,b) => (b.doneAt||0) - (a.doneAt||0)).slice(0, 200).map(row).join('')}</ul>`;
   else { list.sort((a,b) => ord[grp(a)] - ord[grp(b)] || (a.due||'').localeCompare(b.due||''));
     body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => grp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${r.filter(k => !k.done).length || ''}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
-  return head('Reminders', `${n('past')} past due · ${n('today')} today · ${n('future')} upcoming`,
-    searchBox('Search reminders') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + mineSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
-};
+  return head('Reminders', `${ui.mine ? 'Yours' : 'Whole team'}: ${n('past')} past due · ${n('today')} today · ${n('future')} upcoming`,
+    searchBox('Search reminders') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + remSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
+}
 
 V.pipeline = () => {
   const show = ui.oppShow || 'open';
@@ -7680,6 +7684,7 @@ const A = {
     const it = (act, label, icon, extra = '', cls = '') => `<button type="button" role="menuitem" class="${cls}" data-act="${act}" data-id="${esc(d.id)}"${extra}>${icon ? ic(icon) : ''}${label}</button>`;
     popMenu(t, d.k === 'company' ? it('merge', 'Merge a duplicate into this one', 'users', ' data-col="companies"') + '<hr>' + it('delCompany', 'Delete account', 'trash', '', 'danger')
       : it('delDeal', 'Delete opportunity', 'trash', '', 'danger')); },
+  remWho: d => { ui.remAll = d.m === '1'; prefSet('remAll', ui.remAll); render(); },
   todayWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); render(); },
   taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
     if (done && ui.view === 'reminders' && (ui.remShow || 'open') === 'open') (ui.remKeep = ui.remKeep || new Set()).add(d.id); if (!await patch('tasks', d.id, {done, doneAt: done ? Date.now() : null})) return; if (done) { logAct({type: 'done', text: `Completed: ${k.title}${k.notes ? '\n' + k.notes : ''}`, companyId: k.companyId || '', taskId: d.id}); toast('Reminder done', '', {label: 'Undo', fn: () => A.taskDone({id: d.id})}); } else { for (const a of L('activities').filter(a => a.taskId === d.id)) await del('activities', a.id); } },
