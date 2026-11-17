@@ -637,6 +637,7 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .snz{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;border-radius:6px;padding:4px 22px 4px 9px;cursor:pointer;width:92px;flex:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
 .snz:hover,.snz:focus-visible{color:var(--fg);border-color:var(--muted)}
 .rem-x{display:flex;align-items:center;gap:6px}
+.remsug{max-width:240px;gap:6px}.remsug span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.remsug .ic{flex:none;width:15px;height:15px}
 .task .icon-btn{flex:none}
 /* the ⋯ menu */
 .popm{position:absolute;z-index:70;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
@@ -3288,7 +3289,7 @@ const snzSel = k => canWrite && !k.done ? `<select class="snz" data-change="snoo
 function taskRow(k){
   const rel_ = [k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : ''].filter(Boolean).join(' · ');
   return `<li class="task ${remGrp(k)}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="Mark done" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
-  <div class="task-b"><span>${esc(k.title)}</span><small>${dueChip(k.due)}${k.assigneeId && k.assigneeId !== ME.id ? `<span>${esc(pname(k.assigneeId))}</span>` : ''}${rel_}</small></div>${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</li>`;
+  <div class="task-b"><span>${esc(k.title)}</span><small>${dueChip(k.due)}${k.assigneeId && k.assigneeId !== ME.id ? `<span>${esc(pname(k.assigneeId))}</span>` : ''}${rel_}</small></div>${remSugBtn(k)}${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</li>`;
 }
 function feedItem(a, withCo){
   const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
@@ -3329,7 +3330,7 @@ function remBody(){
     return `<li class="rem ${g}${k.done ? ' done' : ''}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="${k.done?'Mark not done':'Mark done'}" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
     <div class="rem-b"><b>${esc(k.title)}</b><small>${[k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : '', k.assigneeId && k.assigneeId !== ME.id ? esc(pname(k.assigneeId)) : ''].filter(Boolean).join(' · ')}</small>${k.notes ? `<p class="rem-n">${esc(k.notes)}</p>` : ''}</div>
     <div class="rem-d"><b>${isDate(k.due) ? fmtDate(k.due) : '—'}</b><small>${k.done ? 'Done' + (k.doneAt ? ' ' + rel(k.doneAt) : '') : when}</small></div>
-    <div class="rem-x">${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</div></li>`; };
+    <div class="rem-x">${remSugBtn(k)}${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</div></li>`; };
   let body;
   if (!all.length) body = `<section class="panel">${emptyState('No reminders yet', 'Set a reminder on any account so a follow-up never slips. Past-due reminders show in red, today\'s in yellow and upcoming ones in green.', `<button class="btn pri" data-act="newTask">${ic('bell')}Set a reminder</button>`)}</section>`;
   else if (!list.length) body = `<p class="empty-s">${ui.q ? 'No reminders match.' : show === 'open' ? 'Nothing open. You are all caught up.' : 'No completed reminders yet.'}</p>`;
@@ -4423,6 +4424,111 @@ function dealForm(id, pre={}){
     }, {wide: true, foot: `<button type="button" class="btn" id="dfRemBtn" data-act="dfSaveRem"${isOpen(d) ? '' : ' hidden'}>${ic('bell')}Save &amp; set reminder</button>`});
 }
 const REMINDER_TYPES = ['1st Follow Up on Purge','2nd Follow Up on Purge','3rd Follow Up on Purge','4th Follow Up on Purge','5th Follow Up on Purge','6th Follow Up on Purge','7th Follow Up on Purge','Final Follow Up'];
+// ---------- reminder suggestions: which email to send next, and when to follow up again ----------
+// Everything here is learned from your team's own history (what was sent, after which reminder, and how long people waited),
+// with sensible starting points until there's enough history.
+const ORD_W = {first: 1, second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7};
+const ORD_S = n => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+function remParse(title){
+  const t = String(title || '').toLowerCase().replace(/follow[\s-]*ups?/g, 'followup');
+  const m = t.match(/\b(\d)(?:st|nd|rd|th)\b/) || t.match(/\b(first|second|third|fourth|fifth|sixth|seventh)\b/) || t.match(/(?:^|[\sa-z#])(\d)\s*$/);
+  const ord = m ? (ORD_W[m[1]] || +m[1]) : null;
+  const topic = t.replace(/\b\d(?:st|nd|rd|th)\b|\b(?:first|second|third|fourth|fifth|sixth|seventh)\b|#?\d+\s*$/g, ' ')
+    .replace(/\b(?:followup|on|the|up|of|a|to|if|no|reply|from|last|email|final|reminder|with|and|for|any|has|he|she|is|or)\b/g, ' ')
+    .replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
+  return {ord, final: /\bfinal\b/.test(t), close: /\bclose\b/.test(t), follow: /followup/.test(t), topic};
+}
+const remKey = p => p.topic + '|' + (p.ord || (p.final ? 'f' : ''));
+const REM_SYN = {mw: ['medical', 'mw'], medical: ['medical', 'mw'], waste: ['waste'], purge: ['purge'], recurring: ['recurring', 'ongoing', 'monthly'], ongoing: ['recurring', 'ongoing'],
+  inquiry: ['inquir'], quote: ['quote', 'proposal', 'pricing'], proposal: ['proposal', 'quote'], prop: ['proposal', 'quote'], rec: ['recurring'], electronics: ['electronic', 'hard drive', 'e-waste'],
+  destruction: ['destruction'], event: ['event'], resch: ['reschedul'], reschedule: ['reschedul'], rescheduling: ['reschedul'], contract: ['contract', 'agreement', 'renewal'],
+  agreement: ['agreement', 'contract', 'renewal'], expires: ['renewal', 'contract'], service: ['service'], shred: ['shred'], shredding: ['shred']};
+const isWknd = s => { const d = parseYmd(s).getDay(); return d === 0 || d === 6; };
+const addBiz = (s, n) => { let d = s; while (n > 0) { d = addDays(d, 1); if (!isWknd(d)) n--; } return d; };
+const bizDays = (a, b) => { let n = 0, d = a; while (d < b && n < 200) { d = addDays(d, 1); if (!isWknd(d)) n++; } return n; };
+const median = a => { const x = [...a].sort((p, q) => p - q); return x[Math.floor((x.length - 1) / 2)]; };
+const remModel = memoD(() => {
+  const tpls = templates(), ids = new Set(tpls.map(t => t.id));
+  // older emails don't say which template they came from, so match their subject line against each template's subject
+  const mt = tpls.map(t => { const sj = String(t.subject || '').trim(); if (sj.replace(/\[[^\]]*\]|\{[^}]*\}/g, '').trim().length < 4) return null;
+    try { return [t.id, new RegExp('^' + sj.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\[.*?\\\]|\\\{.*?\\\}/g, '.*') + '$', 'i')]; } catch { return null; } }).filter(Boolean);
+  const tplOf = a => { if (a.tplId && ids.has(a.tplId)) return a.tplId; const sj = String(a.text || '').split('\n')[0].replace(/^(?:sent|re|fw|fwd)\s*:\s*/i, '').trim(); if (!sj) return ''; const h = mt.find(([, re]) => re.test(sj)); return h ? h[0] : ''; };
+  const sent = {};
+  for (const a of L('activities')) { if (a.type !== 'email' || !a.companyId || /^received\b/i.test(a.text || '')) continue; (sent[a.companyId] ??= []).push({at: a.at || 0, tpl: tplOf(a)}); }
+  for (const k in sent) sent[k].sort((x, y) => x.at - y.at);
+  const next = {}, byTitle = {}, gaps = {}, succ = {}, byCo = {};
+  for (const arr of Object.values(sent)) for (let i = 1; i < arr.length; i++) { const a = arr[i - 1], b = arr[i]; if (a.tpl && b.tpl && b.at - a.at < 60 * 864e5) { const m = next[a.tpl] ??= {}; m[b.tpl] = (m[b.tpl] || 0) + 1; } }
+  for (const k of L('tasks')) if (k.companyId && isDate(k.due)) (byCo[k.companyId] ??= []).push(k);
+  for (const [co, ks] of Object.entries(byCo)) {
+    ks.sort((a, b) => a.due.localeCompare(b.due));
+    for (let i = 0; i < ks.length; i++) { const k = ks[i], p = remParse(k.title);
+      if (k.done && k.doneAt && sent[co]) { const e = sent[co].find(x => x.tpl && Math.abs(x.at - k.doneAt) < 36 * 36e5); if (e) { const m = byTitle[remKey(p)] ??= {}; m[e.tpl] = (m[e.tpl] || 0) + 1; } }
+      const n = ks[i + 1]; if (!n || remParse(n.title).topic !== p.topic) continue;
+      const from = k.doneAt ? ymd(new Date(k.doneAt)) : k.due, g = bizDays(from, n.due);
+      if (g > 0 && g < 40) for (const kk of [(k.assigneeId || '') + '|' + (p.ord || 0), '|' + (p.ord || 0), '*']) (gaps[kk] ??= []).push(g);
+      if (norm(k.title) !== norm(n.title)) { const m = succ[norm(k.title)] ??= {}; m[n.title] = (m[n.title] || 0) + 1; }
+    }
+  }
+  return {tpls, sent, next, byTitle, gaps, succ, cache: new Map()};
+});
+// the template that best fits what this reminder is for, and why
+function remSuggest(k){
+  if (!k || !k.companyId) return null;
+  const M = remModel(); const ck = k.id + '|' + k.title + '|' + (k.dealId || ''); if (M.cache.has(ck)) return M.cache.get(ck);
+  const p = remParse(k.title), key = remKey(p), toks = p.topic.split(' ').filter(w => w.length > 1);
+  const hist = M.sent[k.companyId] || [], last = [...hist].reverse().find(x => x.tpl);
+  const deal = k.dealId && S.deals[k.dealId]; const ctx = deal ? `${deal.service || ''} ${deal.serviceType || ''} ${deal.name || ''}`.toLowerCase() : '';
+  const tot = o => Object.values(o).reduce((a, b) => a + b, 0);
+  let best = null;
+  for (const t of M.tpls) {
+    const txt = `${t.name || ''} ${t.subject || ''}`.toLowerCase(), tp = remParse(t.name);
+    let sc = 0, why = '';
+    const bt = M.byTitle[key]; if (bt && bt[t.id]) { sc += 9 * bt[t.id] / tot(bt); why = `Your team usually sends this for “${k.title}”.`; }
+    const nx = last && M.next[last.tpl]; if (nx && nx[t.id]) { sc += 5 * nx[t.id] / tot(nx); if (!why) why = `Usually goes out after “${(M.tpls.find(x => x.id === last.tpl) || {}).name || 'the last email'}”, which they got ${rel(last.at)}.`; }
+    let hit = 0; for (const w of toks) if ((REM_SYN[w] || [w]).some(x => txt.includes(x))) hit++;
+    sc += Math.min(hit, 3) * 1.5;
+    if (p.ord && tp.ord) sc += tp.ord === p.ord ? 2.5 : -2;
+    if (p.final && tp.final) sc += 2.5;
+    if (p.follow && /follow/.test(txt)) sc += 1;
+    if (ctx) for (const w of ['purge', 'recurring', 'medical', 'electronic', 'event']) if (ctx.includes(w) && txt.includes(w)) sc += 1;
+    if (last && last.tpl === t.id && !(bt && bt[t.id])) sc -= 3;   // don't send the same email twice in a row
+    if (!why) why = `Fits “${k.title}”${deal ? ' on ' + (oppTypeName(deal.name || deal.type) || 'this opportunity') : ''}.`;
+    if (sc >= 2.5 && (!best || sc > best.sc)) best = {id: t.id, name: t.name, sc, why};
+  }
+  M.cache.set(ck, best); return best;
+}
+// the follow-up after this one, and when: the team's usual wait after this step (or a sensible start)
+function remNext(k){
+  const p = remParse(k.title); if (p.close) return null;
+  const M = remModel(); let title = '';
+  const sc = M.succ[norm(k.title)]; if (sc) { const [tt, c] = Object.entries(sc).sort((a, b) => b[1] - a[1])[0]; if (c >= 2) title = tt; }
+  if (!title) {
+    if (p.final) title = 'Close if no reply';
+    else if (p.ord && p.ord >= 7) title = 'Final Follow Up';
+    else if (p.ord) title = /\b\d(?:st|nd|rd|th)\b/i.test(k.title) ? k.title.replace(/\b(\d)(?:st|nd|rd|th)\b/i, (_, d) => ORD_S(+d + 1)) : /\d+\s*$/.test(k.title) ? k.title.replace(/(\d+)(\s*)$/, (_, d, sp) => (+d + 1) + sp) : k.title;
+    else title = k.title;
+  }
+  const o = p.ord || 0; const g = [(k.assigneeId || '') + '|' + o, '|' + o, '*'].map(x => M.gaps[x]).find(a => a && a.length >= 3);
+  const days = g ? median(g) : ({1: 2, 2: 3, 3: 5, 4: 7}[o] || (o ? 7 : 3));
+  return {title, due: addBiz(today(), days), days, learned: !!g, n: g ? g.length : 0};
+}
+// on a reminder that's due: one click to the suggested email
+const remSugBtn = k => { if (!canWrite || k.done || !k.companyId || !isDate(k.due) || k.due > today()) return ''; const sg = remSuggest(k);
+  return `<button type="button" class="btn sm remsug" data-act="remEmail" data-id="${k.id}" title="${esc(sg ? 'Suggested email: ' + sg.name + '. ' + sg.why : 'Write an email for this follow-up')}">${ic('mail')}<span>${sg ? esc(sg.name) : 'Email'}</span></button>`; };
+function remNextModal(id){
+  const k = S.tasks[id]; if (!k) return; const nx = remNext(k);
+  const why = !nx ? 'That was the last step in this follow-up sequence.' : nx.learned ? `${nx.days} business day${nx.days === 1 ? '' : 's'} out: how long your team usually waits after “${esc(k.title)}” (from ${nx.n} past follow-ups).` : `${nx.days} business day${nx.days === 1 ? '' : 's'} out. Paper Trail learns your team's timing as you go.`;
+  openModal(`What's next for ${esc(cname(k.companyId) || 'this account')}?`, `<div class="grid2">
+    ${k.done ? '' : `<div class="wide">${cb('doneNow', true, `Mark “${esc(k.title)}” done`)}</div>`}
+    <div class="wide">${cb('setNext', !!nx, 'Set the next follow-up')}</div>
+    ${F('Next follow-up', inp('nTitle', nx ? nx.title : '', 'text', 'placeholder="e.g. 3rd Follow Up on Purge"'), 'wide')}
+    ${F('On', inp('nDue', nx ? nx.due : addBiz(today(), 3), 'date'))}
+    <p class="sub wide">${why}</p></div>`, 'Save', async f => {
+      if (f.doneNow && S.tasks[id] && !S.tasks[id].done) await A.taskDone({id});
+      if (f.setNext && String(f.nTitle || '').trim()) { const due = isDate(f.nDue) ? f.nDue : addBiz(today(), 3);
+        if (await put('tasks', uid(), {title: f.nTitle.trim(), due, assigneeId: k.assigneeId || ME.id, companyId: k.companyId, ...(k.dealId ? {dealId: k.dealId} : {})})) toast(`Next follow-up set for ${fmtDate(due)}`); }
+    });
+}
 function nextReminderType(coId){
   // suggest the next follow-up in the sequence for this account
   const used = L('tasks').filter(k => k.companyId === coId).map(k => REMINDER_TYPES.indexOf(k.title)).filter(i => i >= 0);
@@ -6256,11 +6362,12 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (jopt && jopt.companyId) companyId = jopt.companyId;
   ui.draftFiles = []; ui.blankList = []; ui.blankVals = {}; ui.blankDefs = {}; ui.blankSubj = null;   // a new email starts with no blanks filled
   ui.draftHtml = true;
-  ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || '', journey: jopt && jopt.journey, hdwd: jopt && jopt.hdwd}; ui.sendOk = false;   // (the editor is the message box from the start, so writing from scratch counts)
+  ui.draft = {col, id, companyId, contactId: contact?.id || '', toAddr: (toAddr && contact && ctAddrs(contact).includes(toAddr.toLowerCase())) ? toAddr : ctMail(contact), dealId: col === 'deals' ? id : (jopt && jopt.dealId) || (ui.draftCtx && ui.draftCtx.dealId) || '', journey: jopt && jopt.journey, hdwd: jopt && jopt.hdwd, remId: (ui.draftCtx && ui.draftCtx.remId) || ''}; ui.sendOk = false;   // (the editor is the message box from the start, so writing from scratch counts)
   const contacts = companyId ? gr(companyId).contacts : (contact ? [contact] : []);
   const tpls = templates();
   let pick = '';
   if (jopt) pick = '';
+  else if (purpose && String(purpose).startsWith('tpl:')) pick = String(purpose).slice(4);
   else if (purpose && PURPOSE_TPL[purpose]) pick = PURPOSE_TPL[purpose];
   else if (col === 'deals') { const st = stage(r).k; pick = st === 'won' ? 't_thanks' : st === 'quoted' ? 't_quote_fu' : 't_inquiry'; }
   if (!tpls.some(t => t.id === pick)) pick = '';
@@ -6334,6 +6441,7 @@ function applyTemplate(tid){
   const hint = $('#dHint');
   if (tid === '__ai') { ui.draftHtml = false; $('#draftOut').hidden = false; $('#draftHtml').hidden = true; const bar = document.querySelector('.rte-bar[data-for="draftHtml"]'); if (bar) bar.hidden = true; if (hint) hint.textContent = ''; setTimeout(() => $('#dPurpose')?.focus(), 30); return; }
   const t = templates().find(x => x.id === tid); if (!t) return;
+  if (ui.draft) ui.draft.tplId = tid;
   const data = mergeData(ui.draft);
   $('#draftSubj').value = fillTemplate(t.subject, data);
   setDraftBody(t.html ? cleanHtml(fillTemplate(t.body, data, true)) : textToHtml(fillTemplate(t.body, data)));
@@ -6442,11 +6550,13 @@ async function sendMail(){
     mailed = true;
     const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut').value.trim();
     const fnames = (ui.draftFiles || []).map(x => x.name);
-    logAct({type: 'email', text: f.subject + '\n' + body + (fnames.length ? `\n\nAttached: ${fnames.join(', ')}` : ''), companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId, ...(track && track.token ? {track: track.token, links: track.links} : {})});
+    logAct({type: 'email', text: f.subject + '\n' + body + (fnames.length ? `\n\nAttached: ${fnames.join(', ')}` : ''), companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId, ...(ui.draft.tplId ? {tplId: ui.draft.tplId} : {}), ...(track && track.token ? {track: track.token, links: track.links} : {})});
     if (ui.draft.journey) { await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); ui.jClaimBy = null; }
     if (ui.draft.hdwd) await hdwdMark(ui.draft.hdwd.dealId, 'sent', !!$('#hd10Btn[aria-pressed="true"]'));
     await emailJourneyAfterSend();
+    const remId = ui.draft && ui.draft.remId;
     closeModal(); toast('Email sent');
+    if (remId && S.tasks[remId]) setTimeout(() => remNextModal(remId), 60);   // sent for a reminder: offer to check it off and set the next one
   } catch(e){
     if (jr && !mailed) jRelease(jr.eid);   // not sent: let it go so it can be sent later
     if (mailed) { closeModal(); toast('Email sent, but part of saving it afterwards failed. Check the timeline.', 'bad'); return; }
@@ -7684,6 +7794,10 @@ const A = {
     const it = (act, label, icon, extra = '', cls = '') => `<button type="button" role="menuitem" class="${cls}" data-act="${act}" data-id="${esc(d.id)}"${extra}>${icon ? ic(icon) : ''}${label}</button>`;
     popMenu(t, d.k === 'company' ? it('merge', 'Merge a duplicate into this one', 'users', ' data-col="companies"') + '<hr>' + it('delCompany', 'Delete account', 'trash', '', 'danger')
       : it('delDeal', 'Delete opportunity', 'trash', '', 'danger')); },
+  remEmail: d => { const k = S.tasks[d.id] && {...S.tasks[d.id], id: d.id}; if (!k) return; const sg = remSuggest(k); const deal = k.dealId && S.deals[k.dealId];
+    const ct = deal ? hdwdContact(deal) : (L('contacts').filter(c => c.companyId === k.companyId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).find(c => ctMail(c)) || {}).id;
+    ui.draftCtx = {dealId: k.dealId || '', remId: k.id};
+    try { if (ct && S.contacts[ct]) draftModal('contacts', ct, sg ? 'tpl:' + sg.id : null); else draftModal('companies', k.companyId, sg ? 'tpl:' + sg.id : null); } finally { ui.draftCtx = null; } },
   remWho: d => { ui.remAll = d.m === '1'; prefSet('remAll', ui.remAll); render(); },
   todayWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); render(); },
   taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
