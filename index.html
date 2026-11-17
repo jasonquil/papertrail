@@ -637,6 +637,9 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .snz{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;border-radius:6px;padding:4px 22px 4px 9px;cursor:pointer;width:92px;flex:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
 .snz:hover,.snz:focus-visible{color:var(--fg);border-color:var(--muted)}
 .rem-x{display:flex;align-items:center;gap:6px}
+.lastmail{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:0;background:none;padding:2px 0;margin-top:3px;font:inherit;font-size:.84rem;color:var(--muted);cursor:pointer;text-align:left}
+.lastmail span{min-width:0;overflow-wrap:anywhere}.lastmail{align-items:flex-start}.lastmail .ic{margin-top:3px}.lastmail b{color:var(--fg);font-weight:600}
+.lastmail .ic{flex:none;width:14px;height:14px}.sm-b .lastmail b{font-size:inherit}.lastmail .replied{font-style:normal;font-weight:700;color:var(--good)}.lastmail:hover span{text-decoration:underline}.lastmail.none{cursor:default;font-style:italic}
 .remsug{max-width:240px;gap:6px}.remsug span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.remsug .ic{flex:none;width:15px;height:15px}
 .task .icon-btn{flex:none}
 /* the ⋯ menu */
@@ -3280,7 +3283,7 @@ function smNextBox(coId){
   if (!k) return canWrite ? `<div class="sm-nextbox none"><div><b>Nothing scheduled for this account.</b><small>Set a reminder so the next follow-up doesn't slip.</small></div><button class="btn pri" data-act="newTask" data-co="${coId}">${ic('bell')}Remind me</button></div>` : '';
   const d = dayDiff(today(), k.due), when = d === 0 ? 'due today' : d === 1 ? 'due tomorrow' : d === -1 ? 'was due yesterday' : d < 0 ? `${-d} days late` : `due ${fmtDate(k.due)}`;
   const sg = k.due <= today() ? remSuggest(k) : null;
-  return `<div class="sm-nextbox${d < 0 ? ' late' : ''}"><div><b>Next: ${esc(k.title)}, ${when}</b>${sg ? `<small>Suggested email: ${esc(sg.name)}</small>` : ''}</div>${canWrite ? `${k.due <= today() ? `<button class="btn pri" data-act="remEmail" data-id="${k.id}">${ic('mail')}Write the email</button>` : ''}<button class="btn" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button>` : ''}</div>`;
+  return `<div class="sm-nextbox${d < 0 ? ' late' : ''}"><div><b>Next: ${esc(k.title)}, ${when}</b>${sg ? `<small>Suggested email: ${esc(sg.name)}</small>` : ''}${lastMailHtml(coId)}</div>${canWrite ? `${k.due <= today() ? `<button class="btn pri" data-act="remEmail" data-id="${k.id}">${ic('mail')}Write the email</button>` : ''}<button class="btn" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button>` : ''}</div>`;
 }
 function simpleToday(){
   const t = today(), h = new Date().getHours();
@@ -3292,12 +3295,12 @@ function simpleToday(){
   const tomorrow = L('tasks').filter(k => !k.done && k.due === addBiz(t, 1) && (!ui.mine || k.assigneeId === ME.id)).length;
   const n = rems.length + att.length + (hd ? 1 : 0);
   let num = 0;
-  const row = (title, sub, btns, lead) => `<li class="sm-item${lead ? ' lead' : ''}"><span class="sm-n">${++num}</span><div class="sm-b"><b>${title}</b><small>${sub}</small></div><div class="sm-x">${btns}</div></li>`;
+  const row = (title, sub, btns, lead, extra = '') => `<li class="sm-item${lead ? ' lead' : ''}"><span class="sm-n">${++num}</span><div class="sm-b"><b>${title}</b><small>${sub}</small>${extra}</div><div class="sm-x">${btns}</div></li>`;
   const remRow = k => { const late = dayDiff(k.due, t), when = late <= 0 ? 'due today' : late === 1 ? 'was due yesterday' : `${late} days late`;
     const sg = k.companyId ? remSuggest(k) : null;
     const main = k.companyId && canWrite ? `<button type="button" class="btn pri" data-act="remEmail" data-id="${k.id}" title="${esc(sg ? 'Suggested email: ' + sg.name : 'Write an email')}">${ic('mail')}Write the email</button>` : '';
     return row(esc(k.companyId ? cname(k.companyId) : k.title), `${k.companyId ? esc(k.title) + ' · ' : ''}${when}${k.assigneeId && k.assigneeId !== ME.id ? ' · ' + esc(pname(k.assigneeId)) : ''}`,
-      main + (canWrite ? `<button type="button" class="btn${main ? '' : ' pri'}" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button><button type="button" class="btn ghost" data-act="smLater" data-id="${k.id}">Later</button>` : ''), !num); };
+      main + (canWrite ? `<button type="button" class="btn${main ? '' : ' pri'}" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button><button type="button" class="btn ghost" data-act="smLater" data-id="${k.id}">Later</button>` : ''), !num, k.companyId ? lastMailHtml(k.companyId) : ''); };
   const attRow = i => row(esc(i.title), `${esc(i.kind)} · ${i.sub}`, i.acts.map((a, x) => `<button class="btn ${x === 0 ? 'pri' : ''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join(''), !num);
   const list = [...rems.map(remRow), ...att.map(attRow), ...(hd ? [row(`Ask ${hd} customer${hd === 1 ? '' : 's'} how we did`, 'Their service is done. A quick review request goes a long way.', `<button class="btn pri" data-act="go" data-v="hdwd">${ic('star')}Send review requests</button>`, !num)] : [])];
   return backupNudge() + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}.`, n ? `${n} thing${n === 1 ? '' : 's'} to do today` : 'Nothing due. Nice work.', canWrite ? `<button class="btn pri" data-act="newDeal">${ic('plus')}New opportunity</button>` : '')
@@ -3404,7 +3407,7 @@ function remBody(){
   const row = k => { const g = grp(k); const d = isDate(k.due) ? dayDiff(t, k.due) : null;
     const when = d == null ? 'No date' : d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : d === -1 ? 'Yesterday' : d < 0 ? `${-d} days ago` : `In ${d} days`;
     return `<li class="rem ${g}${k.done ? ' done' : ''}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="${k.done?'Mark not done':'Mark done'}" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
-    <div class="rem-b"><b>${esc(k.title)}</b><small>${[k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : '', k.assigneeId && k.assigneeId !== ME.id ? esc(pname(k.assigneeId)) : ''].filter(Boolean).join(' · ')}</small>${k.notes ? `<p class="rem-n">${esc(k.notes)}</p>` : ''}</div>
+    <div class="rem-b"><b>${esc(k.title)}</b>${!k.done && k.companyId && isDate(k.due) && k.due <= t ? lastMailHtml(k.companyId) : ''}<small>${[k.companyId ? link('companies', k.companyId) : '', k.dealId ? link('deals', k.dealId) : '', k.assigneeId && k.assigneeId !== ME.id ? esc(pname(k.assigneeId)) : ''].filter(Boolean).join(' · ')}</small>${k.notes ? `<p class="rem-n">${esc(k.notes)}</p>` : ''}</div>
     <div class="rem-d"><b>${isDate(k.due) ? fmtDate(k.due) : '—'}</b><small>${k.done ? 'Done' + (k.doneAt ? ' ' + rel(k.doneAt) : '') : when}</small></div>
     <div class="rem-x">${remSugBtn(k)}${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</div></li>`; };
   let body;
@@ -4532,7 +4535,8 @@ const remModel = memoD(() => {
     try { return [t.id, new RegExp('^' + sj.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\[.*?\\\]|\\\{.*?\\\}/g, '.*') + '$', 'i')]; } catch { return null; } }).filter(Boolean);
   const tplOf = a => { if (a.tplId && ids.has(a.tplId)) return a.tplId; const sj = String(a.text || '').split('\n')[0].replace(/^(?:sent|re|fw|fwd)\s*:\s*/i, '').trim(); if (!sj) return ''; const h = mt.find(([, re]) => re.test(sj)); return h ? h[0] : ''; };
   const sent = {};
-  for (const a of L('activities')) { if (a.type !== 'email' || !a.companyId || /^received\b/i.test(a.text || '')) continue; (sent[a.companyId] ??= []).push({at: a.at || 0, tpl: tplOf(a)}); }
+  const recv = {};
+  for (const a of L('activities')) { if (a.type !== 'email' || !a.companyId) continue; if (/^received\b/i.test(a.text || '')) { if ((a.at || 0) > (recv[a.companyId] || 0)) recv[a.companyId] = a.at || 0; continue; } (sent[a.companyId] ??= []).push({at: a.at || 0, tpl: tplOf(a), id: a.id, by: a.by, text: a.text || ''}); }
   for (const k in sent) sent[k].sort((x, y) => x.at - y.at);
   const next = {}, byTitle = {}, gaps = {}, succ = {}, byCo = {};
   for (const arr of Object.values(sent)) for (let i = 1; i < arr.length; i++) { const a = arr[i - 1], b = arr[i]; if (a.tpl && b.tpl && b.at - a.at < 60 * 864e5) { const m = next[a.tpl] ??= {}; m[b.tpl] = (m[b.tpl] || 0) + 1; } }
@@ -4547,7 +4551,7 @@ const remModel = memoD(() => {
       if (norm(k.title) !== norm(n.title)) { const m = succ[norm(k.title)] ??= {}; m[n.title] = (m[n.title] || 0) + 1; }
     }
   }
-  return {tpls, sent, next, byTitle, gaps, succ, cache: new Map()};
+  return {tpls, sent, recv, next, byTitle, gaps, succ, cache: new Map()};
 });
 // the template that best fits what this reminder is for, and why
 function remSuggest(k){
@@ -4589,6 +4593,14 @@ function remNext(k){
   const o = p.ord || 0; const g = [(k.assigneeId || '') + '|' + o, '|' + o, '*'].map(x => M.gaps[x]).find(a => a && a.length >= 3);
   const days = g ? median(g) : ({1: 2, 2: 3, 3: 5, 4: 7}[o] || (o ? 7 : 3));
   return {title, due: addBiz(today(), days), days, learned: !!g, n: g ? g.length : 0};
+}
+// the last email this account got from us: subject, when, who sent it, and a peek at the message
+function lastMailHtml(coId){
+  const M = remModel(), arr = coId && M.sent[coId]; const m = arr && arr[arr.length - 1]; if (!m) return coId ? '<span class="lastmail none">No emails sent yet</span>' : '';
+  const rep_ = M.recv[coId] && M.recv[coId] > m.at ? M.recv[coId] : 0;   // they wrote back after our last email
+  const lines = String(m.text).replace(/^(?:sent|re|fw|fwd)\s*:\s*/i, '').split('\n'); const subj = lines[0].trim() || '(no subject)';
+  const peek = lines.slice(1).join(' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+  return `<button type="button" class="lastmail" data-act="openCoActivity" data-id="${coId}" title="${esc(peek ? subj + '\n\n' + peek + (peek.length >= 240 ? '…' : '') : subj)}">${ic('mail')}<span>Last email: <b>${esc(subj)}</b> · ${rel(m.at)}${m.by && m.by !== ME.id ? ' · ' + esc(pname(m.by)) : ''}${rep_ ? ` · <em class="replied">they replied ${rel(rep_)}</em>` : ''}</span></button>`;
 }
 // on a reminder that's due: one click to the suggested email
 const remSugBtn = k => { if (!canWrite || k.done || !k.companyId || !isDate(k.due) || k.due > today()) return ''; const sg = remSuggest(k);
