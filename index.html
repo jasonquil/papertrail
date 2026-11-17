@@ -2787,7 +2787,8 @@ window.addEventListener('popstate', e => {
 });
 
 // ---------- appearance: each person's own look, saved to their login ----------
-const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show', simple: 'off'};
+const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show', simple: 'off', remHelp: 'on'};
+const remHelpOn = () => LOOK.remHelp !== 'off';   // the reminder helper: suggested email, last email line, and What's next after sending
 // Simple: an easier version anyone can turn on (fewer menu items, a do-this-next Today, bigger buttons, a short new-opportunity form)
 const simpleOn = () => LOOK.simple === 'on';
 const SIMPLE_NAV = ['today', 'reminders', 'companies', 'pipeline'];
@@ -2854,6 +2855,7 @@ function lookModal(){
   const cur = LOOK.accent || '';
   openModal('Appearance', `<p class="sub" style="margin-bottom:12px">Just for you. Changes show right away and follow your login to any device.</p>
     <div class="lookgrid">
+      <div class="f"><span>Reminder helper</span>${lookSeg('remHelp', [['on', 'On'], ['off', 'Off']])}<small class="sub">On due reminders: a suggested email button, the last email the account got, and a What's next step after you send.</small></div>
       <div class="f"><span>Version</span>${simpleSeg()}<small class="sub">Simple shows fewer menu items, a do-this-next list on Today and bigger buttons. Everything is still there under More.</small></div>
       ${lookPickHtml()}
       ${(LOOK.look || 'default') === 'default' ? F('Mode', seg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']])) : `<p class="sub" style="margin:-4px 0 0">Each look has its own colors, so Mode and Accent color apply to the Original look. Night Shift is the dark one.</p>`}
@@ -3278,7 +3280,7 @@ function smNextBox(coId){
   const k = L('tasks').filter(x => !x.done && x.companyId === coId && isDate(x.due)).sort((a, b) => a.due.localeCompare(b.due))[0];
   if (!k) return canWrite ? `<div class="sm-nextbox none"><div><b>Nothing scheduled for this account.</b><small>Set a reminder so the next follow-up doesn't slip.</small></div><button class="btn pri" data-act="newTask" data-co="${coId}">${ic('bell')}Remind me</button></div>` : '';
   const d = dayDiff(today(), k.due), when = d === 0 ? 'due today' : d === 1 ? 'due tomorrow' : d === -1 ? 'was due yesterday' : d < 0 ? `${-d} days late` : `due ${fmtDate(k.due)}`;
-  const sg = k.due <= today() ? remSuggest(k) : null;
+  const sg = k.due <= today() && remHelpOn() ? remSuggest(k) : null;
   return `<div class="sm-nextbox${d < 0 ? ' late' : ''}"><div><b>Next: ${esc(k.title)}, ${when}</b>${sg ? `<small>Suggested email: ${esc(sg.name)}</small>` : ''}${lastMailHtml(coId)}</div>${canWrite ? `${k.due <= today() ? `<button class="btn pri" data-act="remEmail" data-id="${k.id}">${ic('mail')}Write the email</button>` : ''}<button class="btn" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button>` : ''}</div>`;
 }
 function simpleToday(){
@@ -3293,7 +3295,7 @@ function simpleToday(){
   let num = 0;
   const row = (title, sub, btns, lead, extra = '') => `<li class="sm-item${lead ? ' lead' : ''}"><span class="sm-n">${++num}</span><div class="sm-b"><b>${title}</b><small>${sub}</small>${extra}</div><div class="sm-x">${btns}</div></li>`;
   const remRow = k => { const late = dayDiff(k.due, t), when = late <= 0 ? 'due today' : late === 1 ? 'was due yesterday' : `${late} days late`;
-    const sg = k.companyId ? remSuggest(k) : null;
+    const sg = k.companyId && remHelpOn() ? remSuggest(k) : null;
     const main = k.companyId && canWrite ? `<button type="button" class="btn pri" data-act="remEmail" data-id="${k.id}" title="${esc(sg ? 'Suggested email: ' + sg.name : 'Write an email')}">${ic('mail')}Write the email</button>` : '';
     return row(esc(k.companyId ? cname(k.companyId) : k.title), `${k.companyId ? esc(k.title) + ' · ' : ''}${when}${k.assigneeId && k.assigneeId !== ME.id ? ' · ' + esc(pname(k.assigneeId)) : ''}`,
       main + (canWrite ? `<button type="button" class="btn${main ? '' : ' pri'}" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button><button type="button" class="btn ghost" data-act="smLater" data-id="${k.id}">Later</button>` : ''), !num, k.companyId ? lastMailHtml(k.companyId) : ''); };
@@ -4592,6 +4594,7 @@ function remNext(k){
 }
 // the last email this account got from us: subject, when, who sent it, and a peek at the message
 function lastMailHtml(coId){
+  if (!remHelpOn()) return '';
   const M = remModel(), arr = coId && M.sent[coId]; const m = arr && arr[arr.length - 1]; if (!m) return coId ? '<span class="lastmail none">No emails sent yet</span>' : '';
   const rep_ = M.recv[coId] && M.recv[coId] > m.at ? M.recv[coId] : 0;   // they wrote back after our last email
   const lines = String(m.text).replace(/^(?:sent|re|fw|fwd)\s*:\s*/i, '').split('\n'); const subj = lines[0].trim() || '(no subject)';
@@ -4599,7 +4602,7 @@ function lastMailHtml(coId){
   return `<button type="button" class="lastmail" data-act="openCoActivity" data-id="${coId}" title="${esc(peek ? subj + '\n\n' + peek + (peek.length >= 240 ? '…' : '') : subj)}">${ic('mail')}<span>Last email: <b>${esc(subj)}</b> · ${rel(m.at)}${m.by && m.by !== ME.id ? ' · ' + esc(pname(m.by)) : ''}${rep_ ? ` · <em class="replied">they replied ${rel(rep_)}</em>` : ''}</span></button>`;
 }
 // on a reminder that's due: one click to the suggested email
-const remSugBtn = k => { if (!canWrite || k.done || !k.companyId || !isDate(k.due) || k.due > today()) return ''; const sg = remSuggest(k);
+const remSugBtn = k => { if (!remHelpOn() || !canWrite || k.done || !k.companyId || !isDate(k.due) || k.due > today()) return ''; const sg = remSuggest(k);
   return `<button type="button" class="btn sm remsug" data-act="remEmail" data-id="${k.id}" title="${esc(sg ? 'Suggested email: ' + sg.name + '. ' + sg.why : 'Write an email for this follow-up')}">${ic('mail')}<span>${sg ? esc(sg.name) : 'Email'}</span></button>`; };
 function remNextModal(id){
   const k = S.tasks[id]; if (!k) return; const nx = remNext(k);
@@ -6674,7 +6677,7 @@ async function sendMail(){
     await emailJourneyAfterSend();
     const remId = ui.draft && ui.draft.remId;
     closeModal(); toast('Email sent');
-    if (remId && S.tasks[remId]) setTimeout(() => remNextModal(remId), 60);   // sent for a reminder: offer to check it off and set the next one
+    if (remId && S.tasks[remId] && remHelpOn()) setTimeout(() => remNextModal(remId), 60);   // sent for a reminder: offer to check it off and set the next one
   } catch(e){
     if (jr && !mailed) jRelease(jr.eid);   // not sent: let it go so it can be sent later
     if (mailed) { closeModal(); toast('Email sent, but part of saving it afterwards failed. Check the timeline.', 'bad'); return; }
@@ -7912,7 +7915,7 @@ const A = {
     const it = (act, label, icon, extra = '', cls = '') => `<button type="button" role="menuitem" class="${cls}" data-act="${act}" data-id="${esc(d.id)}"${extra}>${icon ? ic(icon) : ''}${label}</button>`;
     popMenu(t, d.k === 'company' ? (simpleOn() ? it('newContact', 'Add a contact', 'users', ` data-co="${esc(d.id)}"`) + it('attach', 'Attach a file', 'up', ` data-co="${esc(d.id)}"`) + it('editCompany', 'Edit account', 'edit') + '<hr>' : '') + it('merge', 'Merge a duplicate into this one', 'users', ' data-col="companies"') + '<hr>' + it('delCompany', 'Delete account', 'trash', '', 'danger')
       : it('delDeal', 'Delete opportunity', 'trash', '', 'danger')); },
-  remEmail: d => { const k = S.tasks[d.id] && {...S.tasks[d.id], id: d.id}; if (!k) return; const sg = remSuggest(k); const deal = k.dealId && S.deals[k.dealId];
+  remEmail: d => { const k = S.tasks[d.id] && {...S.tasks[d.id], id: d.id}; if (!k) return; const sg = remHelpOn() ? remSuggest(k) : null; const deal = k.dealId && S.deals[k.dealId];
     const ct = deal ? hdwdContact(deal) : (L('contacts').filter(c => c.companyId === k.companyId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).find(c => ctMail(c)) || {}).id;
     ui.draftCtx = {dealId: k.dealId || '', remId: k.id};
     try { if (ct && S.contacts[ct]) draftModal('contacts', ct, sg ? 'tpl:' + sg.id : null); else draftModal('companies', k.companyId, sg ? 'tpl:' + sg.id : null); } finally { ui.draftCtx = null; } },
