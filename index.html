@@ -732,6 +732,9 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.rk{display:flex;flex-wrap:wrap;gap:6px}.rk button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font:inherit;font-size:.88rem;font-weight:600;cursor:pointer}
+.rk button:hover{border-color:var(--muted)}.rk button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.rk-prev{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line)}.rk-prev span{font-size:.78rem;color:var(--muted)}.rk-prev b{font-size:1.02rem}.rk-prev small{color:var(--muted);font-size:.8rem}.rk-prev small:empty{display:none}
 .cu{display:flex;flex-direction:column;gap:14px}.cu-opts{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end}
 .cu-list{max-height:min(46vh,460px);overflow:auto;border:1px solid var(--line);border-radius:10px}
 .cu-list table{width:100%;border-collapse:collapse;font-size:.88rem}.cu-list th{position:sticky;top:0;background:var(--surface-2);text-align:left;padding:8px 10px;font-size:.76rem}
@@ -4619,25 +4622,72 @@ function remNextModal(id){
     });
 }
 function nextReminderType(coId){
-  // suggest the next follow-up in the sequence for this account
-  const used = L('tasks').filter(k => k.companyId === coId).map(k => REMINDER_TYPES.indexOf(k.title)).filter(i => i >= 0);
-  const n = used.length ? Math.max(...used) + 1 : 0;
-  return REMINDER_TYPES[Math.min(n, REMINDER_TYPES.length - 1)];
+  // the next follow-up in this account's sequence (purge, medical waste, recurring...)
+  const nx = rkNextFor(coId); return rkTitle(nx.kind, nx.n || 1, '') || '1st Follow Up on Purge';
+}
+// ---------- reminder kinds: pick what kind of follow-up, then which one; the title is built in the team's own wording ----------
+const RK_KINDS = [['purge', 'Purge', 1], ['mw', 'Medical waste', 1], ['rec', 'Recurring', 1], ['event', 'Shred event', 0], ['resch', 'Ready to reschedule?', 0], ['close', 'Close if no reply', 0], ['other', 'Other…', 0]];
+const RK_NUMS = ['1st', '2nd', '3rd', '4th', '5th', '6th', 'Final'];
+const RK_WAIT = {1: 2, 2: 3, 3: 5, 4: 7, 5: 7, 6: 7, 7: 7};
+function rkTitle(kind, n, other){
+  if (kind === 'purge') return n >= 7 ? 'Final Follow Up' : `${ORD_S(n)} Follow Up on Purge`;
+  if (kind === 'mw') return n >= 7 ? 'MW Final Follow Up' : `MW Follow Up ${n}`;
+  if (kind === 'rec') return n >= 7 ? 'Final Recurring Follow Up' : `${ORD_S(n)} Follow Up on Recurring`;
+  if (kind === 'event') return 'Shred Event';
+  if (kind === 'resch') return 'Ready to reschedule?';
+  if (kind === 'close') return 'Close If No Reply';
+  return String(other || '').trim();
+}
+function rkParse(title){
+  const t = String(title || '').trim(), m = (re) => t.match(re);
+  let x;
+  if ((x = m(/^(\d)(?:st|nd|rd|th) follow[\s-]*up on recurring(?: purge| shredding)?$/i))) return {kind: 'rec', n: +x[1]};
+  if (/^final recurring follow[\s-]*up$/i.test(t)) return {kind: 'rec', n: 7};
+  if ((x = m(/^(\d)(?:st|nd|rd|th) follow[\s-]*up on purge$/i))) return {kind: 'purge', n: +x[1]};
+  if (/^final follow[\s-]*up$/i.test(t)) return {kind: 'purge', n: 7};
+  if ((x = m(/^mw\s*(?:follow[\s-]*up\s*)?(\d)$/i))) return {kind: 'mw', n: +x[1]};
+  if (/^mw final follow[\s-]*up$/i.test(t)) return {kind: 'mw', n: 7};
+  if (/^shred event$/i.test(t)) return {kind: 'event', n: 0};
+  if (/^ready to resch(?:edule)?\??$/i.test(t)) return {kind: 'resch', n: 0};
+  if (/^close if no (?:reply|response)$/i.test(t)) return {kind: 'close', n: 0};
+  return t ? {kind: 'other', n: 0, other: t} : null;
+}
+// what comes after the newest reminder on this account
+function rkNextFor(coId){
+  const last = L('tasks').filter(k => k.companyId === coId).sort((a, b) => (b.due || '').localeCompare(a.due || '') || (b.createdAt || 0) - (a.createdAt || 0))[0];
+  const p = last ? rkParse(last.title) : null;
+  if (!p) return {kind: 'purge', n: 1, last: null};
+  const numbered = (RK_KINDS.find(x => x[0] === p.kind) || [])[2];
+  if (numbered) return p.n >= 7 ? {kind: 'close', n: 0, last} : {kind: p.kind, n: p.n + 1, last};
+  return {kind: p.kind === 'other' ? 'purge' : p.kind, n: p.kind === 'other' ? 1 : 0, last};
+}
+function rkDraw(){
+  const st = ui.rk; if (!st) return; const kinds = $('#rkKinds'), nums = $('#rkNums'); if (!kinds) return;
+  const numbered = (RK_KINDS.find(x => x[0] === st.kind) || [])[2];
+  kinds.innerHTML = RK_KINDS.map(([k, l]) => `<button type="button" class="${k === st.kind ? 'on' : ''}" data-act="rkKind" data-k="${k}" aria-pressed="${k === st.kind}">${esc(l)}</button>`).join('');
+  $('#rkNumWrap').hidden = !numbered; $('#rOther').hidden = st.kind !== 'other';
+  nums.innerHTML = RK_NUMS.map((l, i) => `<button type="button" class="${i + 1 === st.n ? 'on' : ''}" data-act="rkNum" data-n="${i + 1}" aria-pressed="${i + 1 === st.n}">${l}</button>`).join('');
+  const t = rkTitle(st.kind, st.n, $('#rTitle')?.value);
+  $('#rkTitle').textContent = t || 'Describe the follow-up below'; $('#rkVal').value = t;
+  $('#rkHint').textContent = st.picked && st.kind === st.picked.kind && st.n === st.picked.n && st.picked.last ? `Picked for you: the last reminder here was “${st.picked.last.title}”.` : '';
+  const due = $('#mform input[name=due]'); if (due && !st.dueTouched && !st.edit) due.value = numbered ? addBiz(today(), RK_WAIT[st.n] || 3) : (st.baseDue || today());
 }
 function taskForm(id, pre={}){
   const k = id ? S.tasks[id] : {assigneeId: ME.id, due: isDate(pre.due) ? pre.due : today(), companyId: pre.co, dealId: pre.deal || ''};
-  const known = REMINDER_TYPES.includes(k.title);
-  const pick = id ? (known ? k.title : '__other') : (pre.co ? nextReminderType(pre.co) : REMINDER_TYPES[0]);
+  const parsed = id ? rkParse(k.title) : null, nx = !id && pre.co ? rkNextFor(pre.co) : null;
+  ui.rk = id ? {kind: parsed ? parsed.kind : 'other', n: parsed && parsed.n ? parsed.n : 1, edit: true} : {kind: nx ? nx.kind : 'purge', n: nx ? (nx.n || 1) : 1, picked: nx, baseDue: k.due};
   openModal(id ? 'Edit reminder' : pre.co ? `Set a reminder for ${cname(pre.co)}` : 'New reminder', `<div class="grid2">
-    ${F('Follow-up', sel('kind', [...REMINDER_TYPES.map(t => [t, t]), ['__other', 'Other…']], pick, 'id="rKind" data-change="rKind"'), 'wide')}
-    <label class="f wide" id="rOther"${pick === '__other' ? '' : ' hidden'}><span>Describe the follow-up</span>${inp('title', known ? '' : (k.title || ''), 'text', 'id="rTitle" placeholder="e.g. Call Dr. Patel about the purge quote"')}</label>
-    ${F('Remind on', inp('due', k.due, 'date', 'required'))}
+    <div class="f wide"><span>What kind of follow-up</span><div class="rk" id="rkKinds" role="group" aria-label="Kind of follow-up"></div></div>
+    <label class="f wide" id="rOther" hidden><span>Describe the follow-up</span>${inp('title', parsed && parsed.kind === 'other' ? k.title : '', 'text', 'id="rTitle" data-input="rkOther" placeholder="e.g. Call Dr. Patel about the purge quote"')}</label>
+    <div class="f wide" id="rkNumWrap"><span>Which one</span><div class="rk" id="rkNums" role="group" aria-label="Which follow-up"></div></div>
+    <div class="wide rk-prev"><span>Reminder will say</span><b id="rkTitle"></b><small id="rkHint"></small><input type="hidden" name="rtitle" id="rkVal"></div>
+    ${F('Remind on', inp('due', k.due, 'date', 'required data-change="rkDue"'))}
     ${F('Assigned to', ownerSel('assigneeId', k.assigneeId))}
     ${F('Account', sel('companyId', coOpts('— Choose an account —'), k.companyId, 'required data-change="rCo"'), 'wide')}
     ${F('Notes', ta('notes', k.notes, 2), 'wide')}
     ${id ? cb('done', k.done, 'Completed') : ''}</div>`, id ? 'Save' : 'Set reminder', async f => {
       if (!f.companyId) { toast('Every reminder needs an account.', 'bad'); return false; }
-      const title = f.kind === '__other' ? (f.title || '').trim() : f.kind;
+      const title = String(f.rtitle || '').trim();
       if (!title) { toast('Describe the follow-up.', 'bad'); $('#rTitle')?.focus(); return false; }
       const rec = {...(id ? S.tasks[id] : {}), ...(!id && k.dealId && f.companyId === k.companyId ? {dealId: k.dealId} : {}), title, due: f.due, assigneeId: f.assigneeId, companyId: f.companyId, notes: f.notes, done: !!f.done};
       { const dupT = L('tasks').find(x => x.id !== id && !x.done && x.companyId === rec.companyId && norm(x.title) === norm(rec.title)); if (dupT) { dupWarn(`${esc(cname(rec.companyId))} already has an open “${esc(rec.title)}” reminder (${fmtDate(dupT.due)}).`, 'tasks', dupT.id); return false; } }
@@ -4646,6 +4696,7 @@ function taskForm(id, pre={}){
       return ok;
     }, {foot: id && canWrite ? `<button type="button" class="btn ghost" data-act="delTask" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
   if (id) $('#mform').dataset.edit = '1';
+  rkDraw();
 }
 function contractForm(id, pre={}){
   const t = today();
@@ -7923,6 +7974,8 @@ const A = {
   smLater: async d => { const k = S.tasks[d.id]; if (!k) return; const prev = k.due, nd = addBiz(today(), 1); if (await patch('tasks', d.id, {due: nd})) toast(`Moved to ${fmtDate(nd)}`, '', {label: 'Undo', fn: () => patch('tasks', d.id, {due: prev})}); },
   oppCleanup: () => cleanupModal(),
   cuSet: d => { if (!isJason()) return; const sb0 = $('#mform .sb'), t0 = sb0 ? sb0.scrollTop : 0; ui[d.k] = d.k === 'cuDays' ? +d.v : d.v; cleanupModal(); const nb = $('#mform .sb'); if (nb) nb.scrollTop = t0; },
+  rkKind: d => { if (!ui.rk) return; const p = ui.rk.picked; ui.rk.kind = d.k; ui.rk.n = p && p.kind === d.k && p.n ? p.n : 1; rkDraw(); if (d.k === 'other') setTimeout(() => $('#rTitle')?.focus(), 20); },
+  rkNum: d => { if (!ui.rk) return; ui.rk.n = +d.n; rkDraw(); },
   remWho: d => { ui.remAll = d.m === '1'; prefSet('remAll', ui.remAll); render(); },
   todayWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); render(); },
   taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
@@ -8069,8 +8122,9 @@ const CHANGE = {
   jePv: el => { ui.je.pv = el.value; jeSide(); },
   jsCo: el => { const ct = $('#jsCt'); if (ct) ct.innerHTML = jsContactOpts(el.value).map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join(''); },
   jsPrev: () => jsPreview(),
-  rKind: el => { const o = $('#rOther'); if (o) { o.hidden = el.value !== '__other'; if (!o.hidden) $('#rTitle').focus(); } },
-  rCo: el => { const k = $('#rKind'); if (k && k.value !== '__other' && el.value && !$('#mform').dataset.edit) k.value = nextReminderType(el.value); },
+  rCo: el => { if (!ui.rk || ui.rk.edit || !el.value) return; const nx = rkNextFor(el.value); ui.rk = {...ui.rk, kind: nx.kind, n: nx.n || 1, picked: nx}; rkDraw(); },
+  rkDue: () => { if (ui.rk) ui.rk.dueTouched = true; },
+  rkOther: () => rkDraw(),
   dJSel: () => { if (ui.draft && ui.draft.jCustom) { ui.draft.jCustom = null; toast('Switched journeys, so your edits were cleared'); } if (!$('#dJSteps').hidden) dJPaint(); },
   dJDays: () => { const b = $('#dJSteps'); if (b && !b.hidden) b.querySelectorAll('.dj-st').forEach((x, i, all) => { const sp = x.querySelector('summary .sub'); if (!sp) return; const steps = ui.draft && ui.draft.jCustom && ui.draft.jCustom.jid === $('#dJSel').value ? ui.draft.jCustom.steps : jSteps(journeyOf($('#dJSel').value)); let d = Math.max(1, parseInt($('#dJDays').value) || 7); for (let k = 1; k <= i; k++) d += jDelay(steps[k]); sp.textContent = sp.textContent.replace(/^Day \d+/, 'Day ' + d); }); },
   dJSubj: el => dJCust(+el.dataset.i, 'subject', el.value),
