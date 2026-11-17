@@ -729,6 +729,32 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+/* ---------- Simple version ---------- */
+html[data-simple="on"]:not([data-text="sm"]){font-size:17px}
+html[data-simple="on"] .navi{padding-top:10px;padding-bottom:10px;font-size:1rem}
+html[data-simple="on"] .btn:not(.sm):not(.icon-only){min-height:44px;padding-left:16px;padding-right:16px}
+.sm-rest{display:flex;flex-direction:column;gap:2px;margin:2px 0 0 10px;padding-left:8px;border-left:2px solid var(--line)}
+.sm-rest .navi{font-size:.92rem}
+.sm-today{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+.sm-main{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sm-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.sm-item{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 20px;flex-wrap:wrap}
+.sm-item.lead{border:2px solid var(--accent)}
+.sm-n{flex:none;width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800}
+.sm-item.lead .sm-n{background:var(--accent);color:var(--accent-fg)}
+.sm-b{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.sm-b b{font-size:1.12rem}.sm-b small{color:var(--muted);font-size:.92rem}
+.sm-x{display:flex;gap:8px;flex-wrap:wrap}
+.sm-done{padding:28px}.sm-done b{font-size:1.2rem}
+.sm-next{margin:4px 0 0}
+.sm-nextbox{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:6px 0 14px;padding:16px 20px;border-radius:16px;background:var(--yel-soft,#FBF0D6);border:1px solid color-mix(in srgb,var(--yel,#8A6412) 25%,transparent)}
+.sm-nextbox.late{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 25%,transparent)}
+.sm-nextbox.none{background:var(--surface-2);border-color:var(--line)}
+.sm-nextbox>div{flex:1 1 280px;display:flex;flex-direction:column;gap:3px}.sm-nextbox b{font-size:1.05rem}.sm-nextbox small{color:var(--muted)}
+#mform.sm-short .sm-hide{display:none!important}
+.sm-morebtn{justify-self:start;font-weight:600}
+.sm-side .ph{flex-wrap:wrap;gap:4px}.sm-side .svcw li{grid-template-columns:64px minmax(0,1fr);row-gap:4px}.sm-side .svcw li>.chip{grid-column:2;justify-self:start}
+@media (max-width:1100px){.sm-today{grid-template-columns:minmax(0,1fr)}}
 .cth{position:relative;display:block;height:88px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-bottom:4px}
 .cth i{position:absolute;border-radius:3px;box-sizing:border-box}
 .cth .bx{background:var(--surface);border:1px solid var(--line)}
@@ -2756,7 +2782,10 @@ window.addEventListener('popstate', e => {
 });
 
 // ---------- appearance: each person's own look, saved to their login ----------
-const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show'};
+const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show', simple: 'off'};
+// Simple: an easier version anyone can turn on (fewer menu items, a do-this-next Today, bigger buttons, a short new-opportunity form)
+const simpleOn = () => LOOK.simple === 'on';
+const SIMPLE_NAV = ['today', 'reminders', 'companies', 'pipeline'];
 const LOOKS = {"inlet": {"name": "Inlet", "note": "Calm coastal colors, menu across the top", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700", "sw": ["#EDF3F4", "#0B3442", "#127C8C", "#A6DCCF", "#F6DFAE"], "dark": false}, "custody": {"name": "Chain of Custody", "note": "Certificate-style, serious and secure", "fonts": "Newsreader:opsz,wght@6..72,400..700&family=Source+Sans+3:wght@400..700", "sw": ["#F8FAF7", "#123A2B", "#1E5A43", "#9C7A33", "#9E2F27"], "dark": false}, "crosscut": {"name": "Cross-Cut", "note": "Bold, bright and fun", "fonts": "Unbounded:wght@500..800&family=Onest:wght@400..800", "sw": ["#FFFFFF", "#15172E", "#2F4BE8", "#FFE14D", "#FF8FC4"], "dark": false}, "dispatch": {"name": "Dispatch", "note": "Dispatch board with job tickets", "fonts": "Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", "sw": ["#ECEEEC", "#1F252B", "#F2661C", "#F5C232", "#2A68CF"], "dark": false}, "porch": {"name": "Front Porch", "note": "Warm, friendly and easy", "fonts": "Outfit:wght@400..800", "sw": ["#F4F2FB", "#5A47D6", "#261E3D", "#FFB48F", "#FFE6A1"], "dark": false}, "night": {"name": "Night Shift", "note": "Dark, compact and keyboard-friendly", "fonts": "Sora:wght@400..700&family=Inter:wght@400..700", "sw": ["#0E171D", "#1B2B35", "#5FD0B0", "#EDB25A", "#EF7C69"], "dark": true}, "opsboard": {"name": "Ops Board", "note": "Navy sidebar, orange, built for the schedule", "fonts": "IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600", "sw": ["#EEF0EC", "#12202B", "#E8590C", "#FFF1E8", "#B42318"], "dark": false}, "ledger": {"name": "Ledger", "note": "Quiet and minimal, menu across the top", "fonts": "Inter:wght@400..700", "sw": ["#FBFBFA", "#1C1D1F", "#1F6F5C", "#E3F0EC", "#ECECEA"], "dark": false}, "fieldkit": {"name": "Field Kit", "note": "Warm, bold and friendly", "fonts": "Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400..700", "sw": ["#F6F3EE", "#1E1B16", "#1D4ED8", "#FDE7D3", "#E9E1F8"], "dark": false}};
 const ACCENTS = [['', 'Teal (default)', '#0D6B61'], ['#2563EB', 'Blue', '#2563EB'], ['#1E3A8A', 'Navy', '#1E3A8A'], ['#7C3AED', 'Purple', '#7C3AED'], ['#DB2777', 'Pink', '#DB2777'], ['#DC2626', 'Red', '#DC2626'], ['#EA580C', 'Orange', '#EA580C'], ['#15803D', 'Green', '#15803D'], ['#475569', 'Slate', '#475569'], ['#111827', 'Black', '#111827']];
 let LOOK = {...LOOK_DEFAULT};
@@ -2774,7 +2803,7 @@ function applyLook(){
   const lk = LOOKS[LOOK.look] ? LOOK.look : 'default'; r.dataset.look = lk;
   if (lk !== 'default') { r.dataset.theme = LOOKS[lk].dark ? 'dark' : 'light'; lookFont('L:' + lk); }   // each look brings its own colors
   else if (LOOK.mode === 'light' || LOOK.mode === 'dark') r.dataset.theme = LOOK.mode; else delete r.dataset.theme;
-  r.dataset.text = LOOK.text || 'md'; r.dataset.density = LOOK.density || 'comfy'; r.dataset.font = LOOK.font || 'default';
+  r.dataset.text = LOOK.text || 'md'; r.dataset.density = LOOK.density || 'comfy'; r.dataset.font = LOOK.font || 'default'; r.dataset.simple = simpleOn() ? 'on' : 'off';
   lookFont(LOOK.font);
   const a = LOOK.accent;
   if (a && hexRgb(a) && lk === 'default') {
@@ -2814,11 +2843,13 @@ try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () =
 function lookPickHtml(){ return `<div class="f"><span>Look</span><div class="lookpick" role="group" aria-label="Look">${[['default', {name: 'Original', note: 'The Paper Trail you know', sw: ['#F3F6F5', '#12201E', '#0D6B61', '#D8EDE9', '#FBF0B8']}], ...Object.entries(LOOKS)].map(([k, l]) => `<button type="button" class="${(LOOK.look || 'default') === k ? 'on' : ''}" data-act="lookSet" data-k="look" data-v="${k}" aria-pressed="${(LOOK.look || 'default') === k}"><span class="lp-sw">${l.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${esc(l.name)}</b><small>${esc(l.note)}</small></button>`).join('')}</div></div>`; }
 function accentHtml(){ const cur = LOOK.accent || ''; return (LOOK.look || 'default') !== 'default' ? '' : `<div class="f"><span>Accent color</span><div class="swatches">${ACCENTS.map(([v, l, h]) => `<button type="button" class="sw${cur === v ? ' on' : ''}" data-act="lookSet" data-k="accent" data-v="${v}" title="${l}" aria-label="${l}" style="background:${h}"></button>`).join('')}<label class="sw custom${cur && !ACCENTS.some(x => x[0] === cur) ? ' on' : ''}" title="Pick any color" style="background:${cur && !ACCENTS.some(x => x[0] === cur) ? cur : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)'}"><input type="color" id="lookColor" value="${cur || '#0D6B61'}" data-input="lookColor" aria-label="Pick any color"></label></div></div>`; }
 const lookSeg = (k, opts) => `<div class="segs lookseg" role="group">${opts.map(([v, l]) => `<button type="button" class="${(LOOK[k] || LOOK_DEFAULT[k]) === v ? 'on' : ''}" data-act="lookSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+const simpleSeg = () => lookSeg('simple', [['off', 'Full'], ['on', 'Simple']]);
 function lookModal(){
   const seg = (k, opts) => `<div class="segs lookseg" role="group">${opts.map(([v, l]) => `<button type="button" class="${(LOOK[k] || LOOK_DEFAULT[k]) === v ? 'on' : ''}" data-act="lookSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
   const cur = LOOK.accent || '';
   openModal('Appearance', `<p class="sub" style="margin-bottom:12px">Just for you. Changes show right away and follow your login to any device.</p>
     <div class="lookgrid">
+      <div class="f"><span>Version</span>${simpleSeg()}<small class="sub">Simple shows fewer menu items, a do-this-next list on Today, bigger buttons and a short new-opportunity form. Everything is still there under More.</small></div>
       ${lookPickHtml()}
       ${(LOOK.look || 'default') === 'default' ? F('Mode', seg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']])) : `<p class="sub" style="margin:-4px 0 0">Each look has its own colors, so Mode and Accent color apply to the Original look. Night Shift is the dark one.</p>`}
       ${accentHtml()}
@@ -2873,7 +2904,8 @@ function setupModal(step){
     6: `<h2>Your home base</h2>
       ${item('Open Paper Trail to', 'The page you land on each morning.', lookSeg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
       ${item('Today shows', 'Just your reminders and services, or the whole team\'s.', `<div class="segs lookseg" role="group"><button type="button" class="${prefGet('todayAll', false) ? '' : 'on'}" data-act="setupWho" data-m="0">Mine</button><button type="button" class="${prefGet('todayAll', false) ? 'on' : ''}" data-act="setupWho" data-m="1">Everyone</button></div>`)}
-      ${item('Calendar in the sidebar', 'A small month view under the menu.', lookSeg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}`,
+      ${item('Calendar in the sidebar', 'A small month view under the menu.', lookSeg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}
+      ${item('Simple version', 'Fewer menu items, a do-this-next list on Today and bigger buttons. You can switch back anytime.', simpleSeg())}`,
     7: `<h2>You're all set${first ? ', ' + esc(first) : ''}.</h2><p class="su-lead">Here's what you picked. Change any of it in Settings → You → Appearance, or run this setup again from Settings.</p>
       <dl class="su-sum">${[['Outlook', ms ? 'Connected' : 'Not connected'], ['Signature', SIG.html ? 'Saved' : 'Not set up'], ['Look', lkName], ['Text size', optL('text', [['sm', 'Small'], ['md', 'Default'], ['lg', 'Large'], ['xl', 'Extra large']])], ['Spacing', optL('density', [['comfy', 'Comfortable'], ['compact', 'Compact']])], ['Email window', optL('compose', CMP_LAYOUTS)], ['Opens to', optL('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']])], ['Today shows', prefGet('todayAll', false) ? 'Everyone' : 'Mine']].map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
       <div class="su-tips"><b>Three things worth knowing</b><span>Snooze pushes a reminder to tomorrow or next week in one click.</span><span>Checked something off by mistake? Hit Undo at the bottom of the screen.</span><span>Press / anywhere to search every account and contact.</span></div>`
@@ -3122,7 +3154,11 @@ function navHtml(){
   <div class="mtabs" role="navigation" aria-label="Main">${MT.map(k => { const v = VIEWS.find(x => x[0] === k); return `<button class="${curK === k ? 'on' : ''}" data-act="go" data-v="${k}">${ic(v[2])}<span>${k === 'pipeline' ? 'Opps' : v[1]}</span>${badge[k] ? `<em>${badge[k]}</em>` : ''}</button>`; }).join('')}<button class="${MT.includes(curK) ? '' : 'on'}" data-act="mMore">${ic('more')}<span>More</span>${moreBadge ? `<em>${moreBadge}</em>` : ''}</button></div>`;
   return mobile + `<div class="brand">${FISH ? `<span class="mark">${BOBBER}</span><span><b>Paper Trail</b><small>Bait &amp; Tackle Co.</small></span>` : '<span class="mark">PT</span><span><b>Paper Trail</b></span>'}</div>
   <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
-  <div class="navlist">${VIEWS.map(([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`).join('')}</div>
+  <div class="navlist">${(() => { const one = ([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`;
+    if (!simpleOn()) return VIEWS.map(one).join('');
+    const main = SIMPLE_NAV.map(k => VIEWS.find(v => v[0] === k)).filter(Boolean), rest = VIEWS.filter(v => !SIMPLE_NAV.includes(v[0]));
+    const open = ui.smMore || rest.some(v => v[0] === curK); const rb = rest.reduce((n, v) => n + (badge[v[0]] || 0), 0);
+    return main.map(one).join('') + `<button class="navi sm-more-nav" data-act="smNavMore" aria-expanded="${open}">${ic('dots')}<span>More</span>${!open && rb ? `<em>${rb}</em>` : ''}</button>` + (open ? `<div class="sm-rest">${rest.map(one).join('')}</div>` : ''); })()}</div>
   ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
   ${theoOn() ? '<div class="theo-room" id="theoRoom" data-own></div>' : ''}
   ${calOn() && booted ? mcalHtml() : ''}
@@ -3228,7 +3264,47 @@ function weekPanel(){
   return `<section class="panel"><div class="ph"><h3>Services this week</h3><span class="sub">${rows.length ? `${rows.length} in the next 7 days` : 'next 7 days'}</span></div>
     ${rows.length ? `<ul class="svcw">${rows.slice(0, 40).map(d => `<li class="${d.serviceDate === t ? 'is-today' : ''}"><div class="sd"><b>${day(d.serviceDate)}</b><small>${fmtDate(d.serviceDate)}</small></div><div class="sv"><button class="lnk" data-act="oppPage" data-id="${d.id}">${esc(cname(d.companyId) || nameOf('deals', d.id))}</button><small>${[esc(oppType(d)), d.shredAmount ? esc(d.shredAmount) : '', ui.mine ? '' : esc(pname(d.ownerId))].filter(Boolean).join(' · ')}</small></div>${isWon(d) ? '' : stageChip(d)}</li>`).join('')}</ul>` : `<p class="empty-s">Nothing on the schedule for the next 7 days. Opportunities with a service date show up here.</p>`}</section>`;
 }
-V.today = () => asToday(todayBody);
+V.today = () => asToday(() => simpleOn() ? simpleToday() : todayBody());
+// Simple's Today: one numbered list of what to do, each with one big button
+// Simple: a new opportunity asks for the account, what it is, and the price; everything else waits under More details
+function smShortForm(id){
+  if (!simpleOn() || id) return; const g = $('#mform .grid3c'); if (!g || g.dataset.sm) return; g.dataset.sm = '1';
+  const keep = new Set(['companyId', 'type', 'priceQuoted', 'shredAmount', 'serviceDate', 'newCompany']);
+  for (const el of [...g.children]) { const nm = el.querySelector('[name]'); if (el.id === 'dfNewCo' || (nm && keep.has(nm.name))) continue; el.classList.add('sm-hide'); }
+  g.insertAdjacentHTML('beforeend', `<button type="button" class="lnk full sm-morebtn" data-act="smFormMore">+ More details (stage, service, contact, lead source, notes)</button>`);
+  $('#mform').classList.add('sm-short');
+}
+// Simple's account page: the next thing to do for this account, in plain words, with its button
+function smNextBox(coId){
+  const k = L('tasks').filter(x => !x.done && x.companyId === coId && isDate(x.due)).sort((a, b) => a.due.localeCompare(b.due))[0];
+  if (!k) return canWrite ? `<div class="sm-nextbox none"><div><b>Nothing scheduled for this account.</b><small>Set a reminder so the next follow-up doesn't slip.</small></div><button class="btn pri" data-act="newTask" data-co="${coId}">${ic('bell')}Remind me</button></div>` : '';
+  const d = dayDiff(today(), k.due), when = d === 0 ? 'due today' : d === 1 ? 'due tomorrow' : d === -1 ? 'was due yesterday' : d < 0 ? `${-d} days late` : `due ${fmtDate(k.due)}`;
+  const sg = k.due <= today() ? remSuggest(k) : null;
+  return `<div class="sm-nextbox${d < 0 ? ' late' : ''}"><div><b>Next: ${esc(k.title)}, ${when}</b>${sg ? `<small>Suggested email: ${esc(sg.name)}</small>` : ''}</div>${canWrite ? `${k.due <= today() ? `<button class="btn pri" data-act="remEmail" data-id="${k.id}">${ic('mail')}Write the email</button>` : ''}<button class="btn" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button>` : ''}</div>`;
+}
+function simpleToday(){
+  const t = today(), h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const first = (ME.name || '').split(' ')[0];
+  const rems = L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= t && (!ui.mine || k.assigneeId === ME.id)).sort((a, b) => a.due.localeCompare(b.due));
+  const att = todayAtt();
+  const hd = booted ? hdwdDue().length : 0;
+  const tomorrow = L('tasks').filter(k => !k.done && k.due === addBiz(t, 1) && (!ui.mine || k.assigneeId === ME.id)).length;
+  const n = rems.length + att.length + (hd ? 1 : 0);
+  let num = 0;
+  const row = (title, sub, btns, lead) => `<li class="sm-item${lead ? ' lead' : ''}"><span class="sm-n">${++num}</span><div class="sm-b"><b>${title}</b><small>${sub}</small></div><div class="sm-x">${btns}</div></li>`;
+  const remRow = k => { const late = dayDiff(k.due, t), when = late <= 0 ? 'due today' : late === 1 ? 'was due yesterday' : `${late} days late`;
+    const sg = k.companyId ? remSuggest(k) : null;
+    const main = k.companyId && canWrite ? `<button type="button" class="btn pri" data-act="remEmail" data-id="${k.id}" title="${esc(sg ? 'Suggested email: ' + sg.name : 'Write an email')}">${ic('mail')}Write the email</button>` : '';
+    return row(esc(k.companyId ? cname(k.companyId) : k.title), `${k.companyId ? esc(k.title) + ' · ' : ''}${when}${k.assigneeId && k.assigneeId !== ME.id ? ' · ' + esc(pname(k.assigneeId)) : ''}`,
+      main + (canWrite ? `<button type="button" class="btn${main ? '' : ' pri'}" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button><button type="button" class="btn ghost" data-act="smLater" data-id="${k.id}">Later</button>` : ''), !num); };
+  const attRow = i => row(esc(i.title), `${esc(i.kind)} · ${i.sub}`, i.acts.map((a, x) => `<button class="btn ${x === 0 ? 'pri' : ''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join(''), !num);
+  const list = [...rems.map(remRow), ...att.map(attRow), ...(hd ? [row(`Ask ${hd} customer${hd === 1 ? '' : 's'} how we did`, 'Their service is done. A quick review request goes a long way.', `<button class="btn pri" data-act="go" data-v="hdwd">${ic('star')}Send review requests</button>`, !num)] : [])];
+  return backupNudge() + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}.`, n ? `${n} thing${n === 1 ? '' : 's'} to do today` : 'Nothing due. Nice work.', canWrite ? `<button class="btn pri" data-act="newDeal">${ic('plus')}New opportunity</button>` : '')
+    + `<div class="sm-today"><div class="sm-main">${list.length ? `<ol class="sm-list">${list.join('')}</ol>` : `<section class="panel sm-done"><b>You're all caught up.</b><p class="sub">New follow-ups, replies and review requests show up here when they're due.</p></section>`}
+      <p class="sub sm-next">${tomorrow ? `Coming up tomorrow: ${tomorrow} follow-up${tomorrow === 1 ? '' : 's'}.` : ''} <button class="lnk" data-act="go" data-v="reminders">See all reminders</button></p></div>
+      <div class="sm-side">${weekPanel()}</div></div>`;
+}
 function todayBody(){
   const t = today(), h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -3544,7 +3620,7 @@ V.company = () => {
   const addr = [c.address, [c.city, c.state].filter(Boolean).join(', '), c.zip].filter(Boolean).join(' ');
   const W = canWrite;
   const cf = (label, val, k, wide) => W ? `<label class="cpf ed${wide ? ' wide' : ''}"><span>${label}</span><div>${coEditor({...c, id}, k)}</div></label>` : cpField(label, val, wide);
-  const headBtns = `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm ghost" data-act="moreMenu" data-k="company" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}`;
+  const headBtns = simpleOn() ? `<button class="btn pri" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn" data-act="addActivity" data-co="${id}">${ic('plus')}Log a call or note</button><button class="btn" data-act="newTask" data-co="${id}">${ic('bell')}Remind me</button><button class="btn" data-act="newDeal" data-co="${id}">${ic('plus')}New opportunity</button><button class="btn ghost" data-act="moreMenu" data-k="company" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}` : `${W ? `<button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="attach" data-co="${id}">${ic('up')}Attach</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm ghost" data-act="moreMenu" data-k="company" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}`;
   let body = '';
   if (tab === 'details') {
     const od = g.deals.slice().sort((a, b) => (isOpen(b) - isOpen(a)) || ((b.closedAt || b.serviceDate || '') > (a.closedAt || a.serviceDate || '') ? 1 : -1) || (b.createdAt || 0) - (a.createdAt || 0)); const rem = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
@@ -3570,6 +3646,7 @@ V.company = () => {
     body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="jStart" data-co="${id}">${ic('route')}Start a journey</button>` : ''}</div><section class="panel">${rowsOr(es, e => `<li class="rowi" data-act="jOpen" data-id="${e.id}"><div><b>${esc(jName(e.journeyId))}</b><small>${esc(nameOf('contacts', e.contactId))} · ${sentCount(e)} of ${(e.schedule || []).length} sent</small></div><span class="end">${jStatusChip(e)}</span></li>`, 'No one at this company is on a journey.')}</section>`; }
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="companies">← Accounts</button>
     <div class="cp-head"><span class="cp-ic">${ic('building')}</span><div class="cp-name"><h1>${esc(c.name)}</h1><p class="sub">${esc(addr) || 'No address yet'}</p></div><div class="vh-act">${headBtns}</div></div>
+    ${simpleOn() ? smNextBox(id) : ''}
     <div class="cptabs" role="tablist">${CP_TABS.map(([k, l, i]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-act="cpTab" data-t="${k}">${ic(i)}<span>${l}</span>${counts[k] ? `<em>${counts[k]}</em>` : ''}</button>`).join('')}</div>
     <div class="cp-body">${body}</div></div>`;
 };
@@ -4370,6 +4447,7 @@ function contactForm(id, pre={}){
     }, {foot: pre.flow ? `<button type="button" class="btn ghost" data-act="flowSkip" data-co="${esc(pre.co)}" data-coname="${esc(pre.coName||'')}" style="margin-right:auto">Skip to opportunity</button>` : ''});
 }
 function dealForm(id, pre={}){
+  setTimeout(() => smShortForm(id), 0);
   const myCall = INITIAL_CALL.find(n => norm(n) === norm(String(ME.name || '').split(' ')[0])) || '';
   const d = id ? S.deals[id] : {ownerId: ME.id, companyId: pre.co, contactId: pre.ct, stage: 'lead', initialCall: myCall};
   const withCur = (list, v) => v && !list.includes(v) ? [v, ...list] : list;
@@ -7792,12 +7870,15 @@ const A = {
   renew: d => renewModal(d.id),
   moreMenu: (d, t) => { if (POPA === t) { popClose(); return; }
     const it = (act, label, icon, extra = '', cls = '') => `<button type="button" role="menuitem" class="${cls}" data-act="${act}" data-id="${esc(d.id)}"${extra}>${icon ? ic(icon) : ''}${label}</button>`;
-    popMenu(t, d.k === 'company' ? it('merge', 'Merge a duplicate into this one', 'users', ' data-col="companies"') + '<hr>' + it('delCompany', 'Delete account', 'trash', '', 'danger')
+    popMenu(t, d.k === 'company' ? (simpleOn() ? it('newContact', 'Add a contact', 'users', ` data-co="${esc(d.id)}"`) + it('attach', 'Attach a file', 'up', ` data-co="${esc(d.id)}"`) + it('editCompany', 'Edit account', 'edit') + '<hr>' : '') + it('merge', 'Merge a duplicate into this one', 'users', ' data-col="companies"') + '<hr>' + it('delCompany', 'Delete account', 'trash', '', 'danger')
       : it('delDeal', 'Delete opportunity', 'trash', '', 'danger')); },
   remEmail: d => { const k = S.tasks[d.id] && {...S.tasks[d.id], id: d.id}; if (!k) return; const sg = remSuggest(k); const deal = k.dealId && S.deals[k.dealId];
     const ct = deal ? hdwdContact(deal) : (L('contacts').filter(c => c.companyId === k.companyId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).find(c => ctMail(c)) || {}).id;
     ui.draftCtx = {dealId: k.dealId || '', remId: k.id};
     try { if (ct && S.contacts[ct]) draftModal('contacts', ct, sg ? 'tpl:' + sg.id : null); else draftModal('companies', k.companyId, sg ? 'tpl:' + sg.id : null); } finally { ui.draftCtx = null; } },
+  smNavMore: () => { ui.smMore = !ui.smMore; render(); },
+  smFormMore: () => { const f = $('#mform'); if (f) f.classList.remove('sm-short'); $('#mform .sm-morebtn')?.remove(); },
+  smLater: async d => { const k = S.tasks[d.id]; if (!k) return; const prev = k.due, nd = addBiz(today(), 1); if (await patch('tasks', d.id, {due: nd})) toast(`Moved to ${fmtDate(nd)}`, '', {label: 'Undo', fn: () => patch('tasks', d.id, {due: prev})}); },
   remWho: d => { ui.remAll = d.m === '1'; prefSet('remAll', ui.remAll); render(); },
   todayWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); render(); },
   taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
