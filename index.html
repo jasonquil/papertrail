@@ -732,6 +732,10 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.cu{display:flex;flex-direction:column;gap:14px}.cu-opts{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end}
+.cu-list{max-height:min(46vh,460px);overflow:auto;border:1px solid var(--line);border-radius:10px}
+.cu-list table{width:100%;border-collapse:collapse;font-size:.88rem}.cu-list th{position:sticky;top:0;background:var(--surface-2);text-align:left;padding:8px 10px;font-size:.76rem}
+.cu-list td{padding:7px 10px;border-top:1px solid var(--line)}.cu-list td:first-child,.cu-list th:first-child{width:28px}
 /* ---------- Simple version ---------- */
 html[data-simple="on"]:not([data-text="sm"]){font-size:17px}
 html[data-simple="on"] .navi{padding-top:10px;padding-bottom:10px;font-size:1rem}
@@ -754,8 +758,6 @@ html[data-simple="on"] .btn:not(.sm):not(.icon-only){min-height:44px;padding-lef
 .sm-nextbox.late{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 25%,transparent)}
 .sm-nextbox.none{background:var(--surface-2);border-color:var(--line)}
 .sm-nextbox>div{flex:1 1 280px;display:flex;flex-direction:column;gap:3px}.sm-nextbox b{font-size:1.05rem}.sm-nextbox small{color:var(--muted)}
-#mform.sm-short .sm-hide{display:none!important}
-.sm-morebtn{justify-self:start;font-weight:600}
 .sm-side .ph{flex-wrap:wrap;gap:4px}.sm-side .svcw li{grid-template-columns:64px minmax(0,1fr);row-gap:4px}.sm-side .svcw li>.chip{grid-column:2;justify-self:start}
 @media (max-width:1100px){.sm-today{grid-template-columns:minmax(0,1fr)}}
 .cth{position:relative;display:block;height:88px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-bottom:4px}
@@ -1898,7 +1900,7 @@ table.p-t{width:100%;border-collapse:collapse;margin-top:14px}
 // ---------- constants ----------
 const COLS = ['companies','contacts','deals','quotes','activities','tasks','contracts','templates','journeys','enrollments','views','trash'];
 const STAGES = [{k:'lead',l:'Inquiry Received',p:10},{k:'quoted',l:'Proposal Out',p:50},{k:'contract',l:'Contract Out',p:75},{k:'following',l:'Closed Still Following Up',p:25},{k:'won',l:'Closed Won',p:100},{k:'updated',l:'Updated Contract',p:100},{k:'lost',l:'Closed Lost',p:0}];
-const CLOSED = ['won','updated','lost'];
+const CLOSED = ['won','updated','lost','following'];   // Closed Still Following Up counts as closed (Nov 17)
 const LEGACY_STAGE = {qualified:'quoted', negotiation:'quoted'};
 const OPP_TYPES = ['Shredding Purge','Ongoing Purge','Recurring Shredding','Shred Event','Medical Waste','Sharps Only','Hard Drive Destruction','Product Destruction','Drop Off','Other'];
 // older opportunity names read as today's ("Scheduled Shredding" is Recurring Shredding); Clean up imported data renames them for good
@@ -2852,7 +2854,7 @@ function lookModal(){
   const cur = LOOK.accent || '';
   openModal('Appearance', `<p class="sub" style="margin-bottom:12px">Just for you. Changes show right away and follow your login to any device.</p>
     <div class="lookgrid">
-      <div class="f"><span>Version</span>${simpleSeg()}<small class="sub">Simple shows fewer menu items, a do-this-next list on Today, bigger buttons and a short new-opportunity form. Everything is still there under More.</small></div>
+      <div class="f"><span>Version</span>${simpleSeg()}<small class="sub">Simple shows fewer menu items, a do-this-next list on Today and bigger buttons. Everything is still there under More.</small></div>
       ${lookPickHtml()}
       ${(LOOK.look || 'default') === 'default' ? F('Mode', seg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']])) : `<p class="sub" style="margin:-4px 0 0">Each look has its own colors, so Mode and Accent color apply to the Original look. Night Shift is the dark one.</p>`}
       ${accentHtml()}
@@ -2941,6 +2943,8 @@ function preserve(fn){
 // update an element to match new HTML by changing only what differs (keeps hover, focus and scroll steady)
 // ---------- Theo: Jason's pixel tabby (brown, male, 2, small for his age). Only Jason sees him. ----------
 // Health: half from what Jason logged today (6 fills it; before 11am yesterday still counts), half from his overdue reminders.
+// tools only Jason ever sees (his sign-in email, never a display name)
+const isJason = () => live ? /^jason@allpointsprotects\.com$/i.test(ME.email || '') : ME.id === 'jason';
 const theoMe = () => live ? /^jason@allpointsprotects\.com$/i.test(ME.email || '') : ME.id === 'jason';   // Theo is Jason's alone: his sign-in email, not a display name anyone could match
 const theoOn = () => theoMe() && prefGet('theo', true);   // he can be hidden from Settings → You
 const TH_PAL = {o: '#2A1E16', b: '#926C48', d: '#4E3624', l: '#DEC8A4', k: '#140E0A', n: '#D68080', p: '#E29696'};
@@ -3264,19 +3268,11 @@ function weekPanel(){
   const rows = L('deals').filter(d => isDate(d.serviceDate) && d.serviceDate >= t && d.serviceDate <= end && d.stage !== 'lost' && isReal(d) && mine(d))
     .sort((a, b) => a.serviceDate.localeCompare(b.serviceDate) || cname(a.companyId).localeCompare(cname(b.companyId)));
   const day = s => { const n = dayDiff(t, s); return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : parseYmd(s).toLocaleDateString('en-US', {weekday: 'long'}); };
-  return `<section class="panel"><div class="ph"><h3>Services this week</h3><span class="sub">${rows.length ? `${rows.length} in the next 7 days` : 'next 7 days'}</span></div>
+  return `<section class="panel"><div class="ph"><h3>Services this week</h3><span class="sub">${ui.mine && rows.length ? `${rows.length} in the next 7 days` : 'next 7 days'}</span></div>
     ${rows.length ? `<ul class="svcw">${rows.slice(0, 40).map(d => `<li class="${d.serviceDate === t ? 'is-today' : ''}"><div class="sd"><b>${day(d.serviceDate)}</b><small>${fmtDate(d.serviceDate)}</small></div><div class="sv"><button class="lnk" data-act="oppPage" data-id="${d.id}">${esc(cname(d.companyId) || nameOf('deals', d.id))}</button><small>${[esc(oppType(d)), d.shredAmount ? esc(d.shredAmount) : '', ui.mine ? '' : esc(pname(d.ownerId))].filter(Boolean).join(' · ')}</small></div>${isWon(d) ? '' : stageChip(d)}</li>`).join('')}</ul>` : `<p class="empty-s">Nothing on the schedule for the next 7 days. Opportunities with a service date show up here.</p>`}</section>`;
 }
 V.today = () => asToday(() => simpleOn() ? simpleToday() : todayBody());
 // Simple's Today: one numbered list of what to do, each with one big button
-// Simple: a new opportunity asks for the account, what it is, and the price; everything else waits under More details
-function smShortForm(id){
-  if (!simpleOn() || id) return; const g = $('#mform .grid3c'); if (!g || g.dataset.sm) return; g.dataset.sm = '1';
-  const keep = new Set(['companyId', 'type', 'priceQuoted', 'shredAmount', 'serviceDate', 'newCompany']);
-  for (const el of [...g.children]) { const nm = el.querySelector('[name]'); if (el.id === 'dfNewCo' || (nm && keep.has(nm.name))) continue; el.classList.add('sm-hide'); }
-  g.insertAdjacentHTML('beforeend', `<button type="button" class="lnk full sm-morebtn" data-act="smFormMore">+ More details (stage, service, contact, lead source, notes)</button>`);
-  $('#mform').classList.add('sm-short');
-}
 // Simple's account page: the next thing to do for this account, in plain words, with its button
 function smNextBox(coId){
   const k = L('tasks').filter(x => !x.done && x.companyId === coId && isDate(x.due)).sort((a, b) => a.due.localeCompare(b.due))[0];
@@ -3303,9 +3299,9 @@ function simpleToday(){
       main + (canWrite ? `<button type="button" class="btn${main ? '' : ' pri'}" data-act="taskDone" data-id="${k.id}">${ic('check')}Done</button><button type="button" class="btn ghost" data-act="smLater" data-id="${k.id}">Later</button>` : ''), !num, k.companyId ? lastMailHtml(k.companyId) : ''); };
   const attRow = i => row(esc(i.title), `${esc(i.kind)} · ${i.sub}`, i.acts.map((a, x) => `<button class="btn ${x === 0 ? 'pri' : ''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join(''), !num);
   const list = [...rems.map(remRow), ...att.map(attRow), ...(hd ? [row(`Ask ${hd} customer${hd === 1 ? '' : 's'} how we did`, 'Their service is done. A quick review request goes a long way.', `<button class="btn pri" data-act="go" data-v="hdwd">${ic('star')}Send review requests</button>`, !num)] : [])];
-  return backupNudge() + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}.`, n ? `${n} thing${n === 1 ? '' : 's'} to do today` : 'Nothing due. Nice work.', canWrite ? `<button class="btn pri" data-act="newDeal">${ic('plus')}New opportunity</button>` : '')
+  return backupNudge() + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}.`, !ui.mine ? "What's due for the team today" : n ? `${n} thing${n === 1 ? '' : 's'} to do today` : 'Nothing due. Nice work.', canWrite ? `<button class="btn pri" data-act="newDeal">${ic('plus')}New opportunity</button>` : '')
     + `<div class="sm-today"><div class="sm-main">${list.length ? `<ol class="sm-list">${list.join('')}</ol>` : `<section class="panel sm-done"><b>You're all caught up.</b><p class="sub">New follow-ups, replies and review requests show up here when they're due.</p></section>`}
-      <p class="sub sm-next">${tomorrow ? `Coming up tomorrow: ${tomorrow} follow-up${tomorrow === 1 ? '' : 's'}.` : ''} <button class="lnk" data-act="go" data-v="reminders">See all reminders</button></p></div>
+      <p class="sub sm-next">${ui.mine && tomorrow ? `Coming up tomorrow: ${tomorrow} follow-up${tomorrow === 1 ? '' : 's'}.` : ''} <button class="lnk" data-act="go" data-v="reminders">See all reminders</button></p></div>
       <div class="sm-side">${weekPanel()}</div></div>`;
 }
 function todayBody(){
@@ -3331,12 +3327,12 @@ function todayBody(){
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your data over from your current CRM in Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + rstat + `<div class="cols2">
     <div class="stack">${weekPanel()}${readyPanel()}
-    <section class="panel"><div class="ph"><h3>Needs attention</h3><span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span></div>
+    <section class="panel"><div class="ph"><h3>Needs attention</h3>${ui.mine || !items.length ? `<span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span>` : ''}</div>
       ${items.length ? `<ul class="attl">${items.slice(0,25).map(i => `<li class="att ${i.sev}"><div class="att-main"><span class="att-kind">${esc(i.kind)}</span><b>${esc(i.title)}</b><span class="att-sub">${i.sub}</span></div><div class="att-act">${i.acts.map(a => `<button class="btn sm ${a.pri?'pri':''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join('')}</div></li>`).join('')}</ul>`
       : `<p class="empty-s">Nothing needs you right now. Quotes waiting on an answer, journey calls, replies and contracts coming up for renewal show up here. Past-due reminders are in Reminders.</p>`}
     </section></div>
     <div class="stack">
-      <section class="panel"><div class="ph"><h3>${route ? "Today's route" : 'Reminders'}</h3><button class="lnk" data-act="go" data-v="reminders">${tasks.length} open · see all</button></div>
+      <section class="panel"><div class="ph"><h3>${route ? "Today's route" : 'Reminders'}</h3><button class="lnk" data-act="go" data-v="reminders">${ui.mine ? tasks.length + ' open · see all' : 'See all'}</button></div>
         ${canWrite ? `<div><button class="btn sm pri" data-act="newTask">${ic('bell')}Set a reminder</button></div>` : ''}
         ${tasks.length ? `<ul class="tasks${route ? ' route' : ''}">${tasks.slice(0,14).map(taskRow).join('')}</ul>` : `<p class="empty-s">No open reminders.</p>`}
       </section>
@@ -3415,8 +3411,9 @@ function remBody(){
   else if (!list.length) body = `<p class="empty-s">${ui.q ? 'No reminders match.' : show === 'open' ? 'Nothing open. You are all caught up.' : 'No completed reminders yet.'}</p>`;
   else if (show === 'done') body = `<ul class="rems">${list.sort((a,b) => (b.doneAt||0) - (a.doneAt||0)).slice(0, 200).map(row).join('')}</ul>`;
   else { list.sort((a,b) => ord[grp(a)] - ord[grp(b)] || (a.due||'').localeCompare(b.due||''));
-    body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => grp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${r.filter(k => !k.done).length || ''}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
-  return head('Reminders', `${ui.mine ? 'Yours' : 'Whole team'}: ${n('past')} past due · ${n('today')} today · ${n('future')} upcoming`,
+    body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => grp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${ui.mine ? r.filter(k => !k.done).length || '' : ''}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
+  return head('Reminders', ui.mine ? `${n('past')} past due · ${n('today')} today · ${n('future')} upcoming` : '',   // counts only on Mine
+   
     searchBox('Search reminders') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + remSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
 }
 
@@ -3426,7 +3423,7 @@ V.pipeline = () => {
   if (ui.stick && ui.stick.ctx !== oppCtx()) ui.stick = null;   // rows you just changed stay put until you switch lists or pages
   const stuck = id => !!(ui.stick && ui.stick.ids.has(id));
   const all = L('deals').filter(mine).filter(d => fltPass('deals', d));
-  const rows0 = fzRun(() => all.filter(d => stuck(d.id) || (show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? d.stage === 'lost' : true))
+  const rows0 = fzRun(() => all.filter(d => stuck(d.id) || (show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? (d.stage === 'lost' || d.stage === 'following') : true))
     .filter(d => matchR(ui.q, d, 'l', () => HAYF.deals.l(d), 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
   let rows = rows0;
@@ -3437,15 +3434,15 @@ V.pipeline = () => {
   ui.lastRows = {...(ui.lastRows || {}), deals: rows};
   const oppView = ui.oppView || prefGet('oppView', '') || (LOOK.look === 'dispatch' ? 'board' : 'list');
   const vseg = `<div class="segs" role="group" aria-label="View"><button class="${oppView === 'list' ? 'on' : ''}" data-act="oppView" data-v="list">List</button><button class="${oppView === 'board' ? 'on' : ''}" data-act="oppView" data-v="board">Board</button></div>`;
-  const openRows = all.filter(d => isOpen(d) && isReal(d)); const sb = ['lead', 'quoted', 'contract', 'following'].map(k => [k, openRows.filter(d => stage(d).k === k).length]).filter(x => x[1]);
-  const sbar = sb.length ? `<div class="stagebar" aria-hidden="true">${sb.map(([k, n]) => `<span style="flex:${n};background:${({lead: '#6EB1F0', quoted: '#EDB25A', contract: '#B39DF2', following: '#C9B6F5'})[k]}">${esc(STAGES.find(x => x.k === k).l)} ${n}</span>`).join('')}</div>` : '';
+  const openRows = all.filter(d => isOpen(d) && isReal(d)); const sb = ['lead', 'quoted', 'contract'].map(k => [k, openRows.filter(d => stage(d).k === k).length]).filter(x => x[1]);
+  const sbar = ui.mine && sb.length ? `<div class="stagebar" aria-hidden="true">${sb.map(([k, n]) => `<span style="flex:${n};background:${({lead: '#6EB1F0', quoted: '#EDB25A', contract: '#B39DF2', following: '#C9B6F5'})[k]}">${esc(STAGES.find(x => x.k === k).l)} ${n}</span>`).join('')}</div>` : '';
   if (all.length && oppView === 'board') {
-    const cols = show === 'open' ? ['lead', 'quoted', 'contract', 'following'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['lost'] : STAGES.map(x => x.k);
+    const cols = show === 'open' ? ['lead', 'quoted', 'contract'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['following', 'lost'] : STAGES.map(x => x.k);
     const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const real = ds.filter(isReal); const tot = real.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${real.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
-    return head('Opportunities', `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal')) + sbar
+    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
       + (side ? `<div class="oppsplit"><div class="oppsplit-l">${board}</div>${oppSide(side)}</div>` : board);
   }
-  return head('Opportunities', fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
   + sbar + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -3658,7 +3655,7 @@ V.companies = () => {
   const rows = (() => { const list = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies'))); return !ui.q.trim() ? list.sort(byName) : rankSort(list, ui.q, c => c.name, acctFirst(ui.q)); })();
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
-  return head('Accounts', fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
+  return head('Accounts', !ui.mine ? '' : fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import from your current CRM in Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
@@ -3673,7 +3670,7 @@ V.contacts = () => {
   const rows = !ui.q.trim() ? rows0.map(c => [c, named(c) + pname_(c)]).sort((a, b) => COLL.compare(a[1], b[1])).map(x => x[0]) : rankSort(rows0, ui.q, pname_, null, (a, b) => named(a) - named(b));
   const total = Object.keys(S.contacts).length;
   ui.lastRows = {...(ui.lastRows || {}), contacts: rows};
-  return head('Contacts', fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
+  return head('Contacts', !ui.mine ? '' : fltActive('contacts').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} contacts` : `${total.toLocaleString()} contact${total===1?'':'s'}`, searchBox('Search contacts') + fltBtn('contacts') + savedSel('contacts') + mineSeg() + dlBtn('contacts') + addBtn('Contact','newContact'))
   + (!total ? `<section class="panel">${emptyState('No contacts yet', 'Contacts are the people you deal with at each account: office managers, compliance officers, owners.', `<button class="btn pri" data-act="newContact">${ic('plus')}Add a contact</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Name</th><th>Account</th><th>Email</th><th>Phone</th></tr></thead><tbody>${pg('contacts', rows).map(c => `<tr data-act="open" data-col="contacts" data-id="${c.id}"><td><b>${esc(pname_(c))}</b><span class="t2">${esc(c.title||'')}</span></td><td>${link('companies', c.companyId) || '—'}</td><td>${ctMailLink(c) || '—'}</td><td class="num">${esc(phonePretty(c.phone||c.mobile||'—'))}</td></tr>`).join('') || `<tr><td colspan="4" class="sub">No contacts match.</td></tr>`}</tbody></table></div>${pgFoot('contacts', rows.length)}`);
 };
@@ -3681,14 +3678,14 @@ V.contacts = () => {
 V.quotes = () => {
   const rows = L('quotes').filter(mine).filter(q => match(ui.q, q.number, qWho(q), q.status)).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
   const open = rows.filter(q => q.status === 'sent');
-  return head('Quotes', `${open.length} awaiting an answer · ${money(sum(open, qTotal))}`, searchBox('Search quotes') + mineSeg() + addBtn('Quote','newQuote'))
+  return head('Quotes', ui.mine ? `${open.length} awaiting an answer · ${money(sum(open, qTotal))}` : '', searchBox('Search quotes') + mineSeg() + addBtn('Quote','newQuote'))
   + (!rows.length && !ui.q ? `<section class="panel">${emptyState('No quotes yet', 'Build a quote with line items, download it to send, and track it until the customer accepts. Accepting a quote linked to an opportunity marks it won.', `<button class="btn pri" data-act="newQuote">${ic('plus')}New quote</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Quote</th><th>Account</th><th>Status</th><th class="r">Total</th><th>Created</th><th>Valid until</th></tr></thead><tbody>${rows.map(q => `<tr data-act="editQuote" data-id="${q.id}"><td class="mono">${esc(q.number)}</td><td>${q.companyId ? link('companies', q.companyId) || '—' : `${esc(qWho(q))} <span class="chip">One-off</span>`}${q.dealId ? `<span class="t2">${esc(nameOf('deals', q.dealId))}</span>` : ''}</td><td>${qChip(q)}</td><td class="r num">${money2(qTotal(q))}</td><td>${q.createdAt ? fmtDate(ymd(new Date(q.createdAt))) : '—'}</td><td>${q.status==='sent' || q.status==='draft' ? dueChip(q.validUntil) : fmtDate(q.validUntil)}</td></tr>`).join('') || `<tr><td colspan="6" class="sub">No quotes match.</td></tr>`}</tbody></table></div>`);
 };
 
 V.contracts = () => {
   const rows = L('contracts').filter(mine).filter(c => match(ui.q, c.title, c.note, cname(c.companyId), ...(c.files || []).map(f => f.name))).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  return head('Contracts', `${rows.length} contract${rows.length === 1 ? '' : 's'}`, searchBox('Search contracts') + mineSeg() + addBtn('Contract','newContract'))
+  return head('Contracts', ui.mine ? `${rows.length} contract${rows.length === 1 ? '' : 's'}` : '', searchBox('Search contracts') + mineSeg() + addBtn('Contract','newContract'))
   + (!rows.length && !ui.q ? `<section class="panel">${emptyState('No contracts yet', 'Attach a signed agreement to an account and save it as a contract. It shows up here and in the account’s activity.', `<button class="btn pri" data-act="newContract">${ic('plus')}Add a contract</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Account</th><th>Contract</th><th>Files</th><th>Added</th><th>By</th></tr></thead><tbody>${rows.map(c => `<tr data-act="editContract" data-id="${c.id}"><td>${link('companies', c.companyId) || '—'}</td><td><b>${esc(c.title || 'Contract')}</b>${c.note && String(c.note).split('\n')[0].slice(0, 120) !== c.title ? `<span class="t2">${esc(String(c.note).split('\n')[0].slice(0, 80))}</span>` : c.note ? '' : isDate(c.end) ? `<span class="t2">${fmtDate(c.start)} – ${fmtDate(c.end)}</span>` : ''}</td><td>${fileChips(c.files) || '—'}</td><td class="num">${c.createdAt ? fmtDate(ymd(new Date(c.createdAt))) : '—'}</td><td>${esc(nm(c.addedBy || c.ownerId)) || '—'}</td></tr>`).join('') || `<tr><td colspan="5" class="sub">No contracts match.</td></tr>`}</tbody></table></div>`);
 };
@@ -4450,7 +4447,6 @@ function contactForm(id, pre={}){
     }, {foot: pre.flow ? `<button type="button" class="btn ghost" data-act="flowSkip" data-co="${esc(pre.co)}" data-coname="${esc(pre.coName||'')}" style="margin-right:auto">Skip to opportunity</button>` : ''});
 }
 function dealForm(id, pre={}){
-  setTimeout(() => smShortForm(id), 0);
   const myCall = INITIAL_CALL.find(n => norm(n) === norm(String(ME.name || '').split(' ')[0])) || '';
   const d = id ? S.deals[id] : {ownerId: ME.id, companyId: pre.co, contactId: pre.ct, stage: 'lead', initialCall: myCall};
   const withCur = (list, v) => v && !list.includes(v) ? [v, ...list] : list;
@@ -4717,6 +4713,38 @@ function quoteForm(id, pre={}){
       } else toast(id ? 'Quote saved' : 'Quote created');
       return true;
     }, {wide: true, foot: id ? `${canWrite ? `<button type="button" class="btn ghost" data-act="delQuote" data-id="${id}">${ic('trash')}Delete</button>` : ''}<button type="button" class="btn" data-act="dlQuote" data-id="${id}" style="margin-right:auto">${ic('down')}Download</button>` : ''});
+}
+// ---------- opportunity cleanup (Jason only): close out open opportunities nobody has touched in a while ----------
+const cleanupBtn = () => isJason() && canWrite ? `<button class="btn" data-act="oppCleanup">${ic('check')}Clean up</button>` : '';
+function cuRows(){
+  const days = ui.cuDays || 90, cut = Date.now() - days * 864e5, skipRem = ui.cuSkipRem !== false;
+  const remCo = new Set(L('tasks').filter(k => !k.done && k.companyId).map(k => k.companyId));
+  return L('deals').filter(d => isOpen(d) && isReal(d)).map(d => ({d, last: Math.max(d.createdAt || 0, X.lastAct[d.id] || 0, (d.companyId && X.lastAct[d.companyId]) || 0)}))
+    .filter(r => r.last < cut && !(skipRem && remCo.has(r.d.companyId))).sort((a, b) => a.last - b.last);
+}
+function cleanupModal(){
+  if (!isJason() || !canWrite) return;
+  const days = ui.cuDays || 90, to = ui.cuTo || 'lost', why = ui.cuWhy || 'Unresponsive', rows = cuRows();
+  const seg = (k, opts, cur) => `<div class="segs" role="group">${opts.map(([v, l]) => `<button type="button" class="${String(cur) === String(v) ? 'on' : ''}" data-act="cuSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  openModal('Clean up opportunities', `<div class="cu">
+    <p class="sub" style="margin:0">Open opportunities, everyone's, with no call, email or note on the opportunity or its account in the last ${days} days. Everything listed is checked: uncheck any you want to keep open. Only you can see this.</p>
+    <div class="cu-opts">
+      <div class="f"><span>Nothing in the last</span>${seg('cuDays', [[30, '30 days'], [60, '60 days'], [90, '90 days'], [180, '6 months'], [365, '1 year']], days)}</div>
+      <div class="f"><span>Close them as</span>${seg('cuTo', [['lost', 'Closed Lost'], ['following', 'Closed Still Following Up']], to)}</div>
+      ${to === 'lost' ? `<label class="f"><span>Reason for loss</span>${sel('cuWhy', LOSS_REASONS.map(x => [x, x]), why, 'data-change="cuWhy"')}</label>` : ''}
+      <label class="f inline"><input type="checkbox" data-change="cuSkip" ${ui.cuSkipRem !== false ? 'checked' : ''}><span style="font-size:.9rem;color:var(--fg)">Leave out accounts that still have an open reminder</span></label>
+    </div>
+    ${rows.length ? `<div class="cu-list"><table><thead><tr><th><input type="checkbox" data-change="cuAll" checked aria-label="Select all"></th><th>Account</th><th>Opportunity</th><th>Stage</th><th>Owner</th><th>Last touched</th></tr></thead><tbody>
+      ${rows.slice(0, 1000).map(({d, last}) => `<tr><td><input type="checkbox" data-cu="${d.id}" checked aria-label="Close ${esc(cname(d.companyId))}"></td><td>${esc(cname(d.companyId) || '—')}</td><td>${esc(oppTypeName(d.name || d.type) || 'Opportunity')}</td><td>${esc(stage(d).l)}</td><td>${esc(pname(d.ownerId) || '—')}</td><td>${last ? fmtDate(ymd(new Date(last))) : 'Never'}</td></tr>`).join('')}</tbody></table></div>`
+      : `<p class="empty-s">Nothing open has gone ${days} days without a touch. Try a shorter time.</p>`}
+  </div>`, rows.length ? `Close ${rows.length} opportunit${rows.length === 1 ? 'y' : 'ies'}` : null, rows.length ? async () => {
+    const ids = [...document.querySelectorAll('#mform input[data-cu]:checked')].map(x => x.dataset.cu); if (!ids.length) { toast('Nothing checked.', 'bad'); return false; }
+    const k = ui.cuTo || 'lost', reason = ui.cuWhy || 'Unresponsive', at = today(), prev = {};
+    for (const id of ids) { const d = S.deals[id]; if (d) prev[id] = {stage: d.stage || 'lead', closedAt: d.closedAt || null, closedBy: d.closedBy || null, lostReason: d.lostReason || '', cleanedAt: d.cleanedAt || null}; }
+    let n = 0; for (let i = 0; i < ids.length; i += 8) { const r = await Promise.all(ids.slice(i, i + 8).map(id => patch('deals', id, {stage: k, closedAt: at, closedBy: ME.id || '', lostReason: k === 'lost' ? reason : '', cleanedAt: Date.now()}))); n += r.filter(Boolean).length; }
+    toast(`Closed ${n} opportunit${n === 1 ? 'y' : 'ies'} as ${STAGES.find(x => x.k === k).l}`, '', {label: 'Undo', fn: async () => { for (const [id, p] of Object.entries(prev)) await patch('deals', id, p); toast('Put back'); }});
+  } : null, {wide: true, cls: 'cu-sheet'});
+  const b = $('#mform button[type=submit]'); if (b) { b.classList.add('danger'); }
 }
 function changeStage(id, k){
   const d = S.deals[id]; if (!d) return;
@@ -7047,7 +7075,7 @@ V.hdwd = () => {
   const tab = ui.hdTab || 'send', all = hdwdBuild().filter(hdwdMine).filter(x => match(ui.q, x.co.name, x.ct ? pname_(S.contacts[x.ct]) : '', x.zip, x.tpl?.name || ''));
   const due = all.filter(x => !x.done && !x.asked && x.due <= today()), soon = all.filter(x => !x.done && !x.asked && x.due > today());
   const hist = all.filter(x => x.done || x.asked).sort((a, b) => b.due.localeCompare(a.due)), tpls = hdwdTpls();
-  const segs = `<div class="segs" role="group" aria-label="Show">${[['send', `To send${due.length ? ' ' + due.length : ''}`], ['sent', 'Sent & skipped'], ['templates', `Templates${tpls.length ? ' ' + tpls.length : ''}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="hdTab" data-t="${k}">${l}</button>`).join('')}</div>`;
+  const segs = `<div class="segs" role="group" aria-label="Show">${[['send', `To send${ui.mine && due.length ? ' ' + due.length : ''}`], ['sent', 'Sent & skipped'], ['templates', `Templates${tpls.length ? ' ' + tpls.length : ''}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="hdTab" data-t="${k}">${l}</button>`).join('')}</div>`;
   const pickSel = x => canWrite && tpls.length && !x.done ? `<select class="hdpick" data-change="hdPick" data-id="${x.d.id}" aria-label="Region for ${esc(x.co.name)}"><option value="">${x.tpl ? 'Change region…' : 'Pick a region…'}</option>${tpls.map(t => `<option value="${t.id}"${x.picked && x.tpl && x.tpl.id === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}${x.picked ? '<option value="-">Go by the ZIP again</option>' : ''}</select>` : '';
   const tplCell = x => x.tpl ? `${esc(x.tpl.name)}${x.picked ? ' <span class="sub small">(picked)</span>' : ''}${x.tpl.link ? '' : ' <span class="chip warn">no review link</span>'}${x.picked ? '<div>' + pickSel(x) + '</div>' : ''}`
     : `<span class="chip warn">${x.zip ? "ZIP isn't in a region" : 'No ZIP on the account'}</span><div>${pickSel(x)}</div>`;
@@ -7119,9 +7147,9 @@ V.journeys = () => {
     .filter(e => match(ui.q, cname(e.companyId), nameOf('contacts', e.contactId), jName(e.journeyId)))
     .sort((a, b) => ((nextStep(a)?.due) || '9999').localeCompare((nextStep(b)?.due) || '9999') || (b.startedAt || 0) - (a.startedAt || 0));
   const counts = {active: all.filter(e => e.status === 'active').length, paused: all.filter(e => e.status === 'paused').length};
-  const segs = `<div class="segs" role="group" aria-label="Show">${[['active', `Active${counts.active ? ' ' + counts.active : ''}`], ['paused', `Paused${counts.paused ? ' ' + counts.paused : ''}`], ['finished', 'Finished'], ['all', 'All']].map(([k, l]) => `<button class="${show === k ? 'on' : ''}" data-act="jShow" data-s="${k}">${l}</button>`).join('')}</div>`;
+  const segs = `<div class="segs" role="group" aria-label="Show">${[['active', `Active${ui.mine && counts.active ? ' ' + counts.active : ''}`], ['paused', `Paused${ui.mine && counts.paused ? ' ' + counts.paused : ''}`], ['finished', 'Finished'], ['all', 'All']].map(([k, l]) => `<button class="${show === k ? 'on' : ''}" data-act="jShow" data-s="${k}">${l}</button>`).join('')}</div>`;
   const lib = journeys();
-  return head('Journeys', `${counts.active} active · ${due.length} email${due.length === 1 ? '' : 's'} due`, searchBox('Search journeys') + segs + mineSeg() + (canWrite ? `<button class="btn" data-act="jLibrary">Manage journeys</button><button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>` : ''))
+  return head('Journeys', ui.mine ? `${counts.active} active · ${due.length} email${due.length === 1 ? '' : 's'} due` : '', searchBox('Search journeys') + segs + mineSeg() + (canWrite ? `<button class="btn" data-act="jLibrary">Manage journeys</button><button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>` : ''))
   + `<div class="banner" style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">${autoBanner()}${MCP && canWrite ? '<button class="btn sm" data-act="jCheck">Check for replies</button>' : ''}</div>`
   + (due.length ? `<section class="panel"><div class="ph"><h3>Due now</h3><span class="chip warn">${due.length}</span></div><ul class="attl">${due.map(({e, s}) => { const st = eSteps(e)[s.step]; const call = isCallStep(st); const auto = !call && eMode(e) === 'auto'; const errNow = auto && e.lastSendError && e.lastSendError.step === s.step ? e.lastSendError.msg : ''; return `<li class="att ${errNow || s.due < today() ? 'bad' : 'warn'}"><div class="att-main"><span class="att-kind">${esc(jName(e.journeyId))} · ${call ? 'call' : 'email'} · step ${s.step + 1} of ${(e.schedule || []).length} · ${s.due < today() ? 'was due ' + fmtDate(s.due) : 'due today'}${auto ? ` · <b style="color:var(--accent)">${errNow ? 'held for you' : 'sends automatically 8–9 AM'}</b>` : ''}</span><b>${esc(nameOf('contacts', e.contactId))} · ${esc(cname(e.companyId))}</b><span class="att-sub">${esc(st ? (call ? fillTemplate(st.note || 'Call reminder', mergeData({companyId: e.companyId, contactId: e.contactId, dealId: e.dealId})) : st.subject) : '')}</span>${errNow ? `<span class="att-sub" style="color:var(--bad)">${esc(errNow)}</span>` : ''}</div><div class="att-act">${canWrite ? `<button class="btn sm pri" data-act="jSend" data-id="${e.id}">${call ? 'Call &amp; log it' : auto ? 'Send it now' : 'Review & send'}</button>${auto ? `<button class="btn sm" data-act="jMode" data-id="${e.id}" data-m="approve">Ask me first</button>` : ''}<button class="btn sm" data-act="jSkip" data-id="${e.id}">Skip</button>` : ''}</div></li>`; }).join('')}</ul></section>` : '')
   + (!all.length ? `<section class="panel">${emptyState('No one is on a journey yet', 'Start a journey to follow up with a contact automatically. The Shredding Journey sends 4 follow-ups a week apart, and pauses as soon as they reply.', `<button class="btn pri" data-act="jStart">${ic('route')}Start a journey</button>`)}</section>`
@@ -7889,8 +7917,9 @@ const A = {
     ui.draftCtx = {dealId: k.dealId || '', remId: k.id};
     try { if (ct && S.contacts[ct]) draftModal('contacts', ct, sg ? 'tpl:' + sg.id : null); else draftModal('companies', k.companyId, sg ? 'tpl:' + sg.id : null); } finally { ui.draftCtx = null; } },
   smNavMore: () => { ui.smMore = !ui.smMore; render(); },
-  smFormMore: () => { const f = $('#mform'); if (f) f.classList.remove('sm-short'); $('#mform .sm-morebtn')?.remove(); },
   smLater: async d => { const k = S.tasks[d.id]; if (!k) return; const prev = k.due, nd = addBiz(today(), 1); if (await patch('tasks', d.id, {due: nd})) toast(`Moved to ${fmtDate(nd)}`, '', {label: 'Undo', fn: () => patch('tasks', d.id, {due: prev})}); },
+  oppCleanup: () => cleanupModal(),
+  cuSet: d => { if (!isJason()) return; const sb0 = $('#mform .sb'), t0 = sb0 ? sb0.scrollTop : 0; ui[d.k] = d.k === 'cuDays' ? +d.v : d.v; cleanupModal(); const nb = $('#mform .sb'); if (nb) nb.scrollTop = t0; },
   remWho: d => { ui.remAll = d.m === '1'; prefSet('remAll', ui.remAll); render(); },
   todayWho: d => { ui.todayAll = d.m === '1'; prefSet('todayAll', ui.todayAll); render(); },
   taskDone: async d => { const k = S.tasks[d.id]; if (!k || !canWrite) return; const done = !k.done;
@@ -7999,6 +8028,9 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  cuWhy: el => { ui.cuWhy = el.value; },
+  cuSkip: el => { ui.cuSkipRem = el.checked; cleanupModal(); },
+  cuAll: el => { document.querySelectorAll('#mform input[data-cu]').forEach(x => { x.checked = el.checked; }); },
   snooze: async el => { const id = el.dataset.id, k = S.tasks[id], v = el.value; el.value = ''; if (!k || !v || !canWrite) return; if (v === 'pick') { A.editTask({id}); return; }
     const prev = k.due; if (await patch('tasks', id, {due: v})) toast(`Snoozed to ${fmtDate(v)}`, '', {label: 'Undo', fn: () => patch('tasks', id, {due: prev})}); },
   ctEmailChk: el => { const n = document.getElementById('ctEmailNote'); if (!n) return; const hits = emailHits(el.value, el.dataset.id || null);
