@@ -637,6 +637,7 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .snz{appearance:none;-webkit-appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:.78rem;font-weight:600;border-radius:6px;padding:4px 22px 4px 9px;cursor:pointer;width:92px;flex:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 12px) 50%,calc(100% - 8px) 50%;background-size:4px 4px;background-repeat:no-repeat}
 .snz:hover,.snz:focus-visible{color:var(--fg);border-color:var(--muted)}
 .rem-x{display:flex;align-items:center;gap:6px}
+.sortsel{width:auto;font:inherit;font-size:.88rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);cursor:pointer}
 .lastmail{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:0;background:none;padding:2px 0;margin-top:3px;font:inherit;font-size:.84rem;color:var(--muted);cursor:pointer;text-align:left}
 .lastmail span{min-width:0;overflow-wrap:anywhere}.lastmail{align-items:flex-start}.lastmail .ic{margin-top:3px}.lastmail b{color:var(--fg);font-weight:600}
 .lastmail .ic{flex:none;width:14px;height:14px}.sm-b .lastmail b{font-size:inherit}.lastmail .replied{font-style:normal;font-weight:700;color:var(--good)}.lastmail:hover span{text-decoration:underline}.lastmail.none{cursor:default;font-style:italic}
@@ -2051,6 +2052,25 @@ const L = col => { const src = S[col], raw = PX.get(src) || src, v = CV.get(raw)
   return c.arr.slice(); };
 const COLL = new Intl.Collator(undefined, {sensitivity: 'base', numeric: true});   // much faster than localeCompare on big lists
 const byName = (a,b) => COLL.compare(a.name||'', b.name||'');
+// ---------- "Sort by" on Opportunities, Accounts and Reminders (remembered per person) ----------
+const SORTS = {
+  deals: [['default', 'Default'], ['new', 'Newest first'], ['old', 'Oldest first'], ['active', 'Recently active'], ['svc', 'Service date'], ['az', 'Account A–Z']],
+  companies: [['az', 'A–Z'], ['new', 'Newest first'], ['old', 'Oldest first'], ['active', 'Recently active']],
+  tasks: [['due', 'Due date'], ['new', 'Newest added'], ['old', 'Oldest added']]
+};
+const sortOf = col => ui['sort_' + col] ?? (ui['sort_' + col] = prefGet('sort_' + col, SORTS[col][0][0]));
+const sortSel = col => `<select class="sortsel" data-change="sortSet" data-col="${col}" aria-label="Sort by" title="Sort by">${SORTS[col].map(([v, l]) => `<option value="${v}" ${sortOf(col) === v ? 'selected' : ''}>Sort: ${l}</option>`).join('')}</select>`;
+const sCreated = r => r.createdAt || 0;
+const sActive = r => Math.max(X.lastAct[r.id] || 0, (r.companyId && X.lastAct[r.companyId]) || 0, r.updatedAt || 0, sCreated(r));
+function sortRows(col, rows){
+  const k = sortOf(col);
+  if (k === 'new') return rows.sort((a, b) => sCreated(b) - sCreated(a));
+  if (k === 'old') return rows.sort((a, b) => sCreated(a) - sCreated(b));
+  if (k === 'active') return rows.sort((a, b) => sActive(b) - sActive(a));
+  if (k === 'svc') return rows.sort((a, b) => (a.serviceDate || '9999').localeCompare(b.serviceDate || '9999'));
+  if (k === 'az') return col === 'companies' ? rows.sort(byName) : rows.sort((a, b) => COLL.compare(cname(a.companyId) || '', cname(b.companyId) || ''));
+  return rows;
+}
 // sort by a text key worked out once per record (not twice per comparison)
 const sortByKey = (list, key) => { const k = new Map(list.map(r => [r, key(r)])); return list.sort((a, b) => COLL.compare(k.get(a), k.get(b))); };
 
@@ -3415,11 +3435,11 @@ function remBody(){
   if (!all.length) body = `<section class="panel">${emptyState('No reminders yet', 'Set a reminder on any account so a follow-up never slips. Past-due reminders show in red, today\'s in yellow and upcoming ones in green.', `<button class="btn pri" data-act="newTask">${ic('bell')}Set a reminder</button>`)}</section>`;
   else if (!list.length) body = `<p class="empty-s">${ui.q ? 'No reminders match.' : show === 'open' ? 'Nothing open. You are all caught up.' : 'No completed reminders yet.'}</p>`;
   else if (show === 'done') body = `<ul class="rems">${list.sort((a,b) => (b.doneAt||0) - (a.doneAt||0)).slice(0, 200).map(row).join('')}</ul>`;
-  else { list.sort((a,b) => ord[grp(a)] - ord[grp(b)] || (a.due||'').localeCompare(b.due||''));
+  else { const so = sortOf('tasks'); list.sort((a,b) => ord[grp(a)] - ord[grp(b)] || (so === 'new' ? sCreated(b) - sCreated(a) : so === 'old' ? sCreated(a) - sCreated(b) : (a.due||'').localeCompare(b.due||'')));
     body = [['past','Past due'],['today','Today'],['future','Upcoming'],['none','No date']].map(([g, l]) => { const r = list.filter(k => grp(k) === g); return r.length ? `<div class="sec"><div class="sech"><h3>${l}<span>${ui.mine ? r.filter(k => !k.done).length || '' : ''}</span></h3></div><ul class="rems">${pg('rem_' + g, r).map(row).join('')}</ul>${pgFoot('rem_' + g, r.length)}</div>` : ''; }).join(''); }   // long groups show 100 at a time
   return head('Reminders', ui.mine ? `${n('past')} past due · ${n('today')} today · ${n('future')} upcoming` : '',   // counts only on Mine
    
-    searchBox('Search reminders') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + remSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
+    searchBox('Search reminders') + (show === 'open' ? sortSel('tasks') : '') + `<div class="segs" role="group" aria-label="Show"><button class="${show==='open'?'on':''}" data-act="remShow" data-s="open">Open</button><button class="${show==='done'?'on':''}" data-act="remShow" data-s="done">Done</button></div>` + remSeg() + (canWrite ? `<button class="btn pri" data-act="newTask">${ic('bell')}Reminder</button>` : '')) + body;
 }
 
 V.pipeline = () => {
@@ -3431,6 +3451,7 @@ V.pipeline = () => {
   const rows0 = fzRun(() => all.filter(d => stuck(d.id) || (show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? (d.stage === 'lost' || d.stage === 'following') : true))
     .filter(d => matchR(ui.q, d, 'l', () => HAYF.deals.l(d), 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
+  if (!ui.q.trim()) sortRows('deals', rows0);
   let rows = rows0;
   if (ui.stick) { const pos = new Map(ui.stick.order.map((id, i) => [id, i])); rows = rows0.slice().sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e9) - (pos.has(b.id) ? pos.get(b.id) : 1e9)); }   // keep the order you were looking at
   ui.oppOrder = rows.map(d => d.id);
@@ -3444,10 +3465,10 @@ V.pipeline = () => {
   if (all.length && oppView === 'board') {
     const cols = show === 'open' ? ['lead', 'quoted', 'contract'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['following', 'lost'] : STAGES.map(x => x.k);
     const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const real = ds.filter(isReal); const tot = real.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${real.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
-    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
+    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
       + (side ? `<div class="oppsplit"><div class="oppsplit-l">${board}</div>${oppSide(side)}</div>` : board);
   }
-  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
   + sbar + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -3657,10 +3678,10 @@ V.company = () => {
 };
 
 V.companies = () => {
-  const rows = (() => { const list = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies'))); return !ui.q.trim() ? list.sort(byName) : rankSort(list, ui.q, c => c.name, acctFirst(ui.q)); })();
+  const rows = (() => { const list = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies'))); return !ui.q.trim() ? sortRows('companies', list) : rankSort(list, ui.q, c => c.name, acctFirst(ui.q)); })();
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
-  return head('Accounts', !ui.mine ? '' : fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
+  return head('Accounts', !ui.mine ? '' : fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + sortSel('companies') + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import from your current CRM in Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
@@ -8084,6 +8105,7 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  sortSet: el => { ui['sort_' + el.dataset.col] = el.value; prefSet('sort_' + el.dataset.col, el.value); ui.stick = null; render(); },
   cuWhy: el => { ui.cuWhy = el.value; },
   cuSkip: el => { ui.cuSkipRem = el.checked; cleanupModal(); },
   cuAll: el => { document.querySelectorAll('#mform input[data-cu]').forEach(x => { x.checked = el.checked; }); },
