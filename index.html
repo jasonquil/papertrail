@@ -3314,7 +3314,7 @@ function viewHtml(){
   if (!booted || (live && !COLS.every(c => loaded[c]))) return banner + `<div class="loading">Loading your records…</div>`;
   if (ui.view !== 'pipeline') ui.stick = null;   // leaving Opportunities lets moved rows go where they belong
   const ft = FP_T[ui.view];
-  if (ft && fpOn() && !simpleOn()) return banner + `<div class="fp-layout">${fpPanel(ft)}<div class="fp-main">${V[ui.view]()}</div></div>`;
+  if (ft && fpOn()) return banner + `<div class="fp-layout">${fpPanel(ft)}<div class="fp-main">${V[ui.view]()}</div></div>`;
   return banner + V[ui.view]();
 }
 
@@ -3529,10 +3529,10 @@ V.pipeline = () => {
   if (all.length && oppView === 'board') {
     const cols = show === 'open' ? ['lead', 'quoted', 'contract'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['following', 'lost'] : STAGES.map(x => x.k);
     const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const real = ds.filter(isReal); const tot = real.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${real.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
-    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + (fpOn() && !simpleOn() ? '' : segs) + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
+    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + (fpOn() ? '' : segs) + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
       + (side ? `<div class="oppsplit"><div class="oppsplit-l">${board}</div>${oppSide(side)}</div>` : board);
   }
-  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + (fpOn() && !simpleOn() ? '' : segs) + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + (fpOn() ? '' : segs) + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
   + sbar + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -4422,7 +4422,7 @@ const NOUN = {companies: 'accounts', contacts: 'contacts', deals: 'opportunities
 const viewsFor = t => L('views').filter(v => v.t === t && (v.owner === ME.id || v.shared)).sort((a, b) => (a.owner === ME.id ? 0 : 1) - (b.owner === ME.id ? 0 : 1) || String(a.name).localeCompare(String(b.name)));
 const sameF = (a, b) => JSON.stringify(Object.entries(a || {}).sort()) === JSON.stringify(Object.entries(b || {}).sort());
 const viewOn = t => { const id = (ui.viewOn || {})[t]; const v = id && S.views[id]; return v && sameF(fltFresh(v.f), fltOf(t)) && (t !== 'deals' || !v.show || v.show === (ui.oppShow || 'open')) ? {...v, id} : null; };
-const savedSel = t => { if (fpOn() && !simpleOn()) return ''; const vs = viewsFor(t); const on = viewOn(t); const n = fltActive(t).length;
+const savedSel = t => { if (fpOn()) return ''; const vs = viewsFor(t); const on = viewOn(t); const n = fltActive(t).length;
   if (!vs.length && !n) return '';
   return `<select class="savedsel" data-change="viewPick" data-t="${t}" aria-label="Saved filters"><option value="">${on ? '' : 'Saved filters'}</option>${vs.map(v => `<option value="${v.id}" ${on && on.id === v.id ? 'selected' : ''}>${esc(v.name)}${v.owner !== ME.id ? ` (${esc(nm(v.owner) || 'shared')})` : v.shared ? ' (shared)' : ''}</option>`).join('')}${n ? `<option value="__save">＋ Save these filters…</option>` : ''}${vs.length ? `<option value="__manage">Manage saved filters…</option>` : ''}</select>`; };
 function viewApply(t, id){
