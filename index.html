@@ -5854,6 +5854,8 @@ function verShow(){
   b.innerHTML = `<span>${ic('spark')}<b>Paper Trail was updated.</b> Reload to get the latest.</span><button type="button" class="btn sm pri" data-act="verReload">Reload</button><button type="button" class="icon-btn" data-act="verHide" aria-label="Not now">${ic('x')}</button>`;
   document.body.append(b);
 }
+// opened from the Reload button: the address carried ?r=… so the browser fetched the new copy instead of a saved one; tidy it away
+try { const u = new URL(location.href); if (u.searchParams.has('r')) { u.searchParams.delete('r'); history.replaceState(history.state, '', u.toString()); } } catch {}
 setTimeout(() => verCheck(true), 20000);   // the copy just opened may already be old
 setInterval(() => { if (!document.hidden) verCheck(); }, 5 * 60000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - verLast > 60000) verCheck(); });
@@ -8300,7 +8302,7 @@ const A = {
   draftResume: d => draftResume(d.k),
   draftDiscard: d => { const it = DRAFTS.find(x => x.key === d.k); if (!it) return; draftDrop(d.k); if (document.querySelector('#mform .dl-list')) draftsAllModal(); toast('Draft discarded', '', {label: 'Undo', fn: () => draftsPut([it, ...DRAFTS.filter(x => x.key !== it.key)])}); },
   draftsAll: () => draftsAllModal(),
-  verReload: async () => { const b = document.querySelector('#verBar .btn'); if (b) { b.disabled = true; b.textContent = 'Reloading…'; } if ($('#mform .cmp')) await draftKeep(true); else await draftsWrite(); location.reload(); },
+  verReload: async () => { const b = document.querySelector('#verBar .btn'); if (b) { b.disabled = true; b.textContent = 'Reloading…'; } if ($('#mform .cmp')) await draftKeep(true); else await draftsWrite(); try { const u = new URL(location.href); u.searchParams.set('r', Date.now().toString(36)); location.replace(u.toString()); } catch { location.reload(); } },
   verHide: () => { document.getElementById('verBar')?.remove(); verShown = false; verTag = null; verLast = Date.now(); },
   hostImgs: () => { hostList = null; hostModal(); },
   hostHtml: d => { const im = document.querySelector(`#mform img[data-hiname="${CSS.escape(d.n)}"]`); const url = hostUrl(d.n);
