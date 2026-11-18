@@ -737,6 +737,13 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.hosted{display:flex;flex-direction:column;gap:14px}.hi-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}.hi-top .btn{flex:none}
+.hi-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.hi{display:flex;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}
+.hi-th{flex:none;width:88px;height:88px;border-radius:8px;display:grid;place-items:center;overflow:hidden;background:repeating-conic-gradient(#d9dedc 0 25%,#f4f6f5 0 50%) 0 0/14px 14px}
+.hi-th img{max-width:100%;max-height:100%;object-fit:contain}.hi-b{min-width:0;display:flex;flex-direction:column;gap:4px;flex:1}.hi-b b{overflow-wrap:anywhere;font-size:.92rem}
+.hi-url{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}.hi-a{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}.hi-a label.btn{cursor:pointer}.hi-big{color:var(--bad)}
+@media (max-width:640px){.hi-top{flex-direction:column}}
 .rk{display:flex;flex-wrap:wrap;gap:6px}.rk button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font:inherit;font-size:.88rem;font-weight:600;cursor:pointer}
 .rk button:hover{border-color:var(--muted)}.rk button.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
 .rk-prev{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line)}.rk-prev span{font-size:.78rem;color:var(--muted)}.rk-prev b{font-size:1.02rem}.rk-prev small{color:var(--muted);font-size:.8rem}.rk-prev small:empty{display:none}
@@ -1979,6 +1986,7 @@ const ICON = {
   up:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>', down:'<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>',
   users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 010 6.8M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/>',
   clip:'<path d="M20 11.5l-7.8 7.8a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8"/>',
+  img:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/>',
   copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',
   cal:'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   cols:'<rect x="3.5" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="16.5" y="4" width="4" height="7" rx="1"/>',
@@ -5421,6 +5429,7 @@ function settingsModal(){
       SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, btn('account', 'Open')) : '',
       row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
       GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
+      isJason() && SUPA ? row('img', 'Hosted images', 'Pictures with a permanent public link, for email signatures. Only you see this.', btn('hostImgs', 'Open')) : '',
       row('spark', 'Appearance', 'Colors, mode, text size, spacing, font and start page.', btn('look', 'Customize')),
       theoMe() ? row('spark', 'Theo', 'Your pixel cat in the sidebar, above Settings.', btn('theoToggle', prefGet('theo', true) ? 'Hide Theo' : 'Show Theo')) : '',
       adm ? '' : demo]],
@@ -5752,6 +5761,54 @@ function sigModal(){
       return ok;
     }, {wide: true});
   setTimeout(sigCheckImages, 50);
+}
+// ---------- hosted images (Jason only): pictures with a permanent public link, for email signatures ----------
+// Kept in the public signature-images folder, under your own sign-in (signature-images/<you>/hosted/<name>).
+// Replacing a picture keeps its name, so its link stays the same and every signature using it shows the new one.
+const HOST_DIR = () => SUPA && SUPA.uid ? `${SUPA.uid}/hosted` : '';
+const hostUrl = name => SUPA.sb.storage.from(SIG_BUCKET).getPublicUrl(`${HOST_DIR()}/${name}`).data.publicUrl;
+const hostName = f => { const ext = (String(f.name).match(/\.(png|jpe?g|gif|webp)$/i)?.[1] || (f.type.split('/')[1] || 'png')).toLowerCase().replace('jpeg', 'jpg');
+  const base = String(f.name).replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'image'; return `${base}.${ext}`; };
+const kb = n => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+let hostList = null;
+async function hostLoad(){
+  const {data, error} = await SUPA.sb.storage.from(SIG_BUCKET).list(HOST_DIR(), {limit: 500, sortBy: {column: 'name', order: 'asc'}});
+  if (error) throw error;
+  hostList = (data || []).filter(x => x.id && x.name && !x.name.startsWith('.')).map(x => ({name: x.name, size: x.metadata?.size || 0, at: Date.parse(x.updated_at || x.created_at || '') || 0})).sort((a, b) => a.name.localeCompare(b.name));
+}
+async function hostModal(){
+  if (!isJason()) return;
+  if (!SUPA || !SUPA.sb || DEMO) { openModal('Hosted images', '<p class="sub">Sign in (and turn off demo mode) to host images.</p>', null, null); return; }
+  if (!hostList) { openModal('Hosted images', '<p class="sub">Loading…</p>', null, null, {wide: true}); try { await hostLoad(); } catch (e) { $('#mform .sb').innerHTML = `<p class="sub">Couldn't load your hosted images: ${esc(e.message || String(e))}</p>`; return; } }
+  const cards = hostList.map(x => { const url = hostUrl(x.name);
+    return `<li class="hi"><div class="hi-th"><img src="${esc(url)}?v=${x.at}" alt="" loading="lazy" data-hiname="${esc(x.name)}"></div>
+      <div class="hi-b"><b>${esc(x.name)}</b><small class="sub"><span data-hidim="${esc(x.name)}"></span>${kb(x.size)}${x.size > 200 * 1024 ? ' · <span class="hi-big">large for a signature</span>' : ''}</small>
+      <code class="hi-url">${esc(url)}</code>
+      <div class="hi-a"><button type="button" class="btn sm pri" data-act="copy" data-t="${esc(url)}">${ic('copy')}Copy link</button><button type="button" class="btn sm" data-act="hostHtml" data-n="${esc(x.name)}">Copy as HTML</button>
+      <label class="btn sm">Replace<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden data-change="hostRep" data-n="${esc(x.name)}"></label>
+      <button type="button" class="btn sm ghost" data-act="hostDel" data-n="${esc(x.name)}" aria-label="Delete ${esc(x.name)}">${ic('trash')}</button></div></div></li>`; }).join('');
+  openModal('Hosted images', `<div class="hosted">
+    <div class="hi-top"><p class="sub" style="margin:0">Each picture gets a permanent public link you can use in email signatures. Replace keeps the link, so signatures update everywhere. Anyone with a link can see that picture.</p>
+      <label class="btn pri">${ic('plus')}Add images<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden data-change="hostAdd"></label></div>
+    ${hostList.length ? `<ul class="hi-list">${cards}</ul>` : '<p class="empty-s">Nothing hosted yet. Add a logo, badge or photo to get its link.</p>'}
+  </div>`, null, null, {wide: true});
+  // sizes, once each picture loads (used for Copy as HTML too)
+  document.querySelectorAll('#mform img[data-hiname]').forEach(im => { const put_ = () => { const t = document.querySelector(`[data-hidim="${CSS.escape(im.dataset.hiname)}"]`); if (t && im.naturalWidth) t.textContent = `${im.naturalWidth} × ${im.naturalHeight} · `; }; im.complete ? put_() : im.addEventListener('load', put_); });
+}
+async function hostUpload(files, keepName){
+  if (!isJason() || !SUPA || !SUPA.sb) return;
+  const have = new Set((hostList || []).map(x => x.name)); let ok = 0, rep_ = 0; const bad = [];
+  for (const f of files) {
+    if (!/^image\/(png|jpeg|gif|webp)$/.test(f.type)) { bad.push(`${f.name} (not a PNG, JPG, GIF or WebP)`); continue; }
+    if (f.size > 2097152) { bad.push(`${f.name} (over 2 MB)`); continue; }
+    const name = keepName || hostName(f);
+    const {error} = await SUPA.sb.storage.from(SIG_BUCKET).upload(`${HOST_DIR()}/${name}`, f, {upsert: true, contentType: f.type, cacheControl: '300'});
+    if (error) { bad.push(`${f.name} (${error.message || 'upload failed'})`); continue; }
+    have.has(name) ? rep_++ : ok++; have.add(name);
+  }
+  try { await hostLoad(); } catch {}
+  hostModal();
+  toast([ok ? `${ok} added` : '', rep_ ? `${rep_} replaced (same link)` : '', bad.length ? `${bad.length} not added: ${bad.join(', ')}` : ''].filter(Boolean).join('. ') || 'Nothing added', bad.length ? 'bad' : undefined);
 }
 // ---------- signature pictures: hosted in Supabase storage and linked, so emails don't carry them as attachments ----------
 const SIG_BUCKET = 'signature-images';
@@ -8103,6 +8160,12 @@ const A = {
   draftGo: () => draftGo(),
   copyDraft: () => { if (ui.draftHtml) { const el = $('#draftHtml'); if (el && elText(el).trim()) copyRich(el); return; } const v = $('#draftOut')?.value; if (v) copyText(v); else toast('Choose a template or write a message first.', 'bad'); },
   sendMail: () => sendMail(),
+  hostImgs: () => { hostList = null; hostModal(); },
+  hostHtml: d => { const im = document.querySelector(`#mform img[data-hiname="${CSS.escape(d.n)}"]`); const url = hostUrl(d.n);
+    copyText(`<img src="${url}"${im && im.naturalWidth ? ` width="${im.naturalWidth}" height="${im.naturalHeight}"` : ''} alt="All Points Mobile Shredding" style="border:0;display:block">`); },
+  hostDel: d => { if (!isJason()) return; confirmModal(`Delete ${d.n}?`, esc(d.n) + ': any signature or email that uses this picture will show a broken image. This can\'t be undone.', 'Delete', async () => {
+    const {error} = await SUPA.sb.storage.from(SIG_BUCKET).remove([`${HOST_DIR()}/${d.n}`]); if (error) { toast(error.message || 'Could not delete', 'bad'); return false; }
+    try { await hostLoad(); } catch {} setTimeout(hostModal, 60); toast('Deleted'); }); },
   sigEdit: () => { const keep = ui.draft && $('#dSend'); sigModal(); },
   sigClear: () => { const b = $('#sigBox'); if (b) b.innerHTML = ''; },
   dFileDel: d => { (ui.draftFiles || []).splice(+d.i, 1); paintDraftFiles(); },
@@ -8117,6 +8180,8 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  hostAdd: el => { const f = [...(el.files || [])]; el.value = ''; if (f.length) hostUpload(f); },
+  hostRep: el => { const f = el.files && el.files[0]; el.value = ''; if (f) hostUpload([f], el.dataset.n); },
   sortSet: el => { ui['sort_' + el.dataset.col] = el.value; prefSet('sort_' + el.dataset.col, el.value); ui.stick = null; render(); },
   cuWhy: el => { ui.cuWhy = el.value; },
   cuSkip: el => { ui.cuSkipRem = el.checked; cleanupModal(); },
