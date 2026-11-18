@@ -737,6 +737,29 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.ct-h{margin:4px 0 6px;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:6px}.ct-h.won{color:var(--good)}.ct-h.lost{color:var(--bad);margin-top:14px}.ct-h .ic{width:14px;height:14px}.ct-h .sub{font-weight:600;letter-spacing:0}
+.ct-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}.ct-r{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 6px;border-top:1px solid var(--line);cursor:pointer;border-radius:6px}.ct-r:hover{background:var(--surface-2)}
+.ct-r>div{display:flex;flex-direction:column;min-width:0}.ct-r small{color:var(--muted);font-size:.8rem}.ct-v{font-weight:700;color:var(--good);white-space:nowrap}
+.fp-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;align-items:start}.fp-main{min-width:0}
+.fpanel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.fp-h{display:flex;justify-content:space-between;align-items:center}.fp-h b{font-size:1rem}
+.fp-s{display:flex;flex-direction:column;gap:2px;padding-bottom:10px;border-bottom:1px solid var(--line)}.fp-sl,.fp-l{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:2px 0 4px}.fp-sl+.fp-q{margin-top:0}.fp-q~.fp-sl{margin-top:10px}
+.fp-q{display:block;width:100%;text-align:left;border:0;background:none;color:var(--fg);font:inherit;font-size:.92rem;padding:7px 10px;border-radius:9px;cursor:pointer}.fp-q:hover{background:var(--surface-2)}.fp-q.on{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.fp-f{display:flex;flex-direction:column;gap:5px}.fp-f>label{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.fp-f select,.fp-f input{width:100%;font:inherit;font-size:.9rem;padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--fg)}
+.fp-dates{display:flex;align-items:center;gap:6px}.fp-dates input{min-width:0}.fp-dates span{color:var(--muted);font-size:.8rem}
+.fp-seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:9px;overflow:hidden}.fp-seg button{border:0;background:var(--surface);color:var(--fg);font:inherit;font-size:.85rem;font-weight:600;padding:7px 0;cursor:pointer}.fp-seg button+button{border-left:1px solid var(--line)}.fp-seg button.on{background:var(--accent);color:#fff}
+.fp-more{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column}.fp-more summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:.9rem}.fp-more[open]{gap:12px}.fp-more[open]>.fp-f{margin-top:12px}
+.fp-save{align-self:flex-start}
+@media (max-width:1100px){.fp-layout{grid-template-columns:1fr}.fpanel{position:static;max-height:none}}
+.fltnew{display:flex;flex-direction:column;gap:16px}.fq{display:flex;flex-direction:column;gap:8px}.fq-l{font-size:.95rem}
+.fpills{display:flex;flex-wrap:wrap;gap:6px}.fpill{position:relative;cursor:pointer}.fpill input{position:absolute;opacity:0;pointer-events:none}
+.fpill span{display:inline-block;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:.9rem;font-weight:600;color:var(--fg)}
+.fpill:hover span{border-color:var(--muted)}.fpill.on span{background:var(--accent);border-color:var(--accent);color:#fff}.fpill input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.fq-sub .fpill span{padding:4px 11px;font-size:.82rem}.fq-sub .fpill.on span{background:var(--accent-soft);color:var(--accent)}
+.fq-range{display:flex;align-items:center;gap:8px;max-width:420px}.fq-range input{flex:1;min-width:0}.fq-range span{color:var(--muted);font-size:.88rem}
+.fq select{max-width:420px}.fmore{border-top:1px solid var(--line);padding-top:12px}.fmore summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:.92rem}
+.fmore-b{display:flex;flex-direction:column;gap:16px;margin-top:14px}
 .hd-ck{width:30px}.hdbulk{margin:0 0 10px}html.hd-bulk #modal{opacity:0;pointer-events:none}html.hd-bulk #draftTray{display:none}
 #draftTray{position:fixed;right:16px;bottom:16px;z-index:40;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap-reverse;justify-content:flex-end;max-width:calc(100% - 32px)}
 #draftTray .dt-i{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;max-width:280px}
@@ -3289,6 +3312,8 @@ function viewHtml(){
   else if (!canWrite) banner = `<div class="banner">You have view-only access. Ask the owner for Contributor access to add or change records.</div>`;
   if (!booted || (live && !COLS.every(c => loaded[c]))) return banner + `<div class="loading">Loading your records…</div>`;
   if (ui.view !== 'pipeline') ui.stick = null;   // leaving Opportunities lets moved rows go where they belong
+  const ft = FP_T[ui.view];
+  if (ft && fpOn() && !simpleOn()) return banner + `<div class="fp-layout">${fpPanel(ft)}<div class="fp-main">${V[ui.view]()}</div></div>`;
   return banner + V[ui.view]();
 }
 
@@ -3353,7 +3378,7 @@ function simpleToday(){
   return backupNudge() + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}.`, !ui.mine ? "What's due for the team today" : n ? `${n} thing${n === 1 ? '' : 's'} to do today` : 'Nothing due. Nice work.', canWrite ? `<button class="btn pri" data-act="newDeal">${ic('plus')}New opportunity</button>` : '')
     + `<div class="sm-today"><div class="sm-main">${list.length ? `<ol class="sm-list">${list.join('')}</ol>` : `<section class="panel sm-done"><b>You're all caught up.</b><p class="sub">New follow-ups, replies and review requests show up here when they're due.</p></section>`}
       <p class="sub sm-next">${ui.mine && tomorrow ? `Coming up tomorrow: ${tomorrow} follow-up${tomorrow === 1 ? '' : 's'}.` : ''} <button class="lnk" data-act="go" data-v="reminders">See all reminders</button></p></div>
-      <div class="sm-side">${weekPanel()}</div></div>`;
+      <div class="sm-side">${closedTodayPanel()}${weekPanel()}</div></div>`;
 }
 function todayBody(){
   const t = today(), h = new Date().getHours();
@@ -3377,7 +3402,7 @@ function todayBody(){
   return nudge + setupBanner() + head(`${greet}${first ? ', ' + esc(first) : ''}`, new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'}) + (FISH ? ` · ${fresh ? `Fresh catch: ${fresh} new ${fresh === 1 ? 'inquiry' : 'inquiries'} this week` : 'Lines in the water'}` : ''), todaySeg() + addBtn('Account','newCompany') + addBtn('Opportunity','newDeal'))
   + (nothing ? `<section class="panel">${emptyState('Your CRM is ready', 'Add your first account by hand, or bring your data over from your current CRM in Settings → Import.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>` : '')
   + rstat + `<div class="cols2">
-    <div class="stack">${weekPanel()}${readyPanel()}
+    <div class="stack">${closedTodayPanel()}${weekPanel()}${readyPanel()}
     <section class="panel"><div class="ph"><h3>Needs attention</h3>${ui.mine || !items.length ? `<span class="chip ${items.length?'warn':'good'}">${items.length || 'All clear'}</span>` : ''}</div>
       ${items.length ? `<ul class="attl">${items.slice(0,25).map(i => `<li class="att ${i.sev}"><div class="att-main"><span class="att-kind">${esc(i.kind)}</span><b>${esc(i.title)}</b><span class="att-sub">${i.sub}</span></div><div class="att-act">${i.acts.map(a => `<button class="btn sm ${a.pri?'pri':''}" data-act="${a.act}"${attrs(a.d)}>${a.l}</button>`).join('')}</div></li>`).join('')}</ul>`
       : `<p class="empty-s">Nothing needs you right now. Quotes waiting on an answer, journey calls, replies and contracts coming up for renewal show up here. Past-due reminders are in Reminders.</p>`}
@@ -3392,6 +3417,18 @@ function todayBody(){
   </div>`;
 }
 
+// what the team closed today: won at the top, lost (and closed still following up) at the bottom
+function closedTodayPanel(){
+  const t = today(), all = L('deals').filter(d => !isOpen(d) && d.closedAt === t && (!ui.mine || d.closedBy === ME.id || (!d.closedBy && d.ownerId === ME.id)));
+  const won = all.filter(isWon).sort((a, b) => (+b.value || 0) - (+a.value || 0)), lost = all.filter(d => !isWon(d)).sort((a, b) => (a.stage === 'following') - (b.stage === 'following'));
+  const by = d => pname(d.closedBy || d.ownerId);
+  const row = (d, w) => `<li class="ct-r" data-act="oppPage" data-id="${d.id}"><div><b>${esc(cname(d.companyId) || 'Opportunity')}</b><small>${esc(oppTypeName(d.name || d.type) || 'Opportunity')}${d.service ? ' · ' + esc(d.service) : ''}${!w && d.lostReason ? ' · ' + esc(d.lostReason) : ''}${!w && d.stage === 'following' ? ' · still following up' : ''}${by(d) ? ' · ' + esc(by(d)) : ''}</small></div>${w && +d.value ? `<span class="ct-v">$${(+d.value).toLocaleString()}</span>` : ''}</li>`;
+  const n = (x, l) => ui.mine && x ? ` <span class="sub">${x}</span>` : '';
+  return `<section class="panel ctp"><div class="ph"><h3>What's closed today</h3></div>
+    ${all.length ? `${won.length ? `<p class="ct-h won">${ic('check')}Closed won${n(won.length)}</p><ul class="ct-l">${won.map(d => row(d, true)).join('')}</ul>` : ''}
+      ${lost.length ? `<p class="ct-h lost">Closed lost${n(lost.length)}</p><ul class="ct-l">${lost.map(d => row(d, false)).join('')}</ul>` : ''}`
+    : `<p class="empty-s">Nothing closed yet today. Opportunities marked Closed Won or Closed Lost today show up here.</p>`}</section>`;
+}
 // journey emails waiting for someone to review and send (auto-send ones aren't listed)
 function readyPanel(){
   const t = today();
@@ -3474,7 +3511,7 @@ V.pipeline = () => {
   if (ui.stick && ui.stick.ctx !== oppCtx()) ui.stick = null;   // rows you just changed stay put until you switch lists or pages
   const stuck = id => !!(ui.stick && ui.stick.ids.has(id));
   const all = L('deals').filter(mine).filter(d => fltPass('deals', d));
-  const rows0 = fzRun(() => all.filter(d => stuck(d.id) || (show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? (d.stage === 'lost' || d.stage === 'following') : true))
+  const rows0 = fzRun(() => all.filter(d => stuck(d.id) || showPass(d, show))
     .filter(d => matchR(ui.q, d, 'l', () => HAYF.deals.l(d), 'deals'))
     .sort((a,b) => show === 'open' ? (a.serviceDate||'9999').localeCompare(b.serviceDate||'9999') : (b.closedAt||b.closeDate||'').localeCompare(a.closedAt||a.closeDate||'')));
   if (!ui.q.trim()) sortRows('deals', rows0);
@@ -3491,10 +3528,10 @@ V.pipeline = () => {
   if (all.length && oppView === 'board') {
     const cols = show === 'open' ? ['lead', 'quoted', 'contract'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['following', 'lost'] : STAGES.map(x => x.k);
     const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const real = ds.filter(isReal); const tot = real.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${real.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
-    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
+    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + (fpOn() && !simpleOn() ? '' : segs) + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
       + (side ? `<div class="oppsplit"><div class="oppsplit-l">${board}</div>${oppSide(side)}</div>` : board);
   }
-  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + (fpOn() && !simpleOn() ? '' : segs) + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
   + sbar + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -4228,8 +4265,7 @@ const FL = {
     {k: 'value', l: 'Annual projected ($)', num: d => +d.value || 0},
     {k: 'priceQuoted', l: 'Price quoted ($)', num: d => pqNum(d.priceQuoted)},
     {k: 'created', l: 'Created', date: d => d.createdAt},
-    {k: 'closeDate', l: 'Close date', date: d => d.closeDate},
-    {k: 'closedAt', l: 'Closed date', date: d => isOpen(d) ? '' : d.closedAt},
+    {k: 'closedAt', l: 'Closed', date: d => isOpen(d) ? '' : d.closedAt},
     {k: 'serviceDate', l: 'Service date', date: d => d.serviceDate}]
 };
 if (!TAGS_ON) for (const t of Object.keys(FL)) FL[t] = FL[t].filter(x => x.k !== 'tag');
@@ -4245,47 +4281,152 @@ function fltTest(t, r, f){
   return true;
 }
 const fltPass = (t, r) => { const f = fltOf(t); return !Object.keys(f).length || fltTest(t, r, f); };
-const fltLabel = (t, x, f) => { if (x.date) { const a = f[x.k + '_from'], b = f[x.k + '_to']; return `${x.l}: ${a && b ? `${fmtDate(a)} – ${fmtDate(b)}` : a ? `from ${fmtDate(a)}` : `through ${fmtDate(b)}`}`; }
+const fltLabel = (t, x, f) => { if (x.date) { const a = f[x.k + '_from'], b = f[x.k + '_to']; const pr = f[x.k + '_p'] && f[x.k + '_p'] !== 'custom' && DATE_PRESETS.find(z => z[0] === f[x.k + '_p']); if (pr) return `${FP_LABEL[x.k] || x.l}: ${pr[1].toLowerCase()}`; return `${x.l}: ${a && b ? `${fmtDate(a)} – ${fmtDate(b)}` : a ? `from ${fmtDate(a)}` : `through ${fmtDate(b)}`}`; }
   if (x.num) { const a = f[x.k + '_min'], b = f[x.k + '_max']; const m = v => '$' + (+v).toLocaleString(); return `${x.l.replace(' ($)', '')}: ${a !== '' && a !== undefined && b !== '' && b !== undefined ? `${m(a)} – ${m(b)}` : a !== '' && a !== undefined ? `${m(a)}+` : `up to ${m(b)}`}`; }
   const v = f[x.k]; if (x.text) return `${x.l}: ${v}`; const o = (x.opts() || []).map(o => Array.isArray(o) ? o : [o, o]).find(o => String(o[0]) === String(v)); return `${x.l}: ${o ? String(o[1]).replace(/ \([\d,]+\)$/, '') : v}`; };
-const fltBtn = t => { const n = fltActive(t).length; return `<button class="btn${n ? ' on' : ''}" data-act="fltOpen" data-t="${t}">${ic('cols')}Filters${n ? ` <em class="fcount">${n}</em>` : ''}</button>`; };
+const fltBtn = t => { const n = fltActive(t).length; return `<button class="btn${n || fpOn() ? ' on' : ''}" data-act="fpToggle" data-t="${t}" aria-pressed="${fpOn()}" title="${fpOn() ? 'Hide' : 'Show'} the filter panel">${ic('cols')}Filters${n ? ` <em class="fcount">${n}</em>` : ''}</button>`; };
 const fltBar = t => { const f = fltOf(t); const act = fltActive(t); if (!act.length) return ''; const on = viewOn(t); return `<div class="fltbar">${on ? `<b class="savedname">${esc(on.name)}:</b>` : ''}${act.map(x => `<span class="fchip2">${esc(fltLabel(t, x, f))}<button type="button" data-act="fltDel" data-t="${t}" data-k="${x.k}" aria-label="Remove filter">×</button></span>`).join('')}<button type="button" class="lnk" data-act="fltClear" data-t="${t}">Clear all</button>${on && on.owner === ME.id ? '' : `<button type="button" class="lnk" data-act="viewSave" data-t="${t}">Save these filters</button>`}</div>`; };
+// ---------- the filter window: plain questions, buttons to tap, a live count ----------
+// Short lists are buttons; long ones are a dropdown. Dates are one "When" question with ready-made ranges (Today, This week...).
+// Less-used filters sit under "More filters". The count on the button always matches what the list will show.
+const FLT_MAIN = {deals: ['ownerId', 'closedBy', 'type', 'service'], companies: ['ownerId', 'city', 'tag'], contacts: ['ownerId', 'email', 'phone', 'city']};
+const FLT_ASK = {stage: 'At which stage?', ownerId: 'Whose?', closedBy: 'Who closed it?', type: 'What kind?', service: 'Which service?', city: 'Which city?', tag: 'With which tag?', email: 'Has an email?', phone: 'Has a phone?'};
+const SHOW_OPTS = [['open', 'Open'], ['won', 'Won'], ['lost', 'Lost'], ['all', 'All']];
+const showPass = (d, show) => show === 'open' ? isOpen(d) : show === 'won' ? isWon(d) : show === 'lost' ? (d.stage === 'lost' || d.stage === 'following') : true;
+// ready-made date ranges; worked out fresh each time, so a saved "This month" stays this month
+function datePreset(p){
+  const t = today(), d = parseYmd(t), dow = d.getDay(), y = d.getFullYear(), m = d.getMonth(), Y = x => ymd(x);
+  const mon = addDays(t, -((dow + 6) % 7));
+  switch (p) {
+    case 'today': return [t, t];
+    case 'yesterday': { const x = addDays(t, -1); return [x, x]; }
+    case 'week': return [mon, addDays(mon, 6)];
+    case 'lastweek': return [addDays(mon, -7), addDays(mon, -1)];
+    case 'month': return [Y(new Date(y, m, 1)), Y(new Date(y, m + 1, 0))];
+    case 'lastmonth': return [Y(new Date(y, m - 1, 1)), Y(new Date(y, m, 0))];
+    case '30': return [addDays(t, -29), t];
+    case 'year': return [`${y}-01-01`, `${y}-12-31`];
+    case 'lastyear': return [`${y - 1}-01-01`, `${y - 1}-12-31`];
+  }
+  return null;
+}
+const DATE_PRESETS = [['', 'Any time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['week', 'This week'], ['lastweek', 'Last week'], ['month', 'This month'], ['lastmonth', 'Last month'], ['30', 'Last 30 days'], ['year', 'This year'], ['lastyear', 'Last year'], ['custom', 'Pick dates…']];
+const presetOf = (from, to) => (DATE_PRESETS.find(([p]) => p && p !== 'custom' && String(datePreset(p)) === String([from, to])) || [from || to ? 'custom' : ''])[0];
+// saved filters keep the range's name (e.g. this month), so they move with the calendar
+function fltFresh(f){ const out = {...f}; for (const k of Object.keys(out)) if (k.endsWith('_p')) { const base = k.slice(0, -2), r = datePreset(out[k]); if (r) { out[base + '_from'] = r[0]; out[base + '_to'] = r[1]; } } return out; }
+const pillGroup = (name, opts, cur, extra = '') => `<div class="fpills" role="radiogroup">${opts.map(([v, l]) => `<label class="fpill${String(cur) === String(v) ? ' on' : ''}"><input type="radio" name="${name}" value="${esc(v)}"${String(cur) === String(v) ? ' checked' : ''} data-change="fltPill"${extra}><span>${esc(l)}</span></label>`).join('')}</div>`;
 function fltModal(t){
   const f = fltOf(t); const NAMES = {companies: 'accounts', contacts: 'contacts', deals: 'opportunities'};
-  const field = x => {
-    if (x.date) return `<div class="f"><span>${x.l}</span><div class="grid2" style="gap:6px">${inp(x.k + '_from', f[x.k + '_from'] || '', 'date', 'data-change="fltCount" aria-label="' + x.l + ' from"')}${inp(x.k + '_to', f[x.k + '_to'] || '', 'date', 'data-change="fltCount" aria-label="' + x.l + ' to"')}</div></div>`;
-    if (x.num) return `<div class="f"><span>${x.l}</span><div class="grid2" style="gap:6px">${inp(x.k + '_min', f[x.k + '_min'] ?? '', 'number', 'placeholder="Min" min="0" data-input="fltCount" aria-label="' + x.l + ' minimum"')}${inp(x.k + '_max', f[x.k + '_max'] ?? '', 'number', 'placeholder="Max" min="0" data-input="fltCount" aria-label="' + x.l + ' maximum"')}</div></div>`;
-    if (x.text) return F(x.l, inp(x.k, f[x.k] || '', 'text', 'data-input="fltCount"'));
-    return F(x.l, sel(x.k, anyOpt(x.opts()), f[x.k] || '', 'data-change="fltCount"'));
-  };
+  const dates = FL[t].filter(x => x.date), main = FLT_MAIN[t] || [];
+  // which date "When" is about: the one already filtered on, else Closed for won/lost, else Created
+  const show = t === 'deals' ? (ui.fltShow ?? (ui.oppShow || 'open')) : '';
+  const dk = ui.fltDateK && dates.some(x => x.k === ui.fltDateK) ? ui.fltDateK : (dates.find(x => f[x.k + '_from'] || f[x.k + '_to']) || dates.find(x => x.k === (show === 'won' || show === 'lost' ? 'closedAt' : 'created')) || dates[0] || {}).k;
+  ui.fltDateK = dk;
+  const dcur = f[dk + '_p'] && f[dk + '_p'] !== 'custom' ? f[dk + '_p'] : presetOf(f[dk + '_from'], f[dk + '_to']);
+  const choice = x => { const o = anyOpt(x.opts()).map(o => [o[0], String(o[1]).replace(/ \([\d,]+\)$/, '')]);
+    return o.length <= 8 ? pillGroup(x.k, o, f[x.k] || '') : sel(x.k, anyOpt(x.opts()), f[x.k] || '', 'data-change="fltCount"'); };
+  const q = (label, html, cls = '') => `<div class="fq${cls}"><b class="fq-l">${label}</b>${html}</div>`;
+  const field = x => x.num ? q(x.l.replace(' ($)', ''), `<div class="fq-range">${inp(x.k + '_min', f[x.k + '_min'] ?? '', 'number', 'placeholder="From $" min="0" data-input="fltCount" aria-label="' + x.l + ' from"')}<span>to</span>${inp(x.k + '_max', f[x.k + '_max'] ?? '', 'number', 'placeholder="To $" min="0" data-input="fltCount" aria-label="' + x.l + ' to"')}</div>`)
+    : x.text ? q(x.l, inp(x.k, f[x.k] || '', 'text', 'data-input="fltCount"')) : q(FLT_ASK[x.k] || x.l, choice(x));
+  const other = FL[t].filter(x => !x.date && !main.includes(x.k));
+  const moreOn = ui.fltMore || other.some(x => x.num ? ((f[x.k + '_min'] ?? '') !== '' || (f[x.k + '_max'] ?? '') !== '') : f[x.k]);
+  const when = dk ? q('When?', `${dates.length > 1 ? `<div class="fq-sub">${pillGroup('__dk', dates.map(x => [x.k, x.l === 'Created' ? 'Added' : x.l]), dk)}</div>` : ''}
+      ${pillGroup(dk + '_p', DATE_PRESETS, dcur)}
+      <div class="fq-range" id="fltCustom"${dcur === 'custom' ? '' : ' hidden'}>${inp(dk + '_from', f[dk + '_from'] || '', 'date', 'data-change="fltCount" aria-label="From"')}<span>to</span>${inp(dk + '_to', f[dk + '_to'] || '', 'date', 'data-change="fltCount" aria-label="To"')}</div>`, ' fq-when') : '';
   ui.fltT = t;
-  openModal(`Filter ${NAMES[t]}`, `<div class="grid3 fltgrid">${FL[t].map(field).join('')}</div><p class="sub">Filters work together with the search box${t === 'deals' ? ' and the Open/Won/Lost buttons' : ''}. Download uses them too.</p>`, 'Show', fd => {
-    const keep = {}; for (const [k, v] of Object.entries(fd)) if (v !== '' && v != null) keep[k] = v;
-    ui.flt[t] = keep; ui.lim = {}; schedule(); return true;
-  }, {wide: true, foot: `<button type="button" class="btn ghost" data-act="fltReset">Reset</button><button type="button" class="btn ghost" data-act="fltSaveAs" style="margin-right:auto">Save as…</button>`});
+  openModal(`Filter ${NAMES[t]}`, `<div class="fltnew">
+    ${t === 'deals' ? q('Which ones?', pillGroup('__show', SHOW_OPTS, show)) : ''}
+    ${when}
+    ${FL[t].filter(x => main.includes(x.k)).map(field).join('')}
+    ${other.length ? `<details class="fmore"${moreOn ? ' open' : ''}><summary>More filters</summary><div class="fmore-b">${other.map(field).join('')}</div></details>` : ''}
+  </div>`, 'Show', fd => {
+    const keep = {}; for (const [k, v] of Object.entries(fd)) if (v !== '' && v != null && !k.startsWith('__')) keep[k] = v;
+    for (const x of dates) if (x.k !== dk) for (const s_ of ['_from', '_to', '_p']) delete keep[x.k + s_];
+    if (keep[dk + '_p'] && keep[dk + '_p'] !== 'custom') { const r = datePreset(keep[dk + '_p']); keep[dk + '_from'] = r[0]; keep[dk + '_to'] = r[1]; }
+    else if (!keep[dk + '_p']) { delete keep[dk + '_from']; delete keep[dk + '_to']; }
+    if (keep[dk + '_p'] === 'custom') delete keep[dk + '_p'];
+    if (t === 'deals' && fd.__show) ui.oppShow = fd.__show;
+    ui.flt[t] = keep; ui.lim = {}; ui.fltShow = undefined; ui.fltDateK = undefined; ui.fltMore = false; schedule(); return true;
+  }, {wide: true, cls: 'fltsheet', foot: `<button type="button" class="btn ghost" data-act="fltReset">Clear all</button><button type="button" class="btn ghost" data-act="fltSaveAs" style="margin-right:auto">Save as…</button>`});
+  $('#mform .fmore')?.addEventListener('toggle', e => { ui.fltMore = e.target.open; });
   fltCount();
+}
+// what the window would show right now (dates from the picked range)
+function fltForm(){
+  const fm = $('#mform'), t = ui.fltT; if (!fm) return {}; const fd = formData(fm), f = {};
+  for (const [k, v] of Object.entries(fd)) if (v !== '' && v != null && !k.startsWith('__')) f[k] = v;
+  const dk = ui.fltDateK, p = fd[dk + '_p'];
+  if (dk) { if (p && p !== 'custom') { const r = datePreset(p); f[dk + '_from'] = r[0]; f[dk + '_to'] = r[1]; } else if (!p) { delete f[dk + '_from']; delete f[dk + '_to']; } }
+  return f;
 }
 function fltCount(){
   const t = ui.fltT, fm = $('#mform'); if (!t || !fm) return;
-  const f = {}; for (const [k, v] of Object.entries(formData(fm))) if (v !== '' && v != null) f[k] = v;
+  const f = fltForm(), show = t === 'deals' ? (formData(fm).__show || 'open') : '';
   const base = t === 'companies' ? L('companies') : t === 'contacts' ? L('contacts') : L('deals');
-  const n = base.filter(mine).filter(r => fltTest(t, r, f)).length; const b = fm.querySelector('[type=submit]');
+  const n = base.filter(mine).filter(r => (!show || showPass(r, show)) && fltTest(t, r, f)).length; const b = fm.querySelector('[type=submit]');
   const NAMES = {companies: ['account', 'accounts'], contacts: ['contact', 'contacts'], deals: ['opportunity', 'opportunities']};
-  if (b) b.textContent = `Show ${n.toLocaleString()} ${NAMES[t][n === 1 ? 0 : 1]}`;
+  if (b) { b.textContent = n ? `Show ${n.toLocaleString()} ${NAMES[t][n === 1 ? 0 : 1]}` : `No ${NAMES[t][1]} match`; }
+  fm.querySelectorAll('.fpill').forEach(l => l.classList.toggle('on', !!l.querySelector('input:checked')));
 }
 
 
+// ---------- filter side panel (Opportunities, Accounts, Contacts): shortcuts on top, the usual choices underneath ----------
+// Every change applies right away. "Filters" in the page header shows or hides the panel (remembered per person).
+const FP_T = {pipeline: 'deals', companies: 'companies', contacts: 'contacts'};
+const fpOn = () => (ui.fpOn ?? (ui.fpOn = prefGet('fpanel', '1') === '1'));
+const FP_SHORT = {
+  deals: () => [['mine', 'My open', 'open', {ownerId: ME.id}], ['today', 'Closed today', 'all', {closedAt_p: 'today'}], ['wonweek', 'Won this week', 'won', {closedAt_p: 'week'}], ['wonmonth', 'Won this month', 'won', {closedAt_p: 'month'}],
+    ['lostmonth', 'Lost this month', 'lost', {closedAt_p: 'month'}], ['svcweek', 'Service this week', 'all', {serviceDate_p: 'week'}], ['open', 'Everything open', 'open', {}]],
+  companies: () => [['mine', 'My accounts', '', {ownerId: ME.id}], ['new', 'Added this month', '', {created_p: 'month'}], ['all', 'All accounts', '', {}]],
+  contacts: () => [['mine', 'My contacts', '', {ownerId: ME.id}], ['new', 'Added this month', '', {created_p: 'month'}], ['noemail', 'Missing an email', '', {email: 'no'}], ['all', 'All contacts', '', {}]]};
+const FP_MAIN = {deals: ['closedAt', 'ownerId', 'closedBy', 'type', 'service'], companies: ['ownerId', 'city', 'tag', 'lastJob', 'created'], contacts: ['ownerId', 'email', 'phone', 'city', 'created']};
+const FP_LABEL = {created: 'Added', closedAt: 'Closed', lastJob: 'Last job'};
+const fpShortOn = (t, sc) => sameF(fltFresh(sc[3]), fltOf(t)) && (t !== 'deals' || sc[2] === (ui.oppShow || 'open'));
+function fpPanel(t){
+  const f = fltOf(t), main = FP_MAIN[t] || [];
+  const opt = (x, cur) => anyOpt(x.opts(), x.k === 'ownerId' || x.k === 'closedBy' ? 'Anyone' : 'Any').map(([v, l]) => `<option value="${esc(v)}"${String(cur) === String(v) ? ' selected' : ''}>${esc(String(l).replace(/ \([\d,]+\)$/, ''))}</option>`).join('');
+  const lbl = x => FP_LABEL[x.k] || x.l.replace(' ($)', '');
+  const field = x => {
+    if (x.date) { const p = f[x.k + '_p'] || presetOf(f[x.k + '_from'], f[x.k + '_to']);
+      return `<div class="fp-f"><label for="fp_${x.k}">${lbl(x)}</label><select id="fp_${x.k}" data-change="fpDate" data-t="${t}" data-k="${x.k}">${DATE_PRESETS.map(([v, l]) => `<option value="${v}"${p === v ? ' selected' : ''}>${l}</option>`).join('')}</select>
+        ${p === 'custom' ? `<div class="fp-dates"><input type="date" value="${esc(f[x.k + '_from'] || '')}" data-change="fpSet" data-t="${t}" data-k="${x.k}_from" aria-label="${lbl(x)} from"><span>to</span><input type="date" value="${esc(f[x.k + '_to'] || '')}" data-change="fpSet" data-t="${t}" data-k="${x.k}_to" aria-label="${lbl(x)} to"></div>` : ''}</div>`; }
+    if (x.num) return `<div class="fp-f"><label>${lbl(x)}</label><div class="fp-dates"><input type="number" min="0" placeholder="From $" value="${esc(f[x.k + '_min'] ?? '')}" data-change="fpSet" data-t="${t}" data-k="${x.k}_min" aria-label="${lbl(x)} from"><span>to</span><input type="number" min="0" placeholder="To $" value="${esc(f[x.k + '_max'] ?? '')}" data-change="fpSet" data-t="${t}" data-k="${x.k}_max" aria-label="${lbl(x)} to"></div></div>`;
+    if (x.text) return `<div class="fp-f"><label for="fp_${x.k}">${lbl(x)}</label><input id="fp_${x.k}" value="${esc(f[x.k] || '')}" data-change="fpSet" data-t="${t}" data-k="${x.k}"></div>`;
+    return `<div class="fp-f"><label for="fp_${x.k}">${lbl(x)}</label><select id="fp_${x.k}" data-change="fpSet" data-t="${t}" data-k="${x.k}">${opt(x, f[x.k] || '')}</select></div>`;
+  };
+  const shorts = FP_SHORT[t](), views = viewsFor(t), vOn = viewOn(t);
+  const other = FL[t].filter(x => !main.includes(x.k));
+  const moreOn = ui.fpMore || other.some(x => x.date ? (f[x.k + '_from'] || f[x.k + '_to'] || f[x.k + '_p']) : x.num ? ((f[x.k + '_min'] ?? '') !== '' || (f[x.k + '_max'] ?? '') !== '') : f[x.k]);
+  const any = fltActive(t).length || (t === 'deals' && (ui.oppShow || 'open') !== 'open');
+  return `<aside class="fpanel" aria-label="Filters">
+    <div class="fp-h"><b>Filters</b>${any ? `<button class="lnk" data-act="fpClear" data-t="${t}">Clear all</button>` : ''}</div>
+    <div class="fp-s"><span class="fp-sl">Shortcuts</span>${shorts.map(sc => `<button type="button" class="fp-q${fpShortOn(t, sc) ? ' on' : ''}" data-act="fpShort" data-t="${t}" data-k="${sc[0]}">${esc(sc[1])}</button>`).join('')}
+      ${views.length ? `<span class="fp-sl">Saved</span>${views.map(v => `<button type="button" class="fp-q${vOn && vOn.id === v.id ? ' on' : ''}" data-act="viewUse" data-t="${t}" data-id="${v.id}">${esc(v.name)}</button>`).join('')}` : ''}</div>
+    ${t === 'deals' ? `<div class="fp-f"><span class="fp-l">Stage</span><div class="fp-seg" role="radiogroup">${[['open', 'Open'], ['won', 'Won'], ['lost', 'Lost'], ['all', 'All']].map(([v, l]) => `<button type="button" role="radio" aria-checked="${(ui.oppShow || 'open') === v}" class="${(ui.oppShow || 'open') === v ? 'on' : ''}" data-act="oppShow" data-s="${v}">${l}</button>`).join('')}</div></div>` : ''}
+    ${main.map(k => FL[t].find(x => x.k === k)).filter(Boolean).map(field).join('')}
+    ${other.length ? `<details class="fp-more"${moreOn ? ' open' : ''} data-t="${t}"><summary>More filters</summary>${other.map(field).join('')}</details>` : ''}
+    ${fltActive(t).length ? `<button type="button" class="btn sm fp-save" data-act="fpSave" data-t="${t}">${ic('star')}Save these filters</button>` : ''}
+  </aside>`;
+}
+document.addEventListener('toggle', e => { if (e.target && e.target.classList && e.target.classList.contains('fp-more')) ui.fpMore = e.target.open; }, true);
+function fpApplyDate(t, k, p){
+  const f = {...fltOf(t)}; delete f[k + '_p'];
+  if (!p) { delete f[k + '_from']; delete f[k + '_to']; }
+  else if (p === 'custom') f[k + '_p'] = 'custom';
+  else { const r = datePreset(p); f[k + '_p'] = p; f[k + '_from'] = r[0]; f[k + '_to'] = r[1]; }
+  ui.flt[t] = f; ui.lim = {}; schedule();
+}
 // ---------- saved filters ----------
 const NOUN = {companies: 'accounts', contacts: 'contacts', deals: 'opportunities'};
 const viewsFor = t => L('views').filter(v => v.t === t && (v.owner === ME.id || v.shared)).sort((a, b) => (a.owner === ME.id ? 0 : 1) - (b.owner === ME.id ? 0 : 1) || String(a.name).localeCompare(String(b.name)));
 const sameF = (a, b) => JSON.stringify(Object.entries(a || {}).sort()) === JSON.stringify(Object.entries(b || {}).sort());
-const viewOn = t => { const id = (ui.viewOn || {})[t]; const v = id && S.views[id]; return v && sameF(v.f, fltOf(t)) && (t !== 'deals' || !v.show || v.show === (ui.oppShow || 'open')) ? {...v, id} : null; };
-const savedSel = t => { const vs = viewsFor(t); const on = viewOn(t); const n = fltActive(t).length;
+const viewOn = t => { const id = (ui.viewOn || {})[t]; const v = id && S.views[id]; return v && sameF(fltFresh(v.f), fltOf(t)) && (t !== 'deals' || !v.show || v.show === (ui.oppShow || 'open')) ? {...v, id} : null; };
+const savedSel = t => { if (fpOn() && !simpleOn()) return ''; const vs = viewsFor(t); const on = viewOn(t); const n = fltActive(t).length;
   if (!vs.length && !n) return '';
   return `<select class="savedsel" data-change="viewPick" data-t="${t}" aria-label="Saved filters"><option value="">${on ? '' : 'Saved filters'}</option>${vs.map(v => `<option value="${v.id}" ${on && on.id === v.id ? 'selected' : ''}>${esc(v.name)}${v.owner !== ME.id ? ` (${esc(nm(v.owner) || 'shared')})` : v.shared ? ' (shared)' : ''}</option>`).join('')}${n ? `<option value="__save">＋ Save these filters…</option>` : ''}${vs.length ? `<option value="__manage">Manage saved filters…</option>` : ''}</select>`; };
 function viewApply(t, id){
   const v = S.views[id]; if (!v) return;
-  ui.flt = ui.flt || {}; ui.flt[t] = {...(v.f || {})}; if (t === 'deals' && v.show) ui.oppShow = v.show;
+  ui.flt = ui.flt || {}; ui.flt[t] = fltFresh(v.f || {}); if (t === 'deals' && v.show) ui.oppShow = v.show;
   ui.viewOn = {...(ui.viewOn || {}), [t]: id}; ui.lim = {}; schedule();
 }
 function viewSaveModal(t, f){
@@ -8228,7 +8369,11 @@ const A = {
   settings: () => { settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   wipeAll: () => wipeModal(),
   fltOpen: d => fltModal(d.t),
-  fltSaveAs: () => { const t = ui.fltT, fm = $('#mform'); if (!t || !fm) return; const f = {}; for (const [k, v] of Object.entries(formData(fm))) if (v !== '' && v != null) f[k] = v; if (!Object.keys(f).length) { toast('Pick some filters first.', 'bad'); return; } ui.flt[t] = f; ui.lim = {}; schedule(); setTimeout(() => viewSaveModal(t, f), 150); },
+  fpToggle: () => { ui.fpOn = !fpOn(); prefSet('fpanel', ui.fpOn ? '1' : '0'); schedule(); },
+  fpShort: d => { const sc = FP_SHORT[d.t]().find(x => x[0] === d.k); if (!sc) return; ui.flt = ui.flt || {}; ui.flt[d.t] = fltFresh(sc[3]); if (d.t === 'deals' && sc[2]) ui.oppShow = sc[2]; ui.lim = {}; ui.stick = null; schedule(); },
+  fpClear: d => { ui.flt[d.t] = {}; if (d.t === 'deals') ui.oppShow = 'open'; ui.lim = {}; ui.q = ''; schedule(); },
+  fpSave: d => viewSaveModal(d.t),
+  fltSaveAs: () => { const t = ui.fltT, fm = $('#mform'); if (!t || !fm) return; const fd = formData(fm), f = fltForm(); const dk = ui.fltDateK; if (dk && f[dk + '_p'] === 'custom') delete f[dk + '_p']; if (t === 'deals' && fd.__show) ui.oppShow = fd.__show; if (!Object.keys(f).length) { toast('Pick some filters first.', 'bad'); return; } ui.flt[t] = f; ui.lim = {}; schedule(); setTimeout(() => viewSaveModal(t, f), 150); },
   viewSave: d => viewSaveModal(d.t),
   viewUse: d => { closeModal(); viewApply(d.t, d.id); },
   viewRename: d => { const v = S.views[d.id]; if (!v) return; openModal('Rename saved filter', F('Name', inp('name', v.name, 'text', 'required maxlength="60"')), 'Save', async fd => { const name = String(fd.name || '').trim(); if (!name) return false; const ok = await patch('views', d.id, {name}); if (ok) setTimeout(() => viewManageModal(v.t), 200); return ok; }); },
@@ -8236,7 +8381,7 @@ const A = {
   viewDel: d => { const v = S.views[d.id]; if (!v) return; confirmModal('Delete saved filter?', `“${esc(v.name)}” will be removed${v.shared ? ' for everyone' : ''}. Your accounts, contacts and opportunities aren't touched.`, 'Delete', async () => { await del('views', d.id); toast('Saved filter deleted'); setTimeout(() => viewManageModal(d.t), 200); }); },
   fltDel: d => { const f = {...fltOf(d.t)}; for (const k of Object.keys(f)) if (k === d.k || k === d.k + '_from' || k === d.k + '_to' || k === d.k + '_min' || k === d.k + '_max') delete f[k]; ui.flt[d.t] = f; ui.lim = {}; schedule(); },
   fltClear: d => { ui.flt[d.t] = {}; ui.lim = {}; schedule(); },
-  fltReset: () => { const fm = $('#mform'); if (!fm) return; fm.querySelectorAll('select, input').forEach(el => { el.value = ''; }); fltCount(); },
+  fltReset: () => { const t = ui.fltT; if (!t) return; ui.flt[t] = {}; ui.fltShow = t === 'deals' ? 'all' : undefined; ui.fltDateK = undefined; ui.fltMore = false; fltModal(t); },
   tags: () => tagsModal(),
   tagSuggest: () => tagSuggestModal(),
   tagRename: d => tagRenameModal(d.t),
@@ -8324,6 +8469,9 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  fpSet: el => { const t = el.dataset.t, k = el.dataset.k; ui.flt = ui.flt || {}; const f = {...fltOf(t)}; if (el.value === '' || el.value == null) delete f[k]; else f[k] = el.value;
+    const base = k.replace(/_(from|to)$/, ''); if (base !== k) f[base + '_p'] = 'custom'; ui.flt[t] = f; ui.lim = {}; schedule(); },
+  fpDate: el => fpApplyDate(el.dataset.t, el.dataset.k, el.value),
   hdPickRow: el => { const s_ = hdSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
   hdPickAll: el => { const s_ = hdSel(); s_.clear(); if (el.checked) (ui.hdOkIds || []).forEach(id => s_.add(id)); render(); },
   hostAdd: el => { const f = [...(el.files || [])]; el.value = ''; if (f.length) hostUpload(f); },
@@ -8408,6 +8556,11 @@ const CHANGE = {
     oppDateT = setTimeout(() => { if (el.isConnected) oppSaveField(el); }, 700); },
   tagF: el => { ui.flt = ui.flt || {}; const f = {...fltOf('companies')}; if (el.value) f.tag = el.value; else delete f.tag; ui.flt.companies = f; ui.lim = {}; schedule(); },
   fltCount: () => fltCount(),
+  fltPill: el => { const fm = $('#mform'); if (!fm) return;
+    if (el.name === '__dk' || el.name === '__show') { const t = ui.fltT; ui.flt[t] = {...fltOf(t)}; const cur = fltForm(); if (el.name === '__dk') { const old = ui.fltDateK; const p = formData(fm)[old + '_p']; for (const s_ of ['_from', '_to', '_p']) delete cur[old + s_]; if (p && p !== 'custom') cur[el.value + '_p'] = p; ui.fltDateK = el.value; } else ui.fltShow = el.value;
+      const keepOpen = ui.fltMore; const saved = ui.flt[t]; ui.flt[t] = cur; fltModal(t); ui.flt[t] = saved; ui.fltMore = keepOpen; return; }
+    if (el.name.endsWith('_p')) { const c = $('#fltCustom'); if (c) c.hidden = el.value !== 'custom'; }
+    fltCount(); },
   trackMine: async el => { if (await sigSave({track: el.checked})) toast(el.checked ? 'Your emails will be tracked' : 'Tracking is off for your emails'); },
   sigImg: el => { sigInsertFiles([...(el.files || [])]); el.value = ''; },
   dFiles: el => { ui.draftFiles = [...(ui.draftFiles || []), ...(el.files || [])]; el.value = ''; paintDraftFiles(); },
