@@ -2811,7 +2811,8 @@ window.addEventListener('popstate', e => {
 
 // ---------- appearance: each person's own look, saved to their login ----------
 const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show', simple: 'off', remHelp: 'on'};
-const remHelpOn = () => LOOK.remHelp !== 'off';   // the reminder helper: suggested email, last email line, and What's next after sending
+const remHelpOn = () => LOOK.remHelp !== 'off' && LOOK.remHelp !== 'last';   // the reminder helper: suggested email and What's next after sending
+const remLastOn = () => LOOK.remHelp !== 'off';   // the last email line (also on in "Last email only")
 // Simple: an easier version anyone can turn on (fewer menu items, a do-this-next Today, bigger buttons, a short new-opportunity form)
 const simpleOn = () => LOOK.simple === 'on';
 const SIMPLE_NAV = ['today', 'reminders', 'companies', 'pipeline'];
@@ -2878,7 +2879,7 @@ function lookModal(){
   const cur = LOOK.accent || '';
   openModal('Appearance', `<p class="sub" style="margin-bottom:12px">Just for you. Changes show right away and follow your login to any device.</p>
     <div class="lookgrid">
-      <div class="f"><span>Reminder helper</span>${lookSeg('remHelp', [['on', 'On'], ['off', 'Off']])}<small class="sub">On due reminders: a suggested email button, the last email the account got, and a What's next step after you send.</small></div>
+      <div class="f"><span>Reminder helper</span>${lookSeg('remHelp', [['on', 'On'], ['last', 'Last email only'], ['off', 'Off']])}<small class="sub">On: a suggested email button on due reminders, the last email the account got, and a What's next step after you send. Last email only: just the last email line.</small></div>
       <div class="f"><span>Version</span>${simpleSeg()}<small class="sub">Simple shows fewer menu items, a do-this-next list on Today and bigger buttons. Everything is still there under More.</small></div>
       ${lookPickHtml()}
       ${(LOOK.look || 'default') === 'default' ? F('Mode', seg('mode', [['system', 'Match computer'], ['light', 'Light'], ['dark', 'Dark']])) : `<p class="sub" style="margin:-4px 0 0">Each look has its own colors, so Mode and Accent color apply to the Original look. Night Shift is the dark one.</p>`}
@@ -4618,7 +4619,7 @@ function remNext(k){
 }
 // the last email this account got from us: subject, when, who sent it, and a peek at the message
 function lastMailHtml(coId){
-  if (!remHelpOn()) return '';
+  if (!remLastOn()) return '';
   const M = remModel(), arr = coId && M.sent[coId]; const m = arr && arr[arr.length - 1]; if (!m) return coId ? '<span class="lastmail none">No emails sent yet</span>' : '';
   const rep_ = M.recv[coId] && M.recv[coId] > m.at ? M.recv[coId] : 0;   // they wrote back after our last email
   const lines = String(m.text).replace(/^(?:sent|re|fw|fwd)\s*:\s*/i, '').split('\n'); const subj = lines[0].trim() || '(no subject)';
@@ -5208,7 +5209,7 @@ async function runImport(_, form){
   const ctByName = {}; for (const c of L('contacts')) ctByName[(c.companyId || '') + '|' + norm(pname_(c))] = c.id;
   const ctAnyName = {}; for (const c of L('contacts')) ctAnyName[norm(pname_(c))] = c.id;
   const dealByKey = {}; for (const d of L('deals')) dealByKey[norm(d.name) + '|' + (d.companyId||'')] = d.id;
-  let created = 0, updated = 0, skipped = 0, noCo = 0, dupes = 0; const noMatch = [];
+  let created = 0, updated = 0, skipped = 0, noCo = 0, dupes = 0, moved = 0; const noMatch = [], touched = new Set();
   const btn = form.querySelector('[type=submit]');
   const queue = []; const BATCH = 400;
   const flush = async () => {
@@ -5271,10 +5272,17 @@ async function runImport(_, form){
       const companyId = coByName[norm(rel)] || (ctId && S.contacts[ctId]?.companyId) || '';
       if (!companyId || !S.companies[companyId]) { noMatch.push(rel || title); continue; }
       const t = title || 'Follow up', dn = /^(y|yes|x|true|done|completed?|1)$/i.test(get(r,'done'));
-      if (!dn && L('tasks').some(k => !k.done && k.companyId === companyId && norm(k.title) === norm(t))) { dupes++; continue; }   // already set: importing the same file twice doesn't double up
+      // already set (same account, same reminder): don't add it twice, but move it to the file's date if that changed
+      const have = !dn && L('tasks').find(k => !k.done && k.companyId === companyId && norm(k.title) === norm(t));
+      if (have) {
+        const hid = have.id, cur = S.tasks[hid];
+        if (cur && due && cur.due !== due && !touched.has(hid)) { touched.add(hid); const nt = get(r,'notes'); if (await write('tasks', hid, {...cur, due, ...(nt && !cur.notes ? {notes: nt} : {})})) moved++; else break; }
+        else dupes++;
+        continue;
+      }
       const rec = {title: t, due: due || today(), assigneeId: ownerFrom(get(r,'owner')), companyId, contactId: ctId || '', notes: get(r,'notes'), done: dn, source: 'Imported'};
       Object.keys(rec).forEach(k => { if (rec[k] === '') delete rec[k]; });
-      if (await write('tasks', uid(), rec)) created++; else break;
+      { const nid = uid(); if (await write('tasks', nid, rec)) { created++; touched.add(nid); } else break; }
     } else {
       const name = get(r,'name'); if (!name) { skipped++; continue; }
       const companyId = get(r,'company') ? await ensureCo(get(r,'company')) : '';
@@ -5298,7 +5306,7 @@ async function runImport(_, form){
   schedule();
   if (!okFlush) { toast('Some records could not be saved. Check your connection and import the same file again; nothing will be duplicated.', 'bad'); return false; }
   if (imp.type === 'tasks') {
-    const msg = `${created} reminder${created === 1 ? '' : 's'} added${dupes ? `, ${dupes} already set` : ''}${noMatch.length ? `. ${noMatch.length} not found in Paper Trail, so they were skipped: ${noMatch.slice(0, 8).join(', ')}${noMatch.length > 8 ? ` and ${noMatch.length - 8} more` : ''}` : ''}.`;
+    const msg = `${created} reminder${created === 1 ? '' : 's'} added${moved ? `, ${moved} moved to the date in the file` : ''}${dupes ? `, ${dupes} already set` : ''}${noMatch.length ? `. ${noMatch.length} not found in Paper Trail, so they were skipped: ${noMatch.slice(0, 8).join(', ')}${noMatch.length > 8 ? ` and ${noMatch.length - 8} more` : ''}` : ''}.`;
     toast(msg, noMatch.length ? 'bad' : undefined);
     if (noMatch.length) { const el = $('#impBody'); if (el) el.innerHTML = `<p><b>${esc(msg)}</b></p><p class="sub">Add those accounts or contacts (or fix the spelling in the file) and import the same file again. Reminders that already went in won't be added twice.</p>`; const b = form.querySelector('[type=submit]'); if (b) b.textContent = 'Import again'; return false; }
     return true;
