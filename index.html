@@ -325,7 +325,8 @@ td .t2{display:block;color:var(--muted);font-size:.8rem}
 .dacts{display:flex;gap:6px;flex-wrap:wrap}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;margin:0;font-size:.9rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
 .facts dt{color:var(--muted);font-size:.8rem;font-weight:600;padding-top:1px}
-.facts dd{margin:0;overflow-wrap:anywhere;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.facts dd{margin:0;overflow-wrap:break-word;min-width:0;display:flex;gap:6px;align-items:flex-start}
+.facts dd>.fv{min-width:0}.facts dd>.copy{flex:none;margin-top:1px}.facts .who{white-space:normal;max-width:100%;min-width:0}.facts .who>.av,.facts .who>[class*=av]{flex:none}
 .copy{border:0;background:none;color:var(--muted);cursor:pointer;padding:2px;border-radius:4px;display:inline-grid}
 .copy:hover{color:var(--accent)}
 .copy .ic{width:14px;height:14px}
@@ -493,7 +494,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .jwin{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:18px;align-items:start}
 .acard{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:12px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0}
 .acard h4{margin:0 0 2px;font-size:1.02rem}.acard .eyebrow{margin:8px 0 0}.acard .eyebrow:first-child{margin-top:0}
-.acard .facts{margin:0;grid-template-columns:auto minmax(0,1fr);font-size:.86rem}.acard .facts dd{overflow-wrap:anywhere}
+.acard .facts{margin:0;grid-template-columns:auto minmax(0,1fr);font-size:.86rem}.acard .facts{grid-template-columns:minmax(0,1fr);gap:1px;padding:12px}.acard .facts dd{margin-bottom:8px}.acard .facts dd:last-child{margin-bottom:0}
 .acard-d{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.acard-d li{display:flex;flex-direction:column;font-size:.86rem}.acard-d small{color:var(--muted)}
 .acard .btn{align-self:flex-start;margin-top:6px}
 @media (max-width:820px){.jwin{grid-template-columns:1fr}.acard{position:static}}
@@ -3724,7 +3725,7 @@ const rowsOr = (arr, fn, none) => arr.length ? `<ul class="rows">${arr.map(fn).j
 const spLabel = k => String(k).replace(/\s+in Spiro$/i, ' in your current CRM').replace(/^Spiro\s+/i, 'Current CRM ').replace(/Spiro/gi, 'current CRM');
 const spiroFacts = r => Object.entries((r && r.spiro) || {}).map(([k, v]) => fact(esc(spLabel(k)), esc(v))).join('');
 const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length ? `<section class="panel"><div class="ph"><h3>More from your current CRM</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(spLabel(k)), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
-const fact = (k, v, copy) => v ? `<dt>${k}</dt><dd>${v}${copy ? `<button class="copy" data-act="copy" data-t="${esc(copy)}" aria-label="Copy ${k}">${ic('copy')}</button>` : ''}</dd>` : '';
+const fact = (k, v, copy) => v ? `<dt>${k}</dt><dd><span class="fv">${v}</span>${copy ? `<button class="copy" data-act="copy" data-t="${esc(copy)}" aria-label="Copy ${k}">${ic('copy')}</button>` : ''}</dd>` : '';
 function logBox(ctx){
   if (!canWrite) return '';
   return `<form class="logbox" data-form="log"${attrs(ctx)}><div class="row" style="justify-content:flex-start"><label class="chk" style="color:var(--fg);font-weight:600">Add activity</label><select name="type" id="lt_type" data-keep aria-label="Activity type" style="width:auto">${LOG_TYPES.map(t => `<option value="${t}" ${t === 'voicemail' ? 'selected' : ''}>${ACT[t]}</option>`).join('')}</select></div>
@@ -3913,7 +3914,7 @@ const DETAIL = {
     <div class="dacts"><button class="btn sm pri" data-act="coPage" data-id="${id}">${ic('building')}Details</button>${canWrite ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button><button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="editCompany" data-id="${id}">${ic('edit')}Edit</button>` : ''}<button class="btn sm" data-act="draft" data-col="companies" data-id="${id}">${ic('mail')}Email</button>${AI ? `<button class="btn sm" data-act="summarize" data-id="${id}" ${ui.aiBusy[id]?'disabled':''}>${ic('spark')}Summarize</button>` : ''}${canWrite ? `<button class="btn sm ghost" data-act="moreMenu" data-k="company" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}</div>
     ${coTabs(id)}
     ${(ui.coTab[id] || 'overview') === 'activity' ? coActivity(id) : `
-    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${fact('Hours', esc(c.hours || ''))}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Owner', who(c.ownerId))}${fact('Phone', c.phone ? `<span class="nw">${esc(phonePretty(c.phone))}</span>` : '', c.phone)}${fact('Website', web ? `<a class="lnk" href="${esc(web)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '')}${fact('Address', esc(addr), addr)}${fact('Hours', esc(c.hours || ''))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({companyid:id})}
     ${sec('Contacts', g.contacts.length, rowsOr(g.contacts.sort((a,b)=>pname_(a).localeCompare(pname_(b))), contactRow, 'No contacts yet.'), 'newContact', {co:id})}
@@ -3930,7 +3931,7 @@ const DETAIL = {
     const deals = L('deals').filter(d => d.contactId === id);
     return `<div class="dh"><div><p class="eyebrow">Contact</p><h2>${esc(pname_(c))}</h2><p class="sub">${esc(c.title||'')}${c.companyId ? (c.title ? ' at ' : '') : ''}</p>${c.companyId ? `<div>${link('companies', c.companyId)}</div>` : ''}</div>${closeBtn}</div>
     <div class="dacts">${canWrite ? `<button class="btn sm pri" data-act="newDeal" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Opportunity</button><button class="btn sm" data-act="addActivity" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('plus')}Activity</button><button class="btn sm" data-act="newTask" data-co="${esc(c.companyId||'')}">${ic('bell')}Reminder</button><button class="btn sm" data-act="jStart" data-co="${esc(c.companyId||'')}" data-ct="${id}">${ic('route')}Journey</button><button class="btn sm" data-act="editContact" data-id="${id}">${ic('edit')}Edit</button><button class="btn sm" data-act="merge" data-col="contacts" data-id="${id}" title="Fold a duplicate contact into this one">Merge</button>` : ''}<button class="btn sm" data-act="draft" data-col="contacts" data-id="${id}">${ic('mail')}Email</button>${canWrite ? `<button class="btn sm ghost" data-act="delContact" data-id="${id}">${ic('trash')}Delete</button>` : ''}</div>
-    <dl class="facts">${fact('Email', ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(ctMail(c))}</button>` : '', ctMail(c))}${c.email && c.email2 ? fact('Other email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Mobile', esc(phonePretty(c.mobile)), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
+    <dl class="facts">${fact('Email', ctMail(c) ? `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}">${esc(ctMail(c))}</button>` : '', ctMail(c))}${c.email && c.email2 ? fact('Other email', `<button class="lnk" data-act="draft" data-col="contacts" data-id="${id}" data-to="${esc(c.email2)}">${esc(c.email2)}</button>`, c.email2) : ''}${fact('Phone', c.phone ? `<span class="nw">${esc(phonePretty(c.phone))}</span>` : '', c.phone)}${fact('Mobile', esc(phonePretty(c.mobile)), c.mobile)}${fact('Owner', who(c.ownerId))}${spiroFacts(c)}</dl>
     ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ''}
     ${logBox({contactid:id, companyid:c.companyId})}
     ${sec('Opportunities', deals.filter(isReal).length, rowsOr(deals, dealRow, 'No opportunities with this contact.'), 'newDeal', {co:c.companyId, ct:id})}
@@ -7318,8 +7319,8 @@ function acctCard(coId, ctId){
   const ct = ctId && S.contacts[ctId];
   const deals = L('deals').filter(d => d.companyId === coId && isOpen(d)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 3);
   return `<aside class="acard"><p class="eyebrow">Account</p><h4>${esc(c.name)}</h4>
-    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Address', esc(addr), addr)}${fact('Phone', esc(phonePretty(c.phone)), c.phone)}${fact('Owner', who(c.ownerId))}</dl>
-    ${ct ? `<p class="eyebrow">Contact</p><dl class="facts">${fact('Name', esc(pname_(ct)))}${fact('Email', esc(ctMail(ct) || ''), ctMail(ct))}${fact('Phone', esc(phonePretty(ct.phone || ct.mobile || '')), ct.phone || ct.mobile)}</dl>` : ''}
+    <dl class="facts">${fact('Account #', c.acctNo ? `<span class="num">${c.acctNo}</span>` : '', c.acctNo ? String(c.acctNo) : '')}${fact('Address', esc(addr), addr)}${fact('Phone', c.phone ? `<span class="nw">${esc(phonePretty(c.phone))}</span>` : '', c.phone)}${fact('Owner', who(c.ownerId))}</dl>
+    ${ct ? `<p class="eyebrow">Contact</p><dl class="facts">${fact('Name', esc(pname_(ct)))}${fact('Email', esc(ctMail(ct) || ''), ctMail(ct))}${fact('Phone', ct.phone || ct.mobile ? `<span class="nw">${esc(phonePretty(ct.phone || ct.mobile))}</span>` : '', ct.phone || ct.mobile)}</dl>` : ''}
     ${deals.length ? `<p class="eyebrow">Open opportunities</p><ul class="acard-d">${deals.map(d => `<li><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b><small>${esc([stage(d).l, d.value ? money(d.value) : '', isDate(d.serviceDate) ? 'service ' + fmtDate(d.serviceDate) : ''].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>` : ''}
     <button type="button" class="btn sm" data-act="acardOpen" data-id="${esc(coId)}">${ic('building')}Open account</button></aside>`;
 }
