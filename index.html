@@ -751,6 +751,7 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .fp-seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:9px;overflow:hidden}.fp-seg button{border:0;background:var(--surface);color:var(--fg);font:inherit;font-size:.85rem;font-weight:600;padding:7px 0;cursor:pointer}.fp-seg button+button{border-left:1px solid var(--line)}.fp-seg button.on{background:var(--accent);color:#fff}
 .fp-more{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column}.fp-more summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:.9rem}.fp-more[open]{gap:12px}.fp-more[open]>.fp-f{margin-top:12px}
 .fp-save{align-self:flex-start}
+@keyframes fpflash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}.fpanel.flash{animation:fpflash 1.2s ease-out}
 @media (max-width:1100px){.fp-layout{grid-template-columns:1fr}.fpanel{position:static;max-height:none}}
 .fltnew{display:flex;flex-direction:column;gap:16px}.fq{display:flex;flex-direction:column;gap:8px}.fq-l{font-size:.95rem}
 .fpills{display:flex;flex-wrap:wrap;gap:6px}.fpill{position:relative;cursor:pointer}.fpill input{position:absolute;opacity:0;pointer-events:none}
@@ -8369,7 +8370,13 @@ const A = {
   settings: () => { settingsModal(); if (DRIVE_BACKUP) drvLoad(); },
   wipeAll: () => wipeModal(),
   fltOpen: d => fltModal(d.t),
-  fpToggle: () => { ui.fpOn = !fpOn(); prefSet('fpanel', ui.fpOn ? '1' : '0'); schedule(); },
+  fpToggle: () => {
+    const pnl = document.querySelector('.fpanel'), r = pnl && pnl.getBoundingClientRect();
+    // the panel is on but scrolled out of sight (or above the list on a narrower window): bring it into view instead of hiding it
+    if (pnl && (r.bottom < 60 || r.top > innerHeight - 60)) { pnl.scrollIntoView({behavior: 'smooth', block: 'start'}); pnl.classList.remove('flash'); void pnl.offsetWidth; pnl.classList.add('flash'); return; }
+    ui.fpOn = !fpOn(); prefSet('fpanel', ui.fpOn ? '1' : '0'); render();
+    if (ui.fpOn) { const n = document.querySelector('.fpanel'); if (n) { n.scrollIntoView({behavior: 'smooth', block: 'nearest'}); n.classList.add('flash'); } }
+    else toast('Filter panel hidden. Click Filters to bring it back.'); },
   fpShort: d => { const sc = FP_SHORT[d.t]().find(x => x[0] === d.k); if (!sc) return; ui.flt = ui.flt || {}; ui.flt[d.t] = fltFresh(sc[3]); if (d.t === 'deals' && sc[2]) ui.oppShow = sc[2]; ui.lim = {}; ui.stick = null; schedule(); },
   fpClear: d => { ui.flt[d.t] = {}; if (d.t === 'deals') ui.oppShow = 'open'; ui.lim = {}; ui.q = ''; schedule(); },
   fpSave: d => viewSaveModal(d.t),
