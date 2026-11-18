@@ -384,6 +384,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .grid3c{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 16px}
 .grid3c .full{grid-column:1/-1}
+/* the opportunity form: four across on a wide screen, so it fits without scrolling */
+@media (min-width:1000px){.sheet.wide.dform{width:min(1080px,calc(100% - 32px));margin-top:3vh;max-height:94vh}.dform .grid3c{grid-template-columns:repeat(4,minmax(0,1fr))}.dform .grid3c .gap{display:none}}
+.dform .grid3c{gap:10px 14px}.dform .msel-o{min-height:32px}.dform textarea{min-height:0}
 .money{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding-left:10px}
 .money i{font-style:normal;color:var(--muted)}
 .money input,.money input:focus{border:0;box-shadow:none;background:none;padding-left:4px}
@@ -3619,12 +3622,12 @@ V.opp = () => {
   const headBtns = `<button class="btn sm" data-act="ndpCopy" data-id="${id}" title="Copies this opportunity as one row for the New Daily Purge sheet">${ic('copy')}Copy to NDP</button><button class="btn sm" data-act="draft" data-col="deals" data-id="${id}">${ic('mail')}Email</button>${W ? `<button class="btn sm" data-act="newTask" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('bell')}Reminder</button><button class="btn sm" data-act="newQuote" data-co="${esc(d.companyId || '')}" data-deal="${id}">${ic('tag')}Quote</button><button class="btn sm" data-act="jStart" data-co="${esc(d.companyId || '')}" data-ct="${esc(d.contactId || '')}" data-deal="${id}">${ic('route')}Journey</button><button class="btn sm ghost" data-act="moreMenu" data-k="deal" data-id="${id}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions" title="More">${ic('dots')}</button>` : ''}`;
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="pipeline">← Opportunities</button>
     <div class="cp-head"><span class="cp-ic">${ic('cols')}</span><div class="cp-name"><h1>${esc(oppTypeName(d.name) || 'Opportunity')}</h1><p class="sub">${d.companyId ? `<button class="lnk" data-act="coPage" data-id="${d.companyId}">${esc(cname(d.companyId))}</button>` : 'No account'}</p></div>
-      <div class="vh-act">${W ? stageSel(d, 'rowStage') : stageChip(d)}${headBtns}</div></div>
+      <div class="vh-act">${W ? stageSel({...d, id}, 'rowStage') : stageChip(d)}${headBtns}</div></div>
 
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
       <div class="cpgrid">
       ${f('Company', d.companyId ? esc(cname(d.companyId)) : '', false, 'companyId')}${f('Opportunity', esc(oppType(d)), false, 'type')}${f('Initial call', esc(d.initialCall), false, 'initialCall')}
-      ${cpField('Sales stage', W ? stageSel(d, 'rowStage') : stageChip(d))}${f('Annual projected amount', d.value ? `<b class="num">${money(d.value)}</b>` : '', false, 'value')}${f('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '', false, 'priceQuoted')}
+      ${cpField('Sales stage', W ? stageSel({...d, id}, 'rowStage') : stageChip(d))}${f('Annual projected amount', d.value ? `<b class="num">${money(d.value)}</b>` : '', false, 'value')}${f('Price quoted', d.priceQuoted ? `<span class="num">${esc(pqShow(d.priceQuoted))}</span>` : '', false, 'priceQuoted')}
       ${f('Amount of shredding', esc(d.shredAmount), false, 'shredAmount')}${f('Description', d.notes ? `<span style="white-space:pre-wrap">${esc(d.notes)}</span>` : '', 2, 'notes')}
       ${f('Service', esc(d.service), false, 'service')}${f('Service interval', esc(d.interval), false, 'interval')}${f('Service date', isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '', false, 'serviceDate')}
       ${f('Service type', esc(svcShow(d.serviceType)), true, 'serviceType')}${svcHas(d.serviceType, 'Electronics') || d.elecValue ? f('Electronics: annual projected amount', d.elecValue ? money(d.elecValue) : '', false, 'elecValue') : ''}${feeOn(d) ? f('Additional fees', esc(feeList(d.fees).join(', ')), true, 'fees') + FEES.filter(([l, k]) => feeList(d.fees).includes(l) || d[k]).map(([l, k]) => f(l, pqShow(d[k]) ? `<span class="num">${esc(pqShow(d[k]))}</span>` : '', false, k)).join('') : ''}${cpField('Created', d.createdAt ? new Date(d.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}${f('Owner', who(d.ownerId), false, 'ownerId')}
@@ -3667,7 +3670,7 @@ V.company = () => {
   else if (tab === 'reminders') { const open = g.tasks.filter(k => !k.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1); const done = g.tasks.filter(k => k.done).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
     body = `<section class="panel"><div class="ph"><h3>Open</h3>${W ? `<button class="btn sm pri" data-act="newTask" data-co="${id}">${ic('bell')}Reminder</button>` : ''}</div>${tasksList(open)}</section><section class="panel"><h3>Completed</h3>${done.length ? `<ul class="tasks">${done.map(taskRow).join('')}</ul>` : '<p class="empty-s">Nothing completed yet.</p>'}</section>`; }
   else if (tab === 'contacts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContact" data-co="${id}">${ic('plus')}Contact</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>Mobile</th></tr></thead><tbody>${g.contacts.sort((a, b) => pname_(a).localeCompare(pname_(b))).map(ct => `<tr data-act="open" data-col="contacts" data-id="${ct.id}"><td><b>${esc(pname_(ct))}</b></td><td>${esc(ct.title || '—')}</td><td>${ctMailLink(ct) || '—'}</td><td class="num">${esc(phonePretty(ct.phone || '—'))}</td><td class="num">${esc(phonePretty(ct.mobile || '—'))}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No contacts yet.</td></tr>'}</tbody></table></div>`;
-  else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel(d, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
+  else if (tab === 'opps') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newDeal" data-co="${id}">${ic('plus')}Opportunity</button>` : ''}</div><div class="tbl"><table><thead><tr><th>Opportunity</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th><th>Service date</th></tr></thead><tbody>${g.deals.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).map(d => `<tr data-act="open" data-col="deals" data-id="${d.id}"><td><b>${esc(oppTypeName(d.name) || 'Opportunity')}</b>${d.serviceType || d.service ? `<span class="t2">${esc([d.serviceType, d.service, d.interval].filter(Boolean).join(' · '))}</span>` : ''}</td><td>${W ? stageSel({...d, id}, 'rowStage') : stageChip(d)}</td><td class="r num">${d.value ? money(d.value) : '—'}</td><td class="r num">${d.priceQuoted ? esc(pqShow(d.priceQuoted)) : '—'}</td><td>${isDate(d.serviceDate) ? fmtDate(d.serviceDate) : '—'}</td></tr>`).join('') || '<tr><td colspan="5" class="sub">No opportunities yet.</td></tr>'}</tbody></table></div>`;
   else if (tab === 'quotes') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newQuote" data-co="${id}">${ic('plus')}New quote</button>` : ''}</div><section class="panel">${rowsOr(g.quotes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), quoteRow, 'No quotes yet.')}</section>`;
   else if (tab === 'contracts') body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="newContract" data-co="${id}">${ic('plus')}Contract</button>` : ''}</div><section class="panel">${rowsOr(g.contracts, contractRow, 'No contracts yet.')}</section>`;
   else if (tab === 'journeys') { const es = L('enrollments').filter(e => e.companyId === id).sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
@@ -4489,14 +4492,9 @@ function dealForm(id, pre={}){
     ${F('Annual projected amount', `<span class="money"><i>$</i>${inp('value', d.value ? d.value : '', 'text', 'inputmode="decimal"')}</span>`)}
     ${F('Price quoted', `<span class="money"><i>$</i>${inp('priceQuoted', d.priceQuoted ? d.priceQuoted : '', 'text', 'placeholder="e.g. 175/85"')}</span>`)}
     ${F('Amount of shredding', inp('shredAmount', d.shredAmount || '', 'text', 'placeholder="e.g. 30 boxes"'))}
-    <label class="f full"><span>Description</span>${ta('notes', d.notes, 3)}</label>
     ${F('Service', sel('service', o(SERVICES, d.service), d.service, 'data-change="dfSvcPick"'))}
     ${F('Service interval', sel('interval', o(INTERVALS, d.interval), d.interval, 'data-change="dfSvcPick"'))}
     ${F('Service date', inp('serviceDate', d.serviceDate, 'date'))}
-    <div class="f full"><span>Service type <small class="sub">(pick all that apply)</small></span>${mselHtml('serviceType', SVC_TYPES, d.serviceType, 'data-change="dfSvcPick"', 'dfSvcType', 'Service type')}
-      <label class="msel-x" id="dfElec"${svcHas(d.serviceType, 'Electronics') ? '' : ' hidden'}><span>Electronics: annual projected amount</span><span class="money"><i>$</i>${inp('elecValue', d.elecValue ? d.elecValue : '', 'text', 'inputmode="decimal" placeholder="0"')}</span></label></div>
-    <div class="f full" id="dfFeesWrap"${feeOn(d) ? '' : ' hidden'}><span>Additional fees <small class="sub">(pick any that apply)</small></span>${feeMsel('fees', d.fees, '', 'dfFees')}
-      ${FEES.map(([l, k]) => `<label class="msel-x" id="dfFee_${k}"${feeList(d.fees).includes(l) ? '' : ' hidden'}><span>${l}</span><span class="money"><i>$</i>${inp(k, d[k] ?? '', 'text', 'placeholder="0"')}</span></label>`).join('')}</div>
     <label class="f" id="dfClosed"${hid(!isOpen(d))}><span>Closed date</span>${inp('closedAt', d.closedAt || '', 'date', 'id="dfClosedAt"')}</label>
     <label class="f" id="dfClosedBy"${hid(!isOpen(d))}><span>Closed by</span>${ownerSel('closedBy', d.closedBy || ME.id)}</label>
     <span class="gap" id="dfGap1"${hid(!isOpen(d))}></span><span class="gap" id="dfGap2" hidden></span>
@@ -4506,6 +4504,11 @@ function dealForm(id, pre={}){
     ${F('First call close', sel('firstCallClose', ['', 'Yes', 'No'], d.firstCallClose, 'data-change="dfFcc"'))}
     <label class="f" id="dfNoClose"${hid(d.firstCallClose === 'No')}><span>Did not close on first call</span>${sel('noCloseReason', o(NO_CLOSE, d.noCloseReason), d.noCloseReason)}</label>
     <label class="f" id="dfLoss"${hid(d.stage === 'lost')}><span>Reason for loss</span>${sel('lostReason', o(LOSS_REASONS, d.lostReason), d.lostReason)}</label>
+    <div class="f full"><span>Service type <small class="sub">(pick all that apply)</small></span>${mselHtml('serviceType', SVC_TYPES, d.serviceType, 'data-change="dfSvcPick"', 'dfSvcType', 'Service type')}
+      <label class="msel-x" id="dfElec"${svcHas(d.serviceType, 'Electronics') ? '' : ' hidden'}><span>Electronics: annual projected amount</span><span class="money"><i>$</i>${inp('elecValue', d.elecValue ? d.elecValue : '', 'text', 'inputmode="decimal" placeholder="0"')}</span></label></div>
+    <div class="f full" id="dfFeesWrap"${feeOn(d) ? '' : ' hidden'}><span>Additional fees <small class="sub">(pick any that apply)</small></span>${feeMsel('fees', d.fees, '', 'dfFees')}
+      ${FEES.map(([l, k]) => `<label class="msel-x" id="dfFee_${k}"${feeList(d.fees).includes(l) ? '' : ' hidden'}><span>${l}</span><span class="money"><i>$</i>${inp(k, d[k] ?? '', 'text', 'placeholder="0"')}</span></label>`).join('')}</div>
+    <label class="f full"><span>Description</span>${ta('notes', d.notes, 2)}</label>
     <input type="hidden" name="then" id="dfThen" value="">
     </div>`, 'Save', async f => {
       let companyId = f.companyId === '__new' ? '' : f.companyId;
@@ -4526,7 +4529,7 @@ function dealForm(id, pre={}){
       if (ok && !id) { toast('Opportunity added'); afterModal(() => { A.oppPage({id: nid}); if (f.then === 'reminder' && isOpen(rec)) setTimeout(() => taskForm(null, {co: companyId, deal: nid}), 150); }); }   // open the new opportunity's page
       else if (ok && f.then === 'reminder' && isOpen(rec)) setTimeout(() => taskForm(null, {co: companyId, deal: nid}), 250);
       return ok;
-    }, {wide: true, foot: `<button type="button" class="btn" id="dfRemBtn" data-act="dfSaveRem"${isOpen(d) ? '' : ' hidden'}>${ic('bell')}Save &amp; set reminder</button>`});
+    }, {wide: true, cls: 'dform', foot: `<button type="button" class="btn" id="dfRemBtn" data-act="dfSaveRem"${isOpen(d) ? '' : ' hidden'}>${ic('bell')}Save &amp; set reminder</button>`});
 }
 const REMINDER_TYPES = ['1st Follow Up on Purge','2nd Follow Up on Purge','3rd Follow Up on Purge','4th Follow Up on Purge','5th Follow Up on Purge','6th Follow Up on Purge','7th Follow Up on Purge','Final Follow Up'];
 // ---------- reminder suggestions: which email to send next, and when to follow up again ----------
