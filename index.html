@@ -737,6 +737,19 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.hd-ck{width:30px}.hdbulk{margin:0 0 10px}html.hd-bulk #modal{opacity:0;pointer-events:none}html.hd-bulk #draftTray{display:none}
+#draftTray{position:fixed;right:16px;bottom:16px;z-index:40;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap-reverse;justify-content:flex-end;max-width:calc(100% - 32px)}
+#draftTray .dt-i{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;max-width:280px}
+#draftTray .dt-o{display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--fg);font:inherit;padding:8px 6px 8px 12px;cursor:pointer;text-align:left;min-width:0}
+#draftTray .dt-o:hover{background:var(--surface-2)}#draftTray .dt-o .ic{flex:none;color:var(--accent)}#draftTray .dt-o span{display:flex;flex-direction:column;min-width:0}
+#draftTray .dt-o b,#draftTray .dt-o small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#draftTray .dt-o b{font-size:.86rem}#draftTray .dt-o small{font-size:.76rem;color:var(--muted)}
+#draftTray .dt-x{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;padding:8px 10px;align-self:stretch}#draftTray .dt-x:hover{color:var(--bad);background:var(--surface-2)}#draftTray .dt-x .ic{width:15px;height:15px}
+#draftTray .dt-more{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:12px;padding:10px 12px;font:inherit;font-size:.84rem;font-weight:600;cursor:pointer;box-shadow:var(--shadow)}
+.dbar{margin:0 0 12px;background:var(--accent-soft);border-color:transparent}.dbar>span:first-child .ic{vertical-align:-3px;margin-right:6px}.dbar>span:last-child{display:flex;gap:6px}.dbar .ic{color:var(--accent)}
+.dl-list{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:8px}.dl-list li{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}.dl-list li>div{display:flex;flex-direction:column;min-width:0}.dl-list li>span{display:flex;gap:6px;flex:none}
+#verBar{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--accent);border-radius:12px;box-shadow:var(--shadow);padding:8px 8px 8px 14px;font-size:.9rem;max-width:calc(100% - 32px)}
+#verBar>span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#verBar>span .ic{color:var(--accent)}
+@media (max-width:640px){#draftTray .dt-i{max-width:calc(100vw - 32px)}#verBar{top:auto;bottom:80px}}
 .hosted{display:flex;flex-direction:column;gap:14px}.hi-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}.hi-top .btn{flex:none}
 .hi-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
 .hi{display:flex;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface)}
@@ -3685,7 +3698,7 @@ V.company = () => {
     body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="jStart" data-co="${id}">${ic('route')}Start a journey</button>` : ''}</div><section class="panel">${rowsOr(es, e => `<li class="rowi" data-act="jOpen" data-id="${e.id}"><div><b>${esc(jName(e.journeyId))}</b><small>${esc(nameOf('contacts', e.contactId))} · ${sentCount(e)} of ${(e.schedule || []).length} sent</small></div><span class="end">${jStatusChip(e)}</span></li>`, 'No one at this company is on a journey.')}</section>`; }
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="companies">← Accounts</button>
     <div class="cp-head"><span class="cp-ic">${ic('building')}</span><div class="cp-name"><h1>${esc(c.name)}</h1><p class="sub">${esc(addr) || 'No address yet'}</p></div><div class="vh-act">${headBtns}</div></div>
-    ${simpleOn() ? smNextBox(id) : ''}
+    ${draftsBar(id)}${simpleOn() ? smNextBox(id) : ''}
     <div class="cptabs" role="tablist">${CP_TABS.map(([k, l, i]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-act="cpTab" data-t="${k}">${ic(i)}<span>${l}</span>${counts[k] ? `<em>${counts[k]}</em>` : ''}</button>`).join('')}</div>
     <div class="cp-body">${body}</div></div>`;
 };
@@ -4014,7 +4027,7 @@ document.addEventListener('pointerdown', e => {
 });
 document.addEventListener('dblclick', e => { const head = e.target.closest && e.target.closest('#modal .sheet > .sh'); if (!head || e.target.closest('button, input, select, textarea')) return; ui.modalPos = null; sheetMove(head.parentElement, 0, 0); });
 addEventListener('resize', () => { const sh = $('#mform'); if (sh && ui.modalPos) sheetMove(sh, ui.modalPos.x, ui.modalPos.y); });
-function closeModal(){ imgPopClose(); const m = $('#modal'); if (ui.setup) { ui.setupResume = ui.setup; ui.setup = null; } const wasCmp = !!m.querySelector('.cmp'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved', 'dock'); document.documentElement.classList.remove('cmp-docked');
+function closeModal(){ imgPopClose(); const m = $('#modal'); if (m.querySelector('.cmp')) { if (!ui.cmpNoKeep) draftKeep(); ui.cmpNoKeep = false; setTimeout(trayDraw, 0); } if (ui.setup) { ui.setupResume = ui.setup; ui.setup = null; } const wasCmp = !!m.querySelector('.cmp'); m.hidden = true; m.innerHTML = ''; ui.modalPos = null; m.classList.remove('moved', 'dock'); document.documentElement.classList.remove('cmp-docked');
   if (wasCmp) ui.cmpStash = null; else if (ui.cmpStash) { const sn = ui.cmpStash; ui.cmpStash = null; setTimeout(() => cmpReopen(sn), 0); } ui.inSettings = false; if (ui.js) ui.js.open = false; modalUnwind(); }
 function formData(f){ const o = {}; for (const el of f.elements) { if (!el.name) continue; if (el.type === 'checkbox') o[el.name] = el.checked; else if (el.type === 'radio') { if (el.checked) o[el.name] = el.value; } else if (el.name.endsWith('[]')) (o[el.name] ??= []).push(el.value); else o[el.name] = el.type === 'tel' ? phoneNorm(el.value) : el.value.trim(); } return o; }
 const F = (label, input, cls='') => `<label class="f ${cls}"><span>${label}</span>${input}</label>`;
@@ -5762,6 +5775,88 @@ function sigModal(){
     }, {wide: true});
   setTimeout(sigCheckImages, 50);
 }
+// ---------- email drafts: an email you close without sending is kept, like Outlook (saved to your account) ----------
+let DRAFTS = [], draftsTs = 0, draftsT = 0, draftKeepT = 0;
+const DRAFT_DAYS = 14;
+const draftsLsKey = () => 'apcrm-drafts-' + (ME.id || 'x');
+const draftsMine = () => DRAFTS.filter(x => x && x.key && x.at > Date.now() - DRAFT_DAYS * 864e5).sort((a, b) => b.at - a.at);
+function draftsWrite(){ if (!live || !db || !ME.id || DEMO) return Promise.resolve(); return db.doc('drafts/' + ME.id).set({list: DRAFTS, updatedAt: draftsTs}).catch(() => {}); }
+function draftsPut(list, now){
+  DRAFTS = list.filter(x => x && x.at > Date.now() - DRAFT_DAYS * 864e5); draftsTs = Date.now();
+  try { localStorage.setItem(draftsLsKey(), JSON.stringify({list: DRAFTS, ts: draftsTs})); } catch {}
+  trayDraw(); if (ui.view === 'company') schedule();
+  clearTimeout(draftsT); if (now) return draftsWrite(); draftsT = setTimeout(draftsWrite, 800); return Promise.resolve();
+}
+function draftsLoad(){
+  try { const v = JSON.parse(localStorage.getItem(draftsLsKey()) || 'null'); if (v && Array.isArray(v.list)) { DRAFTS = v.list; draftsTs = v.ts || 0; } } catch {}
+  trayDraw();
+  if (!live || !db || !ME.id || DEMO) return;
+  try { db.doc('drafts/' + ME.id).onSnapshot(snap => { const v = snap && snap.exists && snap.data(); if (!v || !Array.isArray(v.list) || (v.updatedAt || 0) <= draftsTs) return;
+    DRAFTS = v.list; draftsTs = v.updatedAt || 0; try { localStorage.setItem(draftsLsKey(), JSON.stringify({list: DRAFTS, ts: draftsTs})); } catch {} trayDraw(); if (ui.view === 'company') schedule(); }, () => {}); } catch {}
+}
+// everything in the open email window, ready to save (attached files can't be kept: only how many there were)
+function draftKeep(now){
+  clearTimeout(draftKeepT);
+  if (!ui.cmpDirty || !ui.draftKey || !$('#mform .cmp') || !ME.id) return Promise.resolve();
+  let sn; try { const raw = cmpSnap(); const files = (raw.files || []).length; delete raw.files; sn = JSON.parse(JSON.stringify(raw)); sn.files = files; } catch { return Promise.resolve(); }
+  const d = ui.draft || {}, ct = d.contactId && S.contacts[d.contactId];
+  const who = (ct && pname_(ct)) || cname(d.companyId) || sn.to || 'Email';
+  const item = {key: ui.draftKey, at: Date.now(), coId: d.companyId || '', who, subj: sn.subj || '', sn};
+  return draftsPut([item, ...DRAFTS.filter(x => x.key !== item.key)].slice(0, 30), now);
+}
+const draftDrop = key => { if (key && DRAFTS.some(x => x.key === key)) draftsPut(DRAFTS.filter(x => x.key !== key)); };
+function draftResume(key){
+  const it = DRAFTS.find(x => x.key === key); if (!it) return;
+  const a = it.sn && it.sn.args; if (!a || !S[a[0]] || !S[a[0]][a[1]]) { toast("That draft's account or contact is gone, so it can't be reopened.", 'bad', {label: 'Discard it', fn: () => draftDrop(key)}); return; }
+  if ($('#mform .cmp')) { draftKeep(); closeModal(); }
+  cmpReopen(it.sn); ui.draftKey = key; ui.cmpDirty = true; trayDraw();
+  if (it.sn.files) toast(`Re-attach your ${it.sn.files === 1 ? 'file' : it.sn.files + ' files'}: drafts don't keep attachments.`);
+}
+function trayDraw(){
+  let t = document.getElementById('draftTray'); if (!t) { t = document.createElement('div'); t.id = 'draftTray'; t.setAttribute('aria-label', 'Email drafts'); document.body.append(t); }
+  const open = $('#mform .cmp') ? ui.draftKey : null;
+  const list = ME.id ? draftsMine().filter(x => x.key !== open) : [];
+  t.hidden = !list.length; if (!list.length) { t.innerHTML = ''; return; }
+  const show = list.slice(0, 3), more = list.length - show.length;
+  t.innerHTML = show.map(x => `<div class="dt-i"><button type="button" class="dt-o" data-act="draftResume" data-k="${esc(x.key)}" title="Open this draft">${ic('mail')}<span><b>${esc(x.who || 'Email')}</b><small>${esc(x.subj || '(no subject)')}</small></span></button><button type="button" class="dt-x" data-act="draftDiscard" data-k="${esc(x.key)}" aria-label="Discard draft to ${esc(x.who || '')}" title="Discard">${ic('x')}</button></div>`).join('')
+    + (more ? `<button type="button" class="dt-more" data-act="draftsAll">+${more} more</button>` : '');
+}
+function draftsAllModal(){
+  const list = draftsMine();
+  openModal('Email drafts', list.length ? `<ul class="dl-list">${list.map(x => `<li><div><b>${esc(x.who || 'Email')}</b><small class="sub">${esc(x.subj || '(no subject)')} · ${fmtWhen(x.at)}</small></div><span><button type="button" class="btn sm pri" data-act="draftResume" data-k="${esc(x.key)}">Open</button><button type="button" class="btn sm ghost" data-act="draftDiscard" data-k="${esc(x.key)}">Discard</button></span></li>`).join('')}</ul><p class="sub">Drafts you don't touch for ${DRAFT_DAYS} days clear themselves.</p>` : '<p class="empty-s">No drafts.</p>', null, null);
+}
+const fmtWhen = t => { const d = new Date(t), y = ymd(d); return (y === today() ? 'today' : fmtDate(y)) + ' ' + d.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'}); };
+// on an account's page: unsent emails to it
+function draftsBar(coId){
+  const list = draftsMine().filter(x => x.coId === coId); if (!list.length) return '';
+  return list.map(x => `<div class="mailbar dbar"><span>${ic('mail')}Unsent email to <b>${esc(x.who || 'this account')}</b>${x.subj ? `: “${esc(x.subj)}”` : ''} · ${fmtWhen(x.at)}</span><span><button type="button" class="btn sm pri" data-act="draftResume" data-k="${esc(x.key)}">Open draft</button><button type="button" class="btn sm ghost" data-act="draftDiscard" data-k="${esc(x.key)}">Discard</button></span></div>`).join('');
+}
+document.addEventListener('input', e => { if (e.target && e.target.closest && e.target.closest('#mform') && $('#mform .cmp') && ui.draftKey) { ui.cmpDirty = true; clearTimeout(draftKeepT); draftKeepT = setTimeout(draftKeep, 1500); } }, true);
+window.addEventListener('pagehide', () => { if ($('#mform .cmp')) draftKeep(true); });
+
+// ---------- a newer Paper Trail is out: offer a reload (so nobody keeps working on an old copy) ----------
+let verTag = null, verShown = false, verLast = 0;
+const appScript = html => (html.match(/<script>([\s\S]*?)<\/script>/g) || []).map(x => x.slice(8, -9)).sort((a, b) => b.length - a.length)[0] || '';
+const runningScript = () => [...document.scripts].map(x => x.textContent || '').sort((a, b) => b.length - a.length)[0] || '';
+async function verCheck(full){
+  if (verShown || !/^https?:$/.test(location.protocol)) return; verLast = Date.now();
+  const url = location.pathname + '?vc=' + Date.now();
+  try {
+    if (!full) { const h = await fetch(url, {method: 'HEAD', cache: 'no-store'}); const tag = h.ok && (h.headers.get('etag') || h.headers.get('last-modified')); if (!tag) return; if (verTag === tag) return; const first = verTag == null; verTag = tag; if (first) return; }
+    const r = await fetch(url, {cache: 'no-store'}); if (!r.ok) return; const html = await r.text();
+    if (full) { const tag = r.headers.get('etag') || r.headers.get('last-modified'); if (tag) verTag = tag; }
+    const next = appScript(html); if (next && next.length > 1000 && next.trim() !== runningScript().trim()) verShow();
+  } catch {}
+}
+function verShow(){
+  if (verShown) return; verShown = true;
+  const b = document.createElement('div'); b.id = 'verBar'; b.setAttribute('role', 'status');
+  b.innerHTML = `<span>${ic('spark')}<b>Paper Trail was updated.</b> Reload to get the latest.</span><button type="button" class="btn sm pri" data-act="verReload">Reload</button><button type="button" class="icon-btn" data-act="verHide" aria-label="Not now">${ic('x')}</button>`;
+  document.body.append(b);
+}
+setTimeout(() => verCheck(true), 20000);   // the copy just opened may already be old
+setInterval(() => { if (!document.hidden) verCheck(); }, 5 * 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - verLast > 60000) verCheck(); });
 // ---------- hosted images (Jason only): pictures with a permanent public link, for email signatures ----------
 // Kept in the public signature-images folder, under your own sign-in (signature-images/<you>/hosted/<name>).
 // Replacing a picture keeps its name, so its link stays the same and every signature using it shows the new one.
@@ -6634,6 +6729,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   else if (col === 'deals') { const st = stage(r).k; pick = st === 'won' ? 't_thanks' : st === 'quoted' ? 't_quote_fu' : 't_inquiry'; }
   if (!tpls.some(t => t.id === pick)) pick = '';
   ui.draftArgs = [col, id, purpose, jopt, toAddr]; ui.blankOk = false;
+  if (!ui.cmpRebuild) { ui.draftKey = uid(); ui.cmpDirty = false; }
   const lay = cmpLayout(jopt);
   const title = jopt && jopt.title ? jopt.title : jopt && jopt.journey ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : (contact && ctMail(contact) ? 'Email ' + toName(contact) : 'Email');
   const X = cmpParts({contacts, tpls, pick, jopt, lay});
@@ -6817,11 +6913,11 @@ async function sendMail(){
     if (ui.draft.hdwd) await hdwdMark(ui.draft.hdwd.dealId, 'sent', !!$('#hd10Btn[aria-pressed="true"]'));
     await emailJourneyAfterSend();
     const remId = ui.draft && ui.draft.remId;
-    closeModal(); toast('Email sent');
+    ui.cmpNoKeep = true; draftDrop(ui.draftKey); closeModal(); toast('Email sent');
     if (remId && S.tasks[remId] && remHelpOn()) setTimeout(() => remNextModal(remId), 60);   // sent for a reminder: offer to check it off and set the next one
   } catch(e){
     if (jr && !mailed) jRelease(jr.eid);   // not sent: let it go so it can be sent later
-    if (mailed) { closeModal(); toast('Email sent, but part of saving it afterwards failed. Check the timeline.', 'bad'); return; }
+    if (mailed) { ui.cmpNoKeep = true; draftDrop(ui.draftKey); closeModal(); toast('Email sent, but part of saving it afterwards failed. Check the timeline.', 'bad'); return; }
     draftNote(esc(mcpMsg(e)), true);
     const b = $('#dSend'); if (b) { b.disabled = false; b.lastChild.textContent = sendLabel(); }
   }
@@ -7219,13 +7315,18 @@ V.hdwd = () => {
   const tab = ui.hdTab || 'send', all = hdwdBuild().filter(hdwdMine).filter(x => match(ui.q, x.co.name, x.ct ? pname_(S.contacts[x.ct]) : '', x.zip, x.tpl?.name || ''));
   const due = all.filter(x => !x.done && !x.asked && x.due <= today()), soon = all.filter(x => !x.done && !x.asked && x.due > today());
   const hist = all.filter(x => x.done || x.asked).sort((a, b) => b.due.localeCompare(a.due)), tpls = hdwdTpls();
+  const hsel = hdSel(); for (const id of [...hsel]) if (!due.some(x => x.d.id === id && hdOk(x))) hsel.delete(id);   // only what's still ready stays picked
+  const okDue = due.filter(hdOk), picking = canWrite && okDue.length > 0; ui.hdOkIds = okDue.map(x => x.d.id);
   const segs = `<div class="segs" role="group" aria-label="Show">${[['send', `To send${ui.mine && due.length ? ' ' + due.length : ''}`], ['sent', 'Sent & skipped'], ['templates', `Templates${tpls.length ? ' ' + tpls.length : ''}`]].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="hdTab" data-t="${k}">${l}</button>`).join('')}</div>`;
   const pickSel = x => canWrite && tpls.length && !x.done ? `<select class="hdpick" data-change="hdPick" data-id="${x.d.id}" aria-label="Region for ${esc(x.co.name)}"><option value="">${x.tpl ? 'Change region…' : 'Pick a region…'}</option>${tpls.map(t => `<option value="${t.id}"${x.picked && x.tpl && x.tpl.id === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}${x.picked ? '<option value="-">Go by the ZIP again</option>' : ''}</select>` : '';
   const tplCell = x => x.tpl ? `${esc(x.tpl.name)}${x.picked ? ' <span class="sub small">(picked)</span>' : ''}${x.tpl.link ? '' : ' <span class="chip warn">no review link</span>'}${x.picked ? '<div>' + pickSel(x) + '</div>' : ''}`
     : `<span class="chip warn">${x.zip ? "ZIP isn't in a region" : 'No ZIP on the account'}</span><div>${pickSel(x)}</div>`;
-  const row = (x, acts) => `<tr><td><button class="lnk" data-act="open" data-col="companies" data-id="${x.co.id}"><b>${esc(x.co.name)}</b></button><div class="sub small">${x.ct ? esc(pname_(S.contacts[x.ct])) + (ctMail(S.contacts[x.ct]) ? '' : ' <span class="chip warn">no email</span>') : '<span class="chip warn">no contact on the account</span>'}</div></td>
+  const row = (x, acts, pick) => `<tr${pick && hsel.has(x.d.id) ? ' class="sel"' : ''}>${pick ? `<td class="hd-ck">${hdOk(x) ? `<input type="checkbox" data-change="hdPickRow" data-id="${x.d.id}"${hsel.has(x.d.id) ? ' checked' : ''}${ui.hdBusy ? ' disabled' : ''} aria-label="Pick ${esc(x.co.name)}">` : ''}</td>` : ''}<td><button class="lnk" data-act="open" data-col="companies" data-id="${x.co.id}"><b>${esc(x.co.name)}</b></button><div class="sub small">${x.ct ? esc(pname_(S.contacts[x.ct])) + (ctMail(S.contacts[x.ct]) ? '' : ' <span class="chip warn">no email</span>') : '<span class="chip warn">no contact on the account</span>'}</div></td>
     <td>${fmtDate(x.d.serviceDate)}</td><td>${tplCell(x)}${x.tpl || x.zip ? `<div class="sub small">${x.zip ? 'ZIP ' + esc(x.zip) : 'No ZIP on the account'}</div>` : ''}</td><td>${esc(pname(x.d.ownerId))}</td><td class="jrow-a">${acts(x)}</td></tr>`;
-  const table = (list, acts, cols = ['Account', 'Service', 'Template', 'Owner', '']) => `<div class="tbl"><table><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${list.map(x => row(x, acts)).join('')}</tbody></table></div>`;
+  const table = (list, acts, cols = ['Account', 'Service', 'Template', 'Owner', ''], pick) => `<div class="tbl"><table><thead><tr>${pick ? `<th class="hd-ck"><input type="checkbox" data-change="hdPickAll"${okDue.length && okDue.every(x => hsel.has(x.d.id)) ? ' checked' : ''}${ui.hdBusy ? ' disabled' : ''} aria-label="Pick all that are ready"></th>` : ''}${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${list.map(x => row(x, acts, pick)).join('')}</tbody></table></div>`;
+  const nPick = hsel.size, bulk = picking ? `<div class="jbulk hdbulk" role="toolbar" aria-label="Send several">${ui.hdBusy ? `<b>${esc(ui.hdBusy)}</b><span style="flex:1"></span><button class="btn sm" data-act="hdBulkStop">Stop after this one</button>`
+    : nPick ? `<b>${nPick} picked</b><button class="btn sm pri" data-act="hdBulk">${ic('mail')}Send ${nPick}</button><span style="flex:1"></span><button class="btn sm ghost" data-act="hdSelNone">Clear</button>`
+    : `<span class="sub">Tick the ones you want, or the box at the top for all ${okDue.length}, to send them in one go.</span>`}</div>` : '';
   const sendActs = x => canWrite ? `<button class="btn sm pri" data-act="hdSend" data-id="${x.d.id}"${!x.tpl ? ' disabled title="Pick a region first"' : !x.ct ? ' disabled title="Add a contact to the account first"' : x.d.ownerId && x.d.ownerId !== ME.id ? ` title="${esc(pname(x.d.ownerId))}'s customer: it goes out from your Outlook"` : ''}>${ic('mail')}Review &amp; send</button><button class="btn sm ghost" data-act="hdSkip" data-id="${x.d.id}">Skip</button>` : '';
   let bodyHtml;
   if (tab === 'templates') bodyHtml = `<section class="panel"><div class="ph"><h3>HDWD templates</h3>${canWrite ? `<button class="btn sm" data-act="hdTplEdit">${ic('plus')}New template</button>` : ''}</div>
@@ -7235,12 +7336,45 @@ V.hdwd = () => {
   else if (tab === 'sent') bodyHtml = hist.length ? table(hist, x => `${x.done === 'sent' ? `<span class="chip good">Sent ${fmtDate(ymd(new Date(x.d.hdwd.at)))}${x.d.hdwd.ten ? ' · 10% off' : ''}</span>` : x.done === 'skipped' ? `<span class="chip">Skipped</span>${canWrite ? ` <button class="btn sm ghost" data-act="hdUnskip" data-id="${x.d.id}">Undo</button>` : ''}` : `<span class="chip" title="Asked for a review on ${fmtDate(ymd(new Date(x.asked)))}; an account is asked at most once a year">Asked ${fmtDate(ymd(new Date(x.asked)))}</span>`}`) : `<section class="panel"><p class="sub">Nothing sent or skipped yet.</p></section>`;
   const noReg = due.filter(x => !x.tpl).length;
   if (tab === 'send') bodyHtml = noReg && tpls.length ? `<div class="mailbar warn"><span>${noReg === 1 ? "1 customer's ZIP isn't" : noReg + " customers' ZIPs aren't"} in any region. Pick the region for ${noReg === 1 ? 'it' : 'each'} below before sending.</span></div>` : '';
-  if (tab === 'send') bodyHtml += (due.length ? `<section class="panel"><div class="ph"><h3>Ready to send</h3><span class="chip warn">${due.length}</span></div>${table(due, sendActs)}</section>` : `<section class="panel">${emptyState('All caught up', 'Customers show up here the day after a purge is marked Closed Won with a service date.')}</section>`)
+  if (tab === 'send') bodyHtml += (due.length ? `<section class="panel"><div class="ph"><h3>Ready to send</h3><span class="chip warn">${due.length}</span></div>${bulk}${table(due, sendActs, undefined, picking)}</section>` : `<section class="panel">${emptyState('All caught up', 'Customers show up here the day after a purge is marked Closed Won with a service date.')}</section>`)
     + (soon.length ? `<section class="panel"><div class="ph"><h3>Coming up</h3><span class="sub">the day after their service</span></div>${table(soon, x => `<span class="chip">${fmtDate(x.due)}</span>`)}</section>` : '')
     + (!tpls.length && canWrite ? `<div class="mailbar warn"><span>Add your HDWD templates (with each office's Google review link and ZIP codes) before sending.</span><button class="btn sm" data-act="hdTab" data-t="templates">Set up templates</button></div>` : '');
   return head('HDWD: How Did We Do', 'Google review emails, the day after each purge. Every one waits for you to review and send.', searchBox('Search') + segs + mineSeg()) + bodyHtml;
 };
 
+// ---------- HDWD: send several at once (each goes out exactly as Review & send would write it, from your Outlook) ----------
+const hdSel = () => ui.hdSel || (ui.hdSel = new Set());
+const hdOk = x => !!(x.tpl && x.tpl.link && x.ct && S.contacts[x.ct] && ctMail(S.contacts[x.ct]));
+function hdBulkAsk(){
+  const ids = [...hdSel()].filter(id => S.deals[id]); if (!ids.length) return;
+  if (!MCP) { toast(mcpMsg(), 'bad'); return; }
+  const others = ids.filter(id => S.deals[id].ownerId && S.deals[id].ownerId !== ME.id).length;
+  openModal(`Send ${ids.length} How Did We Do email${ids.length === 1 ? '' : 's'}?`, `<p>Each one goes out from your Outlook, one after another, written exactly as <b>Review &amp; send</b> would write it (with your signature).</p>
+    <ul class="sub" style="margin:0;padding-left:18px"><li>No 10% offer is added. Use Review &amp; send for any that should get it.</li><li>One that's missing something it needs (a blank it can't fill in) is left on the list for you.</li>${others ? `<li>${others} ${others === 1 ? "is a teammate's customer" : "are teammates' customers"}; ${others === 1 ? 'it' : 'they'} still go${others === 1 ? 'es' : ''} out from your Outlook.</li>` : ''}</ul>`,
+    `Send ${ids.length}`, () => { setTimeout(() => hdBulkSend(ids), 50); });
+}
+async function hdBulkSend(ids){
+  const wait = ms => new Promise(ok => setTimeout(ok, ms));
+  let sent = 0; const held = []; ui.hdStop = false;
+  document.documentElement.classList.add('hd-bulk');   // the email windows open and send out of sight
+  try {
+    for (let i = 0; i < ids.length; i++) {
+      if (ui.hdStop) { held.push(...ids.slice(i).map(id => `${cname(S.deals[id]?.companyId) || 'Customer'}: not sent (you stopped)`)); break; }
+      const id = ids[i], nm = cname(S.deals[id]?.companyId) || 'Customer';
+      ui.hdBusy = `Sending ${i + 1} of ${ids.length}…`; render();
+      if (!S.deals[id] || (S.deals[id].hdwd && S.deals[id].hdwd.status)) continue;   // sent or skipped meanwhile
+      hdwdOpen(id); await wait(120);
+      if (!$('#mform .cmp')) { held.push(`${nm}: the email couldn't be put together`); continue; }
+      const bl = cmpBlankNames(); if (bl.length) { held.push(`${nm}: it's missing ${bl.join(', ')}`); ui.cmpNoKeep = true; closeModal(); continue; }
+      await sendMail();
+      if ($('#mform .cmp')) { const note = ($('#dNote')?.textContent || '').trim(); held.push(`${nm}: ${note || 'it did not send'}`); ui.cmpNoKeep = true; closeModal(); }
+      else { sent++; hdSel().delete(id); }
+      await wait(300);
+    }
+  } finally { document.documentElement.classList.remove('hd-bulk'); ui.hdBusy = null; ui.hdStop = false; render(); }
+  if (held.length) openModal(`Sent ${sent} of ${ids.length}`, `<p class="sub">These are still on the list:</p><ul style="margin:0;padding-left:18px">${held.map(h => `<li>${esc(h)}</li>`).join('')}</ul>`, null, null);
+  else toast(`Sent ${sent} How Did We Do email${sent === 1 ? '' : 's'}`);
+}
 // ---------- picking several journeys at once (Send now, Pause, Resume, Remove) ----------
 const jSel = () => ui.jSel || (ui.jSel = new Set());
 const jPicked = () => [...jSel()].map(id => S.enrollments[id] && {...S.enrollments[id], id}).filter(Boolean);
@@ -7942,6 +8076,9 @@ const A = {
   jShow: d => { ui.jShow = d.s; render(); },
   hdTab: d => { ui.hdTab = d.t; render(); },
   hdSend: d => hdwdOpen(d.id),
+  hdBulk: () => hdBulkAsk(),
+  hdBulkStop: () => { ui.hdStop = true; ui.hdBusy = 'Stopping after this one…'; render(); },
+  hdSelNone: () => { hdSel().clear(); render(); },
   hd10: () => { const b = $('#hd10Btn'), ed = $('#draftHtml'); if (!b || !ed) return; const on = b.getAttribute('aria-pressed') === 'true';
     if (on) { ed.querySelectorAll('[data-hd10]').forEach(x => x.remove()); b.setAttribute('aria-pressed', 'false'); b.textContent = 'Add 10%?'; }
     else { ed.insertAdjacentHTML('beforeend', HDWD_10); b.setAttribute('aria-pressed', 'true'); b.innerHTML = `${ic('check')}10% added · remove`; }
@@ -8160,6 +8297,11 @@ const A = {
   draftGo: () => draftGo(),
   copyDraft: () => { if (ui.draftHtml) { const el = $('#draftHtml'); if (el && elText(el).trim()) copyRich(el); return; } const v = $('#draftOut')?.value; if (v) copyText(v); else toast('Choose a template or write a message first.', 'bad'); },
   sendMail: () => sendMail(),
+  draftResume: d => draftResume(d.k),
+  draftDiscard: d => { const it = DRAFTS.find(x => x.key === d.k); if (!it) return; draftDrop(d.k); if (document.querySelector('#mform .dl-list')) draftsAllModal(); toast('Draft discarded', '', {label: 'Undo', fn: () => draftsPut([it, ...DRAFTS.filter(x => x.key !== it.key)])}); },
+  draftsAll: () => draftsAllModal(),
+  verReload: async () => { const b = document.querySelector('#verBar .btn'); if (b) { b.disabled = true; b.textContent = 'Reloading…'; } if ($('#mform .cmp')) await draftKeep(true); else await draftsWrite(); location.reload(); },
+  verHide: () => { document.getElementById('verBar')?.remove(); verShown = false; verTag = null; verLast = Date.now(); },
   hostImgs: () => { hostList = null; hostModal(); },
   hostHtml: d => { const im = document.querySelector(`#mform img[data-hiname="${CSS.escape(d.n)}"]`); const url = hostUrl(d.n);
     copyText(`<img src="${url}"${im && im.naturalWidth ? ` width="${im.naturalWidth}" height="${im.naturalHeight}"` : ''} alt="All Points Mobile Shredding" style="border:0;display:block">`); },
@@ -8180,6 +8322,8 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  hdPickRow: el => { const s_ = hdSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
+  hdPickAll: el => { const s_ = hdSel(); s_.clear(); if (el.checked) (ui.hdOkIds || []).forEach(id => s_.add(id)); render(); },
   hostAdd: el => { const f = [...(el.files || [])]; el.value = ''; if (f.length) hostUpload(f); },
   hostRep: el => { const f = el.files && el.files[0]; el.value = ''; if (f) hostUpload([f], el.dataset.n); },
   sortSet: el => { ui['sort_' + el.dataset.col] = el.value; prefSet('sort_' + el.dataset.col, el.value); ui.stick = null; render(); },
@@ -9908,7 +10052,7 @@ async function boot(){
   loadLookLocal();
   if (!h && LOOK.start && LOOK.start !== 'today' && VIEWS.some(v => v[0] === LOOK.start)) { ui.view = LOOK.start; try { history.replaceState(navState(), '', navHash(navState())); } catch {} }
   booted = true; bootDone(); setTimeout(acctHeal, 4000); setTimeout(() => { syncJourneyDefaults(); autoLoad(); }, 3000); setTimeout(() => { if (DRIVE_BACKUP && SUPA && !DEMO && isAdmin()) drvLoad(); }, 5000);
-  syncLookFromDb(); sigLoad();
+  syncLookFromDb(); sigLoad(); draftsLoad();
   setTimeout(() => trashPurge().catch(() => {}), 9000);
   try { const sd = sessionStorage.getItem('pt-demo'); if (GUEST || sd === '1' || (sd == null && STANDALONE && window.PAPER_TRAIL && window.PAPER_TRAIL.demo)) setDemo(true, true); } catch {}   // a refresh in demo stays on the same page
   setTimeout(() => checkReplies(), 5000);
