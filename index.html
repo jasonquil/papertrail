@@ -737,6 +737,16 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.to-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.to-pick{position:relative;flex:1;min-width:0;width:100%}
+.to-btn{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:5px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}.to-btn:hover{border-color:var(--muted)}.to-btn[aria-expanded=true]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.to-sel{display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0}.to-chip{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.9rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.to-sel .to-chip:only-child{background:none;border:0;padding:3px 0}
+.to-n{font-size:.78rem;color:var(--muted);white-space:nowrap}.to-car{color:var(--muted);font-size:.8rem}
+.to-list{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;max-height:320px;overflow:auto}
+.to-o{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;color:var(--fg);font:inherit;text-align:left;padding:8px 10px;border-radius:9px;cursor:pointer}.to-o:hover{background:var(--surface-2)}
+.to-ck{display:grid;place-items:center;width:18px;height:18px;border:1.5px solid var(--muted);border-radius:5px;font-size:.75rem;font-weight:800;flex:none}.to-o.on .to-ck{background:var(--accent);border-color:var(--accent);color:#fff}
+.to-t{display:flex;flex-direction:column;min-width:0;flex:1}.to-t b{font-size:.92rem}.to-t small{color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis}.to-o em{font-style:normal;font-size:.72rem;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 8px}
+.to-ft{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:4px;padding:8px 6px 2px;font-size:.84rem;color:var(--muted)}
 #fmPop{position:fixed;z-index:70;width:290px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:6px}#fmPop.wide{width:min(470px,calc(100vw - 24px))}
 .fm-menu{display:flex;flex-direction:column}.fm-menu button{display:flex;align-items:center;gap:10px;border:0;background:none;color:var(--fg);font:inherit;font-size:.92rem;text-align:left;padding:9px 12px;border-radius:9px;cursor:pointer}
 .fm-menu button:hover{background:var(--surface-2)}.fm-menu button.on{color:var(--accent);font-weight:700}.fm-menu button span{flex:1;min-width:0}.fm-menu small{color:var(--accent);font-weight:600;font-size:.8rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fm-menu i{font-style:normal;color:var(--muted)}
@@ -6864,7 +6874,7 @@ function draftModal(col, id, purpose, jopt, toAddr){
   else if (col === 'deals') { const st = stage(r).k; pick = st === 'won' ? 't_thanks' : st === 'quoted' ? 't_quote_fu' : 't_inquiry'; }
   if (!tpls.some(t => t.id === pick)) pick = '';
   ui.draftArgs = [col, id, purpose, jopt, toAddr]; ui.blankOk = false;
-  if (!ui.cmpRebuild) { ui.draftKey = uid(); ui.cmpDirty = false; }
+  if (!ui.cmpRebuild) { ui.draftKey = uid(); ui.cmpDirty = false; ui.toOpen = false; }
   const lay = cmpLayout(jopt);
   const title = jopt && jopt.title ? jopt.title : jopt && jopt.journey ? `${jName(S.enrollments[jopt.journey.eid]?.journeyId)}: email ${jopt.journey.idx + 1}` : (contact && ctMail(contact) ? 'Email ' + toName(contact) : 'Email');
   const X = cmpParts({contacts, tpls, pick, jopt, lay});
@@ -6878,10 +6888,40 @@ function draftModal(col, id, purpose, jopt, toAddr){
   if (jopt && jopt.hdwd) { const bar = $('.rte-bar[data-for="draftHtml"]'); if (bar) bar.insertAdjacentHTML('beforebegin', `<div class="hd10"><button type="button" class="btn sm" id="hd10Btn" data-act="hd10" aria-pressed="false">Add 10%?</button><span class="sub small">Adds the 10% off next purge offer (code THANKYOU10) to the end of the email.</span></div>`); }
 }
 // the recipient's initials beside the To line
-function cmpAvatar(){ const av = $('#dAv'); if (!av) return; const ct = ui.draft && S.contacts[ui.draft.contactId];
+function cmpAvatar(){ cmpToMore(); const av = $('#dAv'); if (!av) return; const ct = ui.draft && S.contacts[ui.draft.contactId];
   const nm = ct ? toName(ct) : '';
   const ini = nm.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || (ui.draft && ui.draft.toAddr || '?')[0].toUpperCase();
   av.textContent = ini; av.title = nm; }
+// the To box: a list of everyone on the account with a tick box each, so one email can go to several of them.
+// The first one ticked is the main contact (the one the email is logged to); the rest ride along on the To line.
+function cmpToMore(){
+  const sel_ = $('#dTo'); if (!sel_) return; const old = $('#dToMore'); if (old) old.remove();
+  sel_.classList.add('to-native'); sel_.tabIndex = -1; sel_.setAttribute('aria-hidden', 'true');
+  const cur = (sel_.value.split('|')[1] || '').toLowerCase();
+  const opts = [...sel_.options].map(o => ({v: o.value, a: o.value.split('|')[1], full: o.textContent.trim(), name: o.textContent.replace(/\s*<[^>]*>\s*$/, '').trim()})).filter(o => o.a);
+  const more = (ui.draft.toMore = (ui.draft.toMore || []).filter(a => a !== cur && opts.some(o => o.a === a)));
+  const picked = [cur, ...more].map(a => opts.find(o => o.a === a)).filter(Boolean);
+  let box = $('#dToPick');
+  if (!box) { sel_.insertAdjacentHTML('afterend', '<div class="to-pick" id="dToPick"></div>'); box = $('#dToPick'); }
+  const open = !!ui.toOpen;
+  box.innerHTML = `<button type="button" class="to-btn" data-act="toOpen" aria-haspopup="listbox" aria-expanded="${open}" aria-label="To: ${esc(picked.map(p => p.full).join(', '))}">
+      <span class="to-sel">${picked.map((p, n) => `<span class="to-chip">${esc(n === 0 && picked.length === 1 ? p.full : p.name)}</span>`).join('')}</span>${opts.length > 1 ? `<span class="to-n">${picked.length > 1 ? `${picked.length} people` : `${opts.length - 1} more on this account`}</span>` : ''}<span class="to-car" aria-hidden="true">▾</span></button>
+    ${open ? `<div class="to-list" role="listbox" aria-multiselectable="true" aria-label="Send to">${opts.map(o => { const on = picked.includes(o);
+      return `<button type="button" role="option" aria-selected="${on}" class="to-o${on ? ' on' : ''}" data-act="toPick" data-a="${esc(o.a)}" data-v="${esc(o.v)}"><span class="to-ck" aria-hidden="true">${on ? '✓' : ''}</span><span class="to-t"><b>${esc(o.name)}</b><small>${esc(o.a)}</small></span>${o.a === cur ? '<em>main</em>' : ''}</button>`; }).join('')}
+      <div class="to-ft"><span>${picked.length} selected</span><button type="button" class="btn sm pri" data-act="toOpen">Done</button></div></div>` : ''}`;
+}
+function toPick(a, v){
+  const sel_ = $('#dTo'); if (!sel_ || !ui.draft) return;
+  const cur = (sel_.value.split('|')[1] || '').toLowerCase(), more = new Set(ui.draft.toMore || []);
+  if (a === cur) {   // unticking the main one: the next one ticked becomes the main contact (one person always stays)
+    const next = [...more][0]; if (!next) { toast('An email needs at least one person.'); return; }
+    more.delete(next); const opt = [...sel_.options].find(o => o.value.split('|')[1] === next); ui.draft.toMore = [...more];
+    if (opt) { sel_.value = opt.value; sel_.dispatchEvent(new Event('change', {bubbles: true})); }
+  } else { more.has(a) ? more.delete(a) : more.add(a); ui.draft.toMore = [...more]; }
+  ui.cmpDirty = true; cmpToMore();
+}
+document.addEventListener('mousedown', e => { if (ui.toOpen && !e.target.closest('#dToPick')) { ui.toOpen = false; cmpToMore(); } }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ui.toOpen) { e.stopPropagation(); ui.toOpen = false; cmpToMore(); $('#dToPick .to-btn')?.focus(); } }, true);
 // Ctrl+Enter (Cmd+Enter on a Mac) sends from the email window
 document.addEventListener('keydown', e => { if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return; const b = $('#dSend'); if (!b || b.disabled || !e.target.closest || !e.target.closest('#mform')) return; e.preventDefault(); b.click(); });
 // ---------- formatting toolbar for email messages and templates ----------
@@ -6999,6 +7039,7 @@ function mailFields(){
   const ct = ui.draft && S.contacts[ui.draft.contactId];
   const ad = ui.draft && ui.draft.toAddr && ctAddrs(ct).includes(ui.draft.toAddr.toLowerCase()) ? ui.draft.toAddr : ctMail(ct);
   const to = ad ? [ad] : [];
+  for (const a of (ui.draft && ui.draft.toMore) || []) if (EMAIL_RE.test(a) && !to.some(x => x.toLowerCase() === a)) to.push(a);
   const cc = splitEmails($('#dCc').value), bcc = splitEmails($('#dBcc').value);
   const subject = $('#draftSubj').value.trim();
   const bad = [...cc, ...bcc].find(e => !EMAIL_RE.test(e));
@@ -8447,6 +8488,8 @@ const A = {
   draftsAll: () => draftsAllModal(),
   verReload: async () => { const b = document.querySelector('#verBar .btn'); if (b) { b.disabled = true; b.textContent = 'Reloading…'; } if ($('#mform .cmp')) await draftKeep(true); else await draftsWrite(); try { const u = new URL(location.href); u.searchParams.set('r', Date.now().toString(36)); location.replace(u.toString()); } catch { location.reload(); } },
   verHide: () => { document.getElementById('verBar')?.remove(); verShown = false; verTag = null; verLast = Date.now(); },
+  toOpen: () => { ui.toOpen = !ui.toOpen; cmpToMore(); },
+  toPick: d => toPick(d.a, d.v),
   hostImgs: () => { hostList = null; hostModal(); },
   hostHtml: d => { const im = document.querySelector(`#mform img[data-hiname="${CSS.escape(d.n)}"]`); const url = hostUrl(d.n);
     copyText(`<img src="${url}"${im && im.naturalWidth ? ` width="${im.naturalWidth}" height="${im.naturalHeight}"` : ''} alt="All Points Mobile Shredding" style="border:0;display:block">`); },
@@ -8527,7 +8570,7 @@ const CHANGE = {
   cmpTplQ: () => cmpLibFilter(),
   cmpBlank: el => {},
   dSigT: el => { const box = $('#dSigBox'); if (box) box.classList.toggle('off', !el.checked); },
-  draftTo: el => { setTimeout(() => { cmpAvatar(); const h = $('#mform > .sh h3'), ct = ui.draft && S.contacts[ui.draft.contactId]; if (h && /^Email\b/.test(h.textContent) && ct) h.textContent = 'Email ' + toName(ct); }, 0); if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
+  draftTo: el => { setTimeout(cmpToMore, 0); setTimeout(() => { cmpAvatar(); const h = $('#mform > .sh h3'), ct = ui.draft && S.contacts[ui.draft.contactId]; if (h && /^Email\b/.test(h.textContent) && ct) h.textContent = 'Email ' + toName(ct); }, 0); if (ui.draft) { const [cid, ad] = el.value.split('|'); ui.draft.contactId = cid; const ct = S.contacts[cid]; ui.draft.toAddr = (ct && ctAddrs(ct).find(e => e === ad)) ? [ct.email, ct.email2].map(x => String(x || '').trim()).find(x => x.toLowerCase() === ad) : ctMail(ct); } const t = $('#dTpl')?.value; if (t && t !== '__ai') applyTemplate(t); },
   dfStage: el => { const rb = $('#dfRemBtn'); if (rb) rb.hidden = CLOSED.includes(el.value); const closed = CLOSED.includes(el.value); const w = $('#dfLoss'); if (w) w.hidden = el.value !== 'lost'; const c = $('#dfClosed'); if (c) c.hidden = !closed; const g1 = $('#dfGap1'); if (g1) g1.hidden = !closed; /* closed: Closed date | Closed by | (space), so Lead source starts a new row */ const cb = $('#dfClosedBy'); if (cb) cb.hidden = !closed; const ca = $('#dfClosedAt'); if (ca) { if (closed && !ca.value) ca.value = today(); if (!closed) ca.value = ''; } },
   // New opportunity: picking the opportunity type fills in its usual service fields. A field the person set themselves is never overwritten;
   // switching to another type clears only what was filled in automatically.
