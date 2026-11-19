@@ -9820,9 +9820,35 @@ function supaNewPassword(sb){
     show();
   });
 }
+// ---------- keeping the sign-in fresh ----------
+// Supabase sign-ins last an hour and renew themselves in the background. A laptop that slept, or a tab the browser paused,
+// can wake up still holding the old one, and the first requests then fail with "JWT expired" (which used to show as a
+// connection problem until someone reloaded). Every request now notices that, renews the sign-in once, and tries again.
+const JWT_OLD = /jwt expired|PGRST301|PGRST303|token is expired|invalid jwt/i;
+function makeAuthFetch(getSb, baseFetch = (...a) => fetch(...a)){
+  let renewing = null;
+  const renew = () => renewing || (renewing = (async () => {
+    try { const sb = getSb(); const {data, error} = await sb.auth.refreshSession(); const tok = !error && data && data.session && data.session.access_token;
+      if (tok) { try { sb.realtime && sb.realtime.setAuth && sb.realtime.setAuth(tok); } catch {} } return tok || null; }
+    catch { return null; } finally { setTimeout(() => { renewing = null; }, 0); }
+  })());
+  const f = async (input, init = {}) => {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const r = await baseFetch(input, init);
+    if ((r.status !== 401 && r.status !== 403) || /\/auth\/v1\//.test(url)) return r;
+    let txt = ''; try { txt = await r.clone().text(); } catch {}
+    if (!JWT_OLD.test(txt)) return r;
+    const tok = await renew(); if (!tok) return r;
+    const h = new Headers(init.headers || (typeof input !== 'string' && input && input.headers) || undefined); h.set('Authorization', 'Bearer ' + tok);
+    return baseFetch(input, {...init, headers: h});
+  };
+  f.renew = renew;
+  return f;
+}
 async function supaStart(){
   const cfg = window.PAPER_TRAIL || {};
-  const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true}});
+  let sbRef = null; const authFetch = makeAuthFetch(() => sbRef);
+  const sb = sbRef = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true}, global: {fetch: authFetch}});
   SUPA = {sb, uid: null};
   let loginMsg = '', loginMode = '';
   if (AUTH_RET && AUTH_RET.type === 'recovery' && AUTH_RET.access_token) {   // came from a password reset email
@@ -9831,6 +9857,11 @@ async function supaStart(){
     else await supaNewPassword(sb);
   } else if (AUTH_RET && (AUTH_RET.error_code || AUTH_RET.error)) { loginMode = 'forgot'; loginMsg = 'That reset link has expired or was already used. Send yourself a new one.'; }
   AUTH_RET = null;
+  // a sign-in that's expired or about to: renew it before loading anything
+  const keepFresh = async () => { try { const {data: d} = await sb.auth.getSession(); const ss = d && d.session; if (ss && (ss.expires_at || 0) * 1000 - Date.now() < 5 * 60000) await authFetch.renew(); } catch {} };
+  await keepFresh();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepFresh(); });
+  addEventListener('online', keepFresh); setInterval(() => { if (document.visibilityState === 'visible') keepFresh(); }, 4 * 60000);
   const {data} = await sb.auth.getSession();
   let ok = false;
   if (data && data.session) {
