@@ -9820,6 +9820,18 @@ function supaNewPassword(sb){
     show();
   });
 }
+// ---------- keep password managers (Keeper, 1Password, LastPass, Bitwarden) out of Paper Trail's own fields ----------
+// Their little icons and autofill belong on the sign-in screen only, not on a customer's address or notes.
+const PM_SKIP = el => el.closest('#lgForm, .lg-card, .login, [data-pm-ok]') || el.type === 'password' || el.type === 'hidden' || /username|password/.test(el.autocomplete || '');
+function pmQuiet(root){
+  for (const el of (root.querySelectorAll ? root.querySelectorAll('input:not([data-pmq]), textarea:not([data-pmq])') : [])) {
+    el.dataset.pmq = '1'; if (PM_SKIP(el)) continue;
+    el.classList.add('keeper-ignore'); el.setAttribute('data-1p-ignore', ''); el.setAttribute('data-lpignore', 'true'); el.setAttribute('data-bwignore', ''); el.setAttribute('data-form-type', 'other');
+    if (!el.getAttribute('autocomplete')) el.setAttribute('autocomplete', 'off');
+  }
+}
+new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) { if (/^(INPUT|TEXTAREA)$/.test(n.tagName)) pmQuiet(n.parentNode || document); else pmQuiet(n); } }).observe(document.documentElement, {childList: true, subtree: true});
+document.addEventListener('DOMContentLoaded', () => pmQuiet(document));
 // ---------- keeping the sign-in fresh ----------
 // Supabase sign-ins last an hour and renew themselves in the background. A laptop that slept, or a tab the browser paused,
 // can wake up still holding the old one, and the first requests then fail with "JWT expired" (which used to show as a
