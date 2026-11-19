@@ -737,6 +737,13 @@ canvas.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:non
 .su-pick button{display:flex;flex-direction:column;gap:4px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}
 .su-pick button.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .su-pick small{color:var(--muted);font-size:.8rem}
+.wl{display:flex;flex-direction:column;gap:12px}.wl-row{display:flex;gap:8px}.wl-row input{flex:1}.wl textarea{font:inherit;font-size:.92rem;line-height:1.5}.wl-act{display:flex;gap:8px;justify-content:flex-end}
+.ci-pick{display:flex;flex-direction:column;gap:14px;max-width:560px}.ci-top{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}.ci-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.ci-tabs button{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 12px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer}.ci-tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.ci-list{max-height:min(56vh,560px);overflow:auto;border:1px solid var(--line);border-radius:10px}.ci-list table{width:100%;border-collapse:collapse;font-size:.86rem}.ci-list th{position:sticky;top:0;background:var(--surface-2);text-align:left;padding:8px 10px;font-size:.74rem;z-index:1}
+.ci-list td{padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}.ci-list td small{display:block;color:var(--muted);font-size:.76rem}.ci-list td:first-child{max-width:300px}.ci-list td:first-child b{font-weight:600;overflow-wrap:anywhere}
+.ci-list input{width:100%;min-width:200px;font:inherit;font-size:.86rem;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg)}
+.ci-st{display:inline-block;margin-top:3px;font-size:.72rem;font-weight:700;border-radius:999px;padding:1px 8px}.ci-ok .ci-st{background:var(--accent-soft);color:var(--accent)}.ci-check .ci-st{background:#FBF0C9;color:#8A6100}.ci-none .ci-st{background:#FCE6E4;color:#B42318}.ci-have .ci-st,.ci-skip .ci-st{background:var(--surface-2);color:var(--muted)}.ci-skip td{opacity:.55}
 .to-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
 .to-pick{position:relative;flex:1;min-width:0;width:100%}
 .to-btn{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:5px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}.to-btn:hover{border-color:var(--muted)}.to-btn[aria-expanded=true]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
@@ -4958,6 +4965,99 @@ function quoteForm(id, pre={}){
       return true;
     }, {wide: true, foot: id ? `${canWrite ? `<button type="button" class="btn ghost" data-act="delQuote" data-id="${id}">${ic('trash')}Delete</button>` : ''}<button type="button" class="btn" data-act="dlQuote" data-id="${id}" style="margin-right:auto">${ic('down')}Download</button>` : ''});
 }
+// ---------- import signed contracts in bulk (Jason only) ----------
+// Pick the contracts zip and the list Claude made from it (client name, start and end date for each PDF). Paper Trail
+// matches each one to an account, shows the matches to check, then uploads each PDF to that account's Contracts tab.
+const CI_NOISE = /\b(llc|l l c|inc|incorporated|pa|p a|pllc|pc|p c|md|m d|dds|dmd|do|dc|d c|corp|corporation|co|company|ltd|the|of|and|group|services|service|center|centre|associates|assoc|llp|plc)\b/g;
+const ciNorm = s => String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[’'`]/g, '').replace(/&|\+/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+const ciCore = s => ciNorm(s).replace(CI_NOISE, ' ').replace(/\s+/g, ' ').trim();
+function ciNames(r){
+  const out = new Set();
+  for (const n of [r.client, r.fileClient]) { if (!n) continue; const base = String(n).replace(/\(prev\.?[^)]*\)/ig, '').replace(/\([^)]*\)/g, ' ');
+    out.add(base); for (const part of base.split(/\b(?:dba|d\/b\/a|d b a)\b/i)) out.add(part); }
+  return [...out].map(x => ({full: ciNorm(x), core: ciCore(x)})).filter(x => x.core.length >= 3);
+}
+let CI_IDX = null;
+function ciIndex(){
+  CI_IDX = L('companies').map(c => ({id: c.id, name: c.name, full: ciNorm(c.name), core: ciCore(c.name), words: new Set(ciCore(c.name).split(' ').filter(Boolean))})).filter(x => x.core);
+  return CI_IDX;
+}
+function ciMatch(r){
+  let best = null, score = 0;
+  for (const nm of ciNames(r)) { const n = nm.core, w = new Set(n.split(' ').filter(Boolean));
+    for (const c of CI_IDX) {
+      let sc = 0;
+      if (c.full === nm.full) sc = 1;                 // same name
+      else if (c.core === n) sc = .9;                 // same once LLC, Inc, P.A., "and"... are set aside
+      else { let hit = 0; for (const x of w) if (c.words.has(x)) hit++; sc = Math.min(.84, (2 * hit) / (w.size + c.words.size));
+        if (sc > .5 && (c.core.startsWith(n + ' ') || n.startsWith(c.core + ' '))) sc = .8; }
+      if (sc > score) { score = sc; best = c; }
+    } }
+  return score >= .6 ? {id: best.id, score} : {id: '', score};
+}
+const ciState = () => ui.ci || (ui.ci = {rows: [], zip: null, show: 'all', busy: ''});
+function ciModal(){
+  if (!isJason()) return;
+  const st = ciState(), rows = st.rows;
+  const n = k => rows.filter(r => r.st === k).length;
+  const view = rows.filter(r => st.show === 'all' || r.st === st.show);
+  const stL = {ok: 'Matched', check: 'Check this', none: 'No match', have: 'Already added', skip: 'Skipping'};
+  const body = !rows.length ? `<div class="ci-pick">
+      <p>Pick the two files and Paper Trail matches every contract to its account before anything is added.</p>
+      <label class="f"><span>1. The contracts zip</span><input type="file" accept=".zip" data-change="ciZip"></label>
+      <label class="f"><span>2. The contract list from Claude (contracts-manifest.json)</span><input type="file" accept=".json,application/json" data-change="ciMan"></label>
+      <p class="sub" id="ciMsg">${esc(st.busy || '')}</p></div>`
+    : `<div class="ci-top"><div class="ci-tabs">${[['all', `All ${rows.length}`], ['ok', `Matched ${n('ok')}`], ['check', `Check ${n('check')}`], ['none', `No match ${n('none')}`], ['have', `Already added ${n('have')}`], ['skip', `Skipping ${n('skip')}`]].map(([k, l]) => `<button type="button" class="${st.show === k ? 'on' : ''}" data-act="ciShow" data-k="${k}">${l}</button>`).join('')}</div>
+      <p class="sub">Type or pick an account to fix a match. “Check this” ones are close but not exact. Only <b>Matched</b> and <b>Check this</b> rows that have an account get added.</p></div>
+      <datalist id="ciCos">${L('companies').sort(byName).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>
+      <div class="ci-list"><table><thead><tr><th>Contract file</th><th>Name in the contract</th><th>Start</th><th>Paper Trail account</th><th></th></tr></thead><tbody>
+      ${view.slice(0, 400).map(r => `<tr class="ci-${r.st}"><td><b>${esc(r.name.replace(/\.pdf$/i, ''))}</b><small>${r.kind === 'MW' ? 'Medical waste' : 'Shredding'}</small></td><td>${esc(r.client || r.fileClient)}${r.inactive ? '<small>Inactive folder</small>' : ''}</td>
+        <td>${r.start ? `Started ${fmtDate(r.start)}` : '<span class="sub">no date found</span>'}</td>
+        <td><input list="ciCos" value="${esc(r.coId ? cname(r.coId) : '')}" placeholder="Pick an account" data-change="ciCo" data-i="${r.i}" aria-label="Account for ${esc(r.name)}"><span class="ci-st">${stL[r.st]}</span></td>
+        <td>${r.st === 'skip' ? `<button type="button" class="lnk" data-act="ciSkip" data-i="${r.i}">Undo</button>` : r.st !== 'have' ? `<button type="button" class="lnk" data-act="ciSkip" data-i="${r.i}">Skip</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+  const go = rows.filter(r => (r.st === 'ok' || r.st === 'check') && r.coId).length;
+  openModal('Import contracts', `<div class="ci">${body}</div>`, rows.length && !st.busy ? `Add ${go} contract${go === 1 ? '' : 's'}` : null, rows.length ? async () => { ciRun(); return false; } : null,
+    {wide: true, cls: 'ci-sheet', foot: rows.length ? `<span class="sub" id="ciMsg" style="margin-right:auto">${esc(st.busy || '')}</span>` : ''});
+}
+async function ciLoad(){
+  const st = ciState(); if (!st.zipFile || !st.man) return;
+  const msg = t => { st.busy = t; const m = $('#ciMsg'); if (m) m.textContent = t; };
+  try {
+    msg('Opening the zip…');
+    if (!window.JSZip) await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; sc.onload = ok; sc.onerror = () => no(new Error("Couldn't load the zip reader")); document.head.append(sc); });
+    st.zip = await window.JSZip.loadAsync(st.zipFile);
+    msg('Matching to accounts…'); await new Promise(r => setTimeout(r, 30));
+    ciIndex();
+    const have = new Map(); for (const c of L('contracts')) for (const f of c.files || []) have.set(c.companyId + '|' + String(f.name).toLowerCase(), c.id);
+    const zn = String(st.zipFile.name || '').toLowerCase(), mine_ = st.man.filter(r => !r.zip || String(r.zip).toLowerCase() === zn);
+    st.rows = (mine_.length ? mine_ : st.man).filter(r => st.zip.file(r.file)).map((r, i) => { const inZip = true; const m = ciMatch(r); const row = {...r, i, inZip, coId: m.id, score: m.score};
+      row.st = !inZip ? 'skip' : !m.id ? 'none' : have.has(m.id + '|' + r.name.toLowerCase()) ? 'have' : m.score >= .85 ? 'ok' : 'check'; return row; });
+    st.busy = ''; ciModal();
+  } catch (e) { msg('Something went wrong: ' + (e.message || e)); }
+}
+async function ciRun(){
+  const st = ciState(); if (st.busy) return;
+  const todo = st.rows.filter(r => (r.st === 'ok' || r.st === 'check') && r.coId); if (!todo.length) return;
+  const btn = $('#mform button[type=submit]'); if (btn) btn.disabled = true;
+  const msg = t => { const m = $('#ciMsg'); if (m) m.textContent = t; };
+  let done = 0; const bad = [];
+  st.busy = 'Adding…';
+  for (const r of todo) {
+    msg(`Adding ${done + 1} of ${todo.length}: ${r.name}`);
+    try {
+      const blob = await st.zip.file(r.file).async('blob'); const f = new File([blob], r.name, {type: 'application/pdf'});
+      const path = `${r.coId}/${uid()}/${r.name.replace(/[^\w.\- ]+/g, '_').slice(-120)}`;
+      await FILES.put(path, f);
+      await put('contracts', uid(), {companyId: r.coId, title: r.title, notes: r.client && r.client !== cname(r.coId) ? `Name on contract: ${r.client}` : '', files: [{path, name: r.name, size: f.size, type: 'application/pdf'}],
+        ...(r.start ? {start: r.start} : {}), termMonths: r.termMonths || 12, autoRenew: !r.cancel && !r.inactive, status: r.cancel ? 'cancelled' : r.inactive ? 'ended' : 'active',
+        ownerId: (S.companies[r.coId] || {}).ownerId || ME.id, addedBy: ME.id, imported: 'contracts'});
+      r.st = 'have'; done++;
+    } catch (e) { bad.push(`${r.name}: ${e.message || e}`); }
+  }
+  st.busy = ''; toast(`Added ${done} contract${done === 1 ? '' : 's'}`);
+  ciModal();
+  if (bad.length) setTimeout(() => toast(`${bad.length} didn't upload. They're still listed; try Add again.`, 'bad'), 400);
+}
 // ---------- opportunity cleanup (Jason only): close out open opportunities nobody has touched in a while ----------
 const cleanupBtn = () => isJason() && canWrite ? `<button class="btn" data-act="oppCleanup">${ic('check')}Clean up</button>` : '';
 function cuRows(){
@@ -5585,6 +5685,7 @@ function settingsModal(){
       SUPA ? row('users', 'My account', `Signed in as ${esc(ME.name || ME.email || '')}. Change your password or sign out.`, btn('account', 'Open')) : '',
       row('mail', 'Outlook', `${ms ? '<span class="chip ok">Connected</span> ' : ''}Send email from Paper Trail and see customer emails on each account.`, btn('connections', 'Manage', ms ? '' : 'pri')),
       GRAPH || SUPA ? row('mail', 'Email signature', SIG.html ? 'Your signature and logos go at the bottom of emails you send.' : 'Set up the signature, with your logos, for emails you send.', btn('sigEdit', SIG.html ? 'Edit' : 'Set up')) : '',
+      isJason() && FILES.remote() ? row('doc', 'Import contracts', 'Add signed contract PDFs to their accounts in one go. Only you see this.', btn('ciOpen', 'Open')) : '',
       isJason() && SUPA ? row('img', 'Hosted images', 'Pictures with a permanent public link, for email signatures. Only you see this.', btn('hostImgs', 'Open')) : '',
       row('spark', 'Appearance', 'Colors, mode, text size, spacing, font and start page.', btn('look', 'Customize')),
       theoMe() ? row('spark', 'Theo', 'Your pixel cat in the sidebar, above Settings.', btn('theoToggle', prefGet('theo', true) ? 'Hide Theo' : 'Show Theo')) : '',
@@ -6164,7 +6265,8 @@ function connRow(){
 }
 function connModal(){
   openModal('My connections', `<div class="sets" id="connBox">${connRow()}
-    <label class="setrow" style="cursor:pointer"><span class="seti">${ic('task')}</span><div><b>Log my customer emails automatically</b><p class="sub">When you open an account's Activity tab, emails between you and that account's contacts are saved to its timeline so your whole team can see them. Emails you send from the CRM are always logged.</p></div><input type="checkbox" id="autoLog" data-change="autoLog" ${prefGet('autoLog', true) ? 'checked' : ''} style="width:20px;height:20px"></label>
+    ${isAdmin() ? `<label class="setrow" style="cursor:pointer"><span class="seti">${ic('task')}</span><div><b>Log my customer emails automatically</b><p class="sub">When you open an account's Activity tab, emails between you and that account's contacts are saved to its timeline so your whole team can see them. Emails you send from the CRM are always logged.</p></div><input type="checkbox" id="autoLog" data-change="autoLog" ${prefGet('autoLog', true) ? 'checked' : ''} style="width:20px;height:20px"></label>`
+      : `<div class="setrow"><span class="seti">${ic('task')}</span><div><b>Your customer emails are logged automatically</b><p class="sub">When you open an account's Activity tab, emails between you and that account's contacts are saved to its timeline so the whole team can see them.</p></div></div>`}
     ${GRAPH && (window.PAPER_TRAIL || {}).emailTracking ? `<label class="setrow" style="cursor:pointer"><span class="seti">${ic('chart')}</span><div><b>Track my emails</b><p class="sub">See when people open the emails you send from Paper Trail and click their links. This is your own setting; it doesn't change anyone else's.</p></div><input type="checkbox" data-change="trackMine" ${SIG.track !== false ? 'checked' : ''} aria-label="Track my emails" style="width:20px;height:20px"></label>` : ''}
   </div>`, null);
   connCheck();
@@ -6307,7 +6409,7 @@ async function emailDedupe(coId){   // tidy up pairs logged before this check ex
 }
 const EMLOG = new Set();   // accounts being logged right now, so two syncs can't log the same emails side by side
 async function autoLogEmails(coId){
-  if (!canWrite || !prefGet('autoLog', true)) return;
+  if (!canWrite || (isAdmin() && !prefGet('autoLog', true))) return;   // only admins can switch this off; managers' emails are always shared
   const st = EM[coId]; if (!st || st.status !== 'done' || EMLOG.has(coId)) return;
   EMLOG.add(coId); st.logging = true;
   try {
@@ -8447,10 +8549,15 @@ const A = {
         if (error) { toast("Couldn't make them a user: " + error.message, 'bad'); return false; }
         const code = inviteCode();
         const iv = await SUPA.sb.from('invites').upsert({profile_id: u.id, code, expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'});
-        await loadProfiles(); usersModal();
+        await loadProfiles(); if (!iv.error) setTimeout(() => welcomeModal({name: u.name, email}, code), 30); else usersModal();
         toast(iv.error ? `${u.name} is a user now, but the invite code couldn't be saved: ${iv.error.message}. Use “New code”.` : `${u.name} is a user now. Their invite code is ${code}.`, iv.error ? 'bad' : undefined);
         return false; }); },
-  uCode: async d => { const {error} = await SUPA.sb.from('invites').upsert({profile_id: d.id, code: inviteCode(), expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'}); if (error) toast("Couldn't make a new code: " + error.message, 'bad'); else { toast('New code made. It works for 7 days.'); await loadProfiles(); usersModal(); } },
+  uCode: async d => { const code = inviteCode(); const {error} = await SUPA.sb.from('invites').upsert({profile_id: d.id, code, expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'}); if (error) toast("Couldn't make a new code: " + error.message, 'bad'); else { toast('New code made. It works for 7 days.'); await loadProfiles(); const u = USERS.find(x => x.id === d.id) || {}; welcomeModal({name: u.name || '', email: u.email || ''}, code); } },
+  uWelcome: d => { const u = USERS.find(x => x.id === d.id); if (u && u.invite_code) welcomeModal(u, u.invite_code, u.invite_exp); },
+  wlCopy: d => { const el = d.w === 'subj' ? $('#wlSubj') : $('#wlBody'); if (el) copyText(el.value); },
+  wlSend: async d => { if (!MCP) return; const b = $('#mform [data-act=wlSend]'); if (b) { b.disabled = true; b.textContent = 'Sending…'; }
+    try { await MCP.callTool(MS, 'outlook_send_mail', {to: [d.to], subject: $('#wlSubj').value, body: $('#wlBody').value, bodyType: 'text'}); toast(`Sent to ${d.to}`); closeModal(); }
+    catch (e) { toast(mcpMsg(e), 'bad'); if (b) { b.disabled = false; b.textContent = 'Send from my Outlook'; } } },
   export: () => exportCsv(),
   expOpen: d => exportModal(d.t),
   team: () => teamModal(),
@@ -8490,6 +8597,9 @@ const A = {
   verHide: () => { document.getElementById('verBar')?.remove(); verShown = false; verTag = null; verLast = Date.now(); },
   toOpen: () => { ui.toOpen = !ui.toOpen; cmpToMore(); },
   toPick: d => toPick(d.a, d.v),
+  ciOpen: () => { if (!isJason()) return; ciModal(); },
+  ciShow: d => { ciState().show = d.k; const t0 = $('#mform .ci-list')?.scrollTop; ciModal(); },
+  ciSkip: d => { const r = ciState().rows[+d.i]; if (!r) return; r.st = r.st === 'skip' ? (r.coId ? (r.score >= .85 ? 'ok' : 'check') : 'none') : 'skip'; const sc = $('#mform .ci-list')?.scrollTop || 0; ciModal(); const l = $('#mform .ci-list'); if (l) l.scrollTop = sc; },
   hostImgs: () => { hostList = null; hostModal(); },
   hostHtml: d => { const im = document.querySelector(`#mform img[data-hiname="${CSS.escape(d.n)}"]`); const url = hostUrl(d.n);
     copyText(`<img src="${url}"${im && im.naturalWidth ? ` width="${im.naturalWidth}" height="${im.naturalHeight}"` : ''} alt="All Points Mobile Shredding" style="border:0;display:block">`); },
@@ -8510,6 +8620,12 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  ciZip: el => { const st = ciState(); st.zipFile = el.files && el.files[0]; ciLoad(); },
+  ciMan: async el => { const st = ciState(); try { st.man = JSON.parse(await el.files[0].text()); if (!Array.isArray(st.man)) throw new Error('not a list'); } catch { toast("That isn't the contract list file.", 'bad'); return; } ciLoad(); },
+  ciCo: el => { const r = ciState().rows[+el.dataset.i]; if (!r) return; const v = el.value.trim().toLowerCase(); const co = L('companies').find(c => String(c.name).trim().toLowerCase() === v);
+    if (!v) { r.coId = ''; r.st = 'none'; } else if (!co) { toast('Pick an account from the list.', 'bad'); return; } else { r.coId = co.id; r.score = 1; r.st = 'ok'; }
+    const tr = el.closest('tr'); if (tr) { tr.className = 'ci-' + r.st; const s_ = tr.querySelector('.ci-st'); if (s_) s_.textContent = {ok: 'Matched', none: 'No match'}[r.st]; }
+    const b = $('#mform button[type=submit]'); if (b) { const go = ciState().rows.filter(x => (x.st === 'ok' || x.st === 'check') && x.coId).length; b.textContent = `Add ${go} contract${go === 1 ? '' : 's'}`; } },
   fmQ: el => { if (ui.fm) { ui.fm.q = el.value; fmDraw(); } },
   hdPickRow: el => { const s_ = hdSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
   hdPickAll: el => { const s_ = hdSel(); s_.clear(); if (el.checked) (ui.hdOkIds || []).forEach(id => s_.add(id)); render(); },
@@ -8523,7 +8639,7 @@ const CHANGE = {
     const prev = k.due; if (await patch('tasks', id, {due: v})) toast(`Snoozed to ${fmtDate(v)}`, '', {label: 'Undo', fn: () => patch('tasks', id, {due: prev})}); },
   ctEmailChk: el => { const n = document.getElementById('ctEmailNote'); if (!n) return; const hits = emailHits(el.value, el.dataset.id || null);
     n.hidden = !hits.length; n.innerHTML = hits.length ? `Woah, that email appears under: ${emailHitsText(hits)}. Are you sure you'd like to continue?` : ''; },
-  autoLog: el => { prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
+  autoLog: el => { if (!isAdmin()) return; prefSet('autoLog', el.checked); toast(el.checked ? 'Customer emails will be logged automatically' : 'Automatic email logging is off'); },
   jsxCo: el => { const s = ui.js; if (s.custom && s.co !== el.value) { s.custom = null; toast('Your edits were for the other contact, so the emails are back to the journey wording.'); } s.exp = null; s.co = el.value; const cts = L('contacts').filter(c => c.companyId === s.co); s.ct = (cts.find(c => ctMail(c)) || cts[0] || {}).id || ''; s.sug = jSuggest({co: s.co}); s.deal = s.sug ? s.sug.dealId : ''; if (s.sug) { s.cat = 'suggested'; s.jid = s.sug.id; } const ct = $('#jsxCt'); if (ct) ct.innerHTML = jsContactOpts(s.co).map(([v, l]) => `<option value="${esc(v)}"${v === s.ct ? ' selected' : ''}>${esc(l)}</option>`).join(''); const [co0, ct0, d0] = s.key.split('|'); journeyStartModal({co: co0, ct: ct0, deal: d0}); },
   ncPh: el => { prefSet('namePh', el.checked); nameCleanModal(); },
   rteSize: el => { const v = el.value; el.value = ''; if (v) rteExec(el.dataset.t, 'fontSize', v); },
@@ -9986,13 +10102,39 @@ async function usageModal(month){
       <small>${p.full} full download${p.full === 1 ? '' : 's'} · ${p.catchups} catch-up${p.catchups === 1 ? '' : 's'} · ${p.files} attachment${p.files === 1 ? '' : 's'} opened${p.fileBytes ? ` (${mb(p.fileBytes)})` : ''}${p.devs.length ? ` · ${p.devs.length} browser${p.devs.length === 1 ? '' : 's'}: ${esc([...new Set(p.devs.map(d => d.device))].join(', '))}` : ''}</small></li>`).join('')}</ul>
     <p class="sub" style="margin-top:10px">A full download happens on a new browser or device, after signing out, after clearing browser data, or in a private window. Lots of full downloads for one person usually means one of those. Figures are estimates and run a little high, because Supabase compresses some data on the way.</p>`, null);
 }
+// ---------- a ready-to-send welcome email for someone just added (or given a new code) ----------
+function welcomeText(name, email, code, exp){
+  const first = String(name || '').trim().split(/\s+/)[0] || 'there', me = String(ME.name || '').trim().split(/\s+/)[0] || '';
+  const url = location.origin + location.pathname.replace(/index\.html$/, '');
+  const until = new Date(exp || Date.now() + 7 * 864e5).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
+  const subject = 'Your Paper Trail login';
+  const body = `Hi ${first},
+
+You're all set on Paper Trail. To get in:
+
+1. Go to ${url} and click "First time here?"
+2. Enter ${email} and your invite code: ${code} (good until ${until})
+3. Pick a password
+
+Then take the 2-minute "New here?" setup and connect your Outlook in Settings.
+
+${me}`;
+  return {subject, body};
+}
+function welcomeModal(u, code, exp){
+  const w = welcomeText(u.name, u.email, code, exp);
+  openModal(`Welcome email for ${u.name}`, `<p class="sub">Copy this into an email to ${esc(u.email)}${MCP ? ', or send it from your Outlook right here' : ''}.</p>
+    <div class="wl"><label class="f"><span>Subject</span><div class="wl-row"><input id="wlSubj" value="${esc(w.subject)}"><button type="button" class="btn sm" data-act="wlCopy" data-w="subj">${ic('copy')}Copy</button></div></label>
+    <label class="f"><span>Message</span><textarea id="wlBody" rows="11">${esc(w.body)}</textarea></label>
+    <div class="wl-act"><button type="button" class="btn" data-act="wlCopy" data-w="body">${ic('copy')}Copy message</button>${MCP ? `<button type="button" class="btn pri" data-act="wlSend" data-to="${esc(u.email)}">${ic('mail')}Send from my Outlook</button>` : ''}</div></div>`, null, null, {back: true});
+}
 const inviteCode = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o = ''; const r = new Uint32Array(8); crypto.getRandomValues(r); for (const n of r) o += a[n % a.length]; return o.slice(0, 4) + '-' + o.slice(4); };
 function usersModal(){
   const admin = isAdmin();
   const row = u => { const former = /\.invalid$/.test(u.email || ''); if (former) return `<li class="urow"><div><b>${esc(u.name)}</b><small>Former user</small></div><div class="uact"><span class="chip">Former</span>${admin ? `<button type="button" class="btn sm" data-act="uMakeReal" data-id="${u.id}" title="They work here: give them a login and keep everything they own">Make a user</button><button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button>` : ''}</div></li>`; const pending = !u.user_id; const me = u.id === ME.id; const expired = pending && u.invite_exp && Date.parse(u.invite_exp) < Date.now();
     const su = SETUP[u.id] || (u.user_id && SETUP[u.user_id]) || null;
     return `<li class="urow"><div><b>${esc(u.name)}${me ? ' (you)' : ''}</b><small>${/\.invalid$/.test(u.email || '') ? 'Former user' : esc(u.email)}${admin && u.active ? ` · ${su && su.doneAt ? 'finished setup ' + esc(new Date(su.doneAt).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})) : 'hasn\'t done setup yet'}` : ''}</small></div>
-      <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button>`}
+      <div class="uact">${!u.active ? '<span class="chip">Deactivated</span>' : !pending ? '<span class="chip good">Active</span>' : !admin || !u.invite_code ? '<span class="chip warn">Invited</span>' : expired ? '<span class="chip bad" title="Make a new code to invite them again">Code expired</span>' : `<span class="chip warn" title="Expires ${esc(new Date(u.invite_exp).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))}">Code ${esc(u.invite_code)}</span><button type="button" class="btn sm ghost" data-act="copy" data-t="${esc(u.invite_code)}" aria-label="Copy code">${ic('copy')}</button><button type="button" class="btn sm" data-act="uWelcome" data-id="${u.id}">${ic('mail')}Welcome email</button>`}
       ${admin && !me ? `<select data-change="uRole" data-id="${u.id}" aria-label="Role">${[['admin', 'Admin'], ['manager', 'Manager']].map(([k, l]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <button type="button" class="btn sm ghost" data-act="reassign" data-id="${u.id}" title="Move this person's records to someone else">Reassign</button><button type="button" class="btn sm ghost" data-act="uActive" data-id="${u.id}"${/\.invalid$/.test(u.email || '') ? ' hidden' : ''}>${u.active ? 'Deactivate' : 'Reactivate'}</button>${!u.user_id ? `<button type="button" class="btn sm ghost" data-act="uCode" data-id="${u.id}">New code</button>` : ''}` : `<span class="chip">${u.role === 'admin' ? 'Admin' : 'Manager'}</span>`}</div></li>`; };
   openModal('Users', `<p class="sub">${admin ? 'Add the people who use Paper Trail. Each new person gets an invite code that works for 7 days: send them the site link and the code, and they choose their own password under “First time here?”.' : 'People who use Paper Trail. Only an admin can add users.'}</p>
@@ -10009,7 +10151,8 @@ function usersModal(){
       if (error) { toast("Couldn't add that user: " + error.message, 'bad'); return false; }
       const iv = await SUPA.sb.from('invites').upsert({profile_id: pid, code, expires_at: new Date(Date.now() + 7 * 864e5).toISOString()}, {onConflict: 'profile_id'});
       if (iv.error) { toast("User added, but the invite code couldn't be saved: " + iv.error.message, 'bad'); }
-      await loadProfiles(); usersModal(); toast(`${name} added. Their invite code is ${code}.`);
+      await loadProfiles(); toast(`${name} added. Their invite code is ${code}.`);
+      if (!iv.error) welcomeModal({name, email}, code); else usersModal();
       return false;
     } : null);
 }
