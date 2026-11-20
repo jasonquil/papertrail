@@ -171,6 +171,7 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap;letter-spacing:.01em}
 .chip.bad{background:var(--bad-soft);color:var(--bad)}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.kres{background:var(--yel-soft);color:var(--yel)}.chip.kbiz{background:var(--accent-soft);color:var(--accent)}
 .chip.good{background:var(--good-soft);color:var(--good)}
 .chip.info{background:var(--info-soft);color:var(--info)}.chip.st-lead{background:var(--info-soft);color:var(--info)}.chip.st-quoted{background:var(--yel-soft);color:var(--yel)}.chip.st-contract{background:var(--warn-soft);color:var(--warn)}.chip.st-following{background:var(--pur-soft);color:var(--pur)}.chip.st-won,.chip.st-updated{background:var(--good-soft);color:var(--good)}.chip.st-lost{background:var(--bad-soft);color:var(--bad)}
 .chip.acc{background:var(--accent-soft);color:var(--accent)}
@@ -3649,11 +3650,15 @@ function oppEditor(d, k){
   }
   return '';
 }
+const CO_KINDS = [['business', 'Business'], ['residential', 'Residential']];
+const coKind = c => c && (c.kind === 'residential' || c.kind === 'business') ? c.kind : '';
+const kindChip = c => coKind(c) ? `<span class="chip ${coKind(c) === 'residential' ? 'kres' : 'kbiz'}">${coKind(c) === 'residential' ? 'Residential' : 'Business'}</span>` : '';
 function coEditor(c, k){
   const at = `id="ce_${k}" data-keep data-change="coField" data-k="${k}" data-id="${c.id}" class="oe"`;
   switch (k) {
     case 'ownerId': return ownerSel('oe', c.ownerId || ME.id).replace('<select ', `<select ${at} `);
     case 'state': return sel('oe', [['', '—'], ...[...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES].map(x => [x, x])], c.state || '', at);
+    case 'kind': return sel('oe', [['', 'Not set'], ...CO_KINDS], coKind(c), at);
     case 'notes': return `<textarea ${at} rows="2" placeholder="Add notes">${esc(c.notes || '')}</textarea>`;
     case 'phone': return `<input ${at} type="tel" placeholder="—" value="${esc(phonePretty(c.phone || ''))}">`;
     case 'zip': return `<input ${at} type="text" inputmode="numeric" placeholder="—" value="${esc(c.zip || '')}">`;
@@ -3743,7 +3748,7 @@ V.company = () => {
     body = `
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
       <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(phonePretty(c.phone))}<button class="copy" data-act="copy" data-t="${esc(phonePretty(c.phone))}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
-      ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
+      ${cf('Residential or business', kindChip(c), 'kind')}${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
       ${cf('Hours of operation', esc(c.hours), 'hours')}${cpField('Contacts', String(g.contacts.length))}${(() => { const k = g.contracts.filter(x => (x.status || 'active') !== 'cancelled'); return cpField('Service agreement', k.length ? `<button class="chip good" data-act="cpTab" data-t="contracts" title="See contracts">${ic('doc')}On file</button>` : '<span class="sub">None on file</span>'); })()}
       ${TAGS_ON ? `<div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>` : ''}
@@ -3777,7 +3782,7 @@ V.companies = () => {
   : `<div class="tbl"><table><thead><tr>${jbOn() ? `<th class="co-ck"><label><input type="checkbox" data-change="jbAll"${pg('companies', rows).length && pg('companies', rows).every(c => jbSel().has(c.id)) ? ' checked' : ''} aria-label="Pick every account on this page"></label></th>` : ''}<th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
-      return `<tr data-act="coPage" data-id="${c.id}"${jbOn() && jbSel().has(c.id) ? ' class="sel"' : ''}>${jbOn() ? `<td class="co-ck"><label><input type="checkbox" data-change="jbRow" data-id="${c.id}"${jbSel().has(c.id) ? ' checked' : ''} aria-label="Pick ${esc(c.name)}"></label></td>` : ''}<td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
+      return `<tr data-act="coPage" data-id="${c.id}"${jbOn() && jbSel().has(c.id) ? ' class="sel"' : ''}>${jbOn() ? `<td class="co-ck"><label><input type="checkbox" data-change="jbRow" data-id="${c.id}"${jbSel().has(c.id) ? ' checked' : ''} aria-label="Pick ${esc(c.name)}"></label></td>` : ''}<td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${coKind(c) === 'residential' ? ' ' + kindChip(c) : ''}${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
     }).join('') || `<tr><td colspan="${jbOn() ? 7 : 6}" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
@@ -4225,6 +4230,30 @@ function tagSuggestions(){
   for (const id of Object.keys(small)) if (!big[id]) put_(id, 'Electronics');
   return Object.entries(add).map(([t, set]) => ({t, ids: [...set]})).sort((a, b) => b.ids.length - a.ids.length);
 }
+// ---------- mark the accounts that are clearly businesses (by name), Jason only; residential is marked by hand as you go ----------
+const kn = v => String(v ?? '').toLowerCase().replace(/['’`]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+const BIZ_SURE = new RegExp(BIZ_WORDS.source.replace(/\|(the|trust|ent|sys|design)(?=\||\))/g, ''));
+function bizSure(){
+  const ppl = {}; for (const ct of Object.values(S.contacts)) if (ct.companyId) (ppl[ct.companyId] = ppl[ct.companyId] || []).push(kn(pname_(ct)));
+  return L('companies').filter(c => { if (coKind(c)) return false; const n = kn(c.name); if (!n) return false;
+    if ((ppl[c.id] || []).some(p => p === n)) return false;   // named exactly like its contact: a person
+    return BIZ_SURE.test(n) || TAG_RULES.some(([, re]) => re.test(n)); }).sort(byName);
+}
+function bizSureModal(){
+  const list = bizSure(); if (!list.length) { toast('No unmarked accounts are clearly businesses.'); return; }
+  openModal(`Mark ${list.length.toLocaleString()} as Business`, `<p class="sub" style="margin:0 0 10px">These have a business word in the name (LLC, Inc, P.A., Dental, Law, Realty, Clinic, Bank and so on). Accounts already marked aren't touched, and residential is left to you.</p>
+    <ul class="users" style="max-height:380px;overflow:auto">${list.map(c => `<li class="urow"><div>${esc(c.name)}</div></li>`).join('')}</ul>`, `Mark ${list.length.toLocaleString()} as Business`, async () => {
+      const ids = list.map(c => c.id).filter(id => S.companies[id] && !coKind(S.companies[id])); const b = $('#mform [type=submit]');
+      try {
+        if (live && !DEMO && db.collection('companies').setMany) {
+          for (let i = 0; i < ids.length; i += 500) { const chunk = ids.slice(i, i + 500).filter(id => S.companies[id]).map(id => [id, {...S.companies[id], kind: 'business', updatedAt: Date.now()}]);
+            await db.collection('companies').setMany(chunk); for (const [id, d] of chunk) S.companies[id] = d; if (b) b.textContent = `Saving ${Math.min(i + 500, ids.length).toLocaleString()} of ${ids.length.toLocaleString()}…`; }
+          hayReset(); schedule();
+        } else for (const id of ids) await patch('companies', id, {kind: 'business'});
+      } catch (e) { writeErr(e); return false; }
+      toast(`Marked ${ids.length.toLocaleString()} account${ids.length === 1 ? '' : 's'} as Business`); return true;
+    }, {wide: true});
+}
 function tagSuggestModal(){
   const sug = tagSuggestions();
   if (!sug.length) { toast('No new suggestions. Your accounts are already tagged.'); return; }
@@ -4260,6 +4289,7 @@ const FL = {
   companies: [
     {k: 'tag', l: 'Tag', opts: tagOpts, test: (c, v) => coTags(c).some(t => tagKey(t) === v)},
     {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (c, v) => c.ownerId === v},
+    {k: 'kind', l: 'Residential or business', opts: () => [...CO_KINDS, ['none', 'Not set']], test: (c, v) => (coKind(c) || 'none') === v},
     {k: 'city', l: 'City', opts: cityOpts, test: (c, v) => nrm(c.city) === v},
     {k: 'state', l: 'State', opts: stateOpts, test: (c, v) => (c.state || '').trim() === v},
     {k: 'zip', l: 'ZIP starts with', text: true, test: (c, v) => String(c.zip || '').startsWith(v)},
@@ -4270,6 +4300,7 @@ const FL = {
     {k: 'ownerId', l: 'Owner', opts: () => ownerOpts(), test: (c, v) => c.ownerId === v},
     {k: 'title', l: 'Title', opts: () => nOpts(Object.values(S.contacts).map(c => c.title)), test: (c, v) => nrm(c.title) === v},
     {k: 'city', l: 'City', opts: cityOpts, test: (c, v) => nrm(coOf(c).city) === v},
+    {k: 'kind', l: 'Account: residential or business', opts: () => [...CO_KINDS, ['none', 'Not set']], test: (c, v) => (coKind(coOf(c)) || 'none') === v},
     {k: 'state', l: 'State', opts: stateOpts, test: (c, v) => (coOf(c).state || '').trim() === v},
     {k: 'email', l: 'Has an email', opts: () => YN, test: (c, v) => has(ctMail(c), v)},
     {k: 'phone', l: 'Has a phone', opts: () => YN, test: (c, v) => has(c.phone || c.mobile, v)},
@@ -4290,6 +4321,7 @@ const FL = {
     {k: 'noCloseReason', l: 'Did not close on first call', opts: () => withData(NO_CLOSE, 'noCloseReason'), test: (d, v) => d.noCloseReason === v},
     {k: 'lostReason', l: 'Reason for loss', opts: () => withData(LOSS_REASONS, 'lostReason'), test: (d, v) => d.lostReason === v},
     {k: 'city', l: 'Account city', opts: cityOpts, test: (d, v) => nrm(coOf(d).city) === v},
+    {k: 'kind', l: 'Account: residential or business', opts: () => [...CO_KINDS, ['none', 'Not set']], test: (d, v) => (coKind(coOf(d)) || 'none') === v},
     {k: 'value', l: 'Annual projected ($)', num: d => +d.value || 0},
     {k: 'priceQuoted', l: 'Price quoted ($)', num: d => pqNum(d.priceQuoted)},
     {k: 'created', l: 'Created', date: d => d.createdAt},
@@ -4339,7 +4371,7 @@ function fltFresh(f){ const out = {...f}; for (const k of Object.keys(out)) if (
 // ---------- filters: one "Filter" button, add one thing at a time ----------
 // Click Filter, pick what to filter by, then pick the value. Each filter shows as a chip above the list, under a line that
 // says in plain words what you're looking at. Dates: ready-made ranges, or click a start and an end day on the calendar.
-const FM_MAIN = {deals: ['__show', '__date', '__who', 'type', 'service', 'source', 'lostReason'], companies: ['ownerId', '__date', 'city', 'tag'], contacts: ['ownerId', '__date', 'city', 'email', 'phone']};
+const FM_MAIN = {deals: ['__show', '__date', '__who', 'type', 'service', 'source', 'lostReason'], companies: ['ownerId', '__date', 'kind', 'city', 'tag'], contacts: ['ownerId', '__date', 'city', 'email', 'phone']};
 const FM_DATES = {deals: [['closedAt', 'Closed'], ['created', 'Added'], ['serviceDate', 'Service date']], companies: [['created', 'Added'], ['lastJob', 'Last job']], contacts: [['created', 'Added']]};
 const FM_NAME = {__show: 'Stage', __date: 'Date', __who: 'Person'};
 const fmDateK = t => (FM_DATES[t].find(([k]) => fltOf(t)[k + '_from'] || fltOf(t)[k + '_to']) || [])[0];
@@ -4626,7 +4658,8 @@ function companyForm(id){
     ${F('Owner', ownerSel('ownerId', c.ownerId))}
     ${F('Street address', inp('address', c.address), 'wide')}
     <div class="grid3 wide">${F('City', inp('city', c.city))}${F('State', sel('state', [...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES], c.state || 'FL'))}${F('ZIP', inp('zip', c.zip, 'text', 'inputmode="numeric"'))}</div>
-    ${F('Hours of operation', inp('hours', c.hours, 'text', 'placeholder="e.g. Mon–Fri 8am–5pm"'), 'wide')}
+    ${F('Residential or business', sel('kind', id ? [['', 'Not set'], ...CO_KINDS] : CO_KINDS, id ? coKind(c) : 'business'))}
+    ${F('Hours of operation', inp('hours', c.hours, 'text', 'placeholder="e.g. Mon–Fri 8am–5pm"'))}
     ${F('Notes', ta('notes', c.notes), 'wide')}</div>`, id ? 'Save' : 'Add account', async d => {
       const nid = id || uid();
       const dup = findDupCompany(d.name, d.phone, id);
@@ -5714,7 +5747,8 @@ function settingsModal(){
       SUPA ? row('users', 'Users', adm ? 'Add people, set Admin or Manager, and send invite codes.' : 'See who uses Paper Trail.', btn('users', adm ? 'Manage' : 'View'))
         : row('users', 'Team', 'Choose which teammates can be assigned records.', btn('team', 'Manage')),
       row('mail', 'Email templates', 'The ready-made emails your team picks from.', btn('tplManage', 'Edit')),
-      TAGS_ON ? row('tag', 'Tags', 'Rename, merge or delete account tags, or suggest tags from history.', btn('tags', 'Manage')) : '']],
+      TAGS_ON ? row('tag', 'Tags', 'Rename, merge or delete account tags, or suggest tags from history.', btn('tags', 'Manage')) : '',
+      isJason() && canWrite ? row('spark', 'Mark businesses', 'Marks accounts with a business word in the name (LLC, Dental, Law…) as Business. Only you see this.', btn('bizSure', 'Review')) : '']],
     ['data', 'Data', 'down', 'Move records in and out of Paper Trail.', [
       canWrite && adm ? row('up', 'Import', 'Bring in accounts, contacts, opportunities or reminders from your current CRM or any CSV.', btn('import', 'Import CSV')) : '',
       row('down', 'Export', 'Download every account and contact as a CSV for Excel.', btn('export', 'Export CSV')),
@@ -7625,7 +7659,7 @@ V.hdwd = () => {
   const nPick = hsel.size, bulk = picking ? `<div class="jbulk hdbulk" role="toolbar" aria-label="Send several">${ui.hdBusy ? `<b>${esc(ui.hdBusy)}</b><span style="flex:1"></span><button class="btn sm" data-act="hdBulkStop">Stop after this one</button>`
     : nPick ? `<b>${nPick} picked</b><button class="btn sm pri" data-act="hdBulk">${ic('mail')}Send ${nPick}</button><span style="flex:1"></span><button class="btn sm ghost" data-act="hdSelNone">Clear</button>`
     : `<span class="sub">Tick the ones you want, or the box at the top for all ${okDue.length}, to send them in one go.</span>`}</div>` : '';
-  const sendActs = x => canWrite ? `<button class="btn sm pri" data-act="hdSend" data-id="${x.d.id}"${!x.tpl ? ' disabled title="Pick a region first"' : !x.ct ? ' disabled title="Add a contact to the account first"' : x.d.ownerId && x.d.ownerId !== ME.id ? ` title="${esc(pname(x.d.ownerId))}'s customer: it goes out from your Outlook"` : ''}>${ic('mail')}Review &amp; send</button><button class="btn sm ghost" data-act="hdSkip" data-id="${x.d.id}">Skip</button>` : '';
+  const sendActs = x => canWrite ? `<button class="btn sm pri" data-act="hdSend" data-id="${x.d.id}"${!x.tpl ? ' disabled title="Pick a region first"' : !x.ct ? ' disabled title="Add a contact to the account first"' : x.d.ownerId && x.d.ownerId !== ME.id ? ` title="${esc(pname(x.d.ownerId))}'s customer: it goes out from your Outlook"` : ''}>${ic('mail')}Review &amp; send</button><button class="btn sm ghost" data-act="hdResched" data-id="${x.d.id}">Rescheduled?</button><button class="btn sm ghost" data-act="hdSkip" data-id="${x.d.id}">Skip</button>` : '';
   let bodyHtml;
   if (tab === 'templates') bodyHtml = `<section class="panel"><div class="ph"><h3>HDWD templates</h3>${canWrite ? `<button class="btn sm" data-act="hdTplEdit">${ic('plus')}New template</button>` : ''}</div>
     <p class="sub">One template per region. Each has its Google review link and the ZIP codes it covers; an account gets the template that lists its ZIP. If a ZIP isn't in any of them, you pick the region on the list before sending.</p>
@@ -7635,10 +7669,24 @@ V.hdwd = () => {
   const noReg = due.filter(x => !x.tpl).length;
   if (tab === 'send') bodyHtml = noReg && tpls.length ? `<div class="mailbar warn"><span>${noReg === 1 ? "1 customer's ZIP isn't" : noReg + " customers' ZIPs aren't"} in any region. Pick the region for ${noReg === 1 ? 'it' : 'each'} below before sending.</span></div>` : '';
   if (tab === 'send') bodyHtml += (due.length ? `<section class="panel"><div class="ph"><h3>Ready to send</h3><span class="chip warn">${due.length}</span></div>${bulk}${table(due, sendActs, undefined, picking)}</section>` : `<section class="panel">${emptyState('All caught up', 'Customers show up here the day after a purge is marked Closed Won with a service date.')}</section>`)
-    + (soon.length ? `<section class="panel"><div class="ph"><h3>Coming up</h3><span class="sub">the day after their service</span></div>${table(soon, x => `<span class="chip">${fmtDate(x.due)}</span>`)}</section>` : '')
+    + (soon.length ? `<section class="panel"><div class="ph"><h3>Coming up</h3><span class="sub">the day after their service</span></div>${table(soon, x => `<span class="chip">${fmtDate(x.due)}</span>${canWrite ? `<button class="btn sm ghost" data-act="hdResched" data-id="${x.d.id}">Rescheduled?</button>` : ''}`)}</section>` : '')
     + (!tpls.length && canWrite ? `<div class="mailbar warn"><span>Add your HDWD templates (with each office's Google review link and ZIP codes) before sending.</span><button class="btn sm" data-act="hdTab" data-t="templates">Set up templates</button></div>` : '');
   return head('HDWD: How Did We Do', 'Google review emails, the day after each purge. Every one waits for you to review and send.', searchBox('Search') + segs + mineSeg()) + bodyHtml;
 };
+
+// ---------- HDWD: the service moved to another day (the email then waits for the day after the new date) ----------
+function hdReschedModal(id){
+  const d = S.deals[id]; if (!d) return; const was = d.serviceDate;
+  openModal('Rescheduled?', `<p class="sub" style="margin:0 0 10px">${esc(cname(d.companyId))}${isDate(was) ? ` · was ${fmtDate(was)}` : ''}. Pick the new service date. The review email moves to the day after it.</p>
+    ${F('New service date', inp('date', isDate(was) && was > today() ? was : addDays(today(), 1), 'date', 'required'))}`, 'Save new date', async f => {
+      if (!isDate(f.date)) { toast('Pick a date.', 'bad'); return false; }
+      if (f.date === was) return true;
+      const ok = await patch('deals', id, {serviceDate: f.date});
+      if (ok) { logAct({type: 'note', text: `Service rescheduled${isDate(was) ? ` from ${fmtDate(was)}` : ''} to ${fmtDate(f.date)}`, companyId: d.companyId, dealId: id}); hdSel().delete(id);
+        toast(`Moved to ${fmtDate(f.date)}. The review email waits until ${fmtDate(addDays(f.date, 1))}.`); }
+      return ok;
+    });
+}
 
 // ---------- HDWD: send several at once (each goes out exactly as Review & send would write it, from your Outlook) ----------
 const hdSel = () => ui.hdSel || (ui.hdSel = new Set());
@@ -8619,6 +8667,8 @@ const A = {
   fltClear: d => { ui.flt[d.t] = {}; if (d.t === 'deals') ui.oppShow = 'open'; ui.lim = {}; schedule(); },
   tags: () => tagsModal(),
   tagSuggest: () => tagSuggestModal(),
+  bizSure: () => bizSureModal(),
+  hdResched: d => hdReschedModal(d.id),
   tagRename: d => tagRenameModal(d.t),
   tagDrop: d => tagDropModal(d.t),
   tagDel: d => tagDel(d.id, d.t),
@@ -10319,7 +10369,7 @@ function raRows(from){
 
 // ---------- merge duplicates ----------
 const MRG_FIELDS = {
-  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['hours', 'Hours of operation'], ['ownerId', 'Owner'], ['notes', 'Notes']],
+  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['hours', 'Hours of operation'], ['kind', 'Residential or business'], ['ownerId', 'Owner'], ['notes', 'Notes']],
   contacts: [['firstName', 'First name'], ['lastName', 'Last name'], ['title', 'Title'], ['companyId', 'Account'], ['email', 'Email'], ['email2', 'Other email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['ownerId', 'Owner'], ['notes', 'Notes']]};
 const coKey = n => norm(String(n || '').toLowerCase().replace(/\s*-\s*copy\b.*$/, '').replace(/[.,'’&()]/g, ' ').replace(/\b(the|llc|l\.?l\.?c|inc|incorporated|pa|p\.?a|pllc|pc|co|corp|corporation|company|ltd|group)\b/g, ' '));
 const mVal = (col, k, r) => { const v = r && r[k]; if (!v) return ''; if (k === 'ownerId') return nm(v); if (k === 'companyId') return cname(v); return String(v); };
