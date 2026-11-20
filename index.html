@@ -2227,9 +2227,11 @@ function vocab(){
 }
 function fuzzQ(Q){
   if (!Q || !Q.n.length) return null; const V = vocab(); let changed = false; const shown = [];
-  const n = Q.n.map(t => { if (t.length < 4 || /^\d+$/.test(t) || V.some(([w]) => w.includes(t))) { shown.push(t); return t; }
-    const max = t.length >= 8 ? 2 : 1; const near = V.filter(([w]) => lev(t, w, max) <= max).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([w]) => w);
-    if (!near.length) { shown.push(t); return t; } changed = true; shown.push(near[0]); return near; });
+  // a word that's off by a letter or two also matches its near spellings (julie finds julia), even when the word itself
+  // exists somewhere else: this only runs when nothing matched exactly
+  const n = Q.n.map(t => { if (t.length < 4 || /^\d+$/.test(t)) { shown.push(t); return t; }
+    const max = t.length >= 8 ? 2 : 1; const near = V.filter(([w]) => w !== t && lev(t, w, max) <= max).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([w]) => w);
+    if (!near.length) { shown.push(t); return t; } changed = true; shown.push(V.some(([w]) => w === t) ? `${t} or ${near[0]}` : near[0]); return [t, ...near]; });
   return changed ? {n, raw: [], d: '', label: shown.join(' ')} : null;
 }
 const fzRun = run => { ui.fzNote = ''; let r = run(); if (!r.length && ui.q && String(ui.q).trim()) { const f = fuzzQ(qOf(ui.q)); if (f) { FZ = f; try { r = run(); } finally { FZ = null; } if (r.length) ui.fzNote = f.label; } } return r; };
@@ -3728,7 +3730,7 @@ V.company = () => {
       <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(phonePretty(c.phone))}<button class="copy" data-act="copy" data-t="${esc(phonePretty(c.phone))}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
       ${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
-      ${cf('Hours of operation', esc(c.hours), 'hours')}${cpField('Contacts', String(g.contacts.length))}
+      ${cf('Hours of operation', esc(c.hours), 'hours')}${cpField('Contacts', String(g.contacts.length))}${(() => { const k = g.contracts.filter(x => (x.status || 'active') !== 'cancelled'); return cpField('Service agreement', k.length ? `<button class="chip good" data-act="cpTab" data-t="contracts" title="See contracts">${ic('doc')}On file</button>` : '<span class="sub">None on file</span>'); })()}
       ${TAGS_ON ? `<div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>` : ''}
       ${cf('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', 'notes', true)}</div></section>
     ${spiroPanel(c)}
@@ -3795,7 +3797,7 @@ const rowsOr = (arr, fn, none) => arr.length ? `<ul class="rows">${arr.map(fn).j
 // labels saved on imported records (some older ones say "in Spiro") read as the current CRM
 const spLabel = k => String(k).replace(/\s+in Spiro$/i, ' in your current CRM').replace(/^Spiro\s+/i, 'Current CRM ').replace(/Spiro/gi, 'current CRM');
 const spiroFacts = r => Object.entries((r && r.spiro) || {}).map(([k, v]) => fact(esc(spLabel(k)), esc(v))).join('');
-const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length ? `<section class="panel"><div class="ph"><h3>More from your current CRM</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(spLabel(k)), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
+const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length && false ? `<section class="panel"><div class="ph"><h3>More from your current CRM</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(spLabel(k)), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
 const fact = (k, v, copy) => v ? `<dt>${k}</dt><dd><span class="fv">${v}</span>${copy ? `<button class="copy" data-act="copy" data-t="${esc(copy)}" aria-label="Copy ${k}">${ic('copy')}</button>` : ''}</dd>` : '';
 function logBox(ctx){
   if (!canWrite) return '';
@@ -4389,11 +4391,12 @@ function fmDraw(){
       const many = opts.length > 10, q = (st.q || '').toLowerCase(), shown = q ? opts.filter(o => o[1].toLowerCase().includes(q)) : opts;
       html = (isWho ? `<div class="fm-h"><button type="button" class="fm-back" data-act="fmField" data-k="" aria-label="Back">‹</button><b>Person</b><div class="fm-seg">${[['ownerId', 'Owner'], ['closedBy', 'Closed by']].map(([k, l]) => `<button type="button" class="${k === wk ? 'on' : ''}" data-act="fmWho" data-k="${k}">${l}</button>`).join('')}</div></div>` : back(x.l))
         + (many ? `<div class="fm-q"><input id="fmQ" placeholder="Search ${esc(x.l.toLowerCase())}" value="${esc(st.q || '')}" data-input="fmQ" autocomplete="off"></div>` : '')
-        + `<div class="fm-menu">${shown.slice(0, 200).map(([v, l]) => `<button type="button" class="${String(f[wk]) === v ? 'on' : ''}" data-act="fmPick" data-k="${wk}" data-v="${esc(v)}"><span>${esc(l)}</span>${String(f[wk]) === v ? '<i>✓</i>' : ''}</button>`).join('') || '<p class="fm-none">No matches</p>'}</div>`
+        + `<div class="fm-menu">${shown.slice(0, 200).map(([v, l]) => `<button type="button" class="${String(f[wk]) === v ? 'on' : ''}" data-act="fmPick" data-k="${wk}" data-v="${esc(v)}"><span>${esc(l)}</span>${String(f[wk]) === v ? '<i>✓</i>' : ''}</button>`).join('') || `<p class="fm-none">${!opts.length ? (wk === 'tag' ? 'No tags yet. Add a tag on an account and it shows up here.' : `Nothing to pick yet.`) : 'No matches'}</p>`}</div>`
         + (f[wk] ? `<div class="fm-foot"><button type="button" class="lnk" data-act="fmPick" data-k="${wk}" data-v="">Remove this filter</button></div>` : '');
     }
   }
   const qFocus = document.activeElement && document.activeElement.id === 'fmQ';
+  if (!html) { fmClose(); return; }   // nothing to show: never leave an empty box on screen
   p.className = st.field === '__date' ? 'wide' : ''; p.innerHTML = html; fmPlace();
   if (qFocus) { const q = document.getElementById('fmQ'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }
   else if (st.field && !['__date'].includes(st.field)) { const q = document.getElementById('fmQ') || document.getElementById('fmMin') || document.getElementById('fmTxt'); if (q) setTimeout(() => q.focus(), 20); }
@@ -5345,7 +5348,7 @@ function spSummary(){
     ${bad.length ? `<p class="sub" style="color:var(--bad)">Not recognized as an export from your current CRM, skipped: ${esc(bad.join(', '))}</p>` : ''}
     ${files.deals ? `<p class="sub">Stages: ${Object.entries(stc).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(k)} ${n.toLocaleString()}`).join(' · ')}</p>` : ''}
     ${fm.length ? `<p class="sub">These people aren't Paper Trail users, so they'll be added as former users. Their names stay on their records, and you can reassign anything from Settings → Users: <b>${fm.map(([, n]) => esc(n)).join(', ')}</b>.</p>` : ''}
-    <p class="sub">The “Latest Weekly Summary” field is left out. Fields Paper Trail doesn't have appear under “More from your current CRM” on each record. Keep this window open until it finishes.</p></div>`;
+    <p class="sub">The “Latest Weekly Summary” field is left out. Keep this window open until it finishes.</p></div>`;
   const b = $('#mform [type=submit]'); if (b) b.textContent = `Import ${['companies', 'contacts', 'deals'].reduce((n, k) => n + (files[k] ? files[k].rows.length : 0), 0).toLocaleString()} records`;
 }
 async function spImport(form){
