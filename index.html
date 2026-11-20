@@ -1247,6 +1247,21 @@ tr.sel td{background:var(--accent-soft)!important}
 .jsx-sugg b{font-size:.98rem}.jsx-sugg p{margin:2px 0 0;font-size:.82rem;opacity:.85}
 .jsx-sugg .btn{margin-left:auto;background:#fff;color:var(--accent);border-color:#fff;flex:none}
 .jsx-spark{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}.jsx-spark svg{width:19px;height:19px}
+.co-ck{width:34px;padding:0!important}.co-ck label{display:flex;align-items:center;justify-content:center;padding:12px 8px;cursor:pointer}.co-ck input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;margin:0}
+tr.sel td{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.jb{display:flex;flex-direction:column;gap:20px}.jb h4{margin:0 0 8px;font-size:.95rem;display:flex;align-items:center;gap:8px}
+.jb h4 i{font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:.78rem}
+.jb-js{display:flex;flex-direction:column;gap:8px}.jb-js .jsx-cards{max-height:290px;overflow:auto;padding:3px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.jb-js .jsx-card{gap:6px;padding:10px 12px}.jb-js .jsx-meta{align-items:center}
+.jb-q{max-width:280px}
+.jb-who{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.jb-r{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;gap:12px;align-items:center;padding:9px 13px;border-bottom:1px solid var(--line)}.jb-r:last-child{border-bottom:0}
+.jb-r.need{background:var(--yel-soft)}.jb-r.none{background:var(--surface-2,var(--bg))}.jb-r.skip>:not(.jb-t){opacity:.5}
+.jb-r b{display:block;font-size:.92rem}.jb-r small{color:var(--muted);font-size:.78rem}
+.jb-r select{width:100%}.jb-one{display:flex;flex-direction:column;font-size:.9rem}.jb-one small{color:var(--muted)}
+.jb-t{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.jb-when{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.sf .jb-sum{margin-right:auto;align-self:center;color:var(--muted);font-size:.88rem}.sf .jb-sum b{color:var(--yel)}
+@media (max-width:700px){.jb-r{grid-template-columns:1fr}.jb-t{justify-content:flex-start}}
 .jsx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
 .jsx-card{display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 13px;font:inherit;color:var(--fg);cursor:pointer}
 .jsx-card:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
@@ -3756,13 +3771,14 @@ V.companies = () => {
   const rows = (() => { const list = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies'))); return !ui.q.trim() ? sortRows('companies', list) : rankSort(list, ui.q, c => c.name, acctFirst(ui.q)); })();
   const total = Object.keys(S.companies).length;
   ui.lastRows = {...(ui.lastRows || {}), companies: rows};
-  return head('Accounts', !ui.mine ? '' : fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + sortSel('companies') + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + addBtn('Account','newCompany'))
+  return head('Accounts', !ui.mine ? '' : fltActive('companies').length || ui.q ? `${rows.length.toLocaleString()} of ${total.toLocaleString()} accounts` : `${total.toLocaleString()} account${total===1?'':'s'}`, searchBox('Search accounts') + tagFilterSel() + sortSel('companies') + fltBtn('companies') + savedSel('companies') + mineSeg() + dlBtn('companies') + (canWrite && total ? `<button class="btn${ui.coPicking ? ' on' : ''}" data-act="jbMode" aria-pressed="${!!ui.coPicking}">${ic('route')}Journey Starter</button>` : '') + addBtn('Account','newCompany'))
+  + (canWrite && ui.coPicking && total ? jbBar() : '')
   + (!total ? `<section class="panel">${emptyState('No accounts yet', 'Accounts are the businesses you serve: law firms, medical offices, banks. Add one now, or import from your current CRM in Settings.', `<button class="btn pri" data-act="newCompany">${ic('plus')}Add an account</button>`)}</section>`
-  : `<div class="tbl"><table><thead><tr><th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
+  : `<div class="tbl"><table><thead><tr>${jbOn() ? `<th class="co-ck"><label><input type="checkbox" data-change="jbAll"${pg('companies', rows).length && pg('companies', rows).every(c => jbSel().has(c.id)) ? ' checked' : ''} aria-label="Pick every account on this page"></label></th>` : ''}<th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
-      return `<tr data-act="coPage" data-id="${c.id}"><td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
-    }).join('') || `<tr><td colspan="6" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
+      return `<tr data-act="coPage" data-id="${c.id}"${jbOn() && jbSel().has(c.id) ? ' class="sel"' : ''}>${jbOn() ? `<td class="co-ck"><label><input type="checkbox" data-change="jbRow" data-id="${c.id}"${jbSel().has(c.id) ? ' checked' : ''} aria-label="Pick ${esc(c.name)}"></label></td>` : ''}<td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
+    }).join('') || `<tr><td colspan="${jbOn() ? 7 : 6}" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
 V.contacts = () => {
@@ -7720,11 +7736,11 @@ V.journeys = () => {
 async function startEnrollment(o){
   const ct = S.contacts[o.contactId]; const j = journeyOf(o.journeyId);
   if (!ct || !j || !(j.steps || []).length) { toast('That journey could not be started.', 'bad'); return false; }
-  if (L('enrollments').some(e => e.contactId === o.contactId && e.journeyId === o.journeyId && ['active', 'paused'].includes(e.status))) { toast(`${pname_(ct)} is already on ${j.name}.`, 'bad'); return false; }
+  if (L('enrollments').some(e => e.contactId === o.contactId && e.journeyId === o.journeyId && ['active', 'paused'].includes(e.status))) { if (!o.quiet) toast(`${pname_(ct)} is already on ${j.name}.`, 'bad'); return false; }
   const steps = o.steps && o.steps.length ? o.steps : jSteps(j);
   const sched = buildSchedule({steps, skipWeekends: o.skipWeekends == null ? j.skipWeekends !== false : o.skipWeekends}, o.firstDate);
   const ok = await put('enrollments', uid(), {companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || '', journeyId: o.journeyId, ownerId: ME.id || '', status: 'active', onReply: o.onReply || j.onReply || 'pause', startedAt: Date.now(), schedule: sched, ...(o.sendMode ? {sendMode: o.sendMode} : {}), ...(o.steps && o.steps.length ? {steps} : {})});
-  if (ok) { logAct({type: 'note', text: `Started ${j.name} for ${pname_(ct)} (${jCountTxt(steps)}, first on ${fmtDate(sched[0].due)})`, companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || ''}); toast(`${pname_(ct)} is on ${j.name}`); }
+  if (ok) { logAct({type: 'note', text: `Started ${j.name} for ${pname_(ct)} (${jCountTxt(steps)}, first on ${fmtDate(sched[0].due)})`, companyId: o.companyId, contactId: o.contactId, dealId: o.dealId || ''}); if (!o.quiet) toast(`${pname_(ct)} is on ${j.name}`); }
   return ok;
 }
 async function emailJourneyAfterSend(){
@@ -8112,6 +8128,72 @@ async function jsxStart(id){
   if (ok) { s.open = false; closeModal(); schedule(); }
 }
 
+// ---------- Journey Starter: tick accounts on the Accounts list, then start one journey for all of them ----------
+const jbSel = () => ui.coPick || (ui.coPick = new Set());
+const jbOn = () => canWrite && !!ui.coPicking;
+const jbCts = id => L('contacts').filter(c => c.companyId === id && ctMail(c)).sort((a, b) => COLL.compare(pname_(a), pname_(b)));
+const jbOnJ = id => L('enrollments').filter(e => e.companyId === id && ['active', 'paused'].includes(e.status));
+function jbBar(){
+  const n = [...jbSel()].filter(id => S.companies[id]).length;
+  return `<div class="jbulk" role="toolbar" aria-label="Journey Starter"><b>${n ? `${n} account${n === 1 ? '' : 's'} picked` : 'Tick the accounts you want on a journey'}</b><span style="flex:1"></span>
+    ${n ? `<button class="btn sm" data-act="jbClear">Clear</button><button class="btn sm pri" data-act="jbOpen">${ic('route')}Start a journey</button>` : ''}<button class="btn sm ghost" data-act="jbMode">Done</button></div>`;
+}
+function jbOpen(){
+  const js = journeys(); if (!js.length) { toast('Create a journey first.', 'bad'); return; }
+  const ids = [...jbSel()].filter(id => S.companies[id]); if (!ids.length) { toast('Tick at least one account first.', 'bad'); return; }
+  const j0 = journeyOf(ui.jb && ui.jb.jid) || js[0];
+  ui.jb = {jid: j0.id, q: '', first: 'today', inDays: 3, date: addDays(today(), 7), sendMode: null,
+    rows: ids.map(id => { const cts = jbCts(id); return {id, ct: cts.length === 1 ? cts[0].id : '', skip: null}; })};
+  openModal(`Start a journey for ${ids.length} account${ids.length === 1 ? '' : 's'}`, `<div class="jb" id="jbBody"></div>`, 'Start', jbGo, {wide: true, foot: '<span class="jb-sum" id="jbSum"></span>'});
+  jbPaint();
+}
+// skipped unless picked otherwise: no email, or already on this same journey
+const jbSkip = r => { if (!jbCts(r.id).length) return true; if (r.skip != null) return r.skip; return jbOnJ(r.id).some(e => e.journeyId === ui.jb.jid); };
+function jbPaint(){
+  const s = ui.jb, box = $('#jbBody'); if (!s || !box) return;
+  const j = journeyOf(s.jid), q = norm(s.q || '');
+  const list = journeys().filter(x => !q || norm([x.name, x.desc, jCat(x.category)[1]].join(' ')).includes(q));
+  const rows = s.rows.map(r => { const co = S.companies[r.id] || {}; const cts = jbCts(r.id); const skip = jbSkip(r); const on = jbOnJ(r.id); const same = on.some(e => e.journeyId === s.jid);
+    const pick = !cts.length ? `<span class="sub">No email on file</span>`
+      : cts.length > 1 ? `<select data-change="jbCt" data-id="${r.id}" aria-label="Contact for ${esc(co.name)}"${skip ? ' disabled' : ''}><option value="">Pick a contact…</option>${cts.map(c => `<option value="${c.id}"${r.ct === c.id ? ' selected' : ''}>${esc(pname_(c))} · ${esc(ctMail(c))}${c.title ? ` (${esc(c.title)})` : ''}</option>`).join('')}</select>`
+      : `<span class="jb-one">${esc(pname_(cts[0]))}<small>${esc(ctMail(cts[0]))}</small></span>`;
+    const tag = !cts.length ? `<span class="chip bad">Skipped</span><button type="button" class="lnk" data-act="jbCo" data-id="${r.id}">Add an email</button>`
+      : skip ? `<span class="chip${same && r.skip == null ? ' warn' : ' bad'}">${same && r.skip == null ? `Already on ${esc(j.name)}` : 'Skipping'}</span><button type="button" class="lnk" data-act="jbInc" data-id="${r.id}">${same && r.skip == null ? 'Add anyway' : 'Undo'}</button>`
+      : `${on.length && !same ? `<span class="chip" title="Already on a journey">On ${esc(jName(on[0].journeyId))}</span>` : ''}${!r.ct ? '<span class="chip warn">Pick one</span>' : `<span class="chip good">${cts.length > 1 ? 'Picked' : 'Only contact'}</span>`}<button type="button" class="lnk" data-act="jbSkip" data-id="${r.id}">Skip</button>`;
+    return `<div class="jb-r${!cts.length ? ' none' : skip ? ' skip' : !r.ct ? ' need' : ''}"><span><b>${esc(co.name || 'Account')}</b><small>${cts.length} contact${cts.length === 1 ? '' : 's'} with email · ${esc(nm(co.ownerId) || '')}</small></span>${pick}<span class="jb-t">${tag}</span></div>`; }).join('');
+  const need = s.rows.filter(r => !jbSkip(r) && !r.ct).length;
+  const mode = s.sendMode || (j && j.sendMode) || 'approve';
+  box.innerHTML = `<section class="jb-js"><h4><i>1</i>Which journey?</h4>
+      ${journeys().length > 6 ? `<input type="search" class="jb-q" placeholder="Search journeys" data-input="jbQ" value="${esc(s.q)}" autocomplete="off" aria-label="Search journeys">` : ''}
+      ${list.length ? `<div class="jsx-cards">${list.map(x => { const st = jSteps(x); const [, cl, col] = jCat(x.category);
+        return `<button type="button" class="jsx-card${s.jid === x.id ? ' on' : ''}" data-act="jbJ" data-id="${esc(x.id)}" aria-pressed="${s.jid === x.id}"><b>${esc(x.name)}</b><span class="jsx-meta"><span class="chip" style="background:color-mix(in srgb, ${col} 16%, transparent);color:color-mix(in srgb, ${col} 80%, var(--fg))">${esc(cl)}</span><span><b>${jCountTxt(st)}</b> · ${jSpanTxt(jSpanDays(st))}</span></span></button>`; }).join('')}</div>` : `<p class="empty-s">No journeys match “${esc(s.q)}”.</p>`}</section>
+    <section><h4><i>2</i>Who gets it?</h4><p class="sub" style="margin:-4px 0 8px">${need ? `<b>${need} account${need === 1 ? ' has' : 's have'} more than one contact.</b> Pick who should get the emails.` : 'Accounts with one email use that contact.'}</p><div class="jb-who">${rows}</div></section>
+    <section><h4><i>3</i>When does the first one go?</h4><div class="jb-when">
+      <div class="segs" role="group" aria-label="First step">${[['today', 'Today'], ['in', 'In a few days'], ['date', 'Pick a date']].map(([k, l]) => `<button type="button" class="${s.first === k ? 'on' : ''}" data-act="jbFirst" data-v="${k}">${l}</button>`).join('')}</div>
+      ${s.first === 'in' ? `<label class="jsx-row"><span>Days from now</span> <input type="number" min="1" max="90" value="${esc(s.inDays)}" data-input="jbIn" style="width:80px"></label>` : ''}
+      ${s.first === 'date' ? `<input type="date" value="${esc(s.date)}" data-input="jbDate" style="width:auto" aria-label="Start on">` : ''}
+      <label class="jsx-row"><span>Sending</span> <select data-change="jbMode2" style="width:auto">${[['approve', 'Ask me first'], ['auto', 'Send automatically']].map(([v, l]) => `<option value="${v}"${mode === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div></section>`;
+  jbFoot();
+}
+function jbFoot(){
+  const s = ui.jb; if (!s) return; const j = journeyOf(s.jid);
+  const go = s.rows.filter(r => !jbSkip(r) && r.ct).length, need = s.rows.filter(r => !jbSkip(r) && !r.ct).length;
+  const sum = $('#jbSum'); if (sum) sum.innerHTML = `${go} will start${need ? ` · <b>${need} need${need === 1 ? 's' : ''} a contact</b>` : ''}`;
+  const b = $('#mform [type=submit]'); if (b) { b.textContent = go ? `Start ${j ? j.name : 'journey'} for ${go}` : 'Start'; b.disabled = !!need || !go; }
+}
+const jbFirstDate = () => { const s = ui.jb; return s.first === 'in' ? addDays(today(), Math.max(1, parseInt(s.inDays) || 3)) : s.first === 'date' && isDate(s.date) ? (s.date < today() ? today() : s.date) : today(); };
+async function jbGo(){
+  const s = ui.jb, j = journeyOf(s.jid); if (!j || !jSteps(j).length) { toast('That journey has no steps yet.', 'bad'); return false; }
+  const todo = s.rows.filter(r => !jbSkip(r) && r.ct); if (s.rows.some(r => !jbSkip(r) && !r.ct)) { toast('Pick a contact for each account first.', 'bad'); return false; }
+  const first = jbFirstDate(), mode = s.sendMode && s.sendMode !== (j.sendMode || 'approve') ? s.sendMode : '';
+  let ok = 0, dup = 0;
+  for (const r of todo) { const already = L('enrollments').some(e => e.contactId === r.ct && e.journeyId === j.id && ['active', 'paused'].includes(e.status)); if (already) { dup++; continue; }
+    if (await startEnrollment({companyId: r.id, contactId: r.ct, journeyId: j.id, firstDate: first, sendMode: mode, quiet: true})) ok++; }
+  toast(`Started ${j.name} for ${ok} account${ok === 1 ? '' : 's'}${dup ? `. ${dup} contact${dup === 1 ? ' was' : 's were'} already on it` : ''}.`, ok ? '' : 'bad', ok ? {label: 'See journeys', fn: () => A.go({v: 'journeys'})} : undefined);
+  if (ok) { jbSel().clear(); ui.coPicking = false; ui.jb = null; schedule(); }
+  return ok ? undefined : false;
+}
+
 // ---------- journey editor: one page, with the timeline across the top ----------
 const JFIELDS = {greeting: 'Greeting', first_name: 'First name', last_name: 'Last name', contact_name: 'Full name', company: 'Company', my_name: 'My name', my_first_name: 'My first name', quote_number: 'Quote #', quote_total: 'Quote total', price_quoted: 'Price quoted', service: 'Service', interval: 'Interval', service_date: 'Service date', contract_end: 'Contract end'};
 const jeChip = k => `<span class="fld" contenteditable="false" data-f="${k}">${esc(JFIELDS[k] || k)}</span>`;
@@ -8394,6 +8476,14 @@ const A = {
   jsxCat: d => { ui.js.cat = d.v; ui.js.q = ''; const q = $('#jsxQ'); if (q) q.value = ''; jsxPaint(); },
   jsxPick: d => { if (ui.js.jid !== d.id) { ui.js.jid = d.id; ui.js.custom = null; ui.js.exp = null; ui.js.onReply = null; ui.js.skip = null; ui.js.sendMode = null; } jsxPaint(); },
   jsxGo: d => jsxStart(d.id),
+  jbMode: () => { ui.coPicking = !ui.coPicking; if (!ui.coPicking) jbSel().clear(); render(); },
+  jbClear: () => { jbSel().clear(); render(); },
+  jbOpen: () => jbOpen(),
+  jbCo: d => { closeModal(); A.coPage({id: d.id}); },
+  jbJ: d => { ui.jb.jid = d.id; ui.jb.rows.forEach(r => { r.skip = null; }); jbPaint(); },
+  jbSkip: d => { const r = ui.jb.rows.find(x => x.id === d.id); if (r) r.skip = true; jbPaint(); },
+  jbInc: d => { const r = ui.jb.rows.find(x => x.id === d.id); if (r) r.skip = false; jbPaint(); },
+  jbFirst: d => { ui.jb.first = d.v; jbPaint(); },
   jsxFirstSet: d => { ui.js.first = d.v; jsxPaint(); },
   jsxCustom: () => { const j = journeyOf(ui.js.jid); if (!j) return; if (!ui.js.ct) { toast('Choose a contact first.', 'bad'); return; } journeyEditModal(j.id, {personal: true, steps: ui.js.custom || jSteps(j), contactId: ui.js.ct}); },
   jsxUncustom: () => { ui.js.custom = null; ui.js.exp = null; jsxPaint(); },
@@ -8624,6 +8714,13 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  jbRow: el => { const s_ = jbSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
+  jbAll: el => { const s_ = jbSel(); (ui.lastRows && ui.lastRows.companies ? pg('companies', ui.lastRows.companies) : []).forEach(c => el.checked ? s_.add(c.id) : s_.delete(c.id)); render(); },
+  jbCt: el => { const r = ui.jb && ui.jb.rows.find(x => x.id === el.dataset.id); if (r) r.ct = el.value; jbPaint(); },
+  jbMode2: el => { ui.jb.sendMode = el.value; },
+  jbQ: el => { ui.jb.q = el.value; const pos = el.selectionStart; jbPaint(); const n = $('#jbBody .jb-q'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch {} } },
+  jbIn: el => { ui.jb.inDays = el.value; },
+  jbDate: el => { ui.jb.date = el.value; },
   ciZip: el => { const st = ciState(); st.zipFile = el.files && el.files[0]; ciLoad(); },
   ciMan: async el => { const st = ciState(); try { st.man = JSON.parse(await el.files[0].text()); if (!Array.isArray(st.man)) throw new Error('not a list'); } catch { toast("That isn't the contract list file.", 'bad'); return; } ciLoad(); },
   ciCo: el => { const r = ciState().rows[+el.dataset.i]; if (!r) return; const v = el.value.trim().toLowerCase(); const co = L('companies').find(c => String(c.name).trim().toLowerCase() === v);
@@ -8823,6 +8920,7 @@ document.addEventListener('focusout', e => { const t = e.target; if (t && t.clas
 document.addEventListener('focusout', e => { if (e.target && (e.target.id === 'dCc' || e.target.id === 'dBcc')) setTimeout(() => { if (!document.activeElement || !['dCc','dBcc'].includes(document.activeElement.id)) acHide(); }, 180); });
 document.addEventListener('click', e => {
   if (e.target.closest('select') && e.target.closest('tr[data-act]')) return;
+  if (e.target.closest('.co-ck')) return;   // ticking an account in the list doesn't open it
   const t = e.target.closest('[data-act]'); if (!t) return;
   if (t.tagName === 'A') return;
   const an = e.target.closest('a[href]'); if (an && an !== t && t.contains(an)) return;   // a real link inside a clickable row just follows the link
