@@ -3654,12 +3654,17 @@ function oppEditor(d, k){
 const CO_KINDS = [['business', 'Business'], ['residential', 'Residential']];
 const coKind = c => c && (c.kind === 'residential' || c.kind === 'business') ? c.kind : '';
 const kindChip = c => coKind(c) ? `<span class="chip ${coKind(c) === 'residential' ? 'kres' : 'kbiz'}">${coKind(c) === 'residential' ? 'Residential' : 'Business'}</span>` : '';
+// ---------- locations: an account can be a location of a main account (one level: a main account isn't itself a location) ----------
+const coParent = c => c && c.parentId && S.companies[c.parentId] ? {...S.companies[c.parentId], id: c.parentId} : null;
+const coKids = id => id ? L('companies').filter(x => x.parentId === id).sort(byName) : [];
+const mainOpts = (id, none = '— None, this is a main account —') => [['', none], ...L('companies').filter(x => x.id !== id && !coParent(x)).sort(byName).map(x => [x.id, x.name])];
 function coEditor(c, k){
   const at = `id="ce_${k}" data-keep data-change="coField" data-k="${k}" data-id="${c.id}" class="oe"`;
   switch (k) {
     case 'ownerId': return ownerSel('oe', c.ownerId || ME.id).replace('<select ', `<select ${at} `);
     case 'state': return sel('oe', [['', '—'], ...[...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES].map(x => [x, x])], c.state || '', at);
     case 'kind': return sel('oe', [['', 'Not set'], ...CO_KINDS], coKind(c), at);
+    case 'parentId': return sel('oe', mainOpts(c.id), coParent(c) ? c.parentId : '', at);
     case 'notes': return `<textarea ${at} rows="2" placeholder="Add notes">${esc(c.notes || '')}</textarea>`;
     case 'phone': return `<input ${at} type="tel" placeholder="—" value="${esc(phonePretty(c.phone || ''))}">`;
     case 'zip': return `<input ${at} type="text" inputmode="numeric" placeholder="—" value="${esc(c.zip || '')}">`;
@@ -3674,8 +3679,10 @@ async function coSaveField(el){
   if (k === 'website') v = v.replace(/^https?:\/\//i, '').replace(/\/$/, '');
   if (k === 'name') { if (!v) { toast('An account needs a name.', 'bad'); el.value = c.name || ''; return; }
     const dup = findDupCompany(v, c.phone, id); if (dup && norm(dup.name) === norm(v)) { toast(`${dup.name} is already in the CRM. Use Merge to combine them.`, 'bad'); el.value = c.name || ''; return; } }
+  if (k === 'parentId' && v) { if (coKids(id).length) { toast(`${c.name} has its own locations, so it can't be a location of another account.`, 'bad'); el.value = ''; return; }
+    if (v === id || coParent(S.companies[v])) { toast('Pick a main account.', 'bad'); el.value = c.parentId || ''; return; } }
   if (String(c[k] ?? '') === v) return;
-  if (await patch('companies', id, {[k]: v})) toast('Saved'); else render();
+  if (await patch('companies', id, {[k]: v})) toast(k === 'parentId' ? (v ? `Now a location of ${cname(v)}` : 'Now its own main account') : 'Saved'); else render();
 }
 let oppDateT = 0;
 async function oppSaveField(el){
@@ -3749,12 +3756,12 @@ V.company = () => {
     body = `
     <section class="panel"><div class="ph"><h3>Details</h3>${W ? `<span class="sub">Click any field to change it. Changes save on their own.</span>` : ''}</div>
       <div class="cpgrid">${cf(`Name${c.acctNo ? ` <span class="acctno" title="Account number">#${c.acctNo}</span>` : ''}`, esc(c.name), 'name')}${cf('Phone', c.phone ? `${esc(phonePretty(c.phone))}<button class="copy" data-act="copy" data-t="${esc(phonePretty(c.phone))}" aria-label="Copy phone">${ic('copy')}</button>` : '', 'phone')}${cf('Owner', who(c.ownerId), 'ownerId')}
-      ${cf('Residential or business', kindChip(c), 'kind')}${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
+      ${cf('Residential or business', kindChip(c), 'kind')}${coKids(id).length ? cpField('Locations', `${coKids(id).length}`) : cf('Location of', coParent(c) ? `<button class="lnk" data-act="coPage" data-id="${c.parentId}">${esc(coParent(c).name)}</button>` : '<span class="sub">— Main account</span>', 'parentId')}${cf('Address', esc(c.address), 'address')}${cf('City', esc(c.city), 'city')}${cf('Zip code', esc(c.zip), 'zip')}
       ${cf('State', esc(c.state), 'state')}${cf('Website', c.website ? `<a class="lnk" href="${esc(/^https?:\/\//i.test(c.website) ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>` : '', 'website')}${cpField('Created', c.createdAt ? new Date(c.createdAt).toLocaleString('en-US', {month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')}
       ${cf('Hours of operation', esc(c.hours), 'hours')}${cpField('Contacts', String(g.contacts.length))}${(() => { const k = g.contracts.filter(x => (x.status || 'active') !== 'cancelled'); return cpField('Service agreement', k.length ? `<button class="chip good" data-act="cpTab" data-t="contracts" title="See contracts">${ic('doc')}On file</button>` : '<span class="sub">None on file</span>'); })()}
       ${TAGS_ON ? `<div class="cpf wide"><span>Tags</span><div>${tagEditor({...c, id})}</div></div>` : ''}
       ${cf('Notes', c.notes ? `<span style="white-space:pre-wrap">${esc(c.notes)}</span>` : '', 'notes', true)}</div></section>
-    ${spiroPanel(c)}
+    ${spiroPanel(c)}${locPanel(id, c, W)}
     <div class="cols2"><section class="panel"><div class="ph"><h3>Opportunities</h3><button class="lnk" data-act="cpTab" data-t="opps">See all</button></div>${rowsOr(od.slice(0, 8), oppHistRow, 'No opportunities yet.')}${od.length > 8 ? `<p class="sub">${od.length - 8} more on the Opportunities tab</p>` : ''}</section>
     <section class="panel"><div class="ph"><h3>Reminders</h3><button class="lnk" data-act="cpTab" data-t="reminders">See all</button></div>${tasksList(rem.slice(0, 5))}</section></div>`;
   } else if (tab === 'activity') body = `<section class="panel">${coActivity(id)}</section>`;
@@ -3767,12 +3774,19 @@ V.company = () => {
   else if (tab === 'journeys') { const es = L('enrollments').filter(e => e.companyId === id).sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
     body = `<div class="ph"><span></span>${W ? `<button class="btn sm pri" data-act="jStart" data-co="${id}">${ic('route')}Start a journey</button>` : ''}</div><section class="panel">${rowsOr(es, e => `<li class="rowi" data-act="jOpen" data-id="${e.id}"><div><b>${esc(jName(e.journeyId))}</b><small>${esc(nameOf('contacts', e.contactId))} · ${sentCount(e)} of ${(e.schedule || []).length} sent</small></div><span class="end">${jStatusChip(e)}</span></li>`, 'No one at this company is on a journey.')}</section>`; }
   return `<div class="cp"><button class="lnk back" data-act="go" data-v="companies">← Accounts</button>
-    <div class="cp-head"><span class="cp-ic">${ic('building')}</span><div class="cp-name"><h1>${esc(c.name)}</h1><p class="sub">${esc(addr) || 'No address yet'}</p></div><div class="vh-act">${headBtns}</div></div>
+    <div class="cp-head"><span class="cp-ic">${ic('building')}</span><div class="cp-name"><h1>${esc(c.name)}</h1><p class="sub">${coParent(c) ? `Location of <button class="lnk" data-act="coPage" data-id="${c.parentId}">${esc(coParent(c).name)}</button> · ` : ''}${esc(addr) || 'No address yet'}${coKids(id).length ? ` · <button class="lnk" data-act="cpLocs">${coKids(id).length} location${coKids(id).length === 1 ? '' : 's'}</button>` : ''}</p></div><div class="vh-act">${headBtns}</div></div>
     ${draftsBar(id)}${simpleOn() ? smNextBox(id) : ''}
     <div class="cptabs" role="tablist">${CP_TABS.map(([k, l, i]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-act="cpTab" data-t="${k}">${ic(i)}<span>${l}</span>${counts[k] ? `<em>${counts[k]}</em>` : ''}</button>`).join('')}</div>
     <div class="cp-body">${body}</div></div>`;
 };
 
+function locPanel(id, c, W){
+  const kids = coKids(id); if (coParent(c)) { const sib = coKids(c.parentId).filter(x => x.id !== id); return sib.length ? `<section class="panel" id="cpLocs"><div class="ph"><h3>Other locations of ${esc(coParent(c).name)}</h3></div>${locRows(sib)}</section>` : ''; }
+  if (!kids.length && !W) return '';
+  return `<section class="panel" id="cpLocs"><div class="ph"><h3>Locations${kids.length ? ` <span class="chip">${kids.length}</span>` : ''}</h3>${W ? `<button class="btn sm" data-act="coAddLoc" data-id="${id}">${ic('plus')}Add a location</button>` : ''}</div>${kids.length ? locRows(kids) : '<p class="empty-s">No other locations. If this account has more sites, add each one as a location so it keeps its own address, contacts and jobs.</p>'}</section>`;
+}
+const locRows = list => `<ul class="rows">${list.map(x => { const a = [x.address, x.city].filter(Boolean).join(', '); const open = L('deals').filter(d => d.companyId === x.id && isOpen(d)).length;
+  return `<li class="rowi" data-act="coPage" data-id="${x.id}"><div><b>${esc(x.name)}</b><small>${esc(a || 'No address yet')}${x.acctNo ? ` · #${esc(x.acctNo)}` : ''}</small></div><span class="end">${open ? `<span class="chip">${open} open</span>` : ''}</span></li>`; }).join('')}</ul>`;
 V.companies = () => {
   const rows = (() => { const list = fzRun(() => L('companies').filter(mine).filter(c => fltPass('companies', c)).filter(c => matchR(ui.q, c, 'l', () => HAYF.companies.l(c), 'companies'))); return !ui.q.trim() ? sortRows('companies', list) : rankSort(list, ui.q, c => c.name, acctFirst(ui.q)); })();
   const total = Object.keys(S.companies).length;
@@ -3783,7 +3797,7 @@ V.companies = () => {
   : `<div class="tbl"><table><thead><tr>${jbOn() ? `<th class="co-ck"><label><input type="checkbox" data-change="jbAll"${pg('companies', rows).length && pg('companies', rows).every(c => jbSel().has(c.id)) ? ' checked' : ''} aria-label="Pick every account on this page"></label></th>` : ''}<th>Acct #</th><th>Account</th><th>Location</th><th>Owner</th><th class="r">Open opportunities</th><th>Contract ends</th></tr></thead><tbody>${pg('companies', rows).map(c => {
       const g = gr(c.id); const od = g.deals.filter(d => isOpen(d) && isReal(d)); const ac = g.contracts.filter(x => (x.status||'active') === 'active' && isDate(x.end)).sort((a,b) => a.end < b.end ? -1 : 1)[0];
       const lt = X.lastAct[c.id];
-      return `<tr data-act="coPage" data-id="${c.id}"${jbOn() && jbSel().has(c.id) ? ' class="sel"' : ''}>${jbOn() ? `<td class="co-ck"><label><input type="checkbox" data-change="jbRow" data-id="${c.id}"${jbSel().has(c.id) ? ' checked' : ''} aria-label="Pick ${esc(c.name)}"></label></td>` : ''}<td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${coKind(c) === 'residential' ? ' ' + kindChip(c) : ''}${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
+      return `<tr data-act="coPage" data-id="${c.id}"${jbOn() && jbSel().has(c.id) ? ' class="sel"' : ''}>${jbOn() ? `<td class="co-ck"><label><input type="checkbox" data-change="jbRow" data-id="${c.id}"${jbSel().has(c.id) ? ' checked' : ''} aria-label="Pick ${esc(c.name)}"></label></td>` : ''}<td class="num sub">${c.acctNo || '—'}</td><td><b>${esc(c.name)}</b>${coKind(c) === 'residential' ? ' ' + kindChip(c) : ''}${coParent(c) ? `<span class="t2">Location of ${esc(coParent(c).name)}</span>` : ''}${tagChips(c, 3)}${c.phone ? `<span class="t2">${esc(phonePretty(c.phone))}</span>` : ''}</td><td>${esc([c.city, c.state].filter(Boolean).join(', ')) || '—'}</td><td>${who(c.ownerId)}</td><td class="r num">${od.length ? `${money(sum(od,d=>d.value))}<span class="t2">${od.length} open</span>` : '—'}</td><td>${ac ? dueChip(ac.end) : '—'}</td></tr>`;
     }).join('') || `<tr><td colspan="${jbOn() ? 7 : 6}" class="sub">No accounts match.</td></tr>`}</tbody></table></div>${pgFoot('companies', rows.length)}`);
 };
 
@@ -4651,21 +4665,26 @@ function findDupContact(f, exceptId){
   const ems = ctAddrs(f);
   return L('contacts').find(c => c.id !== exceptId && ((ems.length && ctAddrs(c).some(e => ems.includes(e))) || (f.companyId && c.companyId === f.companyId && norm(pname_(c)) === norm([f.firstName, f.lastName].filter(Boolean).join(' ')))));
 }
-function companyForm(id){
-  const c = id ? S.companies[id] : {ownerId: ME.id};
-  openModal(id ? 'Edit account' : 'New account', `${id ? '' : stepTag(1, 'Account')}<div class="grid2">
+function companyForm(id, pre = {}){
+  const par = pre.parent && S.companies[pre.parent];
+  const c = id ? S.companies[id] : par ? {ownerId: par.ownerId || ME.id, name: par.name + ' - ', kind: par.kind, phone: par.phone, parentId: pre.parent} : {ownerId: ME.id};
+  const kidsN = id ? coKids(id).length : 0;
+  openModal(id ? 'Edit account' : par ? `New location of ${par.name}` : 'New account', `${id || par ? '' : stepTag(1, 'Account')}<div class="grid2">
     ${F('Account name', inp('name', c.name, 'text', 'required'), 'wide')}
     ${F('Phone', inp('phone', c.phone, 'tel'))}
     ${F('Owner', ownerSel('ownerId', c.ownerId))}
     ${F('Street address', inp('address', c.address), 'wide')}
     <div class="grid3 wide">${F('City', inp('city', c.city))}${F('State', sel('state', [...(c.state && !STATES.includes(c.state) ? [c.state] : []), ...STATES], c.state || 'FL'))}${F('ZIP', inp('zip', c.zip, 'text', 'inputmode="numeric"'))}</div>
-    ${F('Residential or business', sel('kind', id ? [['', 'Not set'], ...CO_KINDS] : CO_KINDS, id ? coKind(c) : 'business'))}
+    ${F('Residential or business', sel('kind', id ? [['', 'Not set'], ...CO_KINDS] : CO_KINDS, id ? coKind(c) : c.kind || 'business'))}
+    ${kidsN ? '' : F('Location of', sel('parentId', mainOpts(id), c.parentId || ''), 'wide')}
     ${F('Hours of operation', inp('hours', c.hours, 'text', 'placeholder="e.g. Mon–Fri 8am–5pm"'))}
     ${F('Notes', ta('notes', c.notes), 'wide')}</div>`, id ? 'Save' : 'Add account', async d => {
       const nid = id || uid();
       const dup = findDupCompany(d.name, d.phone, id);
       if (dup) { dupWarn(`${esc(dup.name)} is already in the CRM${norm(dup.name) === norm(d.name) ? '' : ' with this phone number'}.`, 'companies', dup.id); return false; }
-      const ok = await put('companies', nid, {...(id ? S.companies[id] : {}), ...d});
+      if (d.parentId && (d.parentId === id || coParent(S.companies[d.parentId]))) { toast('Pick a main account.', 'bad'); return false; }
+      const ok = await put('companies', nid, {...(id ? S.companies[id] : {}), ...d, parentId: d.parentId || ''});
+      if (ok && !id && par) { toast(`Location added to ${par.name}`); afterModal(() => A.coPage({id: nid})); return ok; }
       if (ok && !id) { toast('Account added'); afterModal(() => { A.coPage({id: nid}); setTimeout(() => contactForm(null, {co:nid, coName:d.name, flow:1}), 250); }); }   // land on the new account's page, with step 2 on top
       return ok;
     });
@@ -8690,6 +8709,8 @@ const A = {
   tags: () => tagsModal(),
   tagSuggest: () => tagSuggestModal(),
   bizSure: () => bizSureModal(),
+  coAddLoc: d => companyForm(null, {parent: d.id}),
+  cpLocs: () => { ui.cpTab = 'details'; render(); setTimeout(() => { const e = $('#cpLocs'); if (e) e.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60); },
   hdResched: d => hdReschedModal(d.id),
   tagRename: d => tagRenameModal(d.t),
   tagDrop: d => tagDropModal(d.t),
@@ -10393,10 +10414,10 @@ function raRows(from){
 
 // ---------- merge duplicates ----------
 const MRG_FIELDS = {
-  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['hours', 'Hours of operation'], ['kind', 'Residential or business'], ['ownerId', 'Owner'], ['notes', 'Notes']],
+  companies: [['name', 'Name'], ['phone', 'Phone'], ['address', 'Street'], ['city', 'City'], ['state', 'State'], ['zip', 'ZIP'], ['hours', 'Hours of operation'], ['kind', 'Residential or business'], ['parentId', 'Location of'], ['ownerId', 'Owner'], ['notes', 'Notes']],
   contacts: [['firstName', 'First name'], ['lastName', 'Last name'], ['title', 'Title'], ['companyId', 'Account'], ['email', 'Email'], ['email2', 'Other email'], ['phone', 'Phone'], ['mobile', 'Mobile'], ['ownerId', 'Owner'], ['notes', 'Notes']]};
 const coKey = n => norm(String(n || '').toLowerCase().replace(/\s*-\s*copy\b.*$/, '').replace(/[.,'’&()]/g, ' ').replace(/\b(the|llc|l\.?l\.?c|inc|incorporated|pa|p\.?a|pllc|pc|co|corp|corporation|company|ltd|group)\b/g, ' '));
-const mVal = (col, k, r) => { const v = r && r[k]; if (!v) return ''; if (k === 'ownerId') return nm(v); if (k === 'companyId') return cname(v); return String(v); };
+const mVal = (col, k, r) => { const v = r && r[k]; if (!v) return ''; if (k === 'ownerId') return nm(v); if (k === 'companyId' || k === 'parentId') return cname(v); return String(v); };
 function mergeCandidates(col, id){
   const r = S[col][id]; if (!r) return [];
   if (col === 'companies') { const k = coKey(r.name), ph = digits(r.phone);
@@ -10429,6 +10450,7 @@ function mergeModal(col, keepId, otherId){
       const link = col === 'companies' ? 'companyId' : 'contactId';
       const b = $('#mform [type=submit]'); let n = 0;
       for (const c of COLS.filter(c => c !== 'trash')) for (const r of L(c).filter(x => x[link] === otherId)) { const ch = {[link]: keepId}; if (col === 'companies' && c === 'contacts') {} if (await patch(c, r.id, ch)) n++; if (b && n % 20 === 0) b.textContent = `Moving ${n}…`; }
+      if (col === 'companies') { for (const r of L('companies').filter(x => x.parentId === otherId && x.id !== keepId)) await patch('companies', r.id, {parentId: keepId}); if (upd.parentId === keepId || (keep.parentId === otherId)) upd.parentId = ''; }   // its locations follow it
       if (Object.keys(upd).length && !await patch(col, keepId, upd)) return false;
       await del(col, otherId);
       await logAct({type: 'note', sys: true, text: `Merged ${nameOfR(other)} into this ${label}`, companyId: col === 'companies' ? keepId : keep.companyId, contactId: col === 'contacts' ? keepId : ''});
