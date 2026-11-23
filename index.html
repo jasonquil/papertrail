@@ -6721,8 +6721,15 @@ const MAILBOX_MISS = /doesn.t belong to the targeted mailbox|not found|ErrorItem
 async function emailFindMine(b){
   const q = String(b.subject || '').replace(/^(re|fw|fwd):\s*/ig, '').replace(/["()]/g, ' ').replace(/\s+/g, ' ').trim(); if (!q) return '';
   try { const r = await mailCall({query: `"${q.slice(0, 120)}"`, limit: 25});
-    const hit = parseEmails(r).map(m => ({uri: m.uri || '', at: Date.parse(m.receivedDateTime || m.sentDateTime || '') || 0})).filter(m => m.uri && Math.abs(m.at - (b.at || 0)) < 15 * 60000).sort((x, y) => Math.abs(x.at - b.at) - Math.abs(y.at - b.at))[0];
-    return hit ? hit.uri : ''; } catch { return ''; }
+    // only a copy of the very same email: same subject, within a few minutes, and to or from this account's people
+    const ct = b.contactId && S.contacts[b.contactId]; const tg = b.coId ? mailTargets(b.coId) : {emails: [], dom: ''};
+    const emails = [...new Set([...(tg.emails || []), ...(ct ? ctAddrs(ct) : [])].map(x => String(x).toLowerCase()))], dom = tg.dom || '';
+    if (!emails.length && !dom) return '';
+    const sk = subjKey(b.subject);
+    const hit = parseEmails(r).map(m => ({m, n: normEmail(m, emails, dom), at: Date.parse(m.receivedDateTime || m.sentDateTime || '') || 0}))
+      .filter(x => x.n && x.m.uri && x.n.inbound === !!b.inbound && subjKey(x.m.subject) === sk && Math.abs(x.at - (b.at || 0)) < 5 * 60000)
+      .sort((x, y) => Math.abs(x.at - b.at) - Math.abs(y.at - b.at))[0];
+    return hit ? hit.m.uri : ''; } catch { return ''; }
 }
 const emailNotMine = b => b.by && b.by !== ME.id ? `${pname(b.by)} saved this email from their Outlook and it isn't in yours, so only the part Paper Trail saved is shown.` : "This email isn't in your Outlook anymore (it may have been moved or deleted), so only the part Paper Trail saved is shown.";
 async function emailOpen(d){
