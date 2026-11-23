@@ -327,7 +327,7 @@ td .t2{display:block;color:var(--muted);font-size:.8rem}
 .facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;margin:0;font-size:.9rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
 .facts dt{color:var(--muted);font-size:.8rem;font-weight:600;padding-top:1px}
 .facts dd{margin:0;overflow-wrap:break-word;min-width:0;display:flex;gap:6px;align-items:flex-start}
-.facts dd>.fv{min-width:0}.facts dd>.copy{flex:none;margin-top:1px}.facts .who{white-space:normal;max-width:100%;min-width:0}.facts .who>.av,.facts .who>[class*=av]{flex:none}
+.facts dd>.fv{min-width:0;overflow-wrap:anywhere}.facts dd>.fv .lnk{white-space:normal;overflow-wrap:anywhere;text-align:left}.facts dd>.copy{flex:none;margin-top:1px}.facts .who{white-space:normal;max-width:100%;min-width:0}.facts .who>.av,.facts .who>[class*=av]{flex:none}
 .copy{border:0;background:none;color:var(--muted);cursor:pointer;padding:2px;border-radius:4px;display:inline-grid}
 .copy:hover{color:var(--accent)}
 .copy .ic{width:14px;height:14px}
@@ -3818,7 +3818,7 @@ const sec = (title, n, body, addAct, d, label, icon) => `<div class="sec"><div c
 const rowsOr = (arr, fn, none) => arr.length ? `<ul class="rows">${arr.map(fn).join('')}</ul>` : `<p class="empty-s">${none}</p>`;
 // labels saved on imported records (some older ones say "in Spiro") read as the current CRM
 const spLabel = k => String(k).replace(/\s+in Spiro$/i, ' in your current CRM').replace(/^Spiro\s+/i, 'Current CRM ').replace(/Spiro/gi, 'current CRM');
-const spiroFacts = r => Object.entries((r && r.spiro) || {}).map(([k, v]) => fact(esc(spLabel(k)), esc(v))).join('');
+const spiroFacts = () => '';   // old CRM extras are kept on the record but not shown
 const spiroPanel = r => { const e = Object.entries((r && r.spiro) || {}); return e.length && false ? `<section class="panel"><div class="ph"><h3>More from your current CRM</h3></div><div class="cpgrid">${e.map(([k, v]) => cpField(esc(spLabel(k)), `<span style="white-space:pre-wrap">${esc(v)}</span>`)).join('')}</div></section>` : ''; };
 const fact = (k, v, copy) => v ? `<dt>${k}</dt><dd><span class="fv">${v}</span>${copy ? `<button class="copy" data-act="copy" data-t="${esc(copy)}" aria-label="Copy ${k}">${ic('copy')}</button>` : ''}</dd>` : '';
 function logBox(ctx){
