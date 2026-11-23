@@ -260,6 +260,22 @@ mark{background:var(--warn-soft);color:inherit;border-radius:2px;padding:0 1px}
 .mailbar.warn{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
 .f .f-note,.f-note{display:block;margin-top:4px;font-size:.8rem;font-weight:500;letter-spacing:0;text-transform:none;line-height:1.35;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:5px 8px}.f .f-note b{font-weight:700}
 .fi .subj{font-weight:600}
+.fi.em{grid-template-columns:96px minmax(0,1fr);align-items:start;gap:12px;padding:10px 12px 10px 10px;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;background:var(--surface)}
+.fi.em.has-del{grid-template-columns:96px minmax(0,1fr) auto}.fi.em .fi-del{align-self:start;margin:-4px -6px 0 0}
+.fi.em.in{border-left-color:var(--info)}.fi.em.out{border-left-color:var(--accent)}
+.feed .fi.em+.fi.em{margin-top:-4px}
+.emk{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;border-radius:999px;padding:3px 9px 3px 7px;width:fit-content;margin-top:1px}
+.emk svg{width:13px;height:13px;stroke-width:2.4}.emk b{font-weight:700}
+.emk.in{background:var(--info-soft);color:var(--info)}.emk.out{background:var(--accent-soft);color:var(--accent)}
+.em-b{display:flex;flex-direction:column;gap:2px;min-width:0}
+.em-top{display:flex;align-items:baseline;gap:8px;margin:0;white-space:nowrap!important}
+.em-top .subj{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.em-top time{margin-left:auto;flex:none;color:var(--muted);font-size:.8rem;padding-left:8px}
+.fi.em .snip{-webkit-line-clamp:1;margin:0;font-size:.88rem}
+.fi.em small{font-size:.78rem}
+.fi.em .em-b[data-act]{cursor:pointer}.fi.em:has(.em-b[data-act]:hover){border-color:var(--faint,var(--muted));border-left-color:inherit}
+.fi.em.in:has(.em-b[data-act]:hover){border-left-color:var(--info)}.fi.em.out:has(.em-b[data-act]:hover){border-left-color:var(--accent)}
+@media (max-width:640px){.fi.em,.fi.em.has-del{grid-template-columns:minmax(0,1fr) auto}.fi.em .emk{grid-column:1}.fi.em .em-b{grid-column:1 / -1}.fi.em .fi-del{grid-row:1;grid-column:2}}
 .fi .snip{color:var(--muted);font-size:.86rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
 .ft.call,.ft.inbound,.ft.voicemail,.ft.noconnect{background:var(--info-soft);color:var(--info)}.ft.noconnect{opacity:.8}.ft.done{background:var(--good-soft);color:var(--good)}
 .ptag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:9px;font-size:10.5px;font-weight:600;line-height:17px;background:var(--warn-soft,#fff4d6);color:var(--warn,#8a6100);vertical-align:1px}.ft{min-width:86px}.ft.email{background:var(--accent-soft);color:var(--accent)}.ft.meeting{background:var(--good-soft);color:var(--good)}.ft.stage{background:none;border:1px dashed var(--line)}
@@ -2040,6 +2056,7 @@ const ICON = {
   star:'<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
   phone:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  emin:'<path d="M17 7L7 17M16 17H7V8"/>', emout:'<path d="M7 17L17 7M8 7h9v9"/>',
   chevup:'<path d="M6 15l6-6 6 6"/>', chevdown:'<path d="M6 9l6 6 6-6"/>',
   box:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="16" cy="12" r="1.5"/><path d="M7 12h5"/>',
   back:'<path d="M15 18l-6-6 6-6"/>',
@@ -3483,11 +3500,24 @@ function taskRow(k){
   return `<li class="task ${remGrp(k)}"><button class="tick ${k.done?'done':''}" data-act="taskDone" data-id="${k.id}" aria-label="Mark done" ${canWrite?'':'disabled'}>${k.done?ic('check'):''}</button>
   <div class="task-b"><span>${esc(k.title)}</span><small>${dueChip(k.due)}${k.assigneeId && k.assigneeId !== ME.id ? `<span>${esc(pname(k.assigneeId))}</span>` : ''}${rel_}</small></div>${remSugBtn(k)}${snzSel(k)}${canWrite ? `<button class="icon-btn" data-act="editTask" data-id="${k.id}" aria-label="Edit reminder" title="Edit">${ic('edit')}</button>` : ''}</li>`;
 }
+// ---------- one email in a timeline: received and sent are told apart by color, arrow and wording ----------
+const emSnip = t => String(t || '').replace(/Protecting Information\.?\s*Protecting Communities\.?/gi, ' ').replace(/[*_]{1,}/g, '').replace(/\s+/g, ' ').trim();
+const emSubj = t => String(t || '').replace(/^(Sent|Received):\s*/i, '').trim() || '(no subject)';
+function emRow(o){
+  const dir = o.inbound ? 'in' : 'out';
+  const when = o.at ? new Date(o.at) : null;
+  const abs = when ? `${fmtDate(ymd(when))}, ${when.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'})}` : '';
+  return `<li class="fi em ${dir}${o.delB ? ' has-del' : ''}"><span class="emk ${dir}" title="${o.inbound ? 'Email they sent you' : 'Email you sent'}">${ic(o.inbound ? 'emin' : 'emout')}<b>${o.inbound ? 'Received' : 'Sent'}</b></span>
+    <div class="fi-b em-b" ${o.attrs}><p class="em-top"><span class="subj">${esc(o.subject)}</span>${o.att ? '<span class="chip">Attachment</span>' : ''}<time title="${esc(abs)}">${when ? rel(o.at) : ''}</time></p>${o.snip ? `<p class="snip">${esc(o.snip)}</p>` : ''}<small>${o.meta}</small></div>${o.delB || ''}</li>`;
+}
 function feedItem(a, withCo){
   const txt = String(a.text || '').trim(); const nl = txt.indexOf('\n');
   const first = nl > -1 ? txt.slice(0, nl) : txt, rest = nl > -1 ? txt.slice(nl + 1).trim() : '';
   const em = a.type === 'email' && a.id;
   const delB = canWrite && a.id && S.activities[a.id] && (a.by === ME.id || isAdmin()) ? `<button type="button" class="icon-btn fi-del" data-act="actDel" data-id="${esc(a.id)}" aria-label="Delete this activity" title="Delete">${ic('trash')}</button>` : '';
+  if (a.type === 'email') { const inbound = /^Received:/i.test(first); const ct = a.contactId && S.contacts[a.contactId] ? pname_(S.contacts[a.contactId]) : '';
+    const meta = [inbound ? (ct ? `From ${esc(ct)}` : 'From the customer') : `${esc(pname(a.by))}${ct ? ` to ${esc(ct)}` : ''}`, a.type === 'email' ? trackBadge(a).replace(/^ · /, '') : '', withCo && a.companyId ? link('companies', a.companyId) : '', a.dealId && withCo !== 'nodeal' ? link('deals', a.dealId) : ''].filter(Boolean).join(' · ');
+    return emRow({inbound, subject: emSubj(first), snip: emSnip(rest), at: a.at, meta, delB, attrs: em ? `data-act="emailOpen" data-aid="${esc(a.id)}" title="Click to read the whole email"` : ''}); }
   return `<li class="fi${delB ? ' has-del' : ''}"><span class="ft ${a.type}">${ACT[a.type]||'Note'}</span><div${em ? ` class="fi-b" data-act="emailOpen" data-aid="${esc(a.id)}" title="Click to read the whole email"` : rest ? ' class="fi-b" data-act="fiToggle" title="Click to show the whole message"' : ''}><p class="fi-t">${esc(first)}</p>${rest ? `<p class="fi-rest">${esc(rest)}</p>` : ''}${fileChips(a.files)}<small>${esc(pname(a.by))} · ${rel(a.at)}${a.type === 'email' ? trackBadge(a) : ''}${withCo && a.companyId ? ' · ' + link('companies', a.companyId) : ''}${a.dealId && withCo !== 'nodeal' ? ' · ' + link('deals', a.dealId) : ''}</small></div>${delB}</li>`;
 }
 function coActivityGroups(){
@@ -3989,7 +4019,8 @@ async function loadEmails(id, refresh){
 function emailItem(m, coId){
   const who_ = m.inbound ? `From ${m.sender}` : `To ${m.recipients.slice(0, 3).join(', ')}${m.recipients.length > 3 ? ' +' + (m.recipients.length - 3) : ''}`;
   const when = m.at ? `${fmtDate(ymd(new Date(m.at)))}, ${new Date(m.at).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}` : '';
-  return `<li class="fi"><span class="ft ${m.inbound?'in':'out'}">${m.inbound?'Received':'Sent'}</span><div class="fi-b" data-act="emailOpen" data-co="${esc(coId)}" data-mid="${esc(m.id)}" title="Click to read the whole email"><p class="subj">${esc(m.subject)}${m.att ? ' <span class="chip">Attachment</span>' : ''}</p>${m.summary ? `<p class="snip">${esc(m.summary)}</p>` : ''}<small>${esc(who_)} · ${when}${m.web ? ` · <a class="lnk" href="${esc(m.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}${canWrite ? ` · <button class="lnk" data-act="logEmail" data-co="${coId}" data-mid="${esc(m.id)}">Save to timeline</button>` : ''}</small></div></li>`;
+  return emRow({inbound: !!m.inbound, subject: m.subject || '(no subject)', snip: emSnip(m.summary), at: m.at, att: m.att, attrs: `data-act="emailOpen" data-co="${esc(coId)}" data-mid="${esc(m.id)}" title="Click to read the whole email"`,
+    meta: `${esc(who_)}${m.web ? ` · <a class="lnk" href="${esc(m.web)}" target="_blank" rel="noopener">Open in Outlook</a>` : ''}${canWrite ? ` · <button class="lnk" data-act="logEmail" data-co="${coId}" data-mid="${esc(m.id)}">Save to timeline</button>` : ''}`});
 }
 const ACT_FILTERS = [['all','All'],['email','Emails'],['log','Calls, meetings & notes'],['done','Completed reminders'],['job','Closed jobs'],['doc','Files, quotes & contracts']];
 function coActivity(id){
