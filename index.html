@@ -3279,7 +3279,9 @@ function render(){
   preserve(() => {
     const nh = navHtml(); if (nh !== lastNav) { morph($('#nav'), nh); lastNav = nh; }   // the sidebar is patched in place, so it never flickers
     theoSync();
-    $('#main').innerHTML = `<div class="wrap">${viewHtml()}</div>`;
+    // while someone is typing in Quick Email, a background refresh leaves the page alone (it would knock them out of the box)
+    const ae_ = document.activeElement, qeBusy = ui.view === 'qemail' && ae_ && ae_.closest && ae_.closest('#main .qe') && ae_.matches('input, textarea, [contenteditable="true"]');
+    if (!qeBusy) $('#main').innerHTML = `<div class="wrap">${viewHtml()}</div>`;
     const dr = $('#drawer');
     if (ui.detail && S[ui.detail.col][ui.detail.id]) { const body = DETAIL[ui.detail.col](ui.detail.id); const db0 = !dr.hidden && $('#drawerBody');
       if (db0) db0.innerHTML = body;   // already open: just refresh what's inside, so it doesn't slide in again
