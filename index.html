@@ -3878,22 +3878,32 @@ function qeData(){ const v = (ui.qe && ui.qe.vals) || {}; const h = new Date().g
   const d = {greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening', my_name: me, my_first_name: me.split(' ')[0]};
   for (const [k, x] of Object.entries(v)) d[k] = x; const t = qeTpl(); if (t) for (const k of qeKeys(t)) if (!(k in d)) d[k] = ''; return d; }
 const qeTpl = () => ui.qe && ui.qe.tid ? templates().find(t => t.id === ui.qe.tid) : null;
-const qeBodyHtml = (t, mark) => { let h = t.html ? fillTemplate(t.body, qeData(), true) : esc(fillTemplate(t.body, qeData(), false)).replace(/\n/g, '<br>');
-  return mark ? h.replace(/\[([a-z][a-z /]{1,40})\]/g, '<mark class="qe-miss">[$1]</mark>') : h; };
+// blanks typed right into a template as [DATE], [amount], [initial bin]: each gets its own box too
+const QE_BR = /\[([A-Za-z][^\[\]<>{}\n]{0,40}?)\]/g;
+const qeBr = t => { const raw = String(t.subject || '') + ' ' + String(t.body || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ');
+  const out = []; for (const m of raw.matchAll(QE_BR)) { const l = m[1].trim(); if (l && !out.some(x => x.toLowerCase() === l.toLowerCase())) out.push(l); } return out; };
+const qeIsDate = l => /\bdate\b|\bday\b/i.test(l);
+const qeBrVal = l => { const v = String((ui.qe.vals || {})['br:' + l.toLowerCase()] || '').trim(); return v && qeIsDate(l) && isDate(v) ? parseYmd(v).toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'}) : v; };
+// fill or highlight every [blank] in finished text; html: the text is already escaped
+const qeFillBr = (txt, html, mark) => txt.replace(QE_BR, (m, l) => { const raw = html ? l.replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"') : l; const v = qeBrVal(raw.trim());
+  return v ? (html ? esc(v) : v) : mark ? `<mark class="qe-miss">${m}</mark>` : m; });
+const qeBodyHtml = (t, mark) => { const h = t.html ? fillTemplate(t.body, qeData(), true) : esc(fillTemplate(t.body, qeData(), false)).replace(/\n/g, '<br>');
+  return qeFillBr(h, true, mark); };
 function qeList(){ const q = norm((ui.qe && ui.qe.q) || ''); const list = templates().filter(t => !q || norm([t.name, t.subject, t.body].join(' ')).includes(q));
   return list.length ? list.map(t => `<button type="button" class="qe-t${ui.qe && ui.qe.tid === t.id ? ' on' : ''}" data-act="qePick" data-id="${esc(t.id)}"><b>${esc(t.name || t.subject || 'Template')}</b><small>${esc(t.subject || '')}</small></button>`).join('') : `<p class="empty-s">No templates match “${esc(ui.qe.q)}”.</p>`; }
 function qePrev(){ const t = qeTpl(); if (!t) return '';
-  const miss = qeKeys(t).filter(k => !QE_AUTO.includes(k) && !String((ui.qe.vals || {})[k] || '').trim());
-  return `<div class="qe-sub"><span>Subject</span><b>${fillTemplate(t.subject || '', qeData(), true).replace(/\[([a-z][a-z /]{1,40})\]/g, '<mark class="qe-miss">[$1]</mark>')}</b><button type="button" class="btn sm" data-act="qeCopy" data-w="subj">${ic('copy')}Copy subject</button></div>
+  const miss = [...qeKeys(t).filter(k => !QE_AUTO.includes(k) && !String((ui.qe.vals || {})[k] || '').trim()).map(qeLabel), ...qeBr(t).filter(l => !qeBrVal(l)).map(qeBrLabel)];
+  return `<div class="qe-sub"><span>Subject</span><b>${qeFillBr(fillTemplate(t.subject || '', qeData(), true), true, true)}</b><button type="button" class="btn sm" data-act="qeCopy" data-w="subj">${ic('copy')}Copy subject</button></div>
     <div class="qe-body">${qeBodyHtml(t, true)}</div>
-    <div class="qe-act">${miss.length ? `<span class="sub">Still blank: ${miss.map(qeLabel).map(esc).join(', ')}</span>` : '<span class="sub">All filled in.</span>'}<button type="button" class="btn pri" data-act="qeCopy" data-w="body">${ic('copy')}Copy message</button></div>`; }
+    <div class="qe-act">${miss.length ? `<span class="sub">Still blank: ${miss.map(esc).join(', ')}</span>` : '<span class="sub">All filled in.</span>'}<button type="button" class="btn pri" data-act="qeCopy" data-w="body">${ic('copy')}Copy message</button></div>`; }
+const qeBrLabel = l => l === l.toUpperCase() ? l.charAt(0) + l.slice(1).toLowerCase() : l.charAt(0).toUpperCase() + l.slice(1);
 V.qemail = () => {
   ui.qe = ui.qe || {tid: '', q: '', vals: {}}; const t = qeTpl();
-  const keys = t ? qeKeys(t).filter(k => !QE_AUTO.includes(k)) : [];
+  const keys = t ? qeKeys(t).filter(k => !QE_AUTO.includes(k)) : [], brs = t ? qeBr(t) : [];
   return head('Quick Email', 'Pick one of our templates, fill in the blanks, then copy it into your email. Nothing is sent from here.')
   + `<div class="qe"><section class="panel qe-l"><input type="search" class="qe-q" placeholder="Search templates" data-input="qeQ" value="${esc(ui.qe.q)}" autocomplete="off" aria-label="Search templates"><div class="qe-list" id="qeList">${qeList()}</div></section>
     <section class="panel qe-r">${t ? `<div class="ph"><h3>${esc(t.name || 'Template')}</h3><button type="button" class="btn sm ghost" data-act="qeClear">Clear</button></div>
-      ${keys.length ? `<div class="qe-f">${keys.map(k => `<label class="f"><span>${esc(qeLabel(k))}</span><input data-input="qeV" data-k="${esc(k)}" value="${esc((ui.qe.vals || {})[k] || '')}" autocomplete="off"></label>`).join('')}</div>` : '<p class="sub">Nothing to fill in for this one.</p>'}
+      ${keys.length || brs.length ? `<div class="qe-f">${keys.map(k => `<label class="f"><span>${esc(qeLabel(k))}</span><input data-input="qeV" data-k="${esc(k)}" value="${esc((ui.qe.vals || {})[k] || '')}" autocomplete="off"></label>`).join('')}${brs.map(l => { const k = 'br:' + l.toLowerCase(); return `<label class="f"><span>${esc(qeBrLabel(l))}</span><input${qeIsDate(l) ? ' type="date"' : ''} data-input="qeV" data-k="${esc(k)}" value="${esc((ui.qe.vals || {})[k] || '')}" autocomplete="off"></label>`; }).join('')}</div>` : '<p class="sub">Nothing to fill in for this one.</p>'}
       <div id="qePrev">${qePrev()}</div>` : emptyState('Pick a template', 'Search on the left, pick one, and fill in the blanks. Then copy the subject and message into your email.')}</section></div>`;
 };
 V.contracts = () => {
@@ -8829,7 +8839,7 @@ const A = {
   qePick: d => { ui.qe.tid = d.id; ui.qe.vals = {}; render(); setTimeout(() => { const i = $('.qe-f input'); if (i) i.focus(); }, 30); },
   qeClear: () => { ui.qe.vals = {}; render(); },
   qeCopy: d => { const t = qeTpl(); if (!t) return;
-    if (d.w === 'subj') { copyText(fillTemplate(t.subject || '', qeData(), false)); return; }
+    if (d.w === 'subj') { copyText(qeFillBr(fillTemplate(t.subject || '', qeData(), false), false, false)); return; }
     const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:680px;font:15px/1.5 Calibri,Arial,sans-serif;color:#000'; box.innerHTML = qeBodyHtml(t, false); document.body.append(box);
     copyRich(box).finally(() => box.remove()); },
 
