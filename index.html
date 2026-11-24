@@ -1275,7 +1275,8 @@ tr.sel td{background:var(--accent-soft)!important}
 .qe-sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px 10px 0 0;background:var(--surface-2,var(--bg))}
 .qe-sub span{color:var(--muted);font-size:.82rem}.qe-sub b{flex:1;min-width:0}
 .qe-body{border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:16px 18px;background:#fff;color:#12201E;line-height:1.55;overflow-wrap:anywhere}
-.qe-body p{margin:0 0 10px}.qe-body ul{margin:0 0 10px;padding-left:22px}
+.qe-r .qe-body{margin-top:0!important}.qe-mail .qe-sub{position:sticky;top:0;z-index:3}.qe-r .qe-sub{margin-bottom:0!important}.qe-body p{margin:0 0 10px}.qe-body:focus,#qeSubj:focus{outline:2px solid var(--accent);outline-offset:2px}#qeSubj{outline-offset:2px;border-radius:4px;padding:0 2px}
+.qe-b{border-radius:4px}.qe-b.miss{background:#FFF1B8;color:#7A5600;padding:0 3px}.qe-tip{margin-left:auto;margin-right:4px}.qe-body ul{margin:0 0 10px;padding-left:22px}
 mark.qe-miss{background:#FFF1B8;color:#7A5600;border-radius:4px;padding:0 3px}
 .qe-act{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}
 .chip.info{background:var(--info-soft);color:var(--info)}
@@ -3870,41 +3871,68 @@ V.quotes = () => {
   : `<div class="tbl"><table><thead><tr><th>Quote</th><th>Account</th><th>Status</th><th class="r">Total</th><th>Created</th><th>Valid until</th></tr></thead><tbody>${rows.map(q => `<tr data-act="editQuote" data-id="${q.id}"><td class="mono">${esc(q.number)}</td><td>${q.companyId ? link('companies', q.companyId) || '—' : `${esc(qWho(q))} <span class="chip">One-off</span>`}${q.dealId ? `<span class="t2">${esc(nameOf('deals', q.dealId))}</span>` : ''}</td><td>${qChip(q)}</td><td class="r num">${money2(qTotal(q))}</td><td>${q.createdAt ? fmtDate(ymd(new Date(q.createdAt))) : '—'}</td><td>${q.status==='sent' || q.status==='draft' ? dueChip(q.validUntil) : fmtDate(q.validUntil)}</td></tr>`).join('') || `<tr><td colspan="6" class="sub">No quotes match.</td></tr>`}</tbody></table></div>`);
 };
 
-// ---------- Quick Email: pick one of our templates, fill in the blanks, copy it. Nothing is sent and no contact is needed ----------
+// ---------- Quick Email: pick one of our templates, fill in the blanks, edit anything, copy it. Nothing is sent and no contact is needed ----------
+// Blanks are {fields} (first name, company…) and anything typed in [brackets]: [DATE], [amount], [185]. Each gets a box; the email itself can be edited too.
 const QE_AUTO = ['greeting', 'my_name', 'my_first_name'];
-const qeKeys = t => { const ks = []; for (const m of String((t.subject || '') + ' ' + (t.body || '')).matchAll(/%?\{(\w+)\}/g)) { const k = FIELD_ALIAS[m[1].toLowerCase()] || m[1].toLowerCase(); if (!ks.includes(k)) ks.push(k); } return ks; };
-const qeLabel = k => ((MERGE_FIELDS.find(f => f[0] === k) || [k, k.replace(/_/g, ' ')])[1]).replace(/^Contact /, '').replace(/^./, c => c.toUpperCase());
-function qeData(){ const v = (ui.qe && ui.qe.vals) || {}; const h = new Date().getHours(); const me = conn.name || ME.name || '';
-  const d = {greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening', my_name: me, my_first_name: me.split(' ')[0]};
-  for (const [k, x] of Object.entries(v)) d[k] = x; const t = qeTpl(); if (t) for (const k of qeKeys(t)) if (!(k in d)) d[k] = ''; return d; }
+const QE_TOK = /%?\{(\w+)\}|\[([^\[\]<>{}\n]{1,40}?)\]/g;
 const qeTpl = () => ui.qe && ui.qe.tid ? templates().find(t => t.id === ui.qe.tid) : null;
-// blanks typed right into a template as [DATE], [amount], [initial bin]: each gets its own box too
-const QE_BR = /\[([A-Za-z][^\[\]<>{}\n]{0,40}?)\]/g;
-const qeBr = t => { const raw = String(t.subject || '') + ' ' + String(t.body || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ');
-  const out = []; for (const m of raw.matchAll(QE_BR)) { const l = m[1].trim(); if (l && !out.some(x => x.toLowerCase() === l.toLowerCase())) out.push(l); } return out; };
+const qeLabel = k => ((MERGE_FIELDS.find(f => f[0] === k) || [k, k.replace(/_/g, ' ')])[1]).replace(/^Contact /, '').replace(/^./, c => c.toUpperCase());
+const qeCap = l => l === l.toUpperCase() && /[A-Z]/.test(l) ? l.charAt(0) + l.slice(1).toLowerCase() : l.charAt(0).toUpperCase() + l.slice(1);
 const qeIsDate = l => /\bdate\b|\bday\b/i.test(l);
-const qeBrVal = l => { const v = String((ui.qe.vals || {})['br:' + l.toLowerCase()] || '').trim(); return v && qeIsDate(l) && isDate(v) ? parseYmd(v).toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'}) : v; };
-// fill or highlight every [blank] in finished text; html: the text is already escaped
-const qeFillBr = (txt, html, mark) => txt.replace(QE_BR, (m, l) => { const raw = html ? l.replace(/&amp;/g, '&').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"') : l; const v = qeBrVal(raw.trim());
-  return v ? (html ? esc(v) : v) : mark ? `<mark class="qe-miss">${m}</mark>` : m; });
-const qeBodyHtml = (t, mark) => { const h = t.html ? fillTemplate(t.body, qeData(), true) : esc(fillTemplate(t.body, qeData(), false)).replace(/\n/g, '<br>');
-  return qeFillBr(h, true, mark); };
+const qeAutoVal = k => { const h = new Date().getHours(); const me = conn.name || ME.name || ''; return k === 'greeting' ? (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') : k === 'my_name' ? me : k === 'my_first_name' ? me.split(' ')[0] : ''; };
+const qePlain = h => String(h || '').replace(/<(br|\/p|\/div|\/li)[^>]*>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"');
+// the blanks in a template, in order: {key, label, def, date}
+function qeBlanks(t){
+  const out = [], seen = new Set(); const txt = String(t.subject || '') + '\n' + qePlain(t.html ? t.body : String(t.body || ''));
+  for (const m of txt.matchAll(QE_TOK)) {
+    if (m[1]) { const k = FIELD_ALIAS[m[1].toLowerCase()] || m[1].toLowerCase(); if (QE_AUTO.includes(k) || seen.has('f:' + k)) continue; seen.add('f:' + k); out.push({key: 'f:' + k, label: qeLabel(k), def: '', date: /date/.test(k)}); continue; }
+    const raw = m[2].trim(); if (!raw) continue;
+    if (/^[\d$.,\s-]+$/.test(raw)) {   // a number in brackets, like $[185]: a price to keep or change, named by the words after it
+      const after = txt.slice(m.index + m[0].length).replace(/^[\s)]+/, '').split(/[.\n(]/)[0].trim().split(/\s+/).slice(0, 5).join(' ');
+      const key = 'n:' + m.index; out.push({key, label: after ? qeCap(after) : 'Amount', def: raw, date: false, num: true}); continue; }
+    const key = 'b:' + raw.toLowerCase(); if (seen.has(key)) continue; seen.add(key); out.push({key, label: qeCap(raw), def: '', date: qeIsDate(raw)});
+  }
+  return out;
+}
+const qeShow = (bl, v) => { v = String(v ?? '').trim(); return v && bl.date && isDate(v) ? parseYmd(v).toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric'}) : v; };
+// the email as html with every blank wrapped in a span the boxes can fill (numbers in brackets lose the brackets)
+function qeBuild(t){
+  const bl = qeBlanks(t); const num = bl.filter(x => x.num); let ni = 0;
+  const wrap = (txt, html) => { let numBase = 0; return txt.replace(QE_TOK, (m, f, b) => {
+    if (f) { const k = FIELD_ALIAS[f.toLowerCase()] || f.toLowerCase(); if (QE_AUTO.includes(k)) return esc(qeAutoVal(k)); const x = bl.find(y => y.key === 'f:' + k); return `<span class="qe-b miss" data-b="${esc(x.key)}">[${esc(x.label.toLowerCase())}]</span>`; }
+    const raw = (html ? qePlain(b) : b).trim();
+    if (/^[\d$.,\s-]+$/.test(raw)) { const x = num[ni++]; return x ? `<span class="qe-b" data-b="${esc(x.key)}">${esc(x.def)}</span>` : esc(raw); }
+    const x = bl.find(y => y.key === 'b:' + raw.toLowerCase()); return x ? `<span class="qe-b miss" data-b="${esc(x.key)}">[${esc(raw)}]</span>` : m; }); };
+  const subj = wrap(esc(t.subject || ''), true);
+  const body = t.html ? wrap(String(t.body || ''), true) : wrap(esc(String(t.body || '')), true).replace(/\n/g, '<br>');
+  return {subj, body: body.replace(/(Good (?:morning|afternoon|evening)) <span class="qe-b miss" data-b="f:first_name">\[first name\]<\/span>,/, '$1 <span class="qe-b miss" data-b="f:first_name">[first name]</span>,')};
+}
+function qeStart(tid){ const t = templates().find(x => x.id === tid); if (!t) return; const b = qeBuild(t);
+  ui.qe.tid = tid; ui.qe.vals = Object.fromEntries(qeBlanks(t).filter(x => x.def).map(x => [x.key, x.def])); ui.qe.subj = b.subj; ui.qe.body = b.body; ui.qe.edited = false; }
 function qeList(){ const q = norm((ui.qe && ui.qe.q) || ''); const list = templates().filter(t => !q || norm([t.name, t.subject, t.body].join(' ')).includes(q));
-  return list.length ? list.map(t => `<button type="button" class="qe-t${ui.qe && ui.qe.tid === t.id ? ' on' : ''}" data-act="qePick" data-id="${esc(t.id)}"><b>${esc(t.name || t.subject || 'Template')}</b><small>${esc(t.subject || '')}</small></button>`).join('') : `<p class="empty-s">No templates match “${esc(ui.qe.q)}”.</p>`; }
-function qePrev(){ const t = qeTpl(); if (!t) return '';
-  const miss = [...qeKeys(t).filter(k => !QE_AUTO.includes(k) && !String((ui.qe.vals || {})[k] || '').trim()).map(qeLabel), ...qeBr(t).filter(l => !qeBrVal(l)).map(qeBrLabel)];
-  return `<div class="qe-sub"><span>Subject</span><b>${qeFillBr(fillTemplate(t.subject || '', qeData(), true), true, true)}</b><button type="button" class="btn sm" data-act="qeCopy" data-w="subj">${ic('copy')}Copy subject</button></div>
-    <div class="qe-body">${qeBodyHtml(t, true)}</div>
-    <div class="qe-act">${miss.length ? `<span class="sub">Still blank: ${miss.map(esc).join(', ')}</span>` : '<span class="sub">All filled in.</span>'}<button type="button" class="btn pri" data-act="qeCopy" data-w="body">${ic('copy')}Copy message</button></div>`; }
-const qeBrLabel = l => l === l.toUpperCase() ? l.charAt(0) + l.slice(1).toLowerCase() : l.charAt(0).toUpperCase() + l.slice(1);
+  return list.length ? list.map(t => `<button type="button" class="qe-t${ui.qe && ui.qe.tid === t.id ? ' on' : ''}" data-act="qePick" data-id="${esc(t.id)}"><b>${esc(t.name || t.subject || 'Template')}</b><small>${esc(String(t.subject || '').replace(/%?\{(\w+)\}/g, (m, k) => '[' + qeLabel(FIELD_ALIAS[k.toLowerCase()] || k.toLowerCase()).toLowerCase() + ']'))}</small></button>`).join('') : `<p class="empty-s">No templates match “${esc(ui.qe.q)}”.</p>`; }
+// fill the blanks in place, so anything edited by hand stays as it is
+function qeFillDom(){ const t = qeTpl(); if (!t) return; const bl = qeBlanks(t);
+  for (const el of document.querySelectorAll('#qeSubj .qe-b, #qeBody .qe-b')) { const x = bl.find(y => y.key === el.dataset.b); if (!x) continue;
+    const v = qeShow(x, ui.qe.vals[x.key]); const want = v || (x.num ? '' : `[${x.key.startsWith('f:') ? x.label.toLowerCase() : x.label}]`);
+    if (el.textContent !== want) el.textContent = want; el.classList.toggle('miss', !v); }
+  const miss = bl.filter(x => !String(ui.qe.vals[x.key] || '').trim()).map(x => x.label); const m = $('#qeMiss');
+  if (m) m.innerHTML = miss.length ? `Still blank: ${miss.map(esc).join(', ')}` : 'All filled in.';
+  qeSave(); }
+function qeSave(){ const sj = $('#qeSubj'), bd = $('#qeBody'); if (sj) ui.qe.subj = sj.innerHTML; if (bd) ui.qe.body = bd.innerHTML; }
+// what gets copied: the email as shown, blanks as plain text, no highlights
+function qeClean(html){ const d = document.createElement('div'); d.innerHTML = html; d.querySelectorAll('.qe-b').forEach(el => el.replaceWith(document.createTextNode(el.textContent))); return d; }
 V.qemail = () => {
-  ui.qe = ui.qe || {tid: '', q: '', vals: {}}; const t = qeTpl();
-  const keys = t ? qeKeys(t).filter(k => !QE_AUTO.includes(k)) : [], brs = t ? qeBr(t) : [];
-  return head('Quick Email', 'Pick one of our templates, fill in the blanks, then copy it into your email. Nothing is sent from here.')
+  ui.qe = ui.qe || {tid: '', q: '', vals: {}}; const t = qeTpl(); if (t && ui.qe.body == null) qeStart(t.id);
+  const bl = t ? qeBlanks(t) : []; const miss = bl.filter(x => !String(ui.qe.vals[x.key] || '').trim()).map(x => x.label);
+  return head('Quick Email', 'Pick one of our templates, fill in the blanks, change anything you like, then copy it into your email. Nothing is sent from here.')
   + `<div class="qe"><section class="panel qe-l"><input type="search" class="qe-q" placeholder="Search templates" data-input="qeQ" value="${esc(ui.qe.q)}" autocomplete="off" aria-label="Search templates"><div class="qe-list" id="qeList">${qeList()}</div></section>
-    <section class="panel qe-r">${t ? `<div class="ph"><h3>${esc(t.name || 'Template')}</h3><button type="button" class="btn sm ghost" data-act="qeClear">Clear</button></div>
-      ${keys.length || brs.length ? `<div class="qe-f">${keys.map(k => `<label class="f"><span>${esc(qeLabel(k))}</span><input data-input="qeV" data-k="${esc(k)}" value="${esc((ui.qe.vals || {})[k] || '')}" autocomplete="off"></label>`).join('')}${brs.map(l => { const k = 'br:' + l.toLowerCase(); return `<label class="f"><span>${esc(qeBrLabel(l))}</span><input${qeIsDate(l) ? ' type="date"' : ''} data-input="qeV" data-k="${esc(k)}" value="${esc((ui.qe.vals || {})[k] || '')}" autocomplete="off"></label>`; }).join('')}</div>` : '<p class="sub">Nothing to fill in for this one.</p>'}
-      <div id="qePrev">${qePrev()}</div>` : emptyState('Pick a template', 'Search on the left, pick one, and fill in the blanks. Then copy the subject and message into your email.')}</section></div>`;
+    <section class="panel qe-r">${t ? `<div class="ph"><h3>${esc(t.name || 'Template')}</h3><button type="button" class="btn sm ghost" data-act="qeClear" title="Start this template over">Start over</button></div>
+      ${bl.length ? `<div class="qe-f">${bl.map(x => `<label class="f"><span>${esc(x.label)}</span><input${x.date ? ' type="date"' : ''} data-input="qeV" data-k="${esc(x.key)}" value="${esc(ui.qe.vals[x.key] || '')}" autocomplete="off"></label>`).join('')}</div>` : '<p class="sub">Nothing to fill in for this one.</p>'}
+      <div class="qe-mail"><div class="qe-sub"><span>Subject</span><b id="qeSubj" contenteditable="true" spellcheck="true" data-input="qeEdit" role="textbox" aria-label="Subject">${ui.qe.subj}</b><button type="button" class="btn sm pri" data-act="qeCopy" data-w="body">${ic('copy')}Copy message</button></div>
+      <div class="qe-body" id="qeBody" contenteditable="true" spellcheck="true" data-input="qeEdit" role="textbox" aria-multiline="true" aria-label="Email message">${ui.qe.body}</div></div>
+      <div class="qe-act"><span class="sub" id="qeMiss">${miss.length ? `Still blank: ${miss.map(esc).join(', ')}` : 'All filled in.'}</span><span class="sub qe-tip">Click anywhere in the email to change it.</span></div>`
+      : emptyState('Pick a template', 'Search on the left, pick one, and fill in the blanks. You can also change the email itself. Then copy the subject and message into your email.')}</section></div>`;
 };
 V.contracts = () => {
   const rows = L('contracts').filter(mine).filter(c => match(ui.q, c.title, c.note, cname(c.companyId), ...(c.files || []).map(f => f.name))).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -8836,11 +8864,11 @@ const A = {
   tags: () => tagsModal(),
   tagSuggest: () => tagSuggestModal(),
   bizSure: () => bizSureModal(),
-  qePick: d => { ui.qe.tid = d.id; ui.qe.vals = {}; render(); setTimeout(() => { const i = $('.qe-f input'); if (i) i.focus(); }, 30); },
-  qeClear: () => { ui.qe.vals = {}; render(); },
-  qeCopy: d => { const t = qeTpl(); if (!t) return;
-    if (d.w === 'subj') { copyText(qeFillBr(fillTemplate(t.subject || '', qeData(), false), false, false)); return; }
-    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:680px;font:15px/1.5 Calibri,Arial,sans-serif;color:#000'; box.innerHTML = qeBodyHtml(t, false); document.body.append(box);
+  qePick: d => { qeStart(d.id); render(); setTimeout(() => { const i = $('.qe-f input'); if (i) i.focus(); }, 30); },
+  qeClear: () => { if (ui.qe.tid) qeStart(ui.qe.tid); render(); },
+  qeCopy: d => { if (!qeTpl()) return; qeSave();
+    if (d.w === 'subj') { copyText(qeClean(ui.qe.subj).textContent.replace(/\s+/g, ' ').trim()); return; }
+    const box = qeClean(ui.qe.body); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:680px;font:15px/1.5 Calibri,Arial,sans-serif;color:#000'; document.body.append(box);
     copyRich(box).finally(() => box.remove()); },
 
   coAddLoc: d => companyForm(null, {parent: d.id}),
@@ -8942,7 +8970,8 @@ const A = {
 };
 const CHANGE = {
   qeQ: el => { ui.qe.q = el.value; const l = $('#qeList'); if (l) l.innerHTML = qeList(); },
-  qeV: el => { ui.qe.vals[el.dataset.k] = el.value; const p = $('#qePrev'); if (p) p.innerHTML = qePrev(); },
+  qeV: el => { ui.qe.vals[el.dataset.k] = el.value; qeFillDom(); },
+  qeEdit: () => { ui.qe.edited = true; qeSave(); },
   jdPick: el => { const s_ = jdSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
   jdAll: el => { const s_ = jdSel(); (ui.jdOk || []).forEach(id => el.checked ? s_.add(id) : s_.delete(id)); render(); },
   jbRow: el => { const s_ = jbSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
