@@ -1265,6 +1265,21 @@ tr.sel td{background:var(--accent-soft)!important}
 .jsx-sugg .btn{margin-left:auto;background:#fff;color:var(--accent);border-color:#fff;flex:none}
 .jsx-spark{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none}.jsx-spark svg{width:19px;height:19px}
 .att-ck{display:flex;align-items:center;padding:0 10px 0 2px;cursor:pointer}.att-ck input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;margin:0}li.att.sel{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.qe{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+.qe-l{display:flex;flex-direction:column;gap:10px;position:sticky;top:12px;max-height:calc(100vh - 140px)}
+.qe-list{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
+.qe-t{display:flex;flex-direction:column;gap:1px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
+.qe-t:hover{border-color:var(--muted)}.qe-t.on{border-color:var(--accent);background:var(--accent-soft)}
+.qe-t b{font-size:.92rem}.qe-t small{color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qe-f{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.qe-sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px 10px 0 0;background:var(--surface-2,var(--bg))}
+.qe-sub span{color:var(--muted);font-size:.82rem}.qe-sub b{flex:1;min-width:0}
+.qe-body{border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:16px 18px;background:#fff;color:#12201E;line-height:1.55;overflow-wrap:anywhere}
+.qe-body p{margin:0 0 10px}.qe-body ul{margin:0 0 10px;padding-left:22px}
+mark.qe-miss{background:#FFF1B8;color:#7A5600;border-radius:4px;padding:0 3px}
+.qe-act{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}
+.chip.info{background:var(--info-soft);color:var(--info)}
+@media (max-width:860px){.qe{grid-template-columns:1fr}.qe-l{position:static;max-height:none}.qe-list{max-height:280px}}
 .co-ck{width:34px;padding:0!important}.co-ck label{display:flex;align-items:center;justify-content:center;padding:12px 8px;cursor:pointer}.co-ck input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;margin:0}
 tr.sel td{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .jb{display:flex;flex-direction:column;gap:20px}.jb h4{margin:0 0 8px;font-size:.95rem;display:flex;align-items:center;gap:8px}
@@ -2048,7 +2063,7 @@ const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID'
 const SOURCES = ['Chat GPT','Print Ad','Local and Organic','AdWords','Bing','Shred Nations','Click2Sell','Previous Client','Existing Client','Truck','Pink Truck','Newsletter','Facebook','Postcard','Next Door','In-House Post Card','Sell Sheet','Other','Outbound Lead','A3','A4','YouTube','TJ Baral'];
 const QSTAT = [['draft','Draft'],['sent','Sent'],['accepted','Accepted'],['declined','Declined']];
 const STALE_DAYS = 14;
-const NAVKEY = {today: 'T', reminders: 'R', journeys: 'J', hdwd: 'H', pipeline: 'O', companies: 'A', contacts: 'C', quotes: 'Q', contracts: 'K'};
+const NAVKEY = {qemail: 'E', today: 'T', reminders: 'R', journeys: 'J', hdwd: 'H', pipeline: 'O', companies: 'A', contacts: 'C', quotes: 'Q', contracts: 'K'};
 const VIEWS = [['today','Today','cal'],['reminders','Reminders','bell'],['journeys','Journeys','route'],['hdwd','HDWD','star'],['pipeline','Opportunities','cols'],['companies','Accounts','building'],['contacts','Contacts','users'],['quotes','Quotes','tag'],['contracts','Contracts','doc']];
 
 const ICON = {
@@ -2906,7 +2921,7 @@ window.addEventListener('popstate', e => {
 });
 
 // ---------- appearance: each person's own look, saved to their login ----------
-const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show', simple: 'off', remHelp: 'on'};
+const LOOK_DEFAULT = {mode: 'system', accent: '', text: 'md', density: 'comfy', font: 'default', start: 'today', look: 'default', compose: 'form', calendar: 'show', simple: 'off', remHelp: 'on', quickEmail: 'hide'};
 const remHelpOn = () => LOOK.remHelp !== 'off' && LOOK.remHelp !== 'last';   // the reminder helper: suggested email and What's next after sending
 const remLastOn = () => LOOK.remHelp !== 'off';   // the last email line (also on in "Last email only")
 // Simple: an easier version anyone can turn on (fewer menu items, a do-this-next Today, bigger buttons, a short new-opportunity form)
@@ -2985,6 +3000,7 @@ function lookModal(){
       ${F('Font', seg('font', [['default', (LOOK.look || 'default') === 'default' ? 'Original' : 'Match the look'], ['manrope', 'Manrope'], ['jakarta', 'Jakarta'], ['fraunces', 'Fraunces'], ['system', 'System'], ['serif', 'Classic']]))}
       <div class="f"><span>Email window</span>${cmpPickHtml()}</div>
       ${F('Sidebar calendar', seg('calendar', [['show', 'Show'], ['hide', 'Hide']]))}
+      ${F('Quick Email on my menu', seg('quickEmail', [['show', 'Show'], ['hide', 'Hide']]))}
       ${F('Start page', seg('start', [['today', 'Today'], ['reminders', 'Reminders'], ['pipeline', 'Opportunities'], ['companies', 'Accounts']]))}
     </div>`, null, null, {foot: `<button type="button" class="btn ghost" data-act="lookReset" style="margin-right:auto">Reset to default</button><button type="button" class="btn pri" data-act="closeModal">Done</button>`});
 }
@@ -3272,7 +3288,11 @@ function render(){
   ensureProfiles();
 }
 
+// Quick Email: on your menu when you turn it on in Settings → Appearance (off unless you do)
+const opsOn = () => LOOK.quickEmail === 'show';
+function syncOpsNav(){ const i = VIEWS.findIndex(v => v[0] === 'qemail'); if (opsOn() && i < 0) VIEWS.push(['qemail', 'Quick Email', 'mail']); else if (!opsOn() && i > -1) VIEWS.splice(i, 1); }
 function navHtml(){
+  syncOpsNav();
   const badge = {hdwd: booted ? hdwdDue().length : 0, journeys: booted ? journeyDue().filter(({e, s}) => !autoWillSend(e, s)).length : 0, today: booted ? asToday(() => todayAtt().length) : 0, reminders: booted ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && (ME.id ? k.assigneeId === ME.id : true)).length : 0};   // always just yours, whatever Mine/Everyone is set to
   { const n = booted && ME.id ? L('tasks').filter(k => !k.done && isDate(k.due) && k.due <= today() && k.assigneeId === ME.id).length : 0; const tt = (n ? `(${n}) ` : '') + 'Paper Trail'; if (document.title !== tt) document.title = tt; }   // your due reminders, in the browser tab
   const MT = ['today', 'reminders', 'pipeline', 'companies'];
@@ -3285,7 +3305,7 @@ function navHtml(){
   <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
   <div class="navlist">${(() => { const one = ([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`;
     if (!simpleOn()) return VIEWS.map(one).join('');
-    const main = SIMPLE_NAV.map(k => VIEWS.find(v => v[0] === k)).filter(Boolean), rest = VIEWS.filter(v => !SIMPLE_NAV.includes(v[0]));
+    const SN = opsOn() ? [...SIMPLE_NAV, 'qemail'] : SIMPLE_NAV; const main = SN.map(k => VIEWS.find(v => v[0] === k)).filter(Boolean), rest = VIEWS.filter(v => !SN.includes(v[0]));
     const open = ui.smMore || rest.some(v => v[0] === curK); const rb = rest.reduce((n, v) => n + (badge[v[0]] || 0), 0);
     return main.map(one).join('') + `<button class="navi sm-more-nav" data-act="smNavMore" aria-expanded="${open}">${ic('dots')}<span>More</span>${!open && rb ? `<em>${rb}</em>` : ''}</button>` + (open ? `<div class="sm-rest">${rest.map(one).join('')}</div>` : ''); })()}</div>
   ${FISH ? `<div class="tk-float" aria-hidden="true">${BOBBER_SM}<span class="rp r1"></span><span class="rp r2"></span></div>` : ''}
@@ -3850,6 +3870,32 @@ V.quotes = () => {
   : `<div class="tbl"><table><thead><tr><th>Quote</th><th>Account</th><th>Status</th><th class="r">Total</th><th>Created</th><th>Valid until</th></tr></thead><tbody>${rows.map(q => `<tr data-act="editQuote" data-id="${q.id}"><td class="mono">${esc(q.number)}</td><td>${q.companyId ? link('companies', q.companyId) || '—' : `${esc(qWho(q))} <span class="chip">One-off</span>`}${q.dealId ? `<span class="t2">${esc(nameOf('deals', q.dealId))}</span>` : ''}</td><td>${qChip(q)}</td><td class="r num">${money2(qTotal(q))}</td><td>${q.createdAt ? fmtDate(ymd(new Date(q.createdAt))) : '—'}</td><td>${q.status==='sent' || q.status==='draft' ? dueChip(q.validUntil) : fmtDate(q.validUntil)}</td></tr>`).join('') || `<tr><td colspan="6" class="sub">No quotes match.</td></tr>`}</tbody></table></div>`);
 };
 
+// ---------- Quick Email: pick one of our templates, fill in the blanks, copy it. Nothing is sent and no contact is needed ----------
+const QE_AUTO = ['greeting', 'my_name', 'my_first_name'];
+const qeKeys = t => { const ks = []; for (const m of String((t.subject || '') + ' ' + (t.body || '')).matchAll(/%?\{(\w+)\}/g)) { const k = FIELD_ALIAS[m[1].toLowerCase()] || m[1].toLowerCase(); if (!ks.includes(k)) ks.push(k); } return ks; };
+const qeLabel = k => ((MERGE_FIELDS.find(f => f[0] === k) || [k, k.replace(/_/g, ' ')])[1]).replace(/^Contact /, '').replace(/^./, c => c.toUpperCase());
+function qeData(){ const v = (ui.qe && ui.qe.vals) || {}; const h = new Date().getHours(); const me = conn.name || ME.name || '';
+  const d = {greeting: h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening', my_name: me, my_first_name: me.split(' ')[0]};
+  for (const [k, x] of Object.entries(v)) d[k] = x; const t = qeTpl(); if (t) for (const k of qeKeys(t)) if (!(k in d)) d[k] = ''; return d; }
+const qeTpl = () => ui.qe && ui.qe.tid ? templates().find(t => t.id === ui.qe.tid) : null;
+const qeBodyHtml = (t, mark) => { let h = t.html ? fillTemplate(t.body, qeData(), true) : esc(fillTemplate(t.body, qeData(), false)).replace(/\n/g, '<br>');
+  return mark ? h.replace(/\[([a-z][a-z /]{1,40})\]/g, '<mark class="qe-miss">[$1]</mark>') : h; };
+function qeList(){ const q = norm((ui.qe && ui.qe.q) || ''); const list = templates().filter(t => !q || norm([t.name, t.subject, t.body].join(' ')).includes(q));
+  return list.length ? list.map(t => `<button type="button" class="qe-t${ui.qe && ui.qe.tid === t.id ? ' on' : ''}" data-act="qePick" data-id="${esc(t.id)}"><b>${esc(t.name || t.subject || 'Template')}</b><small>${esc(t.subject || '')}</small></button>`).join('') : `<p class="empty-s">No templates match “${esc(ui.qe.q)}”.</p>`; }
+function qePrev(){ const t = qeTpl(); if (!t) return '';
+  const miss = qeKeys(t).filter(k => !QE_AUTO.includes(k) && !String((ui.qe.vals || {})[k] || '').trim());
+  return `<div class="qe-sub"><span>Subject</span><b>${fillTemplate(t.subject || '', qeData(), true).replace(/\[([a-z][a-z /]{1,40})\]/g, '<mark class="qe-miss">[$1]</mark>')}</b><button type="button" class="btn sm" data-act="qeCopy" data-w="subj">${ic('copy')}Copy subject</button></div>
+    <div class="qe-body">${qeBodyHtml(t, true)}</div>
+    <div class="qe-act">${miss.length ? `<span class="sub">Still blank: ${miss.map(qeLabel).map(esc).join(', ')}</span>` : '<span class="sub">All filled in.</span>'}<button type="button" class="btn pri" data-act="qeCopy" data-w="body">${ic('copy')}Copy message</button></div>`; }
+V.qemail = () => {
+  ui.qe = ui.qe || {tid: '', q: '', vals: {}}; const t = qeTpl();
+  const keys = t ? qeKeys(t).filter(k => !QE_AUTO.includes(k)) : [];
+  return head('Quick Email', 'Pick one of our templates, fill in the blanks, then copy it into your email. Nothing is sent from here.')
+  + `<div class="qe"><section class="panel qe-l"><input type="search" class="qe-q" placeholder="Search templates" data-input="qeQ" value="${esc(ui.qe.q)}" autocomplete="off" aria-label="Search templates"><div class="qe-list" id="qeList">${qeList()}</div></section>
+    <section class="panel qe-r">${t ? `<div class="ph"><h3>${esc(t.name || 'Template')}</h3><button type="button" class="btn sm ghost" data-act="qeClear">Clear</button></div>
+      ${keys.length ? `<div class="qe-f">${keys.map(k => `<label class="f"><span>${esc(qeLabel(k))}</span><input data-input="qeV" data-k="${esc(k)}" value="${esc((ui.qe.vals || {})[k] || '')}" autocomplete="off"></label>`).join('')}</div>` : '<p class="sub">Nothing to fill in for this one.</p>'}
+      <div id="qePrev">${qePrev()}</div>` : emptyState('Pick a template', 'Search on the left, pick one, and fill in the blanks. Then copy the subject and message into your email.')}</section></div>`;
+};
 V.contracts = () => {
   const rows = L('contracts').filter(mine).filter(c => match(ui.q, c.title, c.note, cname(c.companyId), ...(c.files || []).map(f => f.name))).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   return head('Contracts', ui.mine ? `${rows.length} contract${rows.length === 1 ? '' : 's'}` : '', searchBox('Search contracts') + mineSeg() + addBtn('Contract','newContract'))
@@ -6833,8 +6879,27 @@ function emailPaint(){
   }
 }
 function emailPlain(){
-  const fr = $('#emvFrame'); if (fr) { try { return fr.contentDocument.body.innerText.trim(); } catch {} }
-  return String(EMV.text || '').trim();
+  const fr = $('#emvFrame'); if (fr) { try { const b = fr.contentDocument.body.cloneNode(true);
+    // Outlook, Gmail and Apple mark the signature block: drop it before reading the text
+    b.querySelectorAll('[id$="Signature" i], [id^="Signature" i], [id*="_Signature" i], .gmail_signature, .gmail_signature_prefix, [data-smartmail="gmail_signature"], .moz-signature, #appendonsend').forEach(n => n.remove());
+    b.querySelectorAll('li').forEach(li => li.prepend(li.closest('ol') ? `${[...li.parentNode.children].indexOf(li) + 1}. ` : '• '));
+    const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;white-space:normal'; host.append(b); document.body.append(host);
+    const t = b.innerText; host.remove(); return emailBodyOnly(t); } catch {} }
+  return emailBodyOnly(String(EMV.text || ''));
+}
+// just what was written: no sign-off, name, title, phone, address, links or confidentiality notice under it
+const SIGN_OFF = /^\s*(thank you( so much| again)?|thanks( again| so much)?|many thanks|sincerely|best( regards| wishes)?|kind regards|warm regards|regards|cheers|respectfully|have a (great|good|nice) (day|week|weekend)|talk soon|all the best|take care)\s*[,.!]?\s*$/i;
+const SIG_LINE = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}|\bx\s?\d{2,5}\b|https?:\/\/|www\.|@[\w-]+\.[a-z]{2,}|\b(FL|Florida)\s+\d{5}\b|\b(Suite|Ste\.?|Pkwy|Blvd|Ave|Street|St\.|Rd\.?)\b|Protecting Information|Protecting Communities|confidential|intended (only )?for the|Get Outlook for|Sent from my (iPhone|iPad|Android)|Client Excellence|Director of|Coordinator|Manager\b|All Points Mobile Shredding|WE OFFER CONVENIENT|EXTERNAL EMAIL|originated from outside/i;
+function emailBodyOnly(txt){
+  let L = String(txt || '').replace(/\r/g, '').replace(/\u00a0/g, ' ').split('\n').map(l => l.replace(/\s+$/, ''));
+  L = L.filter(l => !/EXTERNAL EMAIL|originated from outside (of )?your organization|Do not click links or open attachments/i.test(l));
+  // cut at the last sign-off in the back part of the message
+  const from = Math.max(0, L.length - 30);
+  for (let i = L.length - 1; i >= from; i--) if (SIGN_OFF.test(L[i]) && i > 0) { L = L.slice(0, i); break; }
+  // no sign-off: drop trailing signature-looking lines (name, title, phone, address, links)
+  let end = L.length; while (end > 0 && (!L[end - 1].trim() || (L[end - 1].length < 90 && (SIG_LINE.test(L[end - 1]) || /^[A-Z][A-Za-z'’-]+( [A-Z][A-Za-z'’.-]+){0,2}$/.test(L[end - 1].trim()))))) end--;
+  if (end > 0) L = L.slice(0, end);
+  return L.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 // ---------- the email window: one set of parts, five arrangements (Settings → Appearance → Email window) ----------
@@ -8761,6 +8826,13 @@ const A = {
   tags: () => tagsModal(),
   tagSuggest: () => tagSuggestModal(),
   bizSure: () => bizSureModal(),
+  qePick: d => { ui.qe.tid = d.id; ui.qe.vals = {}; render(); setTimeout(() => { const i = $('.qe-f input'); if (i) i.focus(); }, 30); },
+  qeClear: () => { ui.qe.vals = {}; render(); },
+  qeCopy: d => { const t = qeTpl(); if (!t) return;
+    if (d.w === 'subj') { copyText(fillTemplate(t.subject || '', qeData(), false)); return; }
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:680px;font:15px/1.5 Calibri,Arial,sans-serif;color:#000'; box.innerHTML = qeBodyHtml(t, false); document.body.append(box);
+    copyRich(box).finally(() => box.remove()); },
+
   coAddLoc: d => companyForm(null, {parent: d.id}),
   cpLocs: () => { ui.cpTab = 'details'; render(); setTimeout(() => { const e = $('#cpLocs'); if (e) e.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60); },
   hdResched: d => hdReschedModal(d.id),
@@ -8859,6 +8931,8 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  qeQ: el => { ui.qe.q = el.value; const l = $('#qeList'); if (l) l.innerHTML = qeList(); },
+  qeV: el => { ui.qe.vals[el.dataset.k] = el.value; const p = $('#qePrev'); if (p) p.innerHTML = qePrev(); },
   jdPick: el => { const s_ = jdSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
   jdAll: el => { const s_ = jdSel(); (ui.jdOk || []).forEach(id => el.checked ? s_.add(id) : s_.delete(id)); render(); },
   jbRow: el => { const s_ = jbSel(); el.checked ? s_.add(el.dataset.id) : s_.delete(el.dataset.id); render(); },
