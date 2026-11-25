@@ -58,7 +58,8 @@ p{margin:0}
 
 .app{display:grid;grid-template-columns:228px minmax(0,1fr);height:100%}
 .nav{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:18px;padding:18px 12px;overflow:auto}
-.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;border-radius:10px;width:100%}.brand:hover .mark{filter:brightness(1.08)}.brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mbar button.mark{border:0;cursor:pointer;padding:0}
 .brand .mark{width:34px;height:34px;border-radius:8px;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font:800 .95rem var(--display);letter-spacing:.02em}
 .brand b{display:block;font:800 1.02rem var(--display)}
 .brand small{display:block;color:var(--muted);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
@@ -1267,6 +1268,9 @@ tr.sel td{background:var(--accent-soft)!important}
 .att-ck{display:flex;align-items:center;padding:0 10px 0 2px;cursor:pointer}.att-ck input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;margin:0}li.att.sel{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .qe{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
 .qe-l{display:flex;flex-direction:column;gap:10px;position:sticky;top:12px;max-height:calc(100vh - 140px)}
+.qe-lt{display:flex;gap:8px}.qe-lt .qe-q{flex:1;min-width:0}.qe-hb{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tpl-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}.tpl-top .search{flex:1;min-width:200px}
+.tpl-rows li{display:flex;align-items:center;gap:10px}.tpl-rows .tpl-open{flex:1;min-width:0;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tpl-rows .tpl-open:hover b{text-decoration:underline}.tpl-btns{display:flex;gap:6px;align-items:center;flex:none}
 .qe-list{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
 .qe-t{display:flex;flex-direction:column;gap:1px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
 .qe-t:hover{border-color:var(--muted)}.qe-t.on{border-color:var(--accent);background:var(--accent-soft)}
@@ -3302,9 +3306,9 @@ function navHtml(){
   const curK = ui.view === 'company' ? 'companies' : ui.view === 'opp' ? 'pipeline' : ui.view;
   const curL = (VIEWS.find(v => v[0] === curK) || [0, 'Paper Trail'])[1];
   const moreBadge = VIEWS.filter(v => !MT.includes(v[0])).reduce((n, v) => n + (badge[v[0]] || 0), 0);
-  const mobile = `<div class="mbar"><span class="mark">${FISH ? BOBBER : 'PT'}</span><b class="mtitle">${esc(curL)}</b><button class="icon-btn" data-act="search" aria-label="Search">${ic('search')}</button><button class="icon-btn" data-act="settings" aria-label="Settings">${ic('gear')}</button></div>
+  const mobile = `<div class="mbar"><button type="button" class="mark" data-act="goHome" aria-label="Go to your home page">${FISH ? BOBBER : 'PT'}</button><b class="mtitle">${esc(curL)}</b><button class="icon-btn" data-act="search" aria-label="Search">${ic('search')}</button><button class="icon-btn" data-act="settings" aria-label="Settings">${ic('gear')}</button></div>
   <div class="mtabs" role="navigation" aria-label="Main">${MT.map(k => { const v = VIEWS.find(x => x[0] === k); return `<button class="${curK === k ? 'on' : ''}" data-act="go" data-v="${k}">${ic(v[2])}<span>${k === 'pipeline' ? 'Opps' : v[1]}</span>${badge[k] ? `<em>${badge[k]}</em>` : ''}</button>`; }).join('')}<button class="${MT.includes(curK) ? '' : 'on'}" data-act="mMore">${ic('more')}<span>More</span>${moreBadge ? `<em>${moreBadge}</em>` : ''}</button></div>`;
-  return mobile + `<div class="brand">${FISH ? `<span class="mark">${BOBBER}</span><span><b>Paper Trail</b><small>Bait &amp; Tackle Co.</small></span>` : '<span class="mark">PT</span><span><b>Paper Trail</b></span>'}</div>
+  return mobile + `<button type="button" class="brand" data-act="goHome" title="Home" aria-label="Paper Trail: go to your home page">${FISH ? `<span class="mark">${BOBBER}</span><span><b>Paper Trail</b><small>Bait &amp; Tackle Co.</small></span>` : '<span class="mark">PT</span><span><b>Paper Trail</b></span>'}</button>
   <button class="gsearch" data-act="search" aria-label="Search all records">${ic('search')}<span>Search</span><kbd>/</kbd></button>
   <div class="navlist">${(() => { const one = ([k,l,i]) => `<button class="navi ${ui.view===k || (ui.view==='company' && k==='companies') || (ui.view==='opp' && k==='pipeline')?'on':''}" data-act="go" data-v="${k}" data-k="G ${NAVKEY[k]}">${ic(i)}<span>${l}</span>${badge[k]?`<em>${badge[k]}</em>`:''}</button>`;
     if (!simpleOn()) return VIEWS.map(one).join('');
@@ -3928,8 +3932,8 @@ V.qemail = () => {
   ui.qe = ui.qe || {tid: '', q: '', vals: {}}; const t = qeTpl(); if (t && ui.qe.body == null) qeStart(t.id);
   const bl = t ? qeBlanks(t) : []; const miss = bl.filter(x => !String(ui.qe.vals[x.key] || '').trim()).map(x => x.label);
   return head('Quick Email', 'Pick one of our templates, fill in the blanks, change anything you like, then copy it into your email. Nothing is sent from here.')
-  + `<div class="qe"><section class="panel qe-l"><input type="search" class="qe-q" placeholder="Search templates" data-input="qeQ" value="${esc(ui.qe.q)}" autocomplete="off" aria-label="Search templates"><div class="qe-list" id="qeList">${qeList()}</div></section>
-    <section class="panel qe-r">${t ? `<div class="ph"><h3>${esc(t.name || 'Template')}</h3><button type="button" class="btn sm ghost" data-act="qeClear" title="Start this template over">Start over</button></div>
+  + `<div class="qe"><section class="panel qe-l"><div class="qe-lt"><input type="search" class="qe-q" placeholder="Search templates" data-input="qeQ" value="${esc(ui.qe.q)}" autocomplete="off" aria-label="Search templates">${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-from="qe" title="New template">${ic('plus')}New</button>` : ''}</div><div class="qe-list" id="qeList">${qeList()}</div></section>
+    <section class="panel qe-r">${t ? `<div class="ph"><h3>${esc(t.name || 'Template')}</h3><span class="qe-hb">${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${esc(t.id)}" data-from="qe" title="Change this template for everyone">${ic('edit')}Edit template</button><button type="button" class="icon-btn" data-act="tplDel" data-id="${esc(t.id)}" data-from="qe" aria-label="Delete this template" title="Delete template">${ic('trash')}</button>` : ''}<button type="button" class="btn sm ghost" data-act="qeClear" title="Start this email over">Start over</button></span></div>
       ${bl.length ? `<div class="qe-f">${bl.map(x => `<label class="f"><span>${esc(x.label)}</span><input${x.date ? ' type="date"' : ''} data-input="qeV" data-k="${esc(x.key)}" value="${esc(ui.qe.vals[x.key] || '')}" autocomplete="off"></label>`).join('')}</div>` : '<p class="sub">Nothing to fill in for this one.</p>'}
       <div class="qe-mail"><div class="qe-sub"><span>Subject</span><b id="qeSubj" contenteditable="true" spellcheck="true" data-input="qeEdit" role="textbox" aria-label="Subject">${ui.qe.subj}</b><button type="button" class="btn sm pri" data-act="qeCopy" data-w="body">${ic('copy')}Copy message</button></div>
       <div class="qe-body" id="qeBody" contenteditable="true" spellcheck="true" data-input="qeEdit" role="textbox" aria-multiline="true" aria-label="Email message">${ui.qe.body}</div></div>
@@ -7473,9 +7477,8 @@ function tplManageModal(){
   const sp = list.filter(t => t.src === 'spiro').length, spOld = list.filter(t => t.src === 'spiro' && !t.edited && (t.spv || 1) < SPIRO_TPL_VER).length;
   openModal('Email templates', `<p class="sub">Templates are shared with your team. Words in curly braces, like {first_name}, fill in from the account when you use the template.</p>
     ${canWrite && (sp < SPIRO_TPL_COUNT || spOld) ? `<div class="banner" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${spOld ? `<b>Updated versions of the templates from your current CRM are ready.</b> Bold section headings and bulleted lists throughout, no sign-off since your signature is added when you send, and wording fixes (HIPAA spelling, “30+ years” throughout). This replaces the ${spOld} earlier versions. Templates you've edited yourself are left alone.` : `<b>Your ${SPIRO_TPL_COUNT} templates from your current CRM are ready to add.</b> Formatted, with names swapped for fill-in fields and the pasted signatures removed (Paper Trail adds yours).${sp ? ` ${sp} are already here; the rest will be added.` : ''}`}</span><button type="button" class="btn pri" data-act="spiroImport" id="spiroBtn">${ic('down')}${spOld ? 'Update templates' : 'Add these templates'}</button></div>` : ''}
-    ${list.length > 10 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}
-    <ul class="hits" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span><span>${canWrite ? `<button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">Edit</button>` : ''}</span></li>`).join('')}</ul>
-    ${canWrite ? `<div><button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button></div>` : ''}`, null);
+    <div class="tpl-top">${list.length > 5 ? `<label class="search">${ic('search')}<input type="search" placeholder="Search ${list.length} templates" data-input="tplQ" aria-label="Search templates"></label>` : ''}${canWrite ? `<button type="button" class="btn pri" data-act="tplEdit">${ic('plus')}New template</button>` : ''}</div>
+    <ul class="hits tpl-rows" id="tplList">${list.map(t => `<li data-q="${esc(norm(t.name + ' ' + (t.subject || '')))}"><span${canWrite ? ` class="tpl-open" data-act="tplEdit" data-id="${t.id}" title="Edit"` : ''}><b>${esc(t.name)}</b>${t.subject ? ` <span class="sub">${esc(t.subject)}</span>` : ''}</span>${canWrite ? `<span class="tpl-btns"><button type="button" class="btn sm" data-act="tplEdit" data-id="${t.id}">${ic('edit')}Edit</button><button type="button" class="btn sm ghost" data-act="tplDup" data-id="${t.id}" title="Make a copy to change">${ic('copy')}Copy</button><button type="button" class="icon-btn" data-act="tplDel" data-id="${t.id}" aria-label="Delete ${esc(t.name)}" title="Delete">${ic('trash')}</button></span>` : ''}</li>`).join('')}</ul>`, null);
 }
 const SPIRO_TPL_COUNT = 101, SPIRO_TPL_VER = 6;
 async function spiroImport(){
@@ -7496,6 +7499,12 @@ async function spiroImport(){
   toast([added ? `Added ${added}` : '', updated ? `Updated ${updated}` : ''].filter(Boolean).join(', ') + ` template${added + updated === 1 ? '' : 's'} from your current CRM` + (skipped && !updated ? ` (${skipped} were already here)` : ''));
   tplManageModal();
 }
+// where to land after a template is saved or deleted: the template list, or back in Quick Email
+let tplBack = '';
+function tplDone(tid, deleted){
+  if (tplBack === 'qe') { tplBack = ''; if (ui.qe) { if (deleted) { ui.qe.tid = ''; ui.qe.body = null; } else if (tid) { qeStart(tid); } } closeModal(); render(); return; }
+  tplManageModal();
+}
 function tplEditModal(id){
   const t = id ? templates().find(x => x.id === id) : {name:'', subject:'', body:'{greeting} {first_name},\n\n'};
   if (!t) return;
@@ -7510,7 +7519,7 @@ function tplEditModal(id){
       if (!elText(ed).trim() && !(src && !src.hidden && src.value.trim())) { toast('Write the message first.', 'bad'); return false; }
       const keep = t.src === 'spiro' ? {src: 'spiro', spv: t.spv || 1, order: t.order, edited: true} : {};   // still counted as a Spiro template, but updates leave it alone
       const ok = await put('templates', tid, {name: f.name, subject: f.subject, body, html: true, ...keep});
-      if (ok) { toast('Template saved'); setTimeout(tplManageModal, 0); }
+      if (ok) { toast('Template saved'); setTimeout(() => tplDone(tid), 0); }
       return ok;
     }, {wide: true, foot: id ? `<button type="button" class="btn ghost" data-act="tplDel" data-id="${id}" style="margin-right:auto">${ic('trash')}Delete</button>` : ''});
   updTplPrev();
@@ -8630,6 +8639,7 @@ const A = {
   calCopy: d => { copyText(calLong(d.d)); },
   calUse: d => { const ins = [...document.querySelectorAll('#dBlanks input')]; const inp_ = ins.find(i => /date|day|when/i.test(i.dataset.blank) && !i.value) || ins.find(i => !i.value) || ins[0]; if (inp_) { cmpFill(inp_.dataset.blank, calLong(d.d)); toast('Added to the email'); } },
   theoToggle: (d, el) => { const on = !prefGet('theo', true); prefSet('theo', on); el.textContent = on ? 'Hide Theo' : 'Show Theo'; render(); toast(on ? 'Theo is back' : 'Theo is hidden. Show him again from Settings anytime.'); },
+  goHome: () => A.go({v: startView()}),
   go: d => { ui.view = d.v; ui.q = ''; ui.lim = {}; ui.detail = null; ui.side = null; render(); pushNav(); $('#main').scrollTop = 0; },
   mine: d => { ui.mine = d.m === '1'; render(); },
   open: d => { const nt = $('#noteText'); if (nt) nt.value = ''; ui.detail = {col: d.col, id: d.id}; render(); pushNav(); const b = $('#drawerBody'); if (b) b.scrollTop = 0; const r = S[d.col] && S[d.col][d.id]; syncEmailsFor(d.col === 'companies' ? d.id : r && r.companyId); },
@@ -8966,8 +8976,10 @@ const A = {
   rte: d => rteExec(d.t, d.cmd),
   rteSrc: (d, el) => { const ed = document.getElementById(d.t), src = document.getElementById(d.t + 'Src'); if (!ed || !src) return; const on = src.hidden; if (on) { src.value = ed.innerHTML; } else { ed.innerHTML = cleanHtml(src.value); } src.hidden = !on; ed.hidden = on; el.setAttribute('aria-pressed', on); el.classList.toggle('on', on); el.closest('.rte-bar').classList.toggle('src', on); },
   spiroImport: () => spiroImport(),
-  tplEdit: d => tplEditModal(d.id),
-  tplDel: d => confirmModal('Delete template?', esc(templates().find(t => t.id === d.id)?.name || ''), 'Delete', async () => { const isDefault = DEFAULT_TEMPLATES.some(t => t.id === d.id); const ok = isDefault ? await put('templates', d.id, {deleted: true}) : await del('templates', d.id); if (ok) { toast('Template deleted'); setTimeout(tplManageModal, 0); } return ok; }),
+  tplEdit: d => { tplBack = d.from || ''; tplEditModal(d.id); },
+  tplDup: async d => { const t = templates().find(x => x.id === d.id); if (!t) return; let n = `${t.name} (copy)`, i = 2; while (templates().some(x => norm(x.name) === norm(n))) n = `${t.name} (copy ${i++})`;
+    const nid = 't_' + uid(); if (await put('templates', nid, {name: n, subject: t.subject || '', body: t.body || '', html: t.html !== false})) { toast('Copy made. Change it and save.'); tplBack = d.from || ''; tplEditModal(nid); } },
+  tplDel: d => { const back = d.from || ''; confirmModal('Delete template?', `${esc(templates().find(t => t.id === d.id)?.name || '')}<br><span class="sub">It's removed for the whole team.</span>`, 'Delete', async () => { const isDefault = DEFAULT_TEMPLATES.some(t => t.id === d.id); const ok = isDefault ? await put('templates', d.id, {deleted: true}) : await del('templates', d.id); if (ok) { toast('Template deleted'); tplBack = back; setTimeout(() => tplDone(d.id, true), 0); } else tplBack = ''; return ok; }); },
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
