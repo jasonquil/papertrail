@@ -1268,6 +1268,10 @@ tr.sel td{background:var(--accent-soft)!important}
 .att-ck{display:flex;align-items:center;padding:0 10px 0 2px;cursor:pointer}.att-ck input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;margin:0}li.att.sel{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .qe{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
 .qe-l{display:flex;flex-direction:column;gap:10px;position:sticky;top:12px;max-height:calc(100vh - 140px)}
+.mc-head{display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px}.mc-all{display:flex;gap:8px;align-items:center;font-weight:600}
+.mc-l{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px}.mc-l li+li{border-top:1px solid var(--line)}
+.mc-l label{display:flex;gap:10px;align-items:center;padding:8px 12px;cursor:pointer}.mc-l label>span{display:flex;flex-direction:column;min-width:0}.mc-l small{color:var(--muted);font-size:.8rem}
+.mc-l input,.mc-all input{width:16px;height:16px;accent-color:var(--accent);margin:0;flex:none}
 .qe-lt{display:flex;gap:8px}.qe-lt .qe-q{flex:1;min-width:0}.qe-hb{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .tpl-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}.tpl-top .search{flex:1;min-width:200px}
 .tpl-rows li{display:flex;align-items:center;gap:10px}.tpl-rows .tpl-open{flex:1;min-width:0;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tpl-rows .tpl-open:hover b{text-decoration:underline}.tpl-btns{display:flex;gap:6px;align-items:center;flex:none}
@@ -3614,10 +3618,10 @@ V.pipeline = () => {
   if (all.length && oppView === 'board') {
     const cols = show === 'open' ? ['lead', 'quoted', 'contract'] : show === 'won' ? ['won', 'updated'] : show === 'lost' ? ['following', 'lost'] : STAGES.map(x => x.k);
     const board = `<div class="board">${cols.map(k => { const ds = rows.filter(d => stage(d).k === k); const real = ds.filter(isReal); const tot = real.reduce((n, d) => n + (+d.value || 0), 0); return `<div class="col ${k}" data-drop="${k}"><div class="colh"><b>${esc(STAGES.find(x => x.k === k).l)}</b><span>${real.length} · ${money(tot)}</span></div><div class="cards">${ds.slice(0, 80).map(d => dealCard(d, side === d.id)).join('') || '<p class="sub" style="padding:6px 4px;margin:0">Nothing here</p>'}${ds.length > 80 ? `<p class="sub" style="padding:4px">+${ds.length - 80} more in the list view</p>` : ''}</div></div>`; }).join('')}</div>`;
-    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal')) + sbar
+    return head('Opportunities', ui.mine ? `${nOpen} open` : '', searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + massBtn() + addBtn('Opportunity','newDeal')) + sbar
       + (side ? `<div class="oppsplit"><div class="oppsplit-l">${board}</div>${oppSide(side)}</div>` : board);
   }
-  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + addBtn('Opportunity','newDeal'))
+  return head('Opportunities', !ui.mine ? '' : fltActive('deals').length || ui.q ? `${rows.length.toLocaleString()} shown · ${nOpen.toLocaleString()} open` : `${nOpen} open`, searchBox('Search opportunities') + segs + vseg + sortSel('deals') + fltBtn('deals') + savedSel('deals') + mineSeg() + dlBtn('deals') + cleanupBtn() + massBtn() + addBtn('Opportunity','newDeal'))
   + sbar + (!all.length ? `<section class="panel">${emptyState('No opportunities yet', 'Add an opportunity from any account, or start one here.', `<button class="btn pri" data-act="newDeal">${ic('plus')}Add an opportunity</button>`)}</section>`
   : `<div class="tbl"><table><thead><tr><th class="num" title="Account number">No.</th><th>Opportunity</th><th>Account</th><th>Stage</th><th class="r">Annual projected</th><th class="r">Price quoted</th>${show==='open' ? '' : `<th>Closed</th><th>${show==='won' ? 'Service date' : show==='lost' ? 'Reason for loss' : 'Service date / reason'}</th>`}</tr></thead><tbody>${pg('deals', rows).map(d => {
       const late = isOpen(d) && isDate(d.closeDate) && d.closeDate < today();
@@ -5254,6 +5258,39 @@ async function ciRun(){
 }
 // ---------- opportunity cleanup (Jason only): close out open opportunities nobody has touched in a while ----------
 const cleanupBtn = () => isJason() && canWrite ? `<button class="btn" data-act="oppCleanup">${ic('check')}Clean up</button>` : '';
+// ---------- close every open opportunity in the filtered list at once (Jason only; his sign-in email, never a display name) ----------
+const massOpen = () => ((ui.lastRows && ui.lastRows.deals) || []).filter(d => isOpen(d) && S.deals[d.id]);
+const massBtn = () => { if (!isJason() || !canWrite || !(fltActive('deals').length || (ui.q || '').trim())) return ''; const n = massOpen().length;
+  return n ? `<button class="btn" data-act="massClose" title="Close the open opportunities in this filtered list">${ic('check')}Close ${n.toLocaleString()}…</button>` : ''; };
+function mcCount(){ const n = document.querySelectorAll('#mform .mc-l input:checked').length, all = document.querySelectorAll('#mform .mc-l input').length;
+  const t = $('#mcN'); if (t) t.textContent = `${n.toLocaleString()} will close`; const a = $('#mform .mc-all input'); if (a) { a.checked = n === all; a.indeterminate = n > 0 && n < all; }
+  const b = $('#mform [type=submit]'); if (b) { b.textContent = `Close ${n.toLocaleString()}`; b.disabled = !n; } }
+function massCloseModal(){
+  if (!isJason()) return; const list = massOpen(); if (!list.length) { toast('No open opportunities in this list.', 'bad'); return; }
+  ui.mc = {as: 'lost'};
+  const desc = fltActive('deals').length ? fltSentence('deals') : `matching “${esc(ui.q)}”`;
+  openModal(`Close ${list.length.toLocaleString()} opportunit${list.length === 1 ? 'y' : 'ies'}`, `<p class="sub" style="margin:0 0 12px">The open ones in your list: ${desc}. Untick any you want to leave open.</p>
+    <div class="grid2">${F('Close as', sel('mcAs', [['lost', 'Closed lost'], ['won', 'Closed won']], 'lost', 'data-change="mcAs"'))}<span id="mcWhy">${F('Reason for loss', sel('mcWhy', [['', 'Choose a reason'], ...LOSS_REASONS.map(r => [r, r])], ''))}</span>
+    ${F('Closed date', inp('mcDate', today(), 'date'))}</div>
+    <div class="mc-head"><label class="mc-all"><input type="checkbox" checked data-change="mcAll"> All ${list.length.toLocaleString()}</label><span class="sub" id="mcN">${list.length.toLocaleString()} will close</span></div>
+    <ul class="mc-l">${list.map(d => `<li><label><input type="checkbox" name="mc_${esc(d.id)}" checked data-change="mcOne"><span><b>${esc(cname(d.companyId) || 'Account')}</b><small>${esc([oppTypeName(d.name || d.type), stage(d).l, d.value ? money(d.value) : ''].filter(Boolean).join(' · '))}</small></span></label></li>`).join('')}</ul>`,
+    `Close ${list.length.toLocaleString()}`, async f => {
+      if (!isJason()) return false;
+      const as = f.mcAs === 'won' ? 'won' : 'lost', why = f.mcWhy || '', when = isDate(f.mcDate) ? f.mcDate : today();
+      if (as === 'lost' && !why) { toast('Choose a reason for loss.', 'bad'); return false; }
+      const ids = list.map(d => d.id).filter(id => document.querySelector(`#mform input[name="mc_${CSS.escape(id)}"]`)?.checked && S.deals[id] && isOpen(S.deals[id]));
+      if (!ids.length) { toast('Nothing ticked.', 'bad'); return false; }
+      const undo = ids.map(id => [id, {stage: S.deals[id].stage, closedAt: S.deals[id].closedAt || null, closedBy: S.deals[id].closedBy || null, lostReason: S.deals[id].lostReason || ''}]);
+      const b = $('#mform [type=submit]'); let done = 0; const lbl = as === 'won' ? 'Closed won' : 'Closed lost';
+      for (let i = 0; i < ids.length; i += 10) {
+        await Promise.all(ids.slice(i, i + 10).map(async id => { const d = S.deals[id]; if (!d) return;
+          if (await patch('deals', id, {stage: as, closedAt: when, closedBy: ME.id || '', lostReason: as === 'lost' ? why : ''})) { done++; logAct({type: 'stage', text: `Stage changed to ${lbl}${as === 'lost' ? ` (${why})` : ''}, closed with ${ids.length - 1} other${ids.length === 2 ? '' : 's'} at once`, dealId: id, companyId: d.companyId}); } }));
+        if (b) b.textContent = `Closing ${Math.min(i + 10, ids.length).toLocaleString()} of ${ids.length.toLocaleString()}…`;
+      }
+      toast(`Closed ${done.toLocaleString()} as ${as === 'won' ? 'won' : 'lost'}`, '', {label: 'Undo', fn: async () => { let n = 0; for (const [id, prev] of undo) if (S.deals[id] && await patch('deals', id, prev)) n++; toast(`Reopened ${n.toLocaleString()}`); }});
+      return true;
+    }, {wide: true});
+}
 function cuRows(){
   const days = ui.cuDays || 90, cut = Date.now() - days * 864e5, skipRem = ui.cuSkipRem !== false;
   const remCo = new Set(L('tasks').filter(k => !k.done && k.companyId).map(k => k.companyId));
@@ -8847,6 +8884,7 @@ const A = {
   smNavMore: () => { ui.smMore = !ui.smMore; render(); },
   smLater: async d => { const k = S.tasks[d.id]; if (!k) return; const prev = k.due, nd = addBiz(today(), 1); if (await patch('tasks', d.id, {due: nd})) toast(`Moved to ${fmtDate(nd)}`, '', {label: 'Undo', fn: () => patch('tasks', d.id, {due: prev})}); },
   oppCleanup: () => cleanupModal(),
+  massClose: () => massCloseModal(),
   cuSet: d => { if (!isJason()) return; const sb0 = $('#mform .sb'), t0 = sb0 ? sb0.scrollTop : 0; ui[d.k] = d.k === 'cuDays' ? +d.v : d.v; cleanupModal(); const nb = $('#mform .sb'); if (nb) nb.scrollTop = t0; },
   rkKind: d => { if (!ui.rk) return; const p = ui.rk.picked; ui.rk.kind = d.k; ui.rk.n = p && p.kind === d.k && p.n ? p.n : 1; rkDraw(); if (d.k === 'other') setTimeout(() => $('#rTitle')?.focus(), 20); },
   rkNum: d => { if (!ui.rk) return; ui.rk.n = +d.n; rkDraw(); },
@@ -9002,6 +9040,9 @@ const A = {
   logDraft: async () => { const body = ui.draftHtml ? elText($('#draftHtml')).trim() : $('#draftOut')?.value.trim(); const subj = $('#draftSubj')?.value.trim(); if (!body || !ui.draft) { toast('Choose a template or write a message first.', 'bad'); return; } if (await logAct({type:'email', text: (subj ? subj + '\n' : '') + body, companyId: ui.draft.companyId, contactId: ui.draft.contactId, dealId: ui.draft.dealId})) { if (ui.draft.journey) await jSetStep(ui.draft.journey.eid, ui.draft.journey.idx, 'sent'); await emailJourneyAfterSend(); closeModal(); toast('Logged as email'); } },
 };
 const CHANGE = {
+  mcAs: el => { const w = $('#mcWhy'); if (w) w.hidden = el.value === 'won'; },
+  mcAll: el => { document.querySelectorAll('#mform .mc-l input[type=checkbox]').forEach(x => { x.checked = el.checked; }); mcCount(); },
+  mcOne: () => mcCount(),
   qeQ: el => { ui.qe.q = el.value; const l = $('#qeList'); if (l) l.innerHTML = qeList(); },
   qeV: el => { ui.qe.vals[el.dataset.k] = el.value; qeFillDom(); },
   qeEdit: () => { ui.qe.edited = true; qeSave(); },
